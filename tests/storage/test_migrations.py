@@ -39,6 +39,39 @@ def test_migrations_are_forward_only():
 
 
 @pytest.mark.unit
+def test_migrate_creates_migration_2_tables(tmp_path):
+    connection = connect(tmp_path / "db.sqlite")
+    try:
+        migrate(connection)
+        tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        assert {"progetto", "elemento", "elemento_revisione"} <= tables
+        indexes = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='index'")}
+        assert {"idx_elemento_progetto", "idx_elemento_revisione_elemento"} <= indexes
+    finally:
+        connection.close()
+
+
+@pytest.mark.unit
+def test_migrate_from_version_1_preserves_signoff_data(tmp_path):
+    from strutture.storage.signoff_sqlite import open_signoff_repository
+
+    db_path = tmp_path
+    repo = open_signoff_repository(db_path)  # runs migration 1 only, at the time it shipped
+    repo.set("muro/d1", "approvato", "AB", nota="prima del passaggio a v2")
+
+    connection = connect(db_path / "strutture.db")
+    try:
+        migrate(connection)  # now also applies migration 2
+        tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        assert {"progetto", "elemento", "elemento_revisione", "signoff"} <= tables
+        row = connection.execute("SELECT * FROM signoff WHERE divergence_id = ?", ("muro/d1",)).fetchone()
+        assert row["sigla"] == "AB"
+        assert row["nota"] == "prima del passaggio a v2"
+    finally:
+        connection.close()
+
+
+@pytest.mark.unit
 def test_migrate_survives_reopen(tmp_path):
     db_path = tmp_path / "reopen.db"
     first = connect(db_path)

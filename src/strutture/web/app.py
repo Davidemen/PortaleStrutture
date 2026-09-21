@@ -5,8 +5,14 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from strutture.shared.tool import Tool, discover
-from strutture.storage.interfaces import SignoffRepository
-from strutture.storage.models import Signoff, Stato
+from strutture.storage.interfaces import ProjectRepository, SignoffRepository
+from strutture.storage.models import (
+    Elemento,
+    Progetto,
+    RevisioneElemento,
+    Signoff,
+    Stato,
+)
 
 from . import config
 from .middleware.body_limit import BodySizeLimitMiddleware
@@ -17,6 +23,7 @@ from .middleware.security_headers import SecurityHeadersMiddleware
 from .routes.comuni import build_comuni_router
 from .routes.divergences import build_divergences_router
 from .routes.midas import build_midas_router
+from .routes.progetti import build_progetti_router
 from .routes.tools import build_tools_router
 
 
@@ -24,13 +31,15 @@ def create_app(
     tools: dict[str, Tool] | None = None,
     settings: config.Settings | None = None,
     signoffs: SignoffRepository | None = None,
+    progetti: ProjectRepository | None = None,
 ) -> FastAPI:
     """Build the FastAPI app. `tools` defaults to `discover()`; inject a fake registry for tests.
-    `signoffs` defaults to the real SQLite repository, imported lazily so tests never need it
-    (they inject a small in-test fake implementing `SignoffRepository` instead)."""
+    `signoffs`/`progetti` default to the real SQLite repositories, imported lazily so tests never
+    need them (they inject small in-test fakes implementing the respective Protocols instead)."""
     resolved_tools = tools if tools is not None else discover()
     resolved_settings = settings if settings is not None else config.from_env()
     resolved_signoffs = signoffs if signoffs is not None else _default_signoff_repository(resolved_settings.data_dir)
+    resolved_progetti = progetti if progetti is not None else _default_project_repository(resolved_settings.data_dir)
 
     app = FastAPI(title="StruttureMenni", docs_url=None, redoc_url=None)
 
@@ -48,6 +57,7 @@ def create_app(
     app.include_router(build_comuni_router())
     app.include_router(build_midas_router())
     app.include_router(build_divergences_router(resolved_signoffs))
+    app.include_router(build_progetti_router(resolved_progetti, resolved_tools))
     app.mount("/", StaticFiles(directory=resolved_settings.static_dir, html=True), name="static")
 
     return app
@@ -86,3 +96,65 @@ class _LazySqliteSignoffRepository:
 
     def history(self, divergence_id: str) -> tuple[Signoff, ...]:
         return self._resolved().history(divergence_id)
+
+
+def _default_project_repository(data_dir: Path) -> ProjectRepository:
+    """Deferred to `_LazySqliteProjectRepository`: `progetti_sqlite` is written by another agent
+    in parallel, so it must not be imported before the first real call reaches it — otherwise every
+    test that builds an app without passing `progetti` (unrelated tool/comuni/midas tests) would
+    fail while that module does not exist yet."""
+    return _LazySqliteProjectRepository(data_dir)
+
+
+class _LazySqliteProjectRepository:
+    """Implements `ProjectRepository`, importing and opening the real repository on first use."""
+
+    def __init__(self, data_dir: Path) -> None:
+        self._data_dir = data_dir
+        self._repository: ProjectRepository | None = None
+
+    def _resolved(self) -> ProjectRepository:
+        if self._repository is None:
+            from strutture.storage.progetti_sqlite import open_project_repository
+
+            self._repository = open_project_repository(self._data_dir)
+        return self._repository
+
+    def list_progetti(self, *, inclusi_eliminati: bool = False) -> tuple[Progetto, ...]:
+        return self._resolved().list_progetti(inclusi_eliminati=inclusi_eliminati)
+
+    def get_progetto(self, progetto_id: str) -> Progetto:
+        return self._resolved().get_progetto(progetto_id)
+
+    def crea_progetto(self, progetto: Progetto) -> Progetto:
+        return self._resolved().crea_progetto(progetto)
+
+    def aggiorna_progetto(self, progetto: Progetto) -> Progetto:
+        return self._resolved().aggiorna_progetto(progetto)
+
+    def elimina_progetto(self, progetto_id: str, revisione: int) -> None:
+        self._resolved().elimina_progetto(progetto_id, revisione)
+
+    def ripristina_progetto(self, progetto_id: str) -> Progetto:
+        return self._resolved().ripristina_progetto(progetto_id)
+
+    def list_elementi(self, progetto_id: str) -> tuple[Elemento, ...]:
+        return self._resolved().list_elementi(progetto_id)
+
+    def get_elemento(self, elemento_id: str) -> Elemento:
+        return self._resolved().get_elemento(elemento_id)
+
+    def crea_elemento(self, elemento: Elemento, *, sigla: str = "", nota: str = "") -> Elemento:
+        return self._resolved().crea_elemento(elemento, sigla=sigla, nota=nota)
+
+    def aggiorna_elemento(self, elemento: Elemento, *, sigla: str = "", nota: str = "") -> Elemento:
+        return self._resolved().aggiorna_elemento(elemento, sigla=sigla, nota=nota)
+
+    def duplica_elemento(self, elemento_id: str, nuovo_nome: str) -> Elemento:
+        return self._resolved().duplica_elemento(elemento_id, nuovo_nome)
+
+    def elimina_elemento(self, elemento_id: str, revisione: int) -> None:
+        self._resolved().elimina_elemento(elemento_id, revisione)
+
+    def revisioni(self, elemento_id: str) -> tuple[RevisioneElemento, ...]:
+        return self._resolved().revisioni(elemento_id)

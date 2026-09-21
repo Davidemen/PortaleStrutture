@@ -48,3 +48,24 @@ def session(path: Path) -> Iterator[sqlite3.Connection]:
         connection.commit()
     finally:
         connection.close()
+
+
+@contextmanager
+def write_session(path: Path) -> Iterator[sqlite3.Connection]:
+    """Like `session`, but the whole operation runs inside one `BEGIN IMMEDIATE` transaction.
+
+    Required for read-then-write (optimistic locking) operations: SQLite's default deferred transactions only take
+    the write lock on the first DML statement, so a plain read-check-write can race with another connection between
+    the check and the write. `BEGIN IMMEDIATE` takes the write lock up front, serialising concurrent callers.
+    """
+    connection = connect(path)
+    connection.isolation_level = None  # autocommit off; we drive BEGIN/COMMIT/ROLLBACK explicitly
+    connection.execute("BEGIN IMMEDIATE")
+    try:
+        yield connection
+        connection.execute("COMMIT")
+    except BaseException:
+        connection.execute("ROLLBACK")
+        raise
+    finally:
+        connection.close()
