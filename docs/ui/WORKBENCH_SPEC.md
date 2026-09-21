@@ -263,3 +263,60 @@ accessible name and a tooltip; keyboard: Tab to a category, Enter opens the flyo
 Enter navigates and closes it, Esc returns focus to the button; the active category is marked and shows the active
 tool's sigla; every tool is reachable in ≤ 2 actions from the collapsed rail; sigle unique; 44 px targets; works at
 720–1099 px where the rail is forced collapsed; no layout shift of the content when a flyout opens.
+
+## 13. Registro correzioni + Confronta con Excel (phase 1B UI, 2026-09-21)
+Purpose: the engineer sees every place where the tool departs from the original spreadsheet, decides on each one
+(sign-off, no accounts: a typed `sigla`), and can see for the CURRENT inputs what those departures change.
+API (already live): `GET /api/divergences?strumento=&tipo=&stato=&q=` -> `{divergenze:[entry], totali}`; entry =
+register fields (`id, titolo, tipo, strumenti, cella, foglio, corretto, clausola, impatto, uscite, ramo,
+motivo_senza_ramo`) + `stato (da_confermare|approvato|respinto), sigla, nota, data`; `GET /api/divergences/riepilogo`
+-> `{per_strumento:{tool:{da_confermare,approvato,respinto}}}`; `GET /api/divergences/{unita}/{slug}` (+ `storia`);
+`PUT /api/divergences/{unita}/{slug}/signoff {stato,sigla,nota}` (sigla required unless `da_confermare`; 422 carries
+the Italian message); `POST /api/divergences/signoff-multiplo {ids,stato,sigla,nota}`;
+`POST /api/tools/{name}/compare <inputs>` -> `{ok, disponibile, standard:Report, excel:Report|null, confronto:
+{confrontabile, differenze:[{percorso,standard,excel,delta,delta_rel,divergenze:[id]}], totale_differenze,
+verifiche:[{nome,standard:{passed,value}|null,excel:{…}|null}], divergenze_coinvolte:[id]}|null}`.
+
+### 13.1 Page `#/registro` (optional query: `strumento`, `stato`, `tipo`, `q`, `id`)
+- Rail: one fixed entry "Registro correzioni" below Recenti, own pictogram (a ruled ledger page with a tick — distinct
+  from every category pictogram), a count chip with the number still `da_confermare` (hidden at 0).
+- Main area, full width (no Dati/Sintesi split). Title + ONE sentence: "Ogni punto in cui lo strumento si discosta dal
+  foglio Excel originale. Il progettista conferma o respinge ogni correzione."
+- Totals strip = the state filter: three buttons `aria-pressed` "Da confermare N · Approvate N · Respinte N".
+  Filter row: search (`q`, debounced 250 ms), tool select (sigla + title), tipo select (Italian labels: Errore del
+  foglio / Aggiornamento normativo / Scelta ingegneristica / Da verificare). Filters live in the hash query (shareable).
+- A ruled LIST grouped by unità (group heading = unit + counts), not cards. Collapsed row: state mark (icon + word,
+  never colour alone: ○ Da confermare, ✓ Approvata, ✕ Respinta), titolo, tipo (plain text, sentence case), sigla
+  chips of the tools (link to the tool), clausola. `#/registro?id=<id>` opens and scrolls to that row.
+- Expanded row (`button aria-expanded`): two columns "Il foglio" | "Lo strumento" (`foglio` / `corretto`), then
+  cella, impatto, the outputs affected (label from the tool's output schema when resolvable, else the path);
+  `ramo="nessuno"` -> "Non riproducibile in modalità Excel: <motivo>". Sign-off form: three radios, sigla (required
+  unless Da confermare), nota, "Salva decisione"; last decision line "AB · 21/09/2026 · nota"; "Storia" disclosure
+  (from the detail endpoint). The row updates only after the server confirms; errors inline, in Italian.
+- Bulk: a checkbox per row + "Decidi per le N selezionate…" -> the same small form -> `signoff-multiplo`.
+
+### 13.2 Per-tool indicators (data: `riepilogo`, fetched once, refreshed after a sign-off)
+- Tool header, after the title: link "N correzioni da confermare" (warn ink + icon) -> `#/registro?strumento=<tool>
+  &stato=da_confermare`; with none pending but entries present: muted "Correzioni confermate".
+- Any `respinto` entry for the tool: a banner above Dati (danger ink rule, icon + text): "Una correzione di questo
+  strumento è stata respinta: la modalità standard la applica comunque. Apri il registro." (link, filtered).
+
+### 13.3 "Confronta con Excel" (results toolbar toggle, `aria-pressed`; only when the input schema has `legacy_compat`)
+- On: POST `compare` with the current VALID inputs through the same debounce/queue as live calculation (non-live
+  tools: on "Calcola"). Panel "Confronto con il foglio Excel" directly under the Sintesi; off: panel removed.
+- Summary sentence: "N valori diversi · M verifiche cambiano esito · K correzioni coinvolte", or "Nessuna differenza:
+  per questi dati le due modalità coincidono.", or (not `confrontabile`) which mode failed and its error text.
+- Checks that change outcome first (name, both verdicts as icon + word, both values). Then a table: Grandezza (symbol
+  + label via the output schema by path; `righe[2]` -> "riga 3") | Standard | Excel | Δ | Δ % | Correzione (links
+  `#/registro?id=…`, "—" when unattributed). Numbers via format.js, units via `formatUnit`. When
+  `totale_differenze` exceeds the list: "Mostrate le prime 200 di N." Footnote when any row is unattributed:
+  "Le differenze senza correzione indicata dipendono da una correzione a monte."
+- Stale while recomputing (same treatment as results). NOT part of the printed report (out of scope here).
+
+### 13.4 Staging, files, tests
+Work in `src/strutture/web/static_next/` (identical to `static/` today). New modules, each ≤ 400 lines:
+`js/registro.js` (page), `js/registro-row.js`, `js/registro-signoff.js`, `js/registro-api.js`, `js/confronto.js`,
+`js/confronto-api.js`, `css/registro.css`, `css/confronto.css`; small edits to the router, rail and results toolbar.
+CSP: no inline style/script. Tests: `tests/e2e/test_registro.py`, `tests/e2e/test_confronto_excel.py` (the e2e
+server must use a temporary sign-off store — never the real `var/` database), full e2e suite green on
+`STRUTTURE_E2E_STATIC_DIR=src/strutture/web/static_next`.

@@ -12,6 +12,8 @@ import urllib.request
 import uvicorn
 
 from strutture.shared.tool import discover
+from strutture.storage.memory import InMemorySignoffRepository
+from strutture.storage.progetti_memory import InMemoryProjectRepository
 from strutture.web import config as web_config
 from strutture.web.app import create_app
 
@@ -69,7 +71,10 @@ def start_live_server(static_dir) -> LiveServer:
         port=port,
         static_dir=static_dir,
     )
-    app = create_app(tools=tools, settings=settings)
+    # In-memory stores: a browser test that signs off a correction or saves a project must never
+    # write into the office's real `var/` database.
+    app = create_app(tools=tools, settings=settings, signoffs=InMemorySignoffRepository(),
+                     progetti=InMemoryProjectRepository())
     uv_config = uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning")
     server = uvicorn.Server(uv_config)
     thread = threading.Thread(target=server.run, daemon=True)
