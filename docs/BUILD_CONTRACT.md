@@ -50,5 +50,22 @@ Goal: port the Excel workbooks to a modular, tested Python package `strutture` (
 ## Divergences
 For each spreadsheet bug you fix (see your spec §7 and `docs/architecture.md` §6), add a row to `docs/divergences/<unit>.md`: cell | sheet behaviour | fixed behaviour | clause | numeric impact on the golden case. If you are not sure the sheet is wrong, keep the sheet behaviour in both modes and list it under "Da verificare".
 
+### Register linkage (phase 1B) — the register is DATA, the code points at it
+Source of truth: `src/strutture/data/divergences/<unita>.json` (model `shared/divergences/models.py`); the markdown
+under `docs/divergences/` is GENERATED (`python -m strutture.shared.divergences.render`) — never edit it by hand.
+- Every branch that reproduces the spreadsheet is written `if legacy("<unita>/<slug>", legacy_compat):` (or the same
+  call inside a ternary / boolean expression), `from strutture.shared.divergences import legacy`. The call returns the
+  flag unchanged: linking a branch NEVER changes a number. The id must be a string LITERAL (the checker reads the AST).
+- One branch = one entry. A branch that implements two register entries is split into two `legacy()` conditions only if
+  the code already separates them; otherwise link the entry that names that behaviour and mention the other id in a comment.
+- A register entry with no branch anywhere (a sheet label, a sheet row limit, behaviour that cannot or must not be
+  reproduced, a fix that is unconditional in BOTH modes) gets `"ramo": "nessuno"` and `"motivo_senza_ramo": "<one
+  Italian sentence>"`. Do not invent a branch to satisfy the checker, and do not delete entries.
+- A `legacy_compat` branch with no register entry gets a NEW entry (all required fields, Italian, `tipo` honest —
+  `da_verificare` when unsure), not a made-up link to a vaguely related one.
+- Plain plumbing (`legacy_compat=legacy_compat` passed down, a model field, a docstring) is not a branch: leave it.
+- Acceptance: `uv run python -m strutture.shared.divergences.check --strict` reports 0 errors for your unit(s); your
+  package's golden / oracle / unit tests are unchanged and green in BOTH modes; `uv run ruff check` clean.
+
 ## Token discipline
 Read your spec and only the architecture sections named in your task (use `grep -n`/`sed -n` to pull sections). Do not open other specs, the workbooks, or whole CSVs (`head`, `awk`, `grep` only). Do not explore the repo.

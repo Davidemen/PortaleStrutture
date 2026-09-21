@@ -5,6 +5,7 @@
 and the real tool discovery / source tree, prints the report, and exits 1 only on errors
 (warnings do not fail the build; "non ancora collegati" ids are expected until the linkage step).
 """
+import argparse
 import ast
 from dataclasses import dataclass
 from pathlib import Path
@@ -101,6 +102,27 @@ def orphan_id_report(register_ids: frozenset[str], code_ids: frozenset[str]) -> 
     return errors, warnings
 
 
+def linkage_report(register: tuple[Divergence, ...], code_ids: frozenset[str], *,
+                   strict: bool) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Register <-> code linkage, both directions. An entry declared `ramo="nessuno"` has no branch
+    on purpose: it is never reported as unlinked, and calling `legacy()` with its id is an error.
+    `strict` (the state after the linkage pass) turns every remaining unlinked entry into an error."""
+    register_ids = frozenset(d.id for d in register)
+    branchless = frozenset(d.id for d in register if d.ramo == "nessuno")
+    missing = tuple(f"legacy() id {i!r} used in code but missing from the register" for i in sorted(code_ids - register_ids))
+    contradicted = tuple(
+        f"{i}: dichiarata ramo='nessuno' ma il codice chiama legacy() con questo id" for i in sorted(branchless & code_ids)
+    )
+    unlinked = sorted(register_ids - branchless - code_ids)
+    if strict:
+        unlinked_errors = tuple(
+            f"{i}: nessuna chiamata legacy() nel codice (dichiarare ramo='nessuno' con un motivo se è voluto)" for i in unlinked
+        )
+        return missing + contradicted + unlinked_errors, ()
+    warnings = tuple(f"{i}: non ancora collegati nel codice (nessuna chiamata legacy())" for i in unlinked)
+    return missing + contradicted, warnings
+
+
 def _deref(node: dict, defs: dict) -> dict:
     if "$ref" in node:
         return defs.get(node["$ref"].rsplit("/", 1)[-1], {})
@@ -132,10 +154,9 @@ def _path_exists(schema: dict, defs: dict, path: str) -> bool:
     return True
 
 
-def run_checks(register: tuple[Divergence, ...], tools: dict[str, Tool], code_root: Path) -> CheckReport:
-    orphan_errors, orphan_warnings = orphan_id_report(
-        frozenset(d.id for d in register), legacy_ids_in_code(code_root)
-    )
+def run_checks(register: tuple[Divergence, ...], tools: dict[str, Tool], code_root: Path, *,
+               strict: bool = False) -> CheckReport:
+    orphan_errors, orphan_warnings = linkage_report(register, legacy_ids_in_code(code_root), strict=strict)
     errors = (
         unknown_tool_errors(register, frozenset(tools))
         + unknown_output_errors(register, tools)
@@ -147,7 +168,10 @@ def run_checks(register: tuple[Divergence, ...], tools: dict[str, Tool], code_ro
 
 
 def main() -> None:
-    report = run_checks(load_register(), discover(), REPO_SRC)
+    parser = argparse.ArgumentParser(description="Consistency checks on the divergence register.")
+    parser.add_argument("--strict", action="store_true", help="an entry without a legacy() call is an error, not a warning")
+    args = parser.parse_args()
+    report = run_checks(load_register(), discover(), REPO_SRC, strict=args.strict)
     for warning in report.warnings:
         print(f"WARNING: {warning}")
     for error in report.errors:

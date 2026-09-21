@@ -192,3 +192,53 @@ def test_report_exit_code_is_zero_without_errors() -> None:
 
 def test_report_exit_code_is_one_with_errors() -> None:
     assert CheckReport(errors=("boom",)).exit_code == 1
+
+
+# --- ramo="nessuno": entries that deliberately have no legacy() branch ---------------------------
+
+def test_entry_without_branch_must_say_why() -> None:
+    with pytest.raises(ValueError, match="motivo_senza_ramo"):
+        _div(ramo="nessuno")
+    assert _div(ramo="nessuno", motivo_senza_ramo="Etichetta del foglio: nessun effetto numerico").ramo == "nessuno"
+
+
+def test_entry_with_a_branch_must_not_carry_a_reason() -> None:
+    with pytest.raises(ValueError, match="motivo_senza_ramo"):
+        _div(ramo="codice", motivo_senza_ramo="non serve")
+
+
+def test_declared_branchless_entry_is_not_reported_as_unlinked() -> None:
+    from strutture.shared.divergences.check import linkage_report
+
+    register = (
+        _div(id="demo/linked"),
+        _div(id="demo/unlinked", titolo="Altro titolo di esempio"),
+        _div(id="demo/no-branch", titolo="Terzo titolo di esempio", ramo="nessuno", motivo_senza_ramo="Solo un'etichetta"),
+    )
+    errors, warnings = linkage_report(register, frozenset({"demo/linked"}), strict=False)
+    assert errors == ()
+    assert warnings == ("demo/unlinked: non ancora collegati nel codice (nessuna chiamata legacy())",)
+
+
+def test_strict_mode_turns_unlinked_entries_into_errors() -> None:
+    from strutture.shared.divergences.check import linkage_report
+
+    register = (_div(id="demo/unlinked"),)
+    errors, warnings = linkage_report(register, frozenset(), strict=True)
+    assert errors == ("demo/unlinked: nessuna chiamata legacy() nel codice (dichiarare ramo='nessuno' con un motivo se è voluto)",)
+    assert warnings == ()
+
+
+def test_a_branchless_entry_that_is_called_in_code_is_an_error() -> None:
+    from strutture.shared.divergences.check import linkage_report
+
+    register = (_div(id="demo/no-branch", ramo="nessuno", motivo_senza_ramo="Solo un'etichetta"),)
+    errors, _ = linkage_report(register, frozenset({"demo/no-branch"}), strict=False)
+    assert errors == ("demo/no-branch: dichiarata ramo='nessuno' ma il codice chiama legacy() con questo id",)
+
+
+def test_legacy_id_missing_from_the_register_is_still_an_error() -> None:
+    from strutture.shared.divergences.check import linkage_report
+
+    errors, _ = linkage_report((_div(id="demo/linked"),), frozenset({"demo/linked", "demo/ghost"}), strict=False)
+    assert errors == ("legacy() id 'demo/ghost' used in code but missing from the register",)

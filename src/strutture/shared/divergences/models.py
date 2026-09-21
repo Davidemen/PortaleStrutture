@@ -4,9 +4,10 @@ under docs/divergences/ is generated from it."""
 import re
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 Tipo = Literal["errore_foglio", "aggiornamento_normativo", "scelta_ingegneristica", "da_verificare"]
+Ramo = Literal["codice", "nessuno"]
 ID_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9]+(?:-[a-z0-9]+)*$")  # "<unita>/<slug>"
 
 
@@ -23,6 +24,10 @@ class Divergence(BaseModel):
     clausola: str = Field(default="", description="Governing clause, e.g. 'NTC2018 §4.1.2.3.9.2'")
     impatto: str = Field(default="", description="Numeric impact on the golden case, e.g. 'λ_lim 1084 -> 34,3'")
     uscite: tuple[str, ...] = Field(default=(), description="Output paths that can change, e.g. 'snellezza.lambda_lim'")
+    ramo: Ramo = Field(default="codice", description=(
+        '"codice": a `legacy("<id>", legacy_compat)` branch reproduces the spreadsheet; "nessuno": there is '
+        "deliberately no such branch (a label, a sheet limit, a behaviour that cannot be reproduced)"))
+    motivo_senza_ramo: str = Field(default="", description='Why there is no branch (Italian); required iff ramo="nessuno"')
 
     @field_validator("id")
     @classmethod
@@ -30,3 +35,11 @@ class Divergence(BaseModel):
         if not ID_PATTERN.match(value):
             raise ValueError(f"id {value!r} must look like '<unita>/<slug>' (lowercase, digits, hyphens)")
         return value
+
+    @model_validator(mode="after")
+    def _motivo_iff_senza_ramo(self) -> "Divergence":
+        if self.ramo == "nessuno" and len(self.motivo_senza_ramo.strip()) < 5:
+            raise ValueError('ramo="nessuno" requires motivo_senza_ramo (why no legacy branch exists)')
+        if self.ramo == "codice" and self.motivo_senza_ramo:
+            raise ValueError('motivo_senza_ramo is only allowed with ramo="nessuno"')
+        return self
