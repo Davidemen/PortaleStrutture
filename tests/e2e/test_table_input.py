@@ -6,7 +6,7 @@ registered by the `live_server` fixture (`_demo_tool.py`) for exactly this purpo
 import pytest
 from playwright.sync_api import Page, expect
 
-from ._actions import CALCOLA, goto_tool, load_example
+from ._actions import goto_tool, load_example, submit
 
 pytestmark = pytest.mark.e2e
 
@@ -57,7 +57,7 @@ def test_cell_level_server_error(page: Page, base_url: str) -> None:
     first_row = page.locator(f"{TABLE} tbody tr").first
     modulo_cell = first_row.locator("input, select").nth(1)
     modulo_cell.fill("-5")
-    page.get_by_role("button", name=CALCOLA).click()
+    submit(page)
 
     expect(modulo_cell).to_have_attribute("aria-invalid", "true")
     summary_text = page.locator("#error-summary").inner_text()

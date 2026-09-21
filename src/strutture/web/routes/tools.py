@@ -29,8 +29,8 @@ def build_tools_router(tools: dict[str, Tool]) -> APIRouter:
             {
                 **_summary(tool),
                 "example": _public_example(tool),
-                "input": tool.input_model.model_json_schema(),
-                "output": tool.output_model.model_json_schema(),
+                "input": _ui_schema(tool.input_model.model_json_schema()),
+                "output": _ui_schema(tool.output_model.model_json_schema()),
             }
         )
 
@@ -67,6 +67,18 @@ def _summary(tool: Tool) -> dict[str, Any]:
 
 
 MODE_FIELD = "legacy_compat"
+
+
+def _ui_schema(schema: dict[str, Any]) -> dict[str, Any]:
+    """Schema for the UI: pydantic copies CLASS docstrings into the schema `description` of the model and
+    of every `$defs` entry; those are developer notes (cell references, Python paths). Only the Italian
+    FIELD descriptions are meant for engineers, so the class-level ones are dropped here."""
+    definitions = {
+        name: {key: value for key, value in definition.items() if key != "description"}
+        for name, definition in schema.get("$defs", {}).items()
+    }
+    cleaned = {key: value for key, value in schema.items() if key not in ("description", "$defs")}
+    return {**cleaned, "$defs": definitions} if definitions else cleaned
 
 
 def _public_example(tool: Tool) -> dict[str, Any] | None:

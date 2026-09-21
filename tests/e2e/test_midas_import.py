@@ -8,7 +8,7 @@ tools (`_demo_tool.py`): `demo-tabella-midas` (a `reazioni` table carrying the
 import pytest
 from playwright.sync_api import Page, expect
 
-from ._actions import CALCOLA, goto_tool
+from ._actions import goto_tool, submit
 from ._midas_fixtures import install_happy_path, install_verify_error
 
 pytestmark = pytest.mark.e2e
@@ -67,8 +67,11 @@ def test_happy_path_fills_table_and_tool_runs(page: Page, base_url: str) -> None
 
     expect(page.locator("#field-reazioni-error")).to_contain_text("2 righe importate da MIDAS")
 
-    page.get_by_role("button", name=CALCOLA).click()
-    value_cell = page.locator("#results-root .r-row[data-field='numero_righe'] .r-cell-value")
+    submit(page)
+    # `numero_righe` carries `highlight: true` (_demo_tool.py), so WORKBENCH_SPEC §4/§8 hoists it
+    # into the sticky Sintesi (`.r-si-figure`) rather than rendering it as a plain `#results-root`
+    # row -- same relocation as the highlighted `p_h_kNm2` figure in test_core_flows.py.
+    value_cell = page.locator("#sintesi .r-si-figure[data-field='numero_righe'] .r-si-figure-value")
     expect(value_cell).to_have_text("2")
 
 

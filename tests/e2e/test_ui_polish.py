@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from playwright.sync_api import Page, expect
 
-from ._actions import goto_tool, load_example, submit
+from ._actions import expand_all_results, goto_tool, load_example, submit
 
 pytestmark = pytest.mark.e2e
 
@@ -14,6 +14,11 @@ def test_legend_text_uses_ink_not_series_colour(page: Page, base_url: str) -> No
     goto_tool(page, base_url, "sisma-spettro")
     load_example(page)
     submit(page)
+    # "Carica esempio" already ran the tool once; `submit()` (Ctrl+Enter, live is on for this
+    # tool) queues a SECOND run right behind it (live.js "one request in flight" rule) -- wait for
+    # the chart's own series paths, not just the legend <li> count, so the colour reads below land
+    # on the settled SECOND render rather than catching the chart mid-rebuild.
+    expect(page.locator("svg path[data-series]")).to_have_count(2)
 
     legend_items = page.locator(".c-legend li")
     expect(legend_items).to_have_count(2)
@@ -92,6 +97,9 @@ def test_narrow_chart_min_height_and_tick_font_size(mobile_page, base_url: str) 
     goto_tool(page, base_url, "sisma-spettro")
     load_example(page)
     submit(page)
+    # WORKBENCH_SPEC §4: the row-table/chart group starts closed (only "Verifiche" opens by
+    # default), so the chart isn't visible -- and its box has no real height -- until expanded.
+    expand_all_results(page)
 
     svg = page.locator(".c-svg").first
     expect(svg).to_be_visible()

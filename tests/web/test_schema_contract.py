@@ -87,3 +87,26 @@ def test_default_rate_limit_allows_live_typing() -> None:
     from strutture.web import config
 
     assert config.from_env({}).rate_limit_per_minute >= 600
+
+
+def test_developer_docstrings_are_not_served_to_the_ui() -> None:
+    """Pydantic copies class docstrings into `$defs.*.description`; those are developer notes (cell refs,
+    'Tool 4', Python paths). The UI must only ever see the Italian field descriptions."""
+    import json
+    import re
+
+    from strutture.shared.tool import discover
+
+    api = TestClient(create_app())
+    leak = re.compile(r"`|\bTool \d|docs/specs|strutture\.|[A-Za-z_]+![A-Z]{1,3}\d")
+    offenders = []
+    for name in discover():
+        body = api.get(f"/api/tools/{name}/schema").json()
+        for side in ("input", "output"):
+            schema = body[side]
+            assert "description" not in schema, f"{name}.{side}: top-level docstring served"
+            for def_name, definition in schema.get("$defs", {}).items():
+                assert "description" not in definition, f"{name}.{side}.$defs.{def_name}: docstring served"
+            if leak.search(json.dumps(schema, ensure_ascii=False)):
+                offenders.append(f"{name}.{side}: {leak.search(json.dumps(schema, ensure_ascii=False)).group(0)!r}")
+    assert offenders == []

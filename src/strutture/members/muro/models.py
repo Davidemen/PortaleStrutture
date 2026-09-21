@@ -166,7 +166,7 @@ class PressioniCombo(BaseModel):
     e_terr_m: float = Field(description="Eccentricità del peso del terreno rispetto al centro della fondazione", json_schema_extra={"unit": "m"})
     e_sv_m: float = Field(description="Eccentricità della spinta verticale totale rispetto al centro della fondazione", json_schema_extra={"unit": "m"})
     m_tot_kNm: float = Field(description="Momento totale rispetto al centro della fondazione", json_schema_extra={"unit": "kNm"})
-    n_tot_kN: float = Field(description="Risultante verticale totale (da Tool 2)", json_schema_extra={"unit": "kN"})
+    n_tot_kN: float = Field(description="Risultante verticale totale", json_schema_extra={"unit": "kN"})
     eccentricita_m: float = Field(description="Eccentricità della risultante, e = Mtot/Ntot", json_schema_extra={"unit": "m", "symbol": "e"})
     entro_nocciolo: bool = Field(description="True se |e| ≤ B/6 (sezione interamente compressa)")
     b_star_m: float = Field(description="Larghezza efficace (0 se |e| ≤ B/6)", ge=0, json_schema_extra={"unit": "m", "symbol": "B*"})
@@ -273,10 +273,10 @@ class MuroSostegnoOutput(BaseModel):
 
     geometria: GeometriaResult = Field(description="Geometria e pesi del muro/terreno, comuni a tutte le combinazioni")
     parametri_sismici: ParametriSismiciResult = Field(description="Coefficienti di amplificazione sismica")
-    spinte: tuple[SpintaCombo, ...] = Field(description="Spinta attiva statica/sismica per combinazione (Tool 1)")
-    ribaltamento_scorrimento: tuple[RibaltamentoScorrimentoCombo, ...] = Field(description="Verifiche a ribaltamento e scorrimento per combinazione (Tool 2)")
+    spinte: tuple[SpintaCombo, ...] = Field(description="Spinta attiva statica/sismica per combinazione")
+    ribaltamento_scorrimento: tuple[RibaltamentoScorrimentoCombo, ...] = Field(description="Verifiche a ribaltamento e scorrimento per combinazione")
     pressioni_terreno: tuple[PressioniCombo, ...] = Field(
-        description="Pressioni sul terreno ed eccentricità per combinazione (Tool 3)",
+        description="Pressioni sul terreno ed eccentricità per combinazione",
         json_schema_extra={
             "chart": {
                 "x": "nome", "y": ["p_valle_kPa", "p_monte_kPa"],
@@ -284,7 +284,7 @@ class MuroSostegnoOutput(BaseModel):
             },
         },
     )
-    armatura_paramento: ArmaturaParamentoResult = Field(description="Armatura verticale del paramento (Tool 4)")
-    armatura_fondazione_valle: ArmaturaFondazioneValleResult = Field(description="Armatura della fondazione di valle/mancia (Tool 5)")
-    armatura_fondazione_monte: ArmaturaFondazioneMonteResult = Field(description="Armatura della fondazione di monte/tacco (Tool 6)")
+    armatura_paramento: ArmaturaParamentoResult = Field(description="Armatura verticale del paramento")
+    armatura_fondazione_valle: ArmaturaFondazioneValleResult = Field(description="Armatura della fondazione di valle/mancia")
+    armatura_fondazione_monte: ArmaturaFondazioneMonteResult = Field(description="Armatura della fondazione di monte/tacco")
     schizzo: Sketch | None = campo_schizzo()

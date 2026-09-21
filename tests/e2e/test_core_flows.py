@@ -3,7 +3,7 @@ assertions are written to fail with a clear message rather than a bare timeout."
 import pytest
 from playwright.sync_api import Page, expect
 
-from ._actions import CALCOLA, field_error_id, field_id, goto_tool, load_example, submit, tab_to_calcola
+from ._actions import CALCOLA, expand_all_results, field_error_id, field_id, goto_tool, load_example, submit, tab_to_run
 from ._collectors import PageCollectors, csp_violations, off_origin_requests
 
 pytestmark = pytest.mark.e2e
@@ -15,25 +15,26 @@ def test_desktop_run(desktop_page: tuple[Page, PageCollectors], base_url: str) -
     load_example(page)
     submit(page)
 
-    verdict = page.locator(".r-verdict")
-    expect(verdict).to_be_visible()
-    highlight_rows = page.locator(".r-row[data-highlight]")
-    assert highlight_rows.count() <= 3, f"expected <=3 marker rows, found {highlight_rows.count()}"
+    # WORKBENCH_SPEC §4/§8 replaced the flat `.r-verdict` block with the sticky Sintesi
+    # (`#sintesi`): `vento-pressione` is a loads tool with no checks, so it shows the <=3
+    # `highlight` outputs as figures (`.r-si-figure`) and no verdict line at all (sintesi.js).
+    sintesi = page.locator("#sintesi")
+    expect(sintesi).to_be_visible()
+    highlight_figures = page.locator("#sintesi .r-si-figure")
+    assert highlight_figures.count() <= 3, f"expected <=3 highlight figures, found {highlight_figures.count()}"
 
     # DESIGN_SPEC §7 test 1 pins the exact `1,523` figure measured on the *old* live app
     # (UI_BRIEF's own `p_h_kNm2=1.5230430659834242` quote); the redesigned tool's `example`
     # input (package E) produces a different golden case, so derive the expectation from the
-    # row's own full-precision `title` instead of a stale literal (contractDeviations).
-    value_cell = page.locator('#results-root .r-row[data-field="p_h_kNm2"] .r-cell-value')
+    # figure's own full-precision `title` instead of a stale literal (contractDeviations).
+    value_cell = page.locator('#sintesi .r-si-figure[data-field="p_h_kNm2"] .r-si-figure-value')
     expect(value_cell).to_be_visible()
     full_precision = value_cell.get_attribute("title")
-    assert full_precision, "expected the p(H) row to carry a full-precision title"
+    assert full_precision, "expected the p(H) figure to carry a full-precision title"
     displayed = value_cell.inner_text().strip()
     expected = f"{float(full_precision):.4g}".replace(".", ",")
     assert displayed == expected, f"expected 4-significant-digit {expected!r}, got {displayed!r}"
-    assert full_precision not in page.locator("#results-root").inner_text(), (
-        "full precision must never appear as visible text"
-    )
+    assert full_precision not in sintesi.inner_text(), "full precision must never appear as visible text"
 
 
 def test_deep_link_boot(page: Page, base_url: str) -> None:
@@ -47,16 +48,20 @@ def _assert_deep_link_state(page: Page) -> None:
     page.locator("#tool-title").wait_for(state="visible")
     fields = page.locator("#form-root .f-field").count()
     assert fields > 0, "deep link boot must render the form fields on cold load and reload"
+    # WORKBENCH_SPEC §6: the rail can show the same tool twice at once (its category AND, once
+    # visited, "Recenti") -- js/tool-index.js's `applyCurrent()` deliberately marks every button
+    # for the selected tool, not just one, so `aria-current` is expected on >=1 element rather
+    # than exactly one (a pre-Workbench, single-list-index assumption).
     current = page.locator('[data-tool="sisma-spettro"][aria-current="true"]')
-    expect(current).to_have_count(1)
+    expect(current.first).to_be_visible()
+    assert current.count() >= 1
 
 
 def test_keyboard_only(page: Page, base_url: str) -> None:
     page.goto(f"{base_url}/#/vento-pressione")
-    outlines = tab_to_calcola(page)
-    assert outlines, "no focus stops recorded before reaching Calcola"
+    outlines = tab_to_run(page)
+    assert outlines, "no focus stops recorded before reaching Carica esempio"
     assert all(o != "0px" for o in outlines), f"a focused element had no visible outline: {outlines}"
-    page.keyboard.press("Enter")
     expect(page.locator("#results-head")).to_be_focused()
 
 
@@ -131,8 +136,10 @@ def test_mobile_flow(mobile_page: tuple[Page, PageCollectors], base_url: str) ->
 
 
 def test_tablet_layout(tablet_page: tuple[Page, PageCollectors], base_url: str) -> None:
-    """720-1099px: results sit below the form in the same column, never on top of it
-    (DESIGN_SPEC §2) -- regression for the two panes sharing one grid cell."""
+    """720-1099px: rail collapsed, Dati 360px, results fluid -- all three columns ALONGSIDE each
+    other, never stacked (WORKBENCH_SPEC §1 supersedes DESIGN_SPEC §2's two-column/stacked tablet
+    layout: "720-1099 px: rail collapsed, Dati 360 px, results fluid"). Regression for the two
+    panes sharing one grid cell/row and overlapping."""
     page, _ = tablet_page
     goto_tool(page, base_url, "vento-pressione")
     load_example(page)
@@ -141,7 +148,10 @@ def test_tablet_layout(tablet_page: tuple[Page, PageCollectors], base_url: str) 
     form_box = page.locator("#form-pane").bounding_box()
     results_box = page.locator("#results-pane").bounding_box()
     assert form_box and results_box, "expected both #form-pane and #results-pane to have a layout box"
-    assert form_box["y"] + form_box["height"] <= results_box["y"] + 1, (
+    assert form_box["y"] == results_box["y"], (
+        f"form ({form_box}) and results ({results_box}) must sit in the same row at the tablet breakpoint"
+    )
+    assert form_box["x"] + form_box["width"] <= results_box["x"] + 1, (
         f"form ({form_box}) and results ({results_box}) overlap at the tablet breakpoint"
     )
 
@@ -183,6 +193,9 @@ def test_copy_csv(page: Page, base_url: str) -> None:
     goto_tool(page, base_url, "sisma-spettro")
     load_example(page)
     submit(page)
+    # WORKBENCH_SPEC §4: every group but "Verifiche" (and any group with a failed check) starts
+    # closed, incl. the row-table/chart group "Scarica CSV" lives in.
+    expand_all_results(page)
     with page.expect_download() as download_info:
         page.get_by_role("button", name="Scarica CSV").click()
     download = download_info.value
