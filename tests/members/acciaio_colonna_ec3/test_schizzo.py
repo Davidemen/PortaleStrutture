@@ -1,8 +1,15 @@
-"""Live sketch for `acciaio-colonna-h-ec3` (docs/ui/WORKBENCH_SPEC.md §7): the "Sezione" view
-follows the inputs, and a drawing failure must never fail the calculation."""
+"""Live sketch for `acciaio-colonna-h-ec3` (docs/ui/WORKBENCH_SPEC.md §7, COMPOSITION RULES in
+shared/sketch.py): the "Sezione" view follows the inputs, stays readable across several realistic
+H/I proportions (no slivers, no overlapping texts), and a drawing failure must never fail the
+calculation."""
+import sys
 import time
+from pathlib import Path
 
 import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "shared"))
+from test_sketch_layout import layout_problems, overlap_problems, readability_problems
 
 from strutture.members.acciaio_colonna_ec3 import schizzo as schizzo_module
 from strutture.members.acciaio_colonna_ec3.models import ColonnaEc3Input
@@ -35,21 +42,38 @@ def test_ali_e_anima_seguono_gli_input() -> None:
 
     b_m, h_m = inputs.b_mm / 1000.0, inputs.h_mm / 1000.0
     tw_m, tf_m = inputs.tw_mm / 1000.0, inputs.tf_mm / 1000.0
+    tw_dis, tf_dis = schizzo_module._spessori_disegnati_m(b_m, h_m, tw_m, tf_m)
 
     assert ala_superiore.x == pytest.approx(-b_m / 2)
-    assert ala_superiore.y == pytest.approx(h_m / 2 - tf_m)
+    assert ala_superiore.y == pytest.approx(h_m / 2 - tf_dis)
     assert ala_superiore.w == pytest.approx(b_m)
-    assert ala_superiore.h == pytest.approx(tf_m)
+    assert ala_superiore.h == pytest.approx(tf_dis)
 
     assert ala_inferiore.x == pytest.approx(-b_m / 2)
     assert ala_inferiore.y == pytest.approx(-h_m / 2)
     assert ala_inferiore.w == pytest.approx(b_m)
-    assert ala_inferiore.h == pytest.approx(tf_m)
+    assert ala_inferiore.h == pytest.approx(tf_dis)
 
-    assert anima.x == pytest.approx(-tw_m / 2)
-    assert anima.y == pytest.approx(-h_m / 2 + tf_m)
-    assert anima.w == pytest.approx(tw_m)
-    assert anima.h == pytest.approx(h_m - 2 * tf_m)
+    assert anima.x == pytest.approx(-tw_dis / 2)
+    assert anima.y == pytest.approx(-h_m / 2 + tf_dis)
+    assert anima.w == pytest.approx(tw_dis)
+    assert anima.h == pytest.approx(h_m - 2 * tf_dis)
+
+
+@pytest.mark.unit
+def test_spessori_sottili_ricevono_uno_spessore_minimo_schematico() -> None:
+    """L'anima (8 mm) e l'ala dell'esempio sono sotto il minimo schematico del 3 %: il rettangolo
+    disegnato è più spesso del vero valore, ma le quote riportano sempre il valore vero (mm)."""
+    inputs = ColonnaEc3Input.model_validate(TOOL.example)
+    sketch = disegna(inputs)
+    rettangoli = [f for f in sketch.viste[0].forme if f.kind == "rect"]
+    ala_superiore, _, anima = rettangoli
+
+    assert anima.w > inputs.tw_mm / 1000.0  # spessore disegnato > vero spessore dell'anima
+    assert ala_superiore.h >= inputs.tf_mm / 1000.0  # spessore ala disegnato >= vero spessore
+
+    quote = {q.testo.split(" =")[0]: q.testo for q in sketch.viste[0].forme if q.kind == "dimension"}
+    assert quote["t_w"] == "t_w = 8 mm"  # il vero valore, non quello disegnato
 
 
 @pytest.mark.unit
@@ -64,7 +88,12 @@ def test_assi_yy_zz_con_etichette() -> None:
         assert linea.stile == "asse"
     for etichetta in etichette:
         assert etichetta.stile == "asse"
-        assert etichetta.ancora == "start"
+    # y-y è ancorata all'estremo sinistro (libero da h e t_f), z-z all'estremo superiore
+    # (spostata lateralmente, libera da t_w): vedi il docstring del modulo.
+    etichetta_y = next(e for e in etichette if e.simbolo == "y")
+    etichetta_z = next(e for e in etichette if e.simbolo == "z")
+    assert etichetta_y.ancora == "end"
+    assert etichetta_z.ancora == "start"
 
     asse_yy = next(l for l in linee if l.p1[1] == pytest.approx(0.0) and l.p2[1] == pytest.approx(0.0))
     assert asse_yy.p1[0] == pytest.approx(-asse_yy.p2[0])
@@ -80,11 +109,12 @@ def test_geometria_segue_una_dimensione_modificata() -> None:
     sketch = disegna(inputs)
     rettangoli = [f for f in sketch.viste[0].forme if f.kind == "rect"]
     ala_superiore, ala_inferiore, anima = rettangoli
-    h_m, tf_m = 700 / 1000.0, inputs.tf_mm / 1000.0
+    b_m, h_m, tf_m = inputs.b_mm / 1000.0, 700 / 1000.0, inputs.tf_mm / 1000.0
+    _, tf_dis = schizzo_module._spessori_disegnati_m(b_m, h_m, inputs.tw_mm / 1000.0, tf_m)
 
-    assert ala_superiore.y == pytest.approx(h_m / 2 - tf_m)
+    assert ala_superiore.y == pytest.approx(h_m / 2 - tf_dis)
     assert ala_inferiore.y == pytest.approx(-h_m / 2)
-    assert anima.h == pytest.approx(h_m - 2 * tf_m)
+    assert anima.h == pytest.approx(h_m - 2 * tf_dis)
 
     quote = [f for f in sketch.viste[0].forme if f.kind == "dimension"]
     quota_h = next(q for q in quote if q.testo.startswith("h ="))
@@ -100,6 +130,27 @@ def test_quote_riportano_i_valori_corretti() -> None:
     assert quote["b"] == "b = 280 mm"
     assert quote["t_f"] == "t_f = 12 mm"
     assert quote["t_w"] == "t_w = 8 mm"
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "b_mm,h_mm,tw_mm,tf_mm",
+    [
+        (280, 500, 8, 12),  # esempio
+        (300, 300, 11, 19),  # HEB300-ish: sezione tozza (b/h=1.0)
+        (220, 600, 12, 19),  # IPE600-ish: sezione snella (b/h=0.37)
+        (400, 1200, 12, 25),  # trave a doppio T saldata molto alta
+        (100, 96, 5, 8),  # sezione piccola (HEA100-ish)
+        (500, 300, 10, 16),  # sezione larga e bassa (b/h=1.67)
+    ],
+    ids=["esempio", "HEB300", "IPE600", "trave-alta", "HEA100", "larga-bassa"],
+)
+def test_sezioni_realistiche_non_hanno_problemi_di_layout(b_mm: float, h_mm: float, tw_mm: float, tf_mm: float) -> None:
+    modificato = {**TOOL.example, "b_mm": b_mm, "h_mm": h_mm, "tw_mm": tw_mm, "tf_mm": tf_mm}
+    inputs = ColonnaEc3Input.model_validate(modificato)
+    sketch = disegna(inputs)
+    problems = layout_problems(sketch) + readability_problems(sketch) + overlap_problems(sketch)
+    assert problems == [], problems
 
 
 @pytest.mark.unit

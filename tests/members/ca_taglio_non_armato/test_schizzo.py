@@ -1,9 +1,15 @@
-"""Live sketch for `ca-taglio-non-armato` (docs/ui/WORKBENCH_SPEC.md §7): the "Sezione" view
-follows the inputs, and a drawing failure must never fail the calculation."""
+"""Live sketch for `ca-taglio-non-armato` (docs/ui/WORKBENCH_SPEC.md §7, COMPOSITION RULES in
+shared/sketch.py): the "Sezione" view follows the inputs, stays readable across several realistic
+section proportions and bar layouts, and a drawing failure must never fail the calculation."""
 import math
+import sys
 import time
+from pathlib import Path
 
 import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "shared"))
+from test_sketch_layout import layout_problems, overlap_problems, readability_problems
 
 from strutture.members.ca_taglio_non_armato import schizzo as schizzo_module
 from strutture.members.ca_taglio_non_armato.asl_from_bars import asl_from_barre_mm2
@@ -102,6 +108,42 @@ def test_geometria_segue_una_dimensione_modificata() -> None:
     quota_b = next(f for f in sketch.viste[0].forme if f.kind == "dimension")
     assert rettangolo.w == pytest.approx(1.2)
     assert quota_b.testo == "b = 1200 mm"
+
+
+@pytest.mark.unit
+def test_striscia_molto_larga_e_compressa_ma_la_quota_resta_vera() -> None:
+    """Questo tool è spesso usato su una striscia di 1 m, ma bw_mm può arrivare a diversi metri:
+    oltre l'aspetto leggibile il disegno comprime bw, la quota riporta comunque il valore vero."""
+    modificato = {**TOOL.example, "bw_mm": 3000, "h_mm": 250, "asl_mm2": 4000}
+    inputs = TaglioNonArmatoInput.model_validate(modificato)
+    geometria = _geometria(inputs)
+    sketch = disegna(inputs, geometria)
+    rettangolo = sketch.viste[0].forme[0]
+    assert rettangolo.w < 3.0
+    quota_b = next(f for f in sketch.viste[0].forme if f.kind == "dimension" and f.testo.startswith("b ="))
+    assert quota_b.testo == "b = 3000 mm"
+    assert "Schema non in scala" in sketch.nota
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {},  # esempio
+        {"bw_mm": 300, "h_mm": 1000, "asl_mm2": 1500, "n_barre": None, "diametro_barre_mm": None},  # stretta e alta
+        {"bw_mm": 2000, "h_mm": 300, "asl_mm2": 3000, "n_barre": None, "diametro_barre_mm": None},  # larga e bassa
+        {"asl_mm2": None, "n_barre": 12, "diametro_barre_mm": 20},  # molte barre vere
+        {"asl_mm2": None, "n_barre": 2, "diametro_barre_mm": 32},  # poche barre grandi vere
+        {"bw_mm": 3000, "h_mm": 250, "asl_mm2": 4000, "n_barre": None, "diametro_barre_mm": None},  # striscia larga
+    ],
+)
+def test_sezioni_realistiche_non_hanno_problemi_di_layout(overrides: dict) -> None:
+    modificato = {**TOOL.example, **overrides}
+    inputs = TaglioNonArmatoInput.model_validate(modificato)
+    geometria = _geometria(inputs)
+    sketch = disegna(inputs, geometria)
+    problems = layout_problems(sketch) + readability_problems(sketch) + overlap_problems(sketch)
+    assert problems == [], problems
 
 
 @pytest.mark.unit

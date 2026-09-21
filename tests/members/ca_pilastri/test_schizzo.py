@@ -1,8 +1,14 @@
-"""Live sketch for `pilastro-rettangolare`/`pilastro-circolare` (docs/ui/WORKBENCH_SPEC.md §7):
-the "Sezione" view follows the inputs, and a drawing failure must never fail the calculation."""
+"""Live sketch for `pilastro-rettangolare`/`pilastro-circolare` (docs/ui/WORKBENCH_SPEC.md §7,
+COMPOSITION RULES in shared/sketch.py): the "Sezione" view follows the inputs, stays readable
+across several realistic column geometries, and a drawing failure must never fail the calculation."""
+import sys
 import time
+from pathlib import Path
 
 import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "shared"))
+from test_sketch_layout import layout_problems, overlap_problems, readability_problems
 
 from strutture.members.ca_pilastri import schizzo as schizzo_module
 from strutture.members.ca_pilastri.models import PilastroCircolareInput, PilastroRettangolareInput
@@ -91,6 +97,43 @@ def test_circolare_geometria_segue_una_dimensione_modificata() -> None:
     quota_d = next(f for f in sketch.viste[0].forme if f.kind == "dimension")
     assert cerchio_cls.r == pytest.approx(0.25)
     assert quota_d.testo == "D = 500 mm"
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {},  # esempio
+        {"l1_mm": 800, "l2_mm": 300, "n_ferri_l1": 6, "n_ferri": 16},  # sezione larga e bassa, molti ferri
+        {"l1_mm": 300, "l2_mm": 800, "n_ferri_l1": 3, "n_ferri": 16},  # sezione stretta e alta
+        {"l1_mm": 900, "l2_mm": 900, "n_ferri_l1": 6, "n_ferri": 20},  # sezione grande, molti ferri
+        {"l1_mm": 350, "l2_mm": 350, "n_ferri_l1": 2, "n_ferri": 4},  # sezione piccola, ferri minimi
+    ],
+)
+def test_rettangolare_geometrie_realistiche_non_hanno_problemi_di_layout(overrides: dict) -> None:
+    modificato = {**TOOL_RETT.example, **overrides}
+    inputs = PilastroRettangolareInput.model_validate(modificato)
+    sketch = disegna_rettangolare(inputs)
+    problems = layout_problems(sketch) + readability_problems(sketch) + overlap_problems(sketch)
+    assert problems == [], problems
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {},  # esempio
+        {"d_mm": 350, "n_ferri": 6},  # colonna piccola, pochi ferri
+        {"d_mm": 1000, "n_ferri": 30},  # colonna grande, molti ferri
+        {"d_mm": 300, "n_ferri": 30},  # colonna piccola con ferri molto fitti
+    ],
+)
+def test_circolare_geometrie_realistiche_non_hanno_problemi_di_layout(overrides: dict) -> None:
+    modificato = {**TOOL_CIRC.example, **overrides}
+    inputs = PilastroCircolareInput.model_validate(modificato)
+    sketch = disegna_circolare(inputs)
+    problems = layout_problems(sketch) + readability_problems(sketch) + overlap_problems(sketch)
+    assert problems == [], problems
 
 
 @pytest.mark.unit

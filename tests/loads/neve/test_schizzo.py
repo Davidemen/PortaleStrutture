@@ -1,13 +1,21 @@
-"""Live sketches for `neve-carico-falda` and `neve-accumulo` (docs/ui/WORKBENCH_SPEC.md §7): the
-"Sezione copertura" view follows the inputs, and a drawing failure must never fail the calculation."""
+"""Live sketches for `neve-carico-falda` and `neve-accumulo` (docs/ui/WORKBENCH_SPEC.md §7,
+COMPOSITION RULES in shared/sketch.py): the "Sezione copertura" view follows the inputs, stays
+readable (no slivers, no overlapping texts, bounded aspect ratio) across several realistic input
+sets, and a drawing failure must never fail the calculation."""
+import sys
 import time
+from pathlib import Path
 
 import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "shared"))
+from test_sketch_layout import layout_problems, overlap_problems, readability_problems
 
 from strutture.loads.neve import schizzo as schizzo_module
 from strutture.loads.neve.models import AccumuloInput, AccumuloOutput, CaricoFaldaInput, CaricoFaldaOutput
 from strutture.loads.neve.schizzo import disegna_accumulo, disegna_carico_falda
 from strutture.loads.neve.tool import TOOLS, run_accumulo, run_carico_falda
+from strutture.shared.sketch import etichetta_quota
 from strutture.shared.tool import execute
 
 TOOL_FALDA = next(t for t in TOOLS if t.name == "neve-carico-falda")
@@ -28,6 +36,11 @@ def _output_accumulo(overrides: dict) -> tuple[AccumuloInput, AccumuloOutput]:
     return inputs, report.data
 
 
+def _no_lint_problems(sketch) -> None:
+    problems = layout_problems(sketch) + readability_problems(sketch) + overlap_problems(sketch)
+    assert problems == [], problems
+
+
 @pytest.mark.unit
 def test_falda_esempio_una_falda_disegna_una_sola_falda() -> None:
     """L'esempio ha `tipo_copertura="Copertura ad una falda"` (con a1/parapetto1/a2/parapetto2
@@ -39,6 +52,7 @@ def test_falda_esempio_una_falda_disegna_una_sola_falda() -> None:
     kinds = [f.kind for f in sketch.viste[0].forme]
     assert kinds.count("line") == 1
     assert kinds.count("diagram") == 1
+    assert sketch.nota != ""
 
 
 @pytest.mark.unit
@@ -66,7 +80,7 @@ def test_falda_legacy_compat_disegna_entrambi_i_blocchi_insieme() -> None:
 
 
 @pytest.mark.unit
-def test_falda_diagramma_riporta_qs_e_usa_la_virgola_decimale() -> None:
+def test_falda_diagramma_riporta_qs_e_letichetta_mu_e_solo_il_valore() -> None:
     inputs, output = _output_falda({})
     sketch = disegna_carico_falda(inputs, output)
     diagramma = next(f for f in sketch.viste[0].forme if f.kind == "diagram")
@@ -74,9 +88,36 @@ def test_falda_diagramma_riporta_qs_e_usa_la_virgola_decimale() -> None:
     assert diagramma.etichette[0].startswith("q_s =")
 
     etichetta = next(f for f in sketch.viste[0].forme if f.kind == "label")
-    assert etichetta.simbolo == "μ·q_sk"
+    assert etichetta.simbolo == "μ"
+    assert etichetta.testo == f"{output.mu:.2f}".replace(".", ",")
     assert "," in etichetta.testo
-    assert "." not in etichetta.testo
+
+
+@pytest.mark.unit
+def test_falda_geometria_segue_langolo_e_la_risalita_e_limitata() -> None:
+    """Un angolo molto ripido non fa esplodere l'altezza disegnata (schema, non scala)."""
+    inputs_piatta, output_piatta = _output_falda({"a": 0})
+    inputs_ripida, output_ripida = _output_falda({"a": 89})
+    linea_piatta = disegna_carico_falda(inputs_piatta, output_piatta).viste[0].forme[0]
+    linea_ripida = disegna_carico_falda(inputs_ripida, output_ripida).viste[0].forme[0]
+    assert linea_piatta.p2[1] == pytest.approx(0.0)
+    assert 0.0 < linea_ripida.p2[1] <= schizzo_module.RISALITA_MAX_M + 1e-9
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {},  # esempio: una falda piatta + campi due falde presenti ma non mostrati
+        {"tipo_copertura": "Copertura a due falde"},
+        {"tipo_copertura": "Copertura a due falde", "a1": 5, "a2": 55},  # falde molto asimmetriche
+        {"a": 60},  # falda singola ripida
+        {"legacy_compat": True},  # entrambi i blocchi insieme
+    ],
+)
+def test_falda_esempi_realistici_non_hanno_problemi_di_layout(overrides: dict) -> None:
+    inputs, output = _output_falda(overrides)
+    _no_lint_problems(disegna_carico_falda(inputs, output))
 
 
 @pytest.mark.unit
@@ -85,60 +126,94 @@ def test_accumulo_vista_e_forme_esempio() -> None:
     sketch = disegna_accumulo(inputs, output)
     assert [v.titolo for v in sketch.viste] == ["Sezione copertura"]
     kinds = [f.kind for f in sketch.viste[0].forme]
-    assert kinds[0] == "rect"
-    assert "line" in kinds
-    assert "polygon" in kinds
-    assert "dimension" in kinds
-    assert "label" in kinds
+    assert kinds.count("rect") == 1
+    assert kinds.count("line") == 2  # falda + tratto fantasma
+    assert kinds.count("polygon") == 1
+    assert kinds.count("dimension") == 2  # h, l_s
+    assert kinds.count("label") == 2  # q_s2 al picco, q_s1 all'estremo
+    assert sketch.nota != ""
 
 
 @pytest.mark.unit
 def test_accumulo_geometria_segue_h() -> None:
-    """Cambiando `h` cambia l'altezza del muro disegnato e la quota `l_s` (dipende da `h`)."""
+    """Cambiando `h` cambia l'altezza dell'edificio disegnato e la quota `h`."""
     inputs_a, output_a = _output_accumulo({"h": 6.0})
-    inputs_b, output_b = _output_accumulo({"h": 12.0})
+    inputs_b, output_b = _output_accumulo({"h": 30.0})
     sketch_a = disegna_accumulo(inputs_a, output_a)
     sketch_b = disegna_accumulo(inputs_b, output_b)
 
-    muro_a = sketch_a.viste[0].forme[0]
-    muro_b = sketch_b.viste[0].forme[0]
-    assert muro_a.kind == "rect" and muro_b.kind == "rect"
-    assert muro_a.h == pytest.approx(6.0)
-    assert muro_b.h == pytest.approx(12.0)
+    edificio_a = sketch_a.viste[0].forme[0]
+    edificio_b = sketch_b.viste[0].forme[0]
+    assert edificio_a.kind == "rect" and edificio_b.kind == "rect"
+    # h=30 è ben oltre il minimo per aspetto: l'altezza disegnata segue h esattamente.
+    assert edificio_b.h == pytest.approx(30.0)
 
-    quota_a = next(f for f in sketch_a.viste[0].forme if f.kind == "dimension")
-    quota_b = next(f for f in sketch_b.viste[0].forme if f.kind == "dimension")
-    assert quota_a.testo != quota_b.testo
-    assert output_a.ls_final != pytest.approx(output_b.ls_final)
-
-
-@pytest.mark.unit
-def test_accumulo_geometria_segue_b2() -> None:
-    """Cambiando `b2` cambia la lunghezza della falda inferiore disegnata."""
-    inputs_a, output_a = _output_accumulo({"b2": 20.0})
-    inputs_b, output_b = _output_accumulo({"b2": 40.0})
-    sketch_a = disegna_accumulo(inputs_a, output_a)
-    sketch_b = disegna_accumulo(inputs_b, output_b)
-
-    tetto_a = next(f for f in sketch_a.viste[0].forme if f.kind == "line")
-    tetto_b = next(f for f in sketch_b.viste[0].forme if f.kind == "line")
-    assert tetto_a.p2 != tetto_b.p2
-    assert tetto_a.p2[0] == pytest.approx(schizzo_module.LARGHEZZA_MURO_M + 20.0)
-    assert tetto_b.p2[0] == pytest.approx(schizzo_module.LARGHEZZA_MURO_M + 40.0)
+    quota_h_a = next(f for f in sketch_a.viste[0].forme if f.kind == "dimension" and f.testo.startswith("h ="))
+    quota_h_b = next(f for f in sketch_b.viste[0].forme if f.kind == "dimension" and f.testo.startswith("h ="))
+    assert quota_h_a.testo != quota_h_b.testo
+    assert quota_h_a.testo == etichetta_quota("h", 6.0, "m")
+    assert quota_h_b.testo == etichetta_quota("h", 30.0, "m")
 
 
 @pytest.mark.unit
-def test_accumulo_poligono_e_quota_riportano_ls_final() -> None:
+def test_accumulo_altezza_disegnata_ha_un_minimo_per_laspetto() -> None:
+    """Con `h` molto piccolo (e `ls` al minimo di 5 m) l'edificio disegnato non collassa in uno
+    sliver: la vista resta entro l'aspetto massimo anche se il muro reale è più basso."""
+    inputs, output = _output_accumulo({"h": 0.5})
+    sketch = disegna_accumulo(inputs, output)
+    edificio = sketch.viste[0].forme[0]
+    assert edificio.h > 0.5  # altezza disegnata rialzata rispetto al vero h=0.5 m
+    # la quota riporta comunque il vero valore di input, non quello disegnato
+    quota_h = next(f for f in sketch.viste[0].forme if f.kind == "dimension" and f.testo.startswith("h ="))
+    assert quota_h.testo == etichetta_quota("h", 0.5, "m")
+
+
+@pytest.mark.unit
+def test_accumulo_falda_ritagliata_a_1_4_ls_con_tratto_fantasma() -> None:
+    """La falda inferiore (potenzialmente lunga decine di metri, `b2`) è ritagliata a ~1.4·ls,
+    non disegnata alla sua vera lunghezza; un tratto tratteggiato "fantasma" la continua."""
+    inputs, output = _output_accumulo({"b2": 40.0})
+    sketch = disegna_accumulo(inputs, output)
+    falda = next(f for f in sketch.viste[0].forme if f.kind == "line" and f.stile == "calcestruzzo")
+    fantasma = next(f for f in sketch.viste[0].forme if f.kind == "line" and f.stile == "fantasma")
+    assert falda.p2[0] == pytest.approx(schizzo_module._CROP_SU_LS * output.ls_final)
+    assert falda.p2[0] < inputs.b2  # ritagliata, non la vera larghezza
+    assert fantasma.tratteggio is True
+    assert fantasma.p1[0] == pytest.approx(falda.p2[0])
+
+
+@pytest.mark.unit
+def test_accumulo_profilo_di_carico_riporta_i_picchi_a_qs2_e_qs1() -> None:
     inputs, output = _output_accumulo({})
     sketch = disegna_accumulo(inputs, output)
     poligono = next(f for f in sketch.viste[0].forme if f.kind == "polygon")
-    assert poligono.punti[-1][0] == pytest.approx(schizzo_module.LARGHEZZA_MURO_M + output.ls_final)
+    assert poligono.punti[0] == pytest.approx((0.0, 0.0))
+    picco_su_muro = poligono.punti[1][1]
+    valore_a_ls = poligono.punti[2][1]
+    assert picco_su_muro > valore_a_ls >= 0.0  # q_s2 (al muro) > q_s1 (a ls), coerente col calcolo
 
-    quota = next(f for f in sketch.viste[0].forme if f.kind == "dimension")
-    assert quota.testo == f"l_s = {output.ls_final:.2f} m".replace(".", ",")
+    quota_ls = next(f for f in sketch.viste[0].forme if f.kind == "dimension" and f.testo.startswith("l_s ="))
+    assert quota_ls.testo == etichetta_quota("l_s", output.ls_final, "m")
 
-    etichetta = next(f for f in sketch.viste[0].forme if f.kind == "label")
-    assert etichetta.simbolo == "q_s2"
+    picco = next(f for f in sketch.viste[0].forme if f.kind == "label" and f.simbolo == "q_s2")
+    uniforme = next(f for f in sketch.viste[0].forme if f.kind == "label" and f.simbolo == "q_s1")
+    assert picco.testo == f"{output.qs2_final:.2f}".replace(".", ",") + " kN/m²"
+    assert uniforme.testo == f"{output.qs1_final:.2f}".replace(".", ",") + " kN/m²"
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {},  # esempio
+        {"h": 2.0, "b2": 60.0},  # muro basso, falda molto lunga (ls al minimo)
+        {"h": 25.0, "b1": 50.0, "b2": 45.0},  # muro molto alto (ls al massimo)
+        {"m1_input": 0.1, "msup": 0.1},  # carico di accumulo modesto
+    ],
+)
+def test_accumulo_esempi_realistici_non_hanno_problemi_di_layout(overrides: dict) -> None:
+    inputs, output = _output_accumulo(overrides)
+    _no_lint_problems(disegna_accumulo(inputs, output))
 
 
 @pytest.mark.unit

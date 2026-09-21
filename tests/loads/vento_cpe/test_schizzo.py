@@ -1,8 +1,14 @@
-"""Live sketch for `vento-cpe-rettangolare` (docs/ui/WORKBENCH_SPEC.md §7): two Vista, one per wind
-direction, follow the inputs, and a drawing failure must never fail the calculation."""
+"""Live sketch for `vento-cpe-rettangolare` (docs/ui/WORKBENCH_SPEC.md §7, COMPOSITION RULES in
+shared/sketch.py): two Vista, one per wind direction, follow the inputs, stay readable across
+several realistic plans, and a drawing failure must never fail the calculation."""
+import sys
 import time
+from pathlib import Path
 
 import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "shared"))
+from test_sketch_layout import layout_problems, overlap_problems, readability_problems
 
 from strutture.loads.vento_cpe import schizzo as schizzo_module
 from strutture.loads.vento_cpe.cpe_leeward import cpe_leeward
@@ -12,7 +18,6 @@ from strutture.loads.vento_cpe.hd_ratio import hd_ratio
 from strutture.loads.vento_cpe.models import DirectionResult, VentoCpeInput
 from strutture.loads.vento_cpe.schizzo import disegna
 from strutture.loads.vento_cpe.tool import TOOLS
-from strutture.shared.sketch import etichetta_quota
 from strutture.shared.tool import execute
 
 TOOL = TOOLS[0]
@@ -99,8 +104,46 @@ def test_etichette_c_pe_riportano_il_simbolo_e_il_valore_giusti() -> None:
     simboli = sorted(e.simbolo for e in etichette)
     assert simboli == ["c_pe,l", "c_pe,l", "c_pe,s", "c_pe,w"]
     windward = next(e for e in etichette if e.simbolo == "c_pe,w")
-    assert windward.testo == etichetta_quota("c_pe,w", dir1.cpe_windward, "", decimali=2)
+    # regola 4 (COMPOSITION RULES): con `simbolo` impostato, `testo` è solo il valore.
+    assert windward.testo == f"{dir1.cpe_windward:.2f}".replace(".", ",")
+    assert not windward.testo.startswith("c_pe")
     assert not windward.testo.endswith(" ")  # cpe è adimensionale: nessuna unità in coda
+
+
+@pytest.mark.unit
+def test_pianta_molto_allungata_e_compressa_ma_la_quota_resta_vera() -> None:
+    """b/d=4: oltre l'aspetto massimo leggibile, il lato maggiore viene compresso nel disegno ma
+    la quota riporta sempre il valore vero di b."""
+    modificato = {**TOOL.example, "b": 40.0, "d": 10.0}
+    inputs = VentoCpeInput.model_validate(modificato)
+    dir1, dir2 = _dirs(modificato)
+    sketch = disegna(inputs, dir1, dir2)
+    rettangolo = next(f for f in sketch.viste[0].forme if f.kind == "rect")
+    assert rettangolo.w < 40.0  # disegnato compresso
+    quota_b = next(f for f in sketch.viste[0].forme if f.kind == "dimension" and f.testo.startswith("b ="))
+    assert quota_b.testo == "b = 40,00 m"  # ma la quota riporta il valore vero
+    assert sketch.nota != ""
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {},  # esempio
+        {"b": 40.0, "d": 10.0, "h": 8.0},  # pianta molto allungata, b/d=4
+        {"b": 10.0, "d": 40.0, "h": 8.0},  # allungata nell'altra direzione, d/b=4
+        {"b": 100.0, "d": 5.0, "h": 8.0},  # allungamento estremo
+        {"h": 100.0, "d": 10.0, "b": 50.0},  # h/d>5: etichette assenti in una direzione
+        {"b": 5.0, "d": 5.0, "h": 5.0},  # pianta quadrata
+    ],
+)
+def test_piante_realistiche_non_hanno_problemi_di_layout(overrides: dict) -> None:
+    modificato = {**TOOL.example, **overrides}
+    inputs = VentoCpeInput.model_validate(modificato)
+    dir1, dir2 = _dirs(modificato)
+    sketch = disegna(inputs, dir1, dir2)
+    problems = layout_problems(sketch) + readability_problems(sketch) + overlap_problems(sketch)
+    assert problems == [], problems
 
 
 @pytest.mark.unit

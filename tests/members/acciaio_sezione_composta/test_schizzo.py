@@ -1,8 +1,15 @@
-"""Live sketch for `acciaio-sezione-h-rimpiattata` (docs/ui/WORKBENCH_SPEC.md §7): the "Sezione"
-view follows the inputs, and a drawing failure must never fail the calculation."""
+"""Live sketch for `acciaio-sezione-h-rimpiattata` (docs/ui/WORKBENCH_SPEC.md §7, COMPOSITION
+RULES in shared/sketch.py): the "Sezione" view follows the inputs, stays readable across several
+realistic profile proportions and plate layouts, and a drawing failure must never fail the
+calculation."""
+import sys
 import time
+from pathlib import Path
 
 import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "shared"))
+from test_sketch_layout import layout_problems, overlap_problems, readability_problems
 
 from strutture.members.acciaio_sezione_composta import schizzo as schizzo_module
 from strutture.members.acciaio_sezione_composta.baricentro import baricentro
@@ -90,6 +97,45 @@ def test_geometria_segue_una_dimensione_modificata() -> None:
     marcatore_mod = next(f for f in sketch_mod.viste[0].forme if f.kind == "circle")
     assert marcatore_mod.centro[0] == pytest.approx(x_n1 / 1000.0)
     assert marcatore_base.centro[0] == pytest.approx(x_n0 / 1000.0)
+
+
+@pytest.mark.unit
+def test_profilo_molto_alto_e_snello_riceve_compressione_e_spessori_minimi() -> None:
+    """Una trave saldata molto alta e snella (h=2000mm) supera sia l'aspetto leggibile sia il
+    minimo per gli spessori: il disegno resta comunque privo di problemi di layout."""
+    modificato = {**TOOL.example, "h_profilo_mm": 2000, "b_profilo_mm": 300, "tf_mm": 30, "tw_mm": 16,
+                  "piatti": [{"b_mm": 0, "h_mm": 0}, {"b_mm": 0, "h_mm": 0}]}
+    inputs, elementi, x_n_mm, y_n_mm = _elementi_e_baricentro(modificato)
+    sketch = disegna(elementi, x_n_mm, y_n_mm, inputs.h_profilo_mm, inputs.b_profilo_mm)
+    rettangoli = [f for f in sketch.viste[0].forme if f.kind == "rect"]
+    anima = min(rettangoli, key=lambda r: r.w)
+    assert anima.w > inputs.tw_mm / 1000.0  # spessore anima disegnato > vero spessore (16 mm)
+    assert sketch.nota != ""
+    problems = layout_problems(sketch) + readability_problems(sketch) + overlap_problems(sketch)
+    assert problems == [], problems
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {},  # esempio
+        {"h_profilo_mm": 1200, "b_profilo_mm": 300, "tf_mm": 25, "tw_mm": 14,
+         "piatti": [{"b_mm": 20, "h_mm": 200}, {"b_mm": 20, "h_mm": 200}]},  # alta e snella, 2 piatti
+        {"h_profilo_mm": 300, "b_profilo_mm": 300, "tf_mm": 20, "tw_mm": 12,
+         "piatti": [{"b_mm": 0, "h_mm": 0}, {"b_mm": 0, "h_mm": 0}]},  # tozza, senza piatti
+        {"h_profilo_mm": 150, "b_profilo_mm": 400, "tf_mm": 10, "tw_mm": 6,
+         "piatti": [{"b_mm": 0, "h_mm": 0}, {"b_mm": 0, "h_mm": 0}]},  # larga e bassa
+        {"piatti": [{"b_mm": 10, "h_mm": 105}, {"b_mm": 10, "h_mm": 105},
+                     {"b_mm": 10, "h_mm": 105}, {"b_mm": 10, "h_mm": 105}]},  # 4 piatti attivi
+    ],
+)
+def test_profili_realistici_non_hanno_problemi_di_layout(overrides: dict) -> None:
+    modificato = {**TOOL.example, **overrides}
+    inputs, elementi, x_n_mm, y_n_mm = _elementi_e_baricentro(modificato)
+    sketch = disegna(elementi, x_n_mm, y_n_mm, inputs.h_profilo_mm, inputs.b_profilo_mm)
+    problems = layout_problems(sketch) + readability_problems(sketch) + overlap_problems(sketch)
+    assert problems == [], problems
 
 
 @pytest.mark.unit

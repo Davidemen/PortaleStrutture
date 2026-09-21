@@ -1,8 +1,14 @@
-"""Live sketch for `ca-punzonamento` (docs/ui/WORKBENCH_SPEC.md §7): the "Pianta" view follows
-the inputs, and a drawing failure must never fail the calculation."""
+"""Live sketch for `ca-punzonamento` (docs/ui/WORKBENCH_SPEC.md §7, COMPOSITION RULES in
+shared/sketch.py): the "Pianta" view follows the inputs, stays readable across several realistic
+column/slab geometries, and a drawing failure must never fail the calculation."""
+import sys
 import time
+from pathlib import Path
 
 import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "shared"))
+from test_sketch_layout import layout_problems, overlap_problems, readability_problems
 
 from strutture.members.ca_punzonamento import schizzo as schizzo_module
 from strutture.members.ca_punzonamento.effective_depth import effective_depth
@@ -136,6 +142,30 @@ def test_quote_a_e_2d_hanno_testo_coerente() -> None:
     assert quote[1].testo.startswith("2d = ")
     a_governante_mm = report.data.perimetro_critico.a_governante_mm
     assert quote[0].testo == f"a = {round(a_governante_mm)} mm"
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {},  # esempio
+        {"lato_a_mm": 800, "lato_b_mm": 300},  # colonna rettangolare molto allungata
+        {"lato_a_mm": 0, "lato_b_mm": 0, "diametro_mm": 450},  # colonna circolare
+        {"posizione": "angolo"},
+        {"posizione": "bordo"},
+        {"legacy_compat": True},  # forza il progetto delle armature -> perimetro u0,out disegnato
+        {"lato_a_mm": 0, "lato_b_mm": 0, "diametro_mm": 450, "legacy_compat": True, "posizione": "angolo"},
+        {"h_mm": 1000, "lato_a_mm": 600, "lato_b_mm": 600},  # platea spessa, colonna grande
+    ],
+)
+def test_geometrie_realistiche_non_hanno_problemi_di_layout(overrides: dict) -> None:
+    modificato = {**TOOL.example, **overrides}
+    report = execute(TOOL, modificato)
+    assert report.ok, report.errors
+    sketch = report.data.schizzo
+    assert sketch is not None
+    problems = layout_problems(sketch) + readability_problems(sketch) + overlap_problems(sketch)
+    assert problems == [], problems
 
 
 @pytest.mark.unit

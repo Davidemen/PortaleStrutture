@@ -1,8 +1,14 @@
-"""Live sketch for `ca-mensola-tozza` (docs/ui/WORKBENCH_SPEC.md §7): the "Prospetto" view follows
-the inputs, and a drawing failure must never fail the calculation."""
+"""Live sketch for `ca-mensola-tozza` (docs/ui/WORKBENCH_SPEC.md §7, COMPOSITION RULES in
+shared/sketch.py): the "Prospetto" view follows the inputs, stays readable across several
+realistic corbel geometries, and a drawing failure must never fail the calculation."""
+import sys
 import time
+from pathlib import Path
 
 import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "shared"))
+from test_sketch_layout import layout_problems, overlap_problems, readability_problems
 
 from strutture.members.ca_mensole import schizzo as schizzo_module
 from strutture.members.ca_mensole.geometria import geometria
@@ -74,7 +80,9 @@ def test_quota_a_e_etichetta_b_seguono_gli_input() -> None:
 
     etichetta = next(f for f in sketch.viste[0].forme if f.kind == "label")
     assert etichetta.simbolo == "b"
-    assert etichetta.testo == "b = 800 mm"
+    # regola 4 (COMPOSITION RULES): con `simbolo` impostato, `testo` è solo il valore.
+    assert etichetta.testo == "800 mm"
+    assert not etichetta.testo.startswith("b")
 
 
 @pytest.mark.unit
@@ -94,6 +102,25 @@ def test_carico_puntone_e_tirante_convergono_sul_punto_di_carico() -> None:
     assert puntone.p2 == pytest.approx((0.0, inputs.c_mm / 1000.0))
     assert tirante.p1 == pytest.approx(punto_carico)
     assert tirante.p2 == pytest.approx((0.0, (inputs.h_mm - inputs.c_mm) / 1000.0))
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {},  # esempio
+        {"a_mm": 100, "h_mm": 300, "b_mm": 400, "c_mm": 30},  # mensola piccola e tozza
+        {"a_mm": 350, "h_mm": 900, "b_mm": 1000, "c_mm": 60},  # mensola grande
+        {"a_mm": 250, "h_mm": 350, "b_mm": 300, "c_mm": 40},  # a vicino ad h (mensola "corta")
+    ],
+)
+def test_geometrie_realistiche_non_hanno_problemi_di_layout(overrides: dict) -> None:
+    modificato = {**TOOL.example, **overrides}
+    inputs = MensolaTozzaInput.model_validate(modificato)
+    geo = _geometria(inputs)
+    sketch = disegna(inputs, geo)
+    problems = layout_problems(sketch) + readability_problems(sketch) + overlap_problems(sketch)
+    assert problems == [], problems
 
 
 @pytest.mark.unit

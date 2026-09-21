@@ -87,11 +87,11 @@ def _quote(inputs: MensolaTozzaInput) -> tuple[Quota, Quota]:
 
 def _etichetta_b(inputs: MensolaTozzaInput, geometria: GeometriaResult) -> Etichetta:
     """`b` non è quotabile in un prospetto (è la dimensione fuori piano): un'etichetta vicino
-    all'apice della mensola."""
+    all'apice della mensola. Con `simbolo` impostato, `testo` è solo il valore (regola 4)."""
     x_m, y_m = _punto_carico_m(inputs, geometria)
     offset_m = mm_to_m(_OFFSET_ETICHETTA_B * inputs.h_mm)
-    return Etichetta(punto=(x_m + offset_m, y_m + offset_m), simbolo="b",
-                      testo=etichetta_quota("b", inputs.b_mm, "mm", 0))
+    testo = f"{inputs.b_mm:.0f}".replace(".", ",") + " mm"
+    return Etichetta(punto=(x_m + offset_m, y_m + offset_m), simbolo="b", testo=testo)
 
 
 def _prospetto(inputs: MensolaTozzaInput, geometria: GeometriaResult) -> Vista:

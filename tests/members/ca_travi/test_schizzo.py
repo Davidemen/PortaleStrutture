@@ -1,8 +1,14 @@
-"""Live sketch for `ca-trave-rettangolare` (docs/ui/WORKBENCH_SPEC.md §7): the "Sezione" view
-follows the inputs, and a drawing failure must never fail the calculation."""
+"""Live sketch for `ca-trave-rettangolare` (docs/ui/WORKBENCH_SPEC.md §7, COMPOSITION RULES in
+shared/sketch.py): the "Sezione" view follows the inputs, stays readable across several realistic
+section proportions and bar layouts, and a drawing failure must never fail the calculation."""
+import sys
 import time
+from pathlib import Path
 
 import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "shared"))
+from test_sketch_layout import layout_problems, overlap_problems, readability_problems
 
 from strutture.members.ca_travi import schizzo as schizzo_module
 from strutture.members.ca_travi.flessione_slu import verifica_flessione_slu
@@ -120,6 +126,45 @@ def test_asse_neutro_segue_il_risultato_uls() -> None:
     assert linea.p1[1] == pytest.approx(y_atteso)
     assert linea.p2[1] == pytest.approx(y_atteso)
     assert linea.stile == "evidenza"
+
+
+@pytest.mark.unit
+def test_sezione_molto_larga_e_compressa_ma_la_quota_resta_vera() -> None:
+    """b/h molto oltre l'aspetto leggibile: il disegno comprime il lato maggiore, ma la quota
+    (e il diametro delle barre) riportano sempre i valori veri."""
+    modificato = {**TOOL.example, "b_mm": 2000, "h_mm": 300}
+    inputs = TraveRettangolareInput.model_validate(modificato)
+    flessione = _flessione(inputs)
+    sketch = disegna(inputs, flessione)
+    rettangolo = sketch.viste[0].forme[0]
+    assert rettangolo.w < 2.0  # disegnato compresso
+    quota_b = next(f for f in sketch.viste[0].forme if f.kind == "dimension" and f.testo.startswith("b ="))
+    assert quota_b.testo == "b = 2000 mm"
+    barre = next(f for f in sketch.viste[0].forme if f.kind == "bars")
+    assert barre.diametro == pytest.approx(inputs.diametro_ferri1_mm / 1000.0)  # diametro vero, non scalato
+    assert sketch.nota != ""
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {},  # esempio
+        {"b_mm": 2000, "h_mm": 300},  # sezione molto larga e bassa
+        {"b_mm": 300, "h_mm": 2000},  # sezione molto stretta e alta
+        {"n_ferri1": 10, "diametro_ferri1_mm": 25},  # molte barre grandi
+        {"n_ferri1": 2, "diametro_ferri1_mm": 32},  # poche barre grandi
+        {"n_ferri2": 4, "diametro_ferri2_mm": 16},  # con armatura compressa
+        {"b_mm": 250, "h_mm": 250, "copriferro_mm": 30, "diametro_staffe1_mm": 8},  # sezione piccola e tozza
+    ],
+)
+def test_sezioni_realistiche_non_hanno_problemi_di_layout(overrides: dict) -> None:
+    modificato = {**TOOL.example, **overrides}
+    inputs = TraveRettangolareInput.model_validate(modificato)
+    flessione = _flessione(inputs)
+    sketch = disegna(inputs, flessione)
+    problems = layout_problems(sketch) + readability_problems(sketch) + overlap_problems(sketch)
+    assert problems == [], problems
 
 
 @pytest.mark.unit
