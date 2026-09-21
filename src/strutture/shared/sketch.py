@@ -6,7 +6,15 @@ generic renderer that fits each view into its box and draws SVG — no per-tool 
 data feeds the printed relazione.
 
 Conventions: model coordinates in metres, x to the right, y UP (the renderer flips). Styles are
-semantic (the UI owns colours and line weights). Texts are final Italian strings: use `etichetta_quota` (NOT named test*: pytest would collect it).
+semantic (the UI owns colours and line weights).
+
+SIDE CONVENTION (easy to get backwards — `tests/shared/test_sketch_layout.py` checks every tool):
+the "left" of a segment p1 -> p2 is its left-hand normal `normale_sinistra(p1, p2)` = (-dy, dx)/len.
+- `Quota.distanza` > 0 puts the dimension line on the LEFT of p1 -> p2, < 0 on the right. Dimension
+  the bottom edge of a footing from left to right ((0,0) -> (B,0)): left = up = INSIDE the footing,
+  so use a NEGATIVE distanza to place the line below it. Dimension lines always go outside the element.
+- `Diagramma` ordinates (positive `valori`) are drawn on the LEFT of base[0] -> base[1]. Soil pressure
+  under a base must hang BELOW it: run the baseline from RIGHT to LEFT ((B,0) -> (0,0)). Texts are final Italian strings: use `etichetta_quota` (NOT named test*: pytest would collect it).
 """
 from typing import Annotated, Literal
 
@@ -47,6 +55,7 @@ class Cerchio(_Forma):
     centro: Punto
     r: float = Field(gt=0)
     stile: Stile
+    tratteggio: bool = False  # dashed outline, no fill (e.g. radius of relative stiffness, control perimeters)
 
 
 class Linea(_Forma):
@@ -136,3 +145,19 @@ def etichetta_quota(simbolo: str, valore: float, unita: str, decimali: int = 2) 
 def campo_schizzo() -> object:
     """`Field(...)` for the output field: `schizzo: Sketch | None = campo_schizzo()`."""
     return Field(default=None, description="Schizzo dell'elemento", json_schema_extra={"widget": "sketch"})
+
+
+def normale_sinistra(p1: Punto, p2: Punto) -> Punto:
+    """Unit left-hand normal of the segment p1 -> p2 (y up): the side a positive offset goes to."""
+    dx, dy = p2[0] - p1[0], p2[1] - p1[1]
+    lunghezza = (dx * dx + dy * dy) ** 0.5
+    if lunghezza == 0:
+        raise ValueError("segmento di lunghezza nulla")
+    return (-dy / lunghezza, dx / lunghezza)
+
+
+def linea_quota(quota: Quota) -> tuple[Punto, Punto]:
+    """End points of the dimension LINE (the measured segment shifted by `distanza`)."""
+    nx, ny = normale_sinistra(quota.p1, quota.p2)
+    d = quota.distanza
+    return ((quota.p1[0] + nx * d, quota.p1[1] + ny * d), (quota.p2[0] + nx * d, quota.p2[1] + ny * d))

@@ -4,6 +4,7 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 
 from strutture.shared.sketch import (
     Barre,
+    Cerchio,
     Diagramma,
     Etichetta,
     Freccia,
@@ -63,3 +64,8 @@ def test_output_field_helper_carries_the_widget_hint() -> None:
 
     prop = Out.model_json_schema()["properties"]["schizzo"]
     assert prop["widget"] == "sketch" and Out().schizzo is None
+
+
+def test_circles_can_be_dashed_outlines() -> None:
+    assert Cerchio(centro=(0, 0), r=1.2, stile="asse").tratteggio is False
+    assert Cerchio(centro=(0, 0), r=1.2, stile="asse", tratteggio=True).model_dump()["tratteggio"] is True
