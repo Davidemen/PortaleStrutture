@@ -3,7 +3,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-_DEFAULT_RATE_LIMIT_PER_MINUTE = 120
+_DEFAULT_RATE_LIMIT_PER_MINUTE = 600  # live recalculation while typing: ~2 requests/s per engineer
 _DEFAULT_MAX_BODY_BYTES = 8_000_000  # 8 MB: a 20 000-row reactions table is ~3 MB of JSON
 DEFAULT_STATIC_DIR = Path(__file__).parent / "static"
 

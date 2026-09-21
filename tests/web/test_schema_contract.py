@@ -36,7 +36,7 @@ def client() -> TestClient:
 
 def test_schema_endpoint_carries_identity_example_and_hints(client: TestClient) -> None:
     body = client.get("/api/tools/span/schema").json()
-    assert set(body) == {"name", "title", "group", "norm", "example", "input", "output"}
+    assert set(body) == {"name", "title", "group", "norm", "summary", "live", "example", "input", "output"}
     assert (body["name"], body["title"], body["norm"], body["example"]) == ("span", "Freccia", "NTC2018 §4", {"luce_m": 5.0})
     assert body["input"]["properties"]["luce_m"]["group"] == "Geometria"
     assert body["output"]["properties"]["freccia_mm"]["highlight"] is True
@@ -71,3 +71,19 @@ def test_every_registered_example_runs_in_the_default_mode() -> None:
         if tool.example and not execute(tool, {**tool.example, "legacy_compat": False}).ok
     ]
     assert broken == []
+
+
+def test_tool_metadata_for_home_page_and_live_mode(client: TestClient) -> None:
+    quick = Tool("q", "Rapido", "Test", "-", SpanIn, SpanOut, _run, summary="Freccia di una trave appoggiata.")
+    heavy = Tool("h", "Pesante", "Test", "-", SpanIn, SpanOut, _run, live=False)
+    api = TestClient(create_app(tools={"q": quick, "h": heavy}))
+    listed = {t["name"]: t for t in api.get("/api/tools").json()}
+    assert listed["q"]["summary"] == "Freccia di una trave appoggiata." and listed["q"]["live"] is True
+    assert listed["h"]["summary"] == "" and listed["h"]["live"] is False
+    assert api.get("/api/tools/h/schema").json()["live"] is False
+
+
+def test_default_rate_limit_allows_live_typing() -> None:
+    from strutture.web import config
+
+    assert config.from_env({}).rate_limit_per_minute >= 600

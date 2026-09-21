@@ -14,6 +14,8 @@ def test_list_tools_returns_summaries(client: TestClient) -> None:
         "title": "Somma di prova",
         "group": "Prova",
         "norm": "TEST §1",
+        "summary": "",
+        "live": True,
     }
 
 

@@ -17,7 +17,7 @@ def build_tools_router(tools: dict[str, Tool]) -> APIRouter:
     router = APIRouter(prefix="/api/tools")
 
     @router.get("")
-    def list_tools() -> list[dict[str, str]]:
+    def list_tools() -> list[dict[str, Any]]:
         return [_summary(tool) for tool in tools.values()]
 
     @router.get("/{name}/schema")
@@ -59,8 +59,11 @@ def build_tools_router(tools: dict[str, Tool]) -> APIRouter:
     return router
 
 
-def _summary(tool: Tool) -> dict[str, str]:
-    return {"name": tool.name, "title": tool.title, "group": tool.group, "norm": tool.norm}
+def _summary(tool: Tool) -> dict[str, Any]:
+    return {
+        "name": tool.name, "title": tool.title, "group": tool.group, "norm": tool.norm,
+        "summary": tool.summary, "live": tool.live,
+    }
 
 
 MODE_FIELD = "legacy_compat"

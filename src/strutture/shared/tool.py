@@ -25,6 +25,8 @@ class Tool:
     output_model: type[BaseModel]
     run: Callable[[Any], Report[Any]]  # receives a validated input_model instance
     example: dict[str, Any] | None = None  # golden-case inputs, offered by the UI as "Carica esempio"
+    summary: str = ""  # one Italian sentence for the home page card and the search palette
+    live: bool = True  # False: too heavy to recalculate while typing (big tables) -> explicit "Calcola"
 
 
 def execute(tool: Tool, raw_inputs: dict[str, Any]) -> Report[Any]:
