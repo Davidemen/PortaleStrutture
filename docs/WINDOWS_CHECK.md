@@ -28,6 +28,8 @@ uv run pytest tests/e2e -m e2e -q      # 170 tests (about 2 minutes)
 ## 3. Run the app
 ```powershell
 uv run python -m strutture.web                                  # http://127.0.0.1:8000  (30 tools)
+uv run python scripts/avvia.py                                  # same, and opens the browser once the server answers
+# or double-click "Avvia StruttureMenni.bat" in Explorer (check: a console opens, then the browser; closing the console stops the server)
 uv run python -m strutture.web --port 8080                      # other port
 uv run python -m strutture.web --host 127.0.0.1,100.112.1.85    # localhost + a VPN address
 ```
