@@ -147,7 +147,7 @@ class RibaltamentoScorrimentoCombo(BaseModel):
     m_stab_kNm: float = Field(description="Momento stabilizzante MSTAB", json_schema_extra={"unit": "kNm"})
     n_tot_kN: float = Field(description="Risultante verticale totale Ntot", json_schema_extra={"unit": "kN"})
     r_tot_kN: float = Field(description="Risultante orizzontale totale Rtot", ge=0, json_schema_extra={"unit": "kN"})
-    or_ribaltamento: float = Field(description="Fattore di sicurezza a ribaltamento, OR = MSTAB/MRIB", json_schema_extra={"unit": "-", "symbol": "OR", "highlight": True})
+    or_ribaltamento: float = Field(description="Fattore di sicurezza a ribaltamento, momento stabilizzante su momento ribaltante", json_schema_extra={"unit": "-", "symbol": "OR", "highlight": True})
     os_scorrimento: float = Field(description="Fattore di sicurezza a scorrimento", json_schema_extra={"unit": "-", "symbol": "OS", "highlight": True})
     verifica_ribaltamento: Check = Field(description="Esito della verifica a ribaltamento (OR ≥ 1)")
     verifica_scorrimento: Check = Field(description="Esito della verifica a scorrimento (OS ≥ 1)")

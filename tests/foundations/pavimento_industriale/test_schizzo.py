@@ -35,8 +35,10 @@ def test_vista_titolo_e_forme_esempio() -> None:
 
     assert [v.titolo for v in sketch.viste] == ["Pianta"]
     pianta = sketch.viste[0]
-    # rettangolo piastra, 2 quote, 1 cerchio di riferimento, poi 4 coppie (rettangolo, etichetta)
-    attese = ["rect", "dimension", "dimension", "circle"] + ["rect", "label"] * len(TOOL.example["carichi"])
+    n_carichi = len(TOOL.example["carichi"])
+    # rettangolo piastra, 2 quote, 1 cerchio di riferimento, un'impronta per carico, poi le
+    # etichette esterne (una per carico, fuori dal pannello sul lato sinistro).
+    attese = ["rect", "dimension", "dimension", "circle"] + ["rect"] * n_carichi + ["label"] * n_carichi
     assert [f.kind for f in pianta.forme] == attese
 
 
@@ -105,17 +107,42 @@ def test_impronte_posizionate_per_centro_bordo_spigolo() -> None:
 def test_impronte_sulla_stessa_posizione_condividono_il_centro() -> None:
     """Nell'esempio 'ruota motrice' e 'ruote anteriori' sono entrambe in posizione 'centro':
     entrambe le impronte sono centrate sullo stesso punto (approssimazione accettabile per lo
-    schema), ma le rispettive etichette sono impilate verticalmente per non sovrapporsi."""
+    schema)."""
     inputs = PavimentoIndustrialeInput.model_validate(TOOL.example)
     sketch = disegna(inputs, _L_MM_ESEMPIO)
     rettangoli_carico = [f for f in sketch.viste[0].forme if f.kind == "rect" and f.stile == "carico"]
     primo_centro, secondo_centro = rettangoli_carico[0], rettangoli_carico[3]
     assert primo_centro.x + primo_centro.w / 2 == pytest.approx(secondo_centro.x + secondo_centro.w / 2)
 
+
+@pytest.mark.unit
+def test_etichette_esterne_una_per_carico_fuori_dal_pannello() -> None:
+    """Correzione P1: un'etichetta per carico (con il proprio valore P), elencata fuori dal
+    pannello sul lato sinistro (mai sul contorno), a livelli verticali distinti."""
+    inputs = PavimentoIndustrialeInput.model_validate(TOOL.example)
+    sketch = disegna(inputs, _L_MM_ESEMPIO)
     etichette = [f for f in sketch.viste[0].forme if f.kind == "label"]
-    assert [e.testo for e in etichette] == [r["caso"] for r in TOOL.example["carichi"]]
-    etichetta_centro_1, etichetta_centro_2 = etichette[0], etichette[3]
-    assert etichetta_centro_1.punto[1] != pytest.approx(etichetta_centro_2.punto[1])  # livelli diversi
+    assert len(etichette) == len(TOOL.example["carichi"])
+    for etichetta, riga in zip(etichette, TOOL.example["carichi"], strict=True):
+        assert etichetta.testo.startswith(riga["caso"])
+        assert f"{riga['p_kN']:.0f}" in etichetta.testo
+        assert etichetta.punto[0] < -inputs.a_contrazione_m / 2  # fuori dal pannello, a sinistra
+    livelli_y = {e.punto[1] for e in etichette}
+    assert len(livelli_y) == len(etichette)  # ogni etichetta a un livello verticale distinto
+
+
+@pytest.mark.unit
+def test_impronta_ha_dimensione_minima_visibile() -> None:
+    """Correzione P1: un'impronta reale in mm (spesso una piccola frazione del pannello) è
+    disegnata a una dimensione minima schematica, cosi' resta visibile."""
+    modificato = {**TOOL.example, "a_contrazione_m": 40.0, "b_contrazione_m": 35.0}
+    inputs = PavimentoIndustrialeInput.model_validate(modificato)
+    sketch = disegna(inputs, _L_MM_ESEMPIO)
+    impronte = [f for f in sketch.viste[0].forme if f.kind == "rect" and f.stile == "carico"]
+    minimo_atteso = 0.03 * 40.0
+    for impronta in impronte:
+        assert impronta.w >= minimo_atteso - 1e-9
+        assert impronta.h >= minimo_atteso - 1e-9
 
 
 @pytest.mark.unit

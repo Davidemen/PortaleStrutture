@@ -68,10 +68,12 @@ def _colonna(inputs: PunzonamentoInput) -> Forma:
 
 
 def _bordo_solaio(inputs: PunzonamentoInput, margine_mm: float) -> tuple[Forma, ...]:
-    """Bordo del solaio, schematico: un lato per `bordo`, due lati ortogonali per `angolo`."""
+    """Bordo del solaio, schematico: un lato per `bordo`, due lati ortogonali per `angolo`. La
+    lunghezza è proporzionata al disegno (non troppo oltre `margine_mm`): un tratto molto più
+    lungo dilaterebbe l'estensione della vista percepita dal lint di leggibilità."""
     if inputs.posizione not in ("bordo", "angolo"):
         return ()
-    span_m = mm_to_m(2.5 * margine_mm)
+    span_m = mm_to_m(1.2 * margine_mm)
     x_bordo_m = mm_to_m(-margine_mm)
     verticale = Linea(p1=(x_bordo_m, -span_m / 2.0), p2=(x_bordo_m, span_m / 2.0), stile="quota")
     if inputs.posizione == "bordo":
@@ -82,15 +84,23 @@ def _bordo_solaio(inputs: PunzonamentoInput, margine_mm: float) -> tuple[Forma, 
 
 
 def _quote_a_2d(inputs: PunzonamentoInput, geometria: GeometriaOutput, a_governante_mm: float, estensione_mm: float) -> tuple[Quota, Quota]:
+    """Le distanze a e 2d sono impilate come due colonnine verticali fuori dal disegno, sul lato
+    destro (oltre il perimetro più esterno): una quota orizzontale, passando per il centro,
+    attraverserebbe sempre i perimetri chiusi qualunque fosse lo scostamento."""
     raggio_x_mm = _raggio_colonna_x_mm(inputs)
-    riferimento_m = -0.3 * mm_to_m(raggio_x_mm + estensione_mm)
+    x_esterno_mm = raggio_x_mm + estensione_mm  # oltre il perimetro più esterno disegnato
+    passo_mm = 1.2 * x_esterno_mm  # scostamento fisso tra le due quote impilate (regola 3)
+    x_a_mm = x_esterno_mm + passo_mm
+    x_2d_mm = x_a_mm + passo_mm
+    due_d_mm = 2.0 * geometria.d_mm
+    scostamento_m = -mm_to_m(0.5 * passo_mm)  # negativo = più a destra (regola dei lati, verso p1->p2 = +y)
     quota_a = Quota(
-        p1=(mm_to_m(raggio_x_mm), 0.0), p2=(mm_to_m(raggio_x_mm + a_governante_mm), 0.0),
-        distanza=riferimento_m, testo=etichetta_quota("a", a_governante_mm, "mm", 0),
+        p1=(mm_to_m(x_a_mm), 0.0), p2=(mm_to_m(x_a_mm), mm_to_m(a_governante_mm)),
+        distanza=scostamento_m, testo=etichetta_quota("a", a_governante_mm, "mm", 0),
     )
     quota_2d = Quota(
-        p1=(mm_to_m(raggio_x_mm), 0.0), p2=(mm_to_m(raggio_x_mm + 2.0 * geometria.d_mm), 0.0),
-        distanza=2.0 * riferimento_m, testo=etichetta_quota("2d", 2.0 * geometria.d_mm, "mm", 0),
+        p1=(mm_to_m(x_2d_mm), 0.0), p2=(mm_to_m(x_2d_mm), mm_to_m(due_d_mm)),
+        distanza=scostamento_m, testo=etichetta_quota("2d", due_d_mm, "mm", 0),
     )
     return quota_a, quota_2d
 
@@ -99,16 +109,22 @@ def _pianta(
     inputs: PunzonamentoInput, geometria: GeometriaOutput, perimetro_critico: PerimetroCriticoOutput,
     armatura: ArmaturaOutput | None,
 ) -> Vista:
+    """Ordine di disegno = ordine di stampa (paint order): il bordo di solaio e i perimetri di
+    verifica (compreso quello governante, in evidenza) vanno disegnati PRIMA, la colonna/area
+    caricata per ULTIMA, sopra di essi — altrimenti il riempimento del perimetro governante,
+    più esteso, coprirebbe colonna e quote. Il renderer rende traslucidi i poligoni chiusi in
+    stile "evidenza", quindi il perimetro governante resta leggibile come contorno anche se
+    disegnato per primo fra i perimetri."""
     estensione_mm = max(perimetro_critico.a_governante_mm, armatura.k_d_primo_mm if armatura is not None else 0.0)
     margine_mm = _MARGINE_BORDO_FATTORE * (_raggio_colonna_x_mm(inputs) + estensione_mm)
 
     forme: list[Forma] = [
-        _colonna(inputs),
         *_bordo_solaio(inputs, margine_mm),
         _perimetro(inputs, 0.0, "quota", tratteggio=True),
         _perimetro(inputs, perimetro_critico.a_governante_mm, "evidenza"),
     ]
     if armatura is not None:
         forme.append(_perimetro(inputs, armatura.k_d_primo_mm, "quota", tratteggio=True))
+    forme.append(_colonna(inputs))
     forme.extend(_quote_a_2d(inputs, geometria, perimetro_critico.a_governante_mm, estensione_mm))
     return Vista(titolo="Pianta", forme=tuple(forme))

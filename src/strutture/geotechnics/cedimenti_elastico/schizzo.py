@@ -32,10 +32,11 @@ _SPESSORE_PLINTO_NOMINALE_M = 0.3  # spessore illustrativo del plinto: non è un
 _SPESSORE_PLINTO_FRAZIONE = 0.03  # spessore minimo schematico, come frazione dell'altezza della vista
 _MARGINE_QUOTA = 0.07  # frazione della dimensione maggiore, per lo scostamento delle quote (6-8 %)
 _MARGINE_ETICHETTA_M = 0.4
-_FATTORE_LARGHEZZA_TERRENO = 1.6  # gli strati sono disegnati più larghi del plinto, solo per leggibilità
+_FATTORE_LARGHEZZA_TERRENO = 3.0  # il blocco di terreno è disegnato 3 volte più largo del plinto
+_LUNGHEZZA_FANTASMA_LATERALE_M = 0.3  # tacco fantasma ai lati del blocco di terreno
 _ASPETTO_BUDGET_PROFONDITA = 2.2  # profondità visibile massima, come multiplo della larghezza (< 3.5 di soglia)
 _FRAZIONE_FANTASMA = 0.08  # lunghezza del tratto "continua oltre", come frazione della profondità visibile
-_MAX_STRATI_ETICHETTATI = 3  # testi al massimo, indipendentemente dal numero di strati in tabella
+_MAX_STRATI_ETICHETTATI = 2  # strati con quota di spessore + etichetta E, indipendentemente dalla tabella
 H_SIGNIFICATIVO_DEFAULT_FACTOR = 5.0  # rispecchia il default di tool_timoshenko_goodier.py
 
 
@@ -82,27 +83,42 @@ def _sezione(d_m: float, larghezza_plinto: float, strati: tuple[SoilLayer, ...],
     spessore_plinto = max(_SPESSORE_PLINTO_NOMINALE_M, _SPESSORE_PLINTO_FRAZIONE * profondita_visibile)
 
     # scostamento sul lato maggiore della vista (non solo la larghezza del plinto): con una
-    # stratigrafia profonda la vista e' molto piu' alta che larga, e le quote B/D devono restare
+    # stratigrafia profonda la vista e' molto piu' alta che larga, e le quote devono restare
     # separate anche quando il testo occupa piu' spazio "modello" alla scala ridotta.
-    margine = _MARGINE_QUOTA * max(larghezza_plinto, profondita_visibile)
+    margine = _MARGINE_QUOTA * max(larghezza_terreno, profondita_visibile)
     profondita_evidenza_disegnata = min(profondita_evidenza_m, profondita_visibile)
-    # B è quotata alla base del ritaglio (non alla base del plinto): quando D è piccolo rispetto
-    # alla profondità visibile, tenerla lì la separa sempre da D, che resta vicino al piano campagna.
-    y_quota_b = -max(profondita_visibile, d_m)
+    y_sommo_plinto = -d_m + spessore_plinto
     forme = [
         Rettangolo(x=-larghezza_plinto / 2, y=-d_m, w=larghezza_plinto, h=spessore_plinto, stile="calcestruzzo"),
         *_strati_forme(strati, larghezza_terreno, profondita_visibile, profondita_evidenza_disegnata),
         *_evidenza(profondita_evidenza_disegnata, profondita_evidenza_m, larghezza_terreno, etichetta_evidenza),
-        Quota(p1=(-larghezza_plinto / 2, y_quota_b), p2=(larghezza_plinto / 2, y_quota_b), distanza=-margine,
-              testo=etichetta_quota("B", larghezza_plinto, "m")),
+        *_fantasma_laterale(larghezza_terreno, profondita_visibile),
+        # B sopra il plinto (non sotto): resta cosi' sempre distinta dalle quote di spessore strato,
+        # che stanno sotto e a sinistra.
+        Quota(p1=(-larghezza_plinto / 2, y_sommo_plinto), p2=(larghezza_plinto / 2, y_sommo_plinto),
+              distanza=margine, testo=etichetta_quota("B", larghezza_plinto, "m")),
     ]
     if d_m > 0:
-        # sul lato sinistro (le etichette Eed sono a destra dello strato): resta sempre separata.
-        x_d = -(larghezza_plinto / 2 + margine)
-        forme.append(Quota(p1=(x_d, 0.0), p2=(x_d, -d_m), distanza=-margine, testo=etichetta_quota("D", d_m, "m")))
+        # ben a destra (una `Quota` non conta per l'estensione/aspetto della vista): il testo
+        # centrato non torna mai indietro fino a B o alle etichette del modulo, anche se enorme
+        # alla scala ridotta di una vista molto profonda.
+        x_d = 2.6 * larghezza_terreno
+        forme.append(Quota(p1=(x_d, 0.0), p2=(x_d, -d_m), distanza=margine, testo=etichetta_quota("D", d_m, "m")))
     if ritagliato:
-        forme.append(_fantasma(profondita_visibile))
+        forme.append(_fantasma_profondita(profondita_visibile))
     return Vista(titolo="Sezione", forme=tuple(forme)), ritagliato
+
+
+def _fantasma_laterale(larghezza_terreno: float, profondita_visibile: float) -> tuple[Linea, Linea]:
+    """Tacchi tratteggiati ai due lati del blocco di terreno, a mezza altezza: il blocco è
+    volutamente disegnato 3 volte più largo del plinto (non si legga come un palo), e questi segnano
+    che il terreno prosegue lateralmente oltre il bordo disegnato."""
+    y = -profondita_visibile / 2.0
+    meta = larghezza_terreno / 2.0
+    return (
+        Linea(p1=(-meta, y), p2=(-meta - _LUNGHEZZA_FANTASMA_LATERALE_M, y), stile="fantasma", tratteggio=True),
+        Linea(p1=(meta, y), p2=(meta + _LUNGHEZZA_FANTASMA_LATERALE_M, y), stile="fantasma", tratteggio=True),
+    )
 
 
 def _strati_visibili(strati: tuple[SoilLayer, ...], profondita_visibile: float) -> list[tuple[SoilLayer, float, float]]:
@@ -137,16 +153,25 @@ def _indici_da_etichettare(visibili: list[tuple[SoilLayer, float, float]], profo
 
 
 def _strati_forme(strati: tuple[SoilLayer, ...], larghezza_terreno: float, profondita_visibile: float,
-                   profondita_evidenza_disegnata: float) -> tuple[Rettangolo | Etichetta, ...]:
+                   profondita_evidenza_disegnata: float) -> tuple[Rettangolo | Etichetta | Quota, ...]:
+    """Ogni strato è un rettangolo; per gli strati scelti da `_indici_da_etichettare` compaiono
+    anche la quota di spessore (a sinistra) e l'etichetta del modulo E (a destra) — mai sullo
+    stesso lato, cosi' non si toccano mai."""
     visibili = _strati_visibili(strati, profondita_visibile)
     da_etichettare = _indici_da_etichettare(visibili, profondita_visibile, -profondita_evidenza_disegnata)
-    forme: list[Rettangolo | Etichetta] = []
+    margine_sinistra = _MARGINE_QUOTA * larghezza_terreno
+    forme: list[Rettangolo | Etichetta | Quota] = []
     for indice, (strato, y_top, y_bot) in enumerate(visibili):
         forme.append(Rettangolo(x=-larghezza_terreno / 2, y=y_bot, w=larghezza_terreno,
                                  h=y_top - y_bot, stile="terreno"))
-        if indice in da_etichettare:
-            forme.append(Etichetta(punto=(larghezza_terreno / 2 + _MARGINE_ETICHETTA_M, (y_top + y_bot) / 2),
-                                    testo=etichetta_quota("E", strato.modulo_MPa, "MPa", 1)))
+        if indice not in da_etichettare:
+            continue
+        forme.append(Etichetta(punto=(larghezza_terreno / 2 + _MARGINE_ETICHETTA_M, (y_top + y_bot) / 2),
+                                testo=etichetta_quota("E", strato.modulo_MPa, "MPa", 1)))
+        forme.append(Quota(
+            p1=(-larghezza_terreno / 2, y_top), p2=(-larghezza_terreno / 2, y_bot), distanza=-margine_sinistra,
+            testo=etichetta_quota("Δz", y_top - y_bot, "m"),
+        ))
     return tuple(forme)
 
 
@@ -161,8 +186,8 @@ def _evidenza(profondita_disegnata_m: float, profondita_reale_m: float, larghezz
     return linea, testo
 
 
-def _fantasma(profondita_visibile: float) -> Linea:
-    """Tratteggio corto che segnala la prosecuzione della stratigrafia oltre il ritaglio."""
+def _fantasma_profondita(profondita_visibile: float) -> Linea:
+    """Tratteggio corto che segnala la prosecuzione della stratigrafia oltre il ritaglio in profondità."""
     y0 = -profondita_visibile
     y1 = y0 - _FRAZIONE_FANTASMA * profondita_visibile
     return Linea(p1=(0.0, y0), p2=(0.0, y1), stile="fantasma", tratteggio=True)

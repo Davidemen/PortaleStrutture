@@ -53,7 +53,7 @@ def test_ntc2018_legacy_drops_the_rs_minimum_comparison():
     rs>rs_min comparison is gone; only the 4% ceiling remains under legacy_compat=True."""
     report = run_pilastro_rettangolare(PilastroRettangolareInput(**BASE_RETT, norma="NTC2018", legacy_compat=True))
     by_name = {c.name: c.passed for c in report.checks}
-    assert by_name["percentuale_armatura"] is True  # rs=0.0100531 < 0.04, minimum not checked
+    assert by_name["Percentuale di armatura longitudinale"] is True  # rs=0.0100531 < 0.04, minimum not checked
 
 
 @pytest.mark.unit

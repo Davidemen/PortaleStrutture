@@ -52,6 +52,30 @@ def test_at_most_three_highlighted_outputs(tool):
     assert 1 <= len(highlighted) <= 3, highlighted
 
 
+def _highlighted_field_extras(model, prefix=""):
+    found = []
+    for name, field in model.model_fields.items():
+        extra = field.json_schema_extra or {}
+        if isinstance(extra, dict) and extra.get("highlight"):
+            found.append((f"{prefix}{name}", extra, field.description or ""))
+        annotation = field.annotation
+        nested = getattr(annotation, "__args__", (annotation,))
+        for candidate in nested:
+            if hasattr(candidate, "model_fields") and candidate is not model:
+                found.extend(_highlighted_field_extras(candidate, prefix=f"{prefix}{name}."))
+    return found
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("tool", ALL_TOOLS, ids=[t.name for t in ALL_TOOLS])
+def test_highlighted_fields_have_a_symbol_and_no_formula_in_description(tool):
+    """Design-review finding: a highlighted output with no `symbol` renders as a long italic
+    description in the Sintesi summary; descriptions must read as prose, not as a formula."""
+    for name, extra, description in _highlighted_field_extras(tool.output_model):
+        assert extra.get("symbol"), f"{tool.name}.{name}: highlighted field has no symbol"
+        assert "=" not in description, f"{tool.name}.{name}: description looks like a formula: {description!r}"
+
+
 @pytest.mark.unit
 def test_newmark_condition_hints_gate_mode_specific_fields():
     fields = NEWMARK_TOOLS[0].input_model.model_fields

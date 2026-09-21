@@ -138,7 +138,7 @@ def test_asw_min_check_present_and_passing_with_adequate_stirrups():
     against the area provided, not just computed and left unused."""
     overrides = {**BASE, "ved_kN": 1300, "phi_staffa_mm": 8}
     report = run(PunzonamentoInput(**overrides, legacy_compat=False))
-    check = next(c for c in report.checks if c.name == "asw_min")
+    check = next(c for c in report.checks if c.name == "Area minima delle cuciture verticali")
     assert check.clause == "EN 1992-1-1 §9.4.3(2) eq. (9.11)"
     assert check.unit == "mm2"
     assert check.value == pytest.approx(report.data.armatura.area_staffa_mm2, rel=1e-9)
@@ -151,7 +151,7 @@ def test_asw_min_check_fails_when_stirrup_area_below_minimum():
     so the check must actually fail instead of being reported as verified."""
     overrides = {**BASE, "ved_kN": 1300, "phi_staffa_mm": 8, "st_mm": 600}
     report = run(PunzonamentoInput(**overrides, legacy_compat=False))
-    check = next(c for c in report.checks if c.name == "asw_min")
+    check = next(c for c in report.checks if c.name == "Area minima delle cuciture verticali")
     assert check.value < check.limit
     assert check.passed is False
 

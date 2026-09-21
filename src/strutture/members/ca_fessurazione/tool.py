@@ -208,7 +208,7 @@ def run_apertura_fessure(inputs: AperturaFessureInput) -> Report[AperturaFessure
 
     data = AperturaFessureOutput(geometria=geometria, materiale=materiale, coefficienti=coefficienti, fessurazione=fessurazione)
     check = Check(
-        name="apertura fessure",
+        name="Apertura delle fessure",
         passed=fessurazione.verificato,
         detail=f"wk={fessurazione.wk_mm:.4f} mm / wlim={fessurazione.wlim_mm} mm",
         clause=CLAUSE_APERTURA_FESSURE,

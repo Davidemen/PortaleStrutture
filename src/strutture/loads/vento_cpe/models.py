@@ -58,7 +58,7 @@ class VentoCpeOutput(BaseModel):
 
     classification: str = Field(
         description="Classificazione di snellezza dell'edificio",
-        json_schema_extra={"unit": "-", "highlight": True},
+        json_schema_extra={"unit": "-", "symbol": "h/d", "highlight": True},
     )
     dir1: DirectionResult = Field(description="Direzione 1 — vento perpendicolare al lato b")
     dir2: DirectionResult = Field(description="Direzione 2 — vento perpendicolare al lato d")

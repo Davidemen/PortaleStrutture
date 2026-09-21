@@ -178,7 +178,7 @@ def _ribaltamento_scorrimento_combo(spinta: SpintaCombo, *, inputs: MuroSostegno
         or_ribaltamento=or_ribaltamento,
         os_scorrimento=os_scorrimento,
         verifica_ribaltamento=Check(
-            name=f"Ribaltamento {spinta.nome}",
+            name=f"Ribaltamento {_nome_combo_leggibile(spinta.nome)}",
             passed=or_ribaltamento >= soglia_rib,
             detail=f"OR={or_ribaltamento:.3f} (soglia γR={soglia_rib:.2f})",
             clause=CLAUSE_RIBALTAMENTO,
@@ -187,7 +187,7 @@ def _ribaltamento_scorrimento_combo(spinta: SpintaCombo, *, inputs: MuroSostegno
             unit="-",
         ),
         verifica_scorrimento=Check(
-            name=f"Scorrimento {spinta.nome}",
+            name=f"Scorrimento {_nome_combo_leggibile(spinta.nome)}",
             passed=os_scorrimento >= soglia_scorr,
             detail=f"OS={os_scorrimento:.3f} (soglia γR={soglia_scorr:.2f})",
             clause=CLAUSE_SCORRIMENTO,
@@ -196,6 +196,17 @@ def _ribaltamento_scorrimento_combo(spinta: SpintaCombo, *, inputs: MuroSostegno
             unit="-",
         ),
     )
+
+
+def _nome_combo_leggibile(nome: NomeCombo) -> str:
+    """Nome del check, leggibile anche se l'interfaccia tronca il testo: le combinazioni sismiche
+    SISMA_1/SISMA_2 differiscono solo nell'ultimo carattere (il segno di kv), che un'interfaccia che
+    tronca a larghezza fissa può nascondere — il segno è quindi richiamato esplicitamente."""
+    if nome == "SISMA_1":
+        return f"{nome} (+kv)"
+    if nome == "SISMA_2":
+        return f"{nome} (−kv)"
+    return nome
 
 
 def _pressioni_combo(spinta: SpintaCombo, verifica: RibaltamentoScorrimentoCombo, *, geometria: GeometriaResult) -> PressioniCombo:

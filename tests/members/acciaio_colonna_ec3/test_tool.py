@@ -47,3 +47,14 @@ def test_report_exposes_every_group() -> None:
     ):
         assert group is not None
     assert len(report.checks) >= 9
+
+
+@pytest.mark.unit
+def test_check_names_are_readable_and_have_no_underscore() -> None:
+    """Design review (P0): `Check(name=...)` must be a readable phrase, never a raw snake_case
+    Python key, so no check name may contain an underscore."""
+    tool = TOOLS[0]
+    report = run(ColonnaEc3Input.model_validate(tool.example))
+    assert report.checks
+    for check in report.checks:
+        assert "_" not in check.name, check.name

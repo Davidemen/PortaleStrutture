@@ -7,6 +7,7 @@ Coordinates: x=0 at the toe/valle outer edge (the overturning pole), y=0 at the 
 the same reference `geometria_muro` already uses for every centroid."""
 from strutture.shared.sketch import (
     Diagramma,
+    Etichetta,
     Freccia,
     Poligono,
     Quota,
@@ -25,7 +26,8 @@ from .models import (
 )
 
 _MARGINE_QUOTA = 0.07  # frazione della dimensione maggiore, per lo scostamento delle linee di quota (6-8 %)
-_SBALZO_SOVRACCARICO_M = 0.4  # lunghezza delle frecce di sovraccarico
+_ALTEZZA_RELATIVA_DIAGRAMMA = 0.25  # altezza resa del diagramma delle pressioni (default di Diagramma)
+_ALTEZZA_RELATIVA_SOVRACCARICO = 0.12  # banda del sovraccarico: più sottile del diagramma di pressione
 
 
 def disegna(
@@ -65,14 +67,23 @@ def _terreno(inputs: MuroSostegnoInput, geometria: GeometriaResult) -> Poligono:
     )
 
 
-def _sovraccarico(inputs: MuroSostegnoInput, geometria: GeometriaResult) -> tuple[Freccia, ...]:
-    """Frecce verticali del sovraccarico q sopra il cuneo di terreno (assenti se q=0)."""
+def _sovraccarico(inputs: MuroSostegnoInput, geometria: GeometriaResult) -> tuple:
+    """Banda del sovraccarico q sopra il cuneo di terreno (assente se q=0): una `Diagramma`
+    uniforme, non una singola freccia senza punta visibile, con un'unica etichetta (valore, il
+    simbolo "q" è già reso da `Etichetta`... qui il testo del diagramma include il simbolo perché
+    `Diagramma` non ha un campo `simbolo` separato per le sue etichette)."""
     if inputs.q_kN_m2 <= 0:
         return ()
     y_top = inputs.s_fond_m + inputs.h_muro_m
-    x_centro = (_faccia_interna_stem_x(y_top, inputs) + geometria.b_fond_m) / 2
-    return (Freccia(coda=(x_centro, y_top + _SBALZO_SOVRACCARICO_M), punta=(x_centro, y_top), stile="carico",
-                     testo=etichetta_quota("q", inputs.q_kN_m2, "kN/m2", 0)),)
+    x_sinistra = _faccia_interna_stem_x(y_top, inputs)
+    x_destra = geometria.b_fond_m
+    return (Diagramma(
+        base=((x_sinistra, y_top), (x_destra, y_top)),  # sinistra->destra: la banda sporge verso l'alto
+        valori=(inputs.q_kN_m2, inputs.q_kN_m2),
+        etichette=(etichetta_quota("q", inputs.q_kN_m2, "kN/m2", 0), ""),
+        stile="carico",
+        altezza_relativa=_ALTEZZA_RELATIVA_SOVRACCARICO,
+    ),)
 
 
 def _spinta(nome_cercato: str, spinte: tuple[SpintaCombo, ...],
@@ -84,23 +95,39 @@ def _spinta(nome_cercato: str, spinte: tuple[SpintaCombo, ...],
 
 
 def _freccia_spinta(verifica: RibaltamentoScorrimentoCombo, inputs: MuroSostegnoInput,
-                     geometria: GeometriaResult, *, etichetta: str) -> Freccia:
+                     geometria: GeometriaResult, *, etichetta: str) -> tuple[Freccia, Etichetta]:
+    """Freccia della spinta (senza testo incorporato: l'etichetta è un `Etichetta` separato, ancorata
+    alla coda sul lato libero a destra del cuneo di terreno, cosi' non cade mai sul paramento)."""
     y = min(verifica.braccio_terr_m, geometria.h_muro_tot_m)
     x_muro = _faccia_interna_stem_x(y, inputs)
     x_terreno = geometria.b_fond_m + 0.2
-    return Freccia(coda=(x_terreno, y), punta=(x_muro, y), stile="carico",
-                    testo=etichetta_quota(etichetta, verifica.sh_terr_kN, "kN", 0))
+    freccia = Freccia(coda=(x_terreno, y), punta=(x_muro, y), stile="carico")
+    testo = Etichetta(punto=(x_terreno, y), simbolo=etichetta, testo=_valore_kN(verifica.sh_terr_kN),
+                       ancora="start", stile="carico")
+    return freccia, testo
+
+
+def _valore_kN(valore: float) -> str:
+    return f"{valore:.0f} kN"
 
 
 def _diagramma_pressioni(pressioni_terreno: tuple[PressioniCombo, ...], geometria: GeometriaResult) -> Diagramma:
+    """`base` runs right (x=B, lato monte) -> left (x=0, lato valle): `valori`/`etichette` must be
+    ordered the same way (monte first, valle second) so each ordinate lands at the pressure's own
+    end, not mirrored across the footing. Zero ends stay unlabelled."""
     governante = max(pressioni_terreno, key=lambda p: max(p.p_valle_kPa, p.p_monte_kPa))
     return Diagramma(
         base=((geometria.b_fond_m, 0.0), (0.0, 0.0)),  # right->left: ordinates hang below the base
-        valori=(governante.p_valle_kPa, governante.p_monte_kPa),
-        etichette=(etichetta_quota("p_valle", governante.p_valle_kPa, "kPa", 0),
-                   etichetta_quota("p_monte", governante.p_monte_kPa, "kPa", 0)),
+        valori=(governante.p_monte_kPa, governante.p_valle_kPa),
+        etichette=(_etichetta_pressione("p_monte", governante.p_monte_kPa),
+                   _etichetta_pressione("p_valle", governante.p_valle_kPa)),
         stile="pressione",
+        altezza_relativa=_ALTEZZA_RELATIVA_DIAGRAMMA,
     )
+
+
+def _etichetta_pressione(simbolo: str, valore_kPa: float) -> str:
+    return etichetta_quota(simbolo, valore_kPa, "kPa", 0) if valore_kPa > 0 else ""
 
 
 def _sezione(
@@ -109,21 +136,24 @@ def _sezione(
 ) -> Vista:
     scostamento_o = _MARGINE_QUOTA * geometria.b_fond_m
     scostamento_v = _MARGINE_QUOTA * geometria.h_muro_tot_m
+    # la quota B sta sotto il diagramma delle pressioni (che sporge in basso di ~altezza_relativa
+    # del lato minore), non appena sotto la fondazione: altrimenti i due si accavallano.
+    sporgenza_diagramma = _ALTEZZA_RELATIVA_DIAGRAMMA * min(geometria.b_fond_m, geometria.h_muro_tot_m)
     forme = [
         Rettangolo(x=0.0, y=0.0, w=geometria.b_fond_m, h=inputs.s_fond_m, stile="calcestruzzo"),
         _stem(inputs),
         _terreno(inputs, geometria),
         *_sovraccarico(inputs, geometria),
         _diagramma_pressioni(pressioni_terreno, geometria),
-        Quota(p1=(0.0, 0.0), p2=(geometria.b_fond_m, 0.0), distanza=-scostamento_o,
+        Quota(p1=(0.0, 0.0), p2=(geometria.b_fond_m, 0.0), distanza=-(scostamento_o + sporgenza_diagramma),
               testo=etichetta_quota("B", geometria.b_fond_m, "m")),
         Quota(p1=(0.0, 0.0), p2=(0.0, geometria.h_muro_tot_m), distanza=scostamento_v,
               testo=etichetta_quota("H", geometria.h_muro_tot_m, "m")),
     ]
     statica = _spinta("STR_1", spinte, ribaltamento_scorrimento)
     if statica is not None:
-        forme.append(_freccia_spinta(statica, inputs, geometria, etichetta="S_stat"))
+        forme.extend(_freccia_spinta(statica, inputs, geometria, etichetta="S_stat"))
     sismica = _spinta("SISMA_1", spinte, ribaltamento_scorrimento)
     if sismica is not None:
-        forme.append(_freccia_spinta(sismica, inputs, geometria, etichetta="S_sism"))
+        forme.extend(_freccia_spinta(sismica, inputs, geometria, etichetta="S_sism"))
     return Vista(titolo="Sezione", forme=tuple(forme))

@@ -247,11 +247,11 @@ class AccumuloOutput(BaseModel):
     m2_final: float = Field(description="Coefficiente di forma di progetto, al muro")
     ls_final: float = Field(description="Lunghezza di progetto della zona di accumulo", json_schema_extra={"unit": "m"})
     qs1_final: float = Field(
-        description="Carico neve di progetto, bordo lontano (qsk·CE·Ct·m1_final)",
-        json_schema_extra={"unit": "kN/m²", "highlight": True},
+        description="Carico neve di progetto al bordo lontano dalla costruzione più alta",
+        json_schema_extra={"unit": "kN/m²", "symbol": "q_s1", "highlight": True},
     )
     qs2_final: float = Field(
-        description="Carico neve di progetto, al muro (qsk·CE·Ct·m2_final)",
-        json_schema_extra={"unit": "kN/m²", "highlight": True},
+        description="Carico neve di progetto al muro della costruzione più alta",
+        json_schema_extra={"unit": "kN/m²", "symbol": "q_s2", "highlight": True},
     )
     schizzo: Sketch | None = campo_schizzo()

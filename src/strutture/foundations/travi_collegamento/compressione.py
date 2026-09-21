@@ -13,7 +13,8 @@ class CompressioneResult(BaseModel):
     ncrd_kN: float = Field(description="Forza assiale resistente a compressione Nc,Rd", json_schema_extra={"unit": "kN", "symbol": "N_c,Rd"}, gt=0)
     verifica: Check
     tasso_lavoro: float = Field(
-        description="Tasso di lavoro a compressione NEd/Nc,Rd", json_schema_extra={"unit": "-", "highlight": True}, ge=0
+        description="Tasso di lavoro a compressione, azione di progetto su resistenza",
+        json_schema_extra={"unit": "-", "symbol": "η_c", "highlight": True}, ge=0
     )
 
 

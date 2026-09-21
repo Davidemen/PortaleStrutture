@@ -171,8 +171,8 @@ def test_rectangular_stirrup_diameter_check_h9_vs_h16_bug():
 
     legacy_checks = {c.name: c.passed for c in legacy_report.checks}
     fixed_checks = {c.name: c.passed for c in fixed_report.checks}
-    assert legacy_checks["diametro_minimo_staffe"] is True  # 6mm staffe, 7mm richiesti: il foglio non se ne accorge
-    assert fixed_checks["diametro_minimo_staffe"] is False  # la verifica corretta lo cattura
+    assert legacy_checks["Diametro minimo delle staffe"] is True  # 6mm staffe, 7mm richiesti: il foglio non se ne accorge
+    assert fixed_checks["Diametro minimo delle staffe"] is False  # la verifica corretta lo cattura
 
 
 @pytest.mark.unit
@@ -232,14 +232,14 @@ def test_detailing_checks_use_inclusive_limits_under_code_standard():
     fixed_checks = {c.name: c.passed for c in fixed_report.checks}
 
     # phi_long = 12mm exactly at the limit: sheet (strict >) fails it, code-standard (>=) passes it.
-    assert legacy_checks["diametro_minimo_longitudinale"] is False
-    assert fixed_checks["diametro_minimo_longitudinale"] is True
+    assert legacy_checks["Diametro minimo delle barre longitudinali"] is False
+    assert fixed_checks["Diametro minimo delle barre longitudinali"] is True
 
     # phi_staffe = 6mm, threshold = max(6, 12/4=3) = 6mm exactly: sheet's real (non-H9-bugged)
     # comparison would fail it (strict <); code-standard (<=) passes it. The rect sheet's own
     # L63 bug (H9-vs-H16) still makes legacy_compat report True regardless (documented divergence).
-    assert legacy_checks["diametro_minimo_staffe"] is True  # unchanged H9-vs-H16 sheet bug
-    assert fixed_checks["diametro_minimo_staffe"] is True  # 6 <= 6 now passes
+    assert legacy_checks["Diametro minimo delle staffe"] is True  # unchanged H9-vs-H16 sheet bug
+    assert fixed_checks["Diametro minimo delle staffe"] is True  # 6 <= 6 now passes
 
 
 @pytest.mark.unit
@@ -264,7 +264,7 @@ def test_area_minima_longitudinale_inclusive_under_code_standard():
     rules = resolve(fixed_inputs.norma, fixed_inputs.legacy_compat)
     _, checks = _dettagli(fixed_inputs, rules, ac_mm2, as_min_mm2, as_min_mm2)
     by_name = {c.name: c.passed for c in checks}
-    assert by_name["area_minima_longitudinale"] is True  # as == as_min exactly: must pass (<=)
+    assert by_name["Area minima di armatura longitudinale"] is True  # as == as_min exactly: must pass (<=)
     assert as_min_mm2 != pytest.approx(as_mm2)  # sanity: golden inputs aren't naturally at the boundary
 
 
@@ -301,7 +301,7 @@ def test_circular_input_rejects_out_of_range_and_invalid_enum():
 
 @pytest.mark.unit
 def test_long_bar_spacing_uses_seismic_250mm_under_code_standard():
-    """Review finding (MEDIUM): the "interasse_massimo_longitudinale" check is labelled NTC2018
+    """Review finding (MEDIUM): the "Interasse massimo delle barre longitudinali" check is labelled NTC2018
     §7.4.6.2.2 (CD"B" seismic detailing: bar spacing <=250mm over the whole column), but used the
     non-seismic §4.1.6.1.2 300mm limit. legacy_compat=True keeps the sheet's own 300mm value."""
     base = {
@@ -318,8 +318,8 @@ def test_long_bar_spacing_uses_seismic_250mm_under_code_standard():
     legacy_checks = {c.name: c.passed for c in legacy_report.checks}
     fixed_checks = {c.name: c.passed for c in fixed_report.checks}
     assert fixed_report.data.dettagli.interasse_long_calcolato_mm == pytest.approx(300.0)
-    assert fixed_checks["interasse_massimo_longitudinale"] is False  # 300 > 250mm (seismic limit)
-    assert legacy_checks["interasse_massimo_longitudinale"] is True  # sheet's own (non-seismic) 300mm limit, unaffected
+    assert fixed_checks["Interasse massimo delle barre longitudinali"] is False  # 300 > 250mm (seismic limit)
+    assert legacy_checks["Interasse massimo delle barre longitudinali"] is True  # sheet's own (non-seismic) 300mm limit, unaffected
     assert fixed_report.data.dettagli.interasse_long_max_mm == pytest.approx(250.0)
     assert legacy_report.data.dettagli.interasse_long_max_mm == pytest.approx(300.0)
 
@@ -424,6 +424,6 @@ def test_passo_staffe_zona_critica_check_is_reported():
 
     violating_checks = {c.name: c.passed for c in violating.checks}
     compliant_checks = {c.name: c.passed for c in compliant.checks}
-    assert "passo_staffe_zona_critica" in violating_checks
-    assert violating_checks["passo_staffe_zona_critica"] is False
-    assert compliant_checks["passo_staffe_zona_critica"] is True
+    assert "Passo delle staffe in zona critica" in violating_checks
+    assert violating_checks["Passo delle staffe in zona critica"] is False
+    assert compliant_checks["Passo delle staffe in zona critica"] is True

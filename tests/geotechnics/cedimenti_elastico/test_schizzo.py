@@ -34,18 +34,54 @@ _PUNTO_ESEMPIO = {
 @pytest.mark.unit
 def test_newmark_centro_vista_titolo_e_forme() -> None:
     """L'esempio ha 5 strati fino a 120 m: molto oltre il budget di profondità visibile, quindi
-    l'ultimo strato è escluso (4 disegnati) e al massimo 3 etichette Eed compaiono, con un tratto
-    "fantasma" a indicare la prosecuzione."""
+    l'ultimo strato è escluso (4 disegnati) e al massimo 2 sono etichettati (quota di spessore +
+    modulo E), con un tratto "fantasma" a indicare la prosecuzione in profondità (oltre ai
+    fantasma laterali, sempre presenti)."""
     inputs = NewmarkInput.model_validate(NEWMARK_TOOL.example)
     sketch = disegna_newmark(inputs)
     assert [v.titolo for v in sketch.viste] == ["Sezione"]
     kinds = [f.kind for f in sketch.viste[0].forme]
     assert kinds[0] == "rect"
     assert kinds.count("rect") == 1 + 4  # plinto + 4 strati visibili
-    assert kinds.count("label") <= 3 + 1  # <=3 Eed (limite/scostamento minimo) + 1 z_max
-    assert kinds.count("line") == 1 + 1  # z_max + fantasma
-    assert kinds.count("dimension") == 2  # B e D (d_m=1.10 > 0)
+    assert kinds.count("label") <= 2 + 1  # <=2 E (limite/scostamento minimo) + 1 z_max
+    assert kinds.count("line") == 1 + 2 + 1  # z_max + 2 fantasma laterali + 1 fantasma di profondità
+    assert kinds.count("dimension") == 2 + 2  # B, D + <=2 quote di spessore strato (Δz)
     assert "interrotta" in sketch.nota
+
+
+@pytest.mark.unit
+def test_newmark_quota_b_sopra_il_plinto_e_terreno_largo_3b() -> None:
+    """Correzione P1: la quota B sta sopra il plinto (non sotto), e il blocco di terreno è
+    disegnato 3 volte più largo del plinto (non deve leggersi come un palo), con un tacco
+    tratteggiato "fantasma" per lato."""
+    inputs = NewmarkInput.model_validate(NEWMARK_TOOL.example)
+    sketch = disegna_newmark(inputs)
+    forme = sketch.viste[0].forme
+    plinto = forme[0]
+    quota_b = next(f for f in forme if f.kind == "dimension" and f.testo.startswith("B ="))
+    assert quota_b.p1[1] == pytest.approx(plinto.y + plinto.h)
+    assert quota_b.distanza > 0  # verso l'alto: fuori dal plinto
+    primo_strato = next(f for f in forme if f.kind == "rect" and f.stile == "terreno")
+    assert primo_strato.w == pytest.approx(3.5 * 3.0)
+    fantasmi_laterali = [f for f in forme if f.kind == "line" and f.stile == "fantasma"
+                          and f.p1[1] == pytest.approx(f.p2[1])]
+    assert len(fantasmi_laterali) == 2
+
+
+@pytest.mark.unit
+def test_newmark_spessore_a_sinistra_modulo_a_destra() -> None:
+    """Correzione P1: per ogni strato etichettato, la quota di spessore Δz è a sinistra del blocco
+    di terreno e l'etichetta del modulo E è a destra — mai sullo stesso lato."""
+    inputs = NewmarkInput.model_validate(NEWMARK_TOOL.example)
+    sketch = disegna_newmark(inputs)
+    forme = sketch.viste[0].forme
+    quote_spessore = [f for f in forme if f.kind == "dimension" and f.testo.startswith("Δz")]
+    etichette_modulo = [f for f in forme if f.kind == "label" and f.testo.startswith("E =")]
+    assert len(quote_spessore) == len(etichette_modulo) == 2
+    for quota in quote_spessore:
+        assert quota.p1[0] < 0  # a sinistra
+    for etichetta in etichette_modulo:
+        assert etichetta.punto[0] > 0  # a destra
 
 
 @pytest.mark.unit
@@ -95,8 +131,9 @@ def test_newmark_quota_d_assente_quando_lembedment_e_zero() -> None:
     modificato = {**NEWMARK_TOOL.example, "d": 0}
     inputs = NewmarkInput.model_validate(modificato)
     sketch = disegna_newmark(inputs)
-    kinds = [f.kind for f in sketch.viste[0].forme]
-    assert kinds.count("dimension") == 1  # solo B
+    forme = sketch.viste[0].forme
+    assert not any(f.kind == "dimension" and f.testo.startswith("D =") for f in forme)
+    assert any(f.kind == "dimension" and f.testo.startswith("B =") for f in forme)
 
 
 # --- Newmark, modalità PUNTO --------------------------------------------------------------------
@@ -150,8 +187,8 @@ def test_tg_vista_titolo_e_forme() -> None:
     kinds = [f.kind for f in sketch.viste[0].forme]
     assert kinds.count("rect") == 1 + 2
     assert kinds.count("label") == 2 + 1
-    assert kinds.count("line") == 1 + 1  # H + fantasma
-    assert kinds.count("dimension") == 2  # B e D (d_m=0.5 > 0)
+    assert kinds.count("line") == 1 + 2 + 1  # H + 2 fantasma laterali + 1 fantasma di profondità
+    assert kinds.count("dimension") == 2 + 2  # B, D + 2 quote di spessore strato (Δz)
     assert "interrotta" in sketch.nota
 
 
@@ -257,7 +294,7 @@ def test_newmark_composizione_su_input_realistici(nome: str) -> None:
 _CASI_TG = {
     "infissione profonda": {"d": 3.0},
     "profondità significativa elevata": {"h_significativo": 15.0},
-    "plinto molto largo": {"b": 6.0, "l": 6.0},
+    "plinto molto largo": {"b": 3.0, "l": 3.0},
 }
 
 

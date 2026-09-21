@@ -44,15 +44,15 @@ def test_golden_pilastro_rettangolare():
     assert data.snellezza.lambda_ == pytest.approx(34.641, rel=1e-5)
 
     by_name = {c.name: c.passed for c in report.checks}
-    assert by_name["taglio"] is True
-    assert by_name["gerarchia_resistenze"] is True
-    assert by_name["percentuale_armatura"] is True
-    assert by_name["flessione"] is True
-    assert by_name["compressione"] is True
-    assert by_name["snellezza"] is True
+    assert by_name["Resistenza a taglio"] is True
+    assert by_name["Gerarchia delle resistenze a taglio"] is True
+    assert by_name["Percentuale di armatura longitudinale"] is True
+    assert by_name["Resistenza a pressoflessione"] is True
+    assert by_name["Resistenza a compressione"] is True
+    assert by_name["Verifica di snellezza"] is True
     for name in (
-        "diametro_minimo_longitudinale", "interasse_massimo_longitudinale", "area_minima_longitudinale",
-        "diametro_minimo_staffe", "interasse_massimo_staffe",
+        "Diametro minimo delle barre longitudinali", "Interasse massimo delle barre longitudinali", "Area minima di armatura longitudinale",
+        "Diametro minimo delle staffe", "Interasse massimo delle staffe",
     ):
         assert by_name[name] is True, name
 
@@ -87,14 +87,14 @@ def test_golden_pilastro_circolare():
     assert data.snellezza.lambda_ == pytest.approx(40, rel=1e-6)
 
     by_name = {c.name: c.passed for c in report.checks}
-    assert by_name["taglio"] is True
-    assert by_name["gerarchia_resistenze"] is True
-    assert by_name["percentuale_armatura"] is False  # rs=0.04 is not strictly < 0.04
-    assert by_name["flessione"] is True
-    assert by_name["compressione"] is True
-    assert by_name["snellezza"] is True
+    assert by_name["Resistenza a taglio"] is True
+    assert by_name["Gerarchia delle resistenze a taglio"] is True
+    assert by_name["Percentuale di armatura longitudinale"] is False  # rs=0.04 is not strictly < 0.04
+    assert by_name["Resistenza a pressoflessione"] is True
+    assert by_name["Resistenza a compressione"] is True
+    assert by_name["Verifica di snellezza"] is True
     for name in (
-        "diametro_minimo_longitudinale", "interasse_massimo_longitudinale", "area_minima_longitudinale",
-        "diametro_minimo_staffe", "interasse_massimo_staffe",
+        "Diametro minimo delle barre longitudinali", "Interasse massimo delle barre longitudinali", "Area minima di armatura longitudinale",
+        "Diametro minimo delle staffe", "Interasse massimo delle staffe",
     ):
         assert by_name[name] is True, name

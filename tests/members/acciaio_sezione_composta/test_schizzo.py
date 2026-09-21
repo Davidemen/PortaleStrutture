@@ -48,6 +48,32 @@ def test_vista_titolo_e_forme_esempio() -> None:
     assert all(f.stile == "asse" for f in assi)
     marcatore = next(f for f in sketch.viste[0].forme if f.kind == "circle")
     assert marcatore.stile == "asse"
+    assert kinds.count("dimension") == 3  # h, b, t_p (un solo piatto attivo -> uno spessore distinto)
+
+
+@pytest.mark.unit
+def test_quote_h_b_t_p_riportano_i_valori_veri() -> None:
+    """Design review (P1): il profilo non aveva alcuna quota; ora h, b e lo spessore di ogni
+    piatto attivo (t_p, uno per spessore distinto) sono quotati fuori dall'ingombro disegnato."""
+    inputs, elementi, x_n_mm, y_n_mm = _elementi_e_baricentro(TOOL.example)
+    sketch = disegna(elementi, x_n_mm, y_n_mm, inputs.h_profilo_mm, inputs.b_profilo_mm)
+    quote = {q.testo.split(" =")[0]: q.testo for q in sketch.viste[0].forme if q.kind == "dimension"}
+    assert quote["h"] == f"h = {inputs.h_profilo_mm:.0f} mm"
+    assert quote["b"] == f"b = {inputs.b_profilo_mm:.0f} mm"
+    piatto_attivo = next(p for p in inputs.piatti if p.b_mm > 0)
+    assert quote["t_p"] == f"t_p = {piatto_attivo.b_mm:.0f} mm"
+
+
+@pytest.mark.unit
+def test_quote_t_p_distinte_per_piatti_di_spessore_diverso_e_impilate() -> None:
+    """Piatti con spessori diversi ricevono ciascuno la propria quota t_p, impilate verso
+    l'esterno per non sovrapporsi quando i piatti rappresentativi sono vicini."""
+    modificato = {**TOOL.example, "piatti": [{"b_mm": 8, "h_mm": 105}, {"b_mm": 16, "h_mm": 105}]}
+    inputs, elementi, x_n_mm, y_n_mm = _elementi_e_baricentro(modificato)
+    sketch = disegna(elementi, x_n_mm, y_n_mm, inputs.h_profilo_mm, inputs.b_profilo_mm)
+    quote_tp = [q for q in sketch.viste[0].forme if q.kind == "dimension" and q.testo.startswith("t_p")]
+    assert {q.testo for q in quote_tp} == {"t_p = 8 mm", "t_p = 16 mm"}
+    assert len({q.distanza for q in quote_tp}) == 2  # scostamenti diversi: impilate, non sovrapposte
 
 
 @pytest.mark.unit
@@ -166,3 +192,16 @@ def test_errore_nel_disegno_non_fa_fallire_il_calcolo(monkeypatch: pytest.Monkey
 @pytest.mark.unit
 def test_modulo_schizzo_importabile_e_puro() -> None:
     assert hasattr(schizzo_module, "disegna")
+
+
+@pytest.mark.unit
+def test_quote_t_p_sono_limitate_a_tre_spessori_distinti() -> None:
+    """Oltre 3 spessori distinti di piatto, le quote t_p si fermano al tetto (budget di testi)."""
+    modificato = {**TOOL.example, "piatti": [
+        {"b_mm": 8, "h_mm": 105}, {"b_mm": 12, "h_mm": 105}, {"b_mm": 16, "h_mm": 105},
+        {"b_mm": 20, "h_mm": 105}, {"b_mm": 24, "h_mm": 105},
+    ]}
+    inputs, elementi, x_n_mm, y_n_mm = _elementi_e_baricentro(modificato)
+    sketch = disegna(elementi, x_n_mm, y_n_mm, inputs.h_profilo_mm, inputs.b_profilo_mm)
+    quote_tp = [q for q in sketch.viste[0].forme if q.kind == "dimension" and q.testo.startswith("t_p")]
+    assert len(quote_tp) == schizzo_module._MAX_QUOTE_SPESSORE_PIATTO

@@ -41,10 +41,17 @@ def test_viste_titoli_e_forme_esempio() -> None:
 
     assert [v.titolo for v in sketch.viste] == ["Pianta", "Sezione"]
     pianta, sezione = sketch.viste
-    assert [f.kind for f in pianta.forme] == ["rect", "circle", "label", "dimension", "dimension"]
+    kinds_pianta = [f.kind for f in pianta.forme]
+    # 2 rect (plinto+colonna) + 2 line (assi) + 1 circle (eccentricità) + 2 label (e_x/e_y) + 2 dimension
+    assert kinds_pianta.count("rect") == 2
+    assert kinds_pianta.count("line") == 2
+    assert kinds_pianta.count("circle") == 1
+    assert kinds_pianta.count("label") == 2
+    assert kinds_pianta.count("dimension") == 2
     kinds_sezione = [f.kind for f in sezione.forme]
     assert kinds_sezione[0] == "rect"
     assert "arrow" in kinds_sezione
+    assert "label" in kinds_sezione  # M, accanto a N (non più una freccia)
     assert "dimension" in kinds_sezione
     assert "diagram" in kinds_sezione
 
@@ -62,9 +69,10 @@ def test_pianta_rettangolo_segue_gli_input() -> None:
     assert rettangolo.w == pytest.approx(inputs.ax_m)
     assert rettangolo.h == pytest.approx(inputs.by_m)
 
-    quota_ax = sketch.viste[0].forme[3]
+    forme = sketch.viste[0].forme
+    quota_ax = next(f for f in forme if f.kind == "dimension" and f.testo.startswith("A_X"))
+    quota_by = next(f for f in forme if f.kind == "dimension" and f.testo.startswith("B_Y"))
     assert quota_ax.testo == "A_X = 4,00 m"
-    quota_by = sketch.viste[0].forme[4]
     assert quota_by.testo == "B_Y = 4,00 m"
 
 
@@ -78,7 +86,7 @@ def test_geometria_segue_una_dimensione_modificata() -> None:
     governante = _governante(modificato)
     sketch = disegna(inputs, governante)
     rettangolo = sketch.viste[0].forme[0]
-    quota_ax = sketch.viste[0].forme[3]
+    quota_ax = next(f for f in sketch.viste[0].forme if f.kind == "dimension" and f.testo.startswith("A_X"))
     assert rettangolo.w == pytest.approx(6.5)
     assert quota_ax.testo == "A_X = 6,50 m"
 
@@ -94,6 +102,33 @@ def test_diagramma_pressioni_riporta_sigma_max_e_min() -> None:
     assert diagramma.valori == pytest.approx((governante.sigma_max_kpa, governante.sigma_min_kpa))
     assert diagramma.etichette[0].startswith("σmax =")
     assert diagramma.etichette[1].startswith("σmin =")
+
+
+@pytest.mark.unit
+def test_diagramma_pressioni_sigma_max_dal_lato_delleccentricita() -> None:
+    """`base` va da x=+ax/2 (destra) a x=-ax/2 (sinistra): σmax deve stare dal lato verso cui la
+    risultante è eccentrica (ex>=0 -> destra, base[0]; ex<0 -> sinistra, base[1]), mai sempre allo
+    stesso capo indipendentemente dal segno di ex — la diagnosi P0 della revisione di design."""
+    from strutture.foundations.plinti_isolati.input import PlintoIsolatoInput
+
+    esempio_positivo = {**TOOL.example}
+    inputs = PlintoIsolatoInput.model_validate(esempio_positivo)
+    governante = _governante(esempio_positivo)
+    assert governante.ex_m >= 0
+    sketch = disegna(inputs, governante)
+    diagramma = next(f for f in sketch.viste[1].forme if f.kind == "diagram")
+    assert diagramma.base[0][0] > 0  # base[0] è il lato destro (+ax/2)
+    assert diagramma.valori[0] == pytest.approx(governante.sigma_max_kpa)  # σmax a destra: ex>=0
+
+    # `AzioniBase.myy_kNm` è vincolato >=0 (il verso del momento non è modellato dalla pipeline di
+    # calcolo reale), quindi `ex_m` prodotto da `riga_verifica` non è mai negativo: per verificare
+    # il ramo ex<0 dello schizzo si costruisce direttamente una `RigaVerifica` con ex_m negativo
+    # (funzione pura: `disegna` prende in ingresso una qualunque `RigaVerifica`, non solo quelle
+    # prodotte dalla pipeline).
+    governante_neg = governante.model_copy(update={"ex_m": -abs(governante.ex_m) - 0.5})
+    sketch_neg = disegna(inputs, governante_neg)
+    diagramma_neg = next(f for f in sketch_neg.viste[1].forme if f.kind == "diagram")
+    assert diagramma_neg.valori[1] == pytest.approx(governante_neg.sigma_max_kpa)  # σmax a sinistra: ex<0
 
 
 @pytest.mark.unit

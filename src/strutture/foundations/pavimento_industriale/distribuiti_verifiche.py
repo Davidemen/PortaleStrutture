@@ -29,7 +29,7 @@ class VerificheDistribuitoResult(BaseModel):
     verifica_armatura_inf: Check
     tl_massimo: float = Field(
         description="Massimo tasso di lavoro fra tutte le verifiche del carico distribuito", ge=0,
-        json_schema_extra={"unit": "-", "highlight": True},
+        json_schema_extra={"unit": "-", "symbol": "TL_max", "highlight": True},
     )
 
 

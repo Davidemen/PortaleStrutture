@@ -57,12 +57,12 @@ def _armatura(inputs: PunzonamentoInput, capacity: gov.GoverningCapacity, d_mm: 
         v_rrd_kN=v_rrd, ved_su_vrd=ved_beta / v_rrd,
     )
     checks = (
-        Check(name="a1_eff_nel_range", passed=a1_min <= inputs.a1eff_mm <= a1_max, clause=DETTAGLI_CLAUSE,
+        Check(name="Distanza della prima fila di cuciture nell'intervallo ammesso", passed=a1_min <= inputs.a1eff_mm <= a1_max, clause=DETTAGLI_CLAUSE,
               value=inputs.a1eff_mm, limit=a1_max, unit="mm", detail=f"intervallo ammesso [{a1_min:.1f}, {a1_max:.1f}] mm"),
-        Check(name="bu_max", passed=inputs.bu_mm < bu_st_limit, clause=DETTAGLI_CLAUSE, value=inputs.bu_mm, limit=bu_st_limit, unit="mm"),
-        Check(name="st_max", passed=inputs.st_mm < bu_st_limit, clause=DETTAGLI_CLAUSE, value=inputs.st_mm, limit=bu_st_limit, unit="mm"),
-        Check(name="resistenza_con_armatura", passed=v_rrd > ved_beta, clause=RESISTENZA_CLAUSE, value=ved_beta, limit=v_rrd, unit="kN"),
-        Check(name="asw_min", passed=area_staffa >= asw_min, clause=ASW_MIN_CLAUSE, value=area_staffa, limit=asw_min, unit="mm2"),
+        Check(name="Distanza massima dell'ultima fila di cuciture", passed=inputs.bu_mm < bu_st_limit, clause=DETTAGLI_CLAUSE, value=inputs.bu_mm, limit=bu_st_limit, unit="mm"),
+        Check(name="Passo tangenziale massimo delle cuciture", passed=inputs.st_mm < bu_st_limit, clause=DETTAGLI_CLAUSE, value=inputs.st_mm, limit=bu_st_limit, unit="mm"),
+        Check(name="Resistenza a punzonamento con armatura", passed=v_rrd > ved_beta, clause=RESISTENZA_CLAUSE, value=ved_beta, limit=v_rrd, unit="kN"),
+        Check(name="Area minima delle cuciture verticali", passed=area_staffa >= asw_min, clause=ASW_MIN_CLAUSE, value=area_staffa, limit=asw_min, unit="mm2"),
     )
     return armatura, checks
 
@@ -102,11 +102,11 @@ def run(inputs: PunzonamentoInput) -> Report[PunzonamentoOutput]:
 
     faccia_detail = "" if inputs.legacy_compat else f"vRd,max = {inputs.coeff_vrd_max:g}·ν·fcd (c scelto in input)"
     checks = (
-        Check(name="punzonamento_faccia_pilastro", passed=faccia.v_ed_0_MPa < faccia.v_rd_max_MPa, clause=FACCIA_CLAUSE,
+        Check(name="Punzonamento al filo del pilastro", passed=faccia.v_ed_0_MPa < faccia.v_rd_max_MPa, clause=FACCIA_CLAUSE,
               detail=faccia_detail, value=faccia.v_ed_0_MPa, limit=faccia.v_rd_max_MPa, unit="MPa"),
-        Check(name="punzonamento_perimetro_critico", passed=not capacity.armatura_necessaria, clause=PERIMETRO_CLAUSE,
+        Check(name="Punzonamento al perimetro critico", passed=not capacity.armatura_necessaria, clause=PERIMETRO_CLAUSE,
               value=capacity.v_ed_i_MPa, limit=capacity.v_rd_i_MPa, unit="MPa"),
-        Check(name="rho_l_massimo", passed=rho <= RHO_MAX_WARNING, clause=RHO_L_CLAUSE, value=rho, limit=RHO_MAX_WARNING, unit="-"),
+        Check(name="Percentuale massima di armatura tesa", passed=rho <= RHO_MAX_WARNING, clause=RHO_L_CLAUSE, value=rho, limit=RHO_MAX_WARNING, unit="-"),
     )
 
     armatura = None

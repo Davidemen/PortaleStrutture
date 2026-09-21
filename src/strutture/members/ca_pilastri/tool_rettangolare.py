@@ -77,10 +77,10 @@ def _taglio(inputs: PilastroRettangolareInput, rules: RuleSet, ac_mm2: float, fc
         sigma_cp_MPa=sigma_cp_MPa, ac=ac_coef, cot_theta=theta, vrdc_kN=v_rdc, vrds_kN=v_rds, vrd_kN=v_rd,
         domanda_capacity_design_kN=demand,
     )
-    check_taglio = Check(name="taglio", passed=v_rd > inputs.ved_kN, clause="NTC2018 §4.1.2.1.3.2",
+    check_taglio = Check(name="Resistenza a taglio", passed=v_rd > inputs.ved_kN, clause="NTC2018 §4.1.2.1.3.2",
                           detail=f"VRd={v_rd:.3f} kN vs Ved={inputs.ved_kN} kN",
                           value=inputs.ved_kN, limit=v_rd, unit="kN")
-    check_gerarchia = Check(name="gerarchia_resistenze", passed=v_rd > demand, clause="NTC2018 §7.4.4.2.1",
+    check_gerarchia = Check(name="Gerarchia delle resistenze a taglio", passed=v_rd > demand, clause="NTC2018 §7.4.4.2.1",
                              detail=f"VRd={v_rd:.3f} kN vs domanda={demand:.3f} kN",
                              value=demand, limit=v_rd, unit="kN")
     return result, nu1, check_taglio, check_gerarchia
@@ -113,18 +113,18 @@ def _dettagli(inputs: PilastroRettangolareInput, rules: RuleSet, ac_mm2: float, 
         diametro_staffe_min_mm=soglia_staffe, interasse_staffe_max_mm=soglia_interasse_staffe,
     )
     checks = (
-        Check(name="diametro_minimo_longitudinale", passed=diam_long_ok, clause="NTC2018 §4.1.6.1.2"),
-        Check(name="interasse_massimo_longitudinale", passed=interasse_calc <= rules.long_bar_max_spacing_mm, clause="NTC2018 §7.4.6.2.2"),
-        Check(name="area_minima_longitudinale", passed=area_min_ok, clause="NTC2018 §7.4.6.2.1"),
+        Check(name="Diametro minimo delle barre longitudinali", passed=diam_long_ok, clause="NTC2018 §4.1.6.1.2"),
+        Check(name="Interasse massimo delle barre longitudinali", passed=interasse_calc <= rules.long_bar_max_spacing_mm, clause="NTC2018 §7.4.6.2.2"),
+        Check(name="Area minima di armatura longitudinale", passed=area_min_ok, clause="NTC2018 §7.4.6.2.1"),
         Check(
-            name="diametro_minimo_staffe", passed=diam_staffe_ok, clause="NTC2018 §7.4.6.2.2",
+            name="Diametro minimo delle staffe", passed=diam_staffe_ok, clause="NTC2018 §7.4.6.2.2",
             detail="" if not inputs.legacy_compat else "legacy: confronto col foglio contro una cella non numerica, sempre vero",
         ),
-        Check(name="interasse_massimo_staffe", passed=inputs.passo_staffe_mm <= soglia_interasse_staffe, clause="NTC2018 §7.4.6.2.2"),
+        Check(name="Interasse massimo delle staffe", passed=inputs.passo_staffe_mm <= soglia_interasse_staffe, clause="NTC2018 §7.4.6.2.2"),
     )
     if rules.as_max_check:
         as_max_mm2 = AREA_MASSIMA_RATIO * ac_mm2
-        checks = (*checks, Check(name="area_massima_longitudinale", passed=as_mm2 <= as_max_mm2, clause="EC2 §9.5.2(3)",
+        checks = (*checks, Check(name="Area massima di armatura longitudinale", passed=as_mm2 <= as_max_mm2, clause="EC2 §9.5.2(3)",
                                   value=as_mm2, limit=as_max_mm2, unit="mm2"))
     return result, checks
 
@@ -151,7 +151,7 @@ def _snellezza(inputs: PilastroRettangolareInput, rules: RuleSet, ac_mm2: float,
         lambda_lim = lambda_limite(inputs.ned_kN, ac_mm2, fcd_MPa, rm=inputs.rm, legacy_compat=inputs.legacy_compat, unit_fix=rules.lambda_lim_unit_fix)
     lambda_ = snellezza(l0_mm, i_mm)
     result = SnellezzaResult(lambda_lim=lambda_lim, i_mm=i_mm, l0_mm=l0_mm, lambda_=lambda_)
-    check = Check(name="snellezza", passed=verifica_snellezza(lambda_, lambda_lim), clause="NTC2018 §4.1.2.3.9.2",
+    check = Check(name="Verifica di snellezza", passed=verifica_snellezza(lambda_, lambda_lim), clause="NTC2018 §4.1.2.3.9.2",
                   detail=f"λ={lambda_:.3f} vs λlim={lambda_lim:.3f}")
     return result, a, c, omega, check
 
@@ -169,19 +169,19 @@ def run_pilastro_rettangolare(inputs: PilastroRettangolareInput) -> Report[Pilas
     )
     armatura_min_result = ArmaturaMinimaResult(as_min_mm2=as_min_mm2, rs_min=rs_min)
     check_percentuale = Check(
-        name="percentuale_armatura", passed=verifica_percentuale_armatura(rs, rs_min, controlla_minimo=rules.rs_controlla_minimo),
+        name="Percentuale di armatura longitudinale", passed=verifica_percentuale_armatura(rs, rs_min, controlla_minimo=rules.rs_controlla_minimo),
         clause="NTC2018 §7.4.6.2.1", detail=f"ρs={rs:.4f}, minimo={rs_min:.4f}, massimo=0.04",
     )
 
     taglio_result, nu1, check_taglio, check_gerarchia = _taglio(inputs, rules, ac_mm2, materiali.fcd_MPa, materiali.fyd_MPa)
 
     flessione = FlessioneResult(mrd_kNm=inputs.mrd_kNm, med_kNm=med_calc_kNm, tasso_sfruttamento_pct=tasso_sfruttamento_pct(med_calc_kNm, inputs.mrd_kNm))
-    check_flessione = Check(name="flessione", passed=verifica_flessione(inputs.mrd_kNm, med_calc_kNm), clause="NTC2018 §4.1.2.1.2",
+    check_flessione = Check(name="Resistenza a pressoflessione", passed=verifica_flessione(inputs.mrd_kNm, med_calc_kNm), clause="NTC2018 §4.1.2.1.2",
                              value=med_calc_kNm, limit=inputs.mrd_kNm, unit="kNm")
 
     nrcd_kN = compressione_nrcd_kN(ac_mm2, materiali.fcd_MPa)
     compressione = CompressioneResult(nrcd_kN=nrcd_kN, tasso_sfruttamento_pct=tasso_sfruttamento_pct(inputs.ned_kN, nrcd_kN))
-    check_compressione = Check(name="compressione", passed=verifica_compressione(nrcd_kN, inputs.ned_kN), clause="NTC2018 §4.1.2.1.2",
+    check_compressione = Check(name="Resistenza a compressione", passed=verifica_compressione(nrcd_kN, inputs.ned_kN), clause="NTC2018 §4.1.2.1.2",
                                 value=inputs.ned_kN, limit=nrcd_kN, unit="kN")
 
     confinamento = ConfinamentoResult(
@@ -189,7 +189,7 @@ def run_pilastro_rettangolare(inputs: PilastroRettangolareInput) -> Report[Pilas
         passo_max_confinato_mm=passo_massimo_confinato_mm(min(inputs.l1_mm, inputs.l2_mm), inputs.diametro_ferri_mm),
     )
     check_confinamento = Check(
-        name="passo_staffe_zona_critica", passed=inputs.passo_staffe_mm <= confinamento.passo_max_confinato_mm,
+        name="Passo delle staffe in zona critica", passed=inputs.passo_staffe_mm <= confinamento.passo_max_confinato_mm,
         clause="NTC2018 §7.4.6.2.2", detail=f"s={inputs.passo_staffe_mm} mm vs s_max={confinamento.passo_max_confinato_mm:.3f} mm (zona critica)",
         value=inputs.passo_staffe_mm, limit=confinamento.passo_max_confinato_mm, unit="mm",
     )

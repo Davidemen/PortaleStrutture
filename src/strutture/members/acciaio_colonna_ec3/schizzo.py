@@ -4,12 +4,14 @@ Pure function of the validated inputs; a failure here must never fail the calcul
 `tool.run`).
 
 Real web/flange thicknesses are routinely < 2 % of the section's larger side (a real sliver at
-drawing scale): both get a schematic minimum thickness (rule 2), while the quota TEXT always shows
-the true tw/tf. The y-y/z-z axis end labels are kept off the centreline where the perpendicular
-quota's own text sits (h/b are centred on y=0/x=0): y-y moves to the axis' LEFT end (opposite h,
-clear of t_f which lives near the top); z-z stays at the top but is nudged sideways by a full `b_m`
-to clear t_w's wide centred text box — verified empirically against several realistic H/I
-proportions (`tests/.../test_schizzo.py`)."""
+drawing scale): both get a schematic minimum thickness (rule 2), while the quota/label TEXT always
+shows the true tw/tf. Design review: `t_w` is a plain `Etichetta` (not a dimension line) anchored
+at mid-web height, on the free side between the web and the flange tip (a dimension line spanning
+only the thin web would be cramped); `t_f` stays a `Quota` outside the flange. The y-y/z-z axis
+end labels are kept off the centreline where the perpendicular quota's own text sits (h/b are
+centred on y=0/x=0): y-y moves to the axis' LEFT end (opposite h and t_w, both on the right at
+y=0); z-z stays at the top, nudged sideways to clear t_f — verified empirically against several
+realistic H/I proportions (`tests/.../test_schizzo.py`)."""
 from strutture.shared.sketch import Etichetta, Linea, Quota, Rettangolo, Sketch, Vista, etichetta_quota
 from strutture.shared.units import mm_to_m
 
@@ -17,12 +19,12 @@ from .models import ColonnaEc3Input
 
 _MARGINE_ASSI = 1.15  # frazione della semidimensione, per l'estensione degli assi oltre il profilo
 _SPESSORE_MINIMO_FRAZIONE = 0.03  # spessore minimo disegnato di ali/anima, frazione del lato maggiore (regola 2)
-_NUDGE_Z_FRAZIONE_B = 1.0  # scostamento laterale dell'etichetta z, frazione di b_m, per liberare la quota t_w
+_NUDGE_Z_FRAZIONE_B = 0.5  # scostamento laterale dell'etichetta z, frazione di b_m, per liberare la quota t_f
+_OFFSET_ETICHETTA_TW_FRAZIONE_B = 0.12  # scostamento dell'etichetta t_w dall'anima, frazione di b_m
 # Quota(distanza): positivo = a sinistra del verso p1->p2 (ruotando p1->p2 di 90 gradi in senso antiorario).
 _SCOSTAMENTO_H = -0.15  # quota h verticale lungo x=+b/2: negativo sposta a destra (fuori dal profilo)
 _SCOSTAMENTO_TF = 0.15  # quota tf verticale lungo x=-b/2: positivo sposta a sinistra (lato opposto a h)
 _SCOSTAMENTO_B = -0.15  # quota b orizzontale lungo y=-h/2: negativo sposta in basso (fuori dal profilo)
-_SCOSTAMENTO_TW = 0.15  # quota tw orizzontale lungo y=+h/2: positivo sposta in alto (fuori dal profilo)
 
 
 def disegna(inputs: ColonnaEc3Input) -> Sketch:
@@ -56,10 +58,10 @@ def _assi(b_m: float, h_m: float) -> tuple[Linea, Etichetta, Linea, Etichetta]:
     return asse_yy, etichetta_yy, asse_zz, etichetta_zz
 
 
-def _quote(inputs: ColonnaEc3Input, b_m: float, h_m: float, tw_dis_m: float, tf_dis_m: float) -> tuple[Quota, Quota, Quota, Quota]:
-    """h e tf sono verticali su lati opposti del profilo; b e tw sono orizzontali sopra/sotto.
-    Le linee di quota di t_f/t_w seguono lo spessore DISEGNATO (per toccare la forma), il testo
-    riporta sempre il valore VERO."""
+def _quote(inputs: ColonnaEc3Input, b_m: float, h_m: float, tf_dis_m: float) -> tuple[Quota, Quota, Quota]:
+    """h e tf sono verticali su lati opposti del profilo; b è orizzontale sotto. Lo spessore
+    dell'anima è invece un'`Etichetta` (vedi `_etichetta_tw`), non una quota. La linea di quota di
+    t_f segue lo spessore DISEGNATO (per toccare la forma), il testo riporta sempre il valore VERO."""
     quota_h = Quota(
         p1=(b_m / 2, -h_m / 2), p2=(b_m / 2, h_m / 2), distanza=_SCOSTAMENTO_H * b_m,
         testo=etichetta_quota("h", inputs.h_mm, "mm", 0),
@@ -72,11 +74,20 @@ def _quote(inputs: ColonnaEc3Input, b_m: float, h_m: float, tw_dis_m: float, tf_
         p1=(-b_m / 2, -h_m / 2), p2=(b_m / 2, -h_m / 2), distanza=_SCOSTAMENTO_B * h_m,
         testo=etichetta_quota("b", inputs.b_mm, "mm", 0),
     )
-    quota_tw = Quota(
-        p1=(-tw_dis_m / 2, h_m / 2), p2=(tw_dis_m / 2, h_m / 2), distanza=_SCOSTAMENTO_TW * h_m,
-        testo=etichetta_quota("t_w", inputs.tw_mm, "mm", 0),
-    )
-    return quota_h, quota_tf, quota_b, quota_tw
+    return quota_h, quota_tf, quota_b
+
+
+_QUOTA_TW_Y_FRAZIONE_H = 0.2  # altezza dell'etichetta t_w lungo l'anima, frazione di h_m: non esattamente
+# y=0 (mezzeria), dove il testo della quota h e l'etichetta dell'asse y-y occupano già entrambi i lati.
+
+
+def _etichetta_tw(inputs: ColonnaEc3Input, b_m: float, h_m: float, tw_dis_m: float) -> Etichetta:
+    """Spessore dell'anima: un'etichetta (non una quota) ancorata sull'anima, sul lato libero
+    tra anima e punta dell'ala — quella zona è sempre aperta (le ali stanno solo in sommità/base)."""
+    x_m = tw_dis_m / 2.0 + _OFFSET_ETICHETTA_TW_FRAZIONE_B * b_m
+    numero = f"{inputs.tw_mm:.0f}".replace(".", ",")
+    return Etichetta(punto=(x_m, _QUOTA_TW_Y_FRAZIONE_H * h_m), simbolo="t_w", testo=f"{numero} mm",
+                      ancora="start", stile="asse")
 
 
 def _sezione(inputs: ColonnaEc3Input) -> Vista:
@@ -84,10 +95,10 @@ def _sezione(inputs: ColonnaEc3Input) -> Vista:
     tw_dis_m, tf_dis_m = _spessori_disegnati_m(b_m, h_m, tw_m, tf_m)
     ala_superiore, ala_inferiore, anima = _profilo(b_m, h_m, tw_dis_m, tf_dis_m)
     asse_yy, etichetta_yy, asse_zz, etichetta_zz = _assi(b_m, h_m)
-    quota_h, quota_tf, quota_b, quota_tw = _quote(inputs, b_m, h_m, tw_dis_m, tf_dis_m)
+    quota_h, quota_tf, quota_b = _quote(inputs, b_m, h_m, tf_dis_m)
     forme = (
         ala_superiore, ala_inferiore, anima,
         asse_yy, etichetta_yy, asse_zz, etichetta_zz,
-        quota_h, quota_tf, quota_b, quota_tw,
+        quota_h, quota_tf, quota_b, _etichetta_tw(inputs, b_m, h_m, tw_dis_m),
     )
     return Vista(titolo="Sezione", forme=forme)

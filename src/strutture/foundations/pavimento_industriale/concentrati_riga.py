@@ -37,7 +37,7 @@ class RigaCaricoResult(BaseModel):
     tl_punzonamento_u1: float = Field(description="Tasso di lavoro a punzonamento a u1", ge=0, json_schema_extra={"unit": "-", "symbol": "TL_u1"})
     utilizzo_max: float = Field(
         description="Massimo tasso di lavoro della riga (governa la selezione dell'inviluppo)", ge=0,
-        json_schema_extra={"unit": "-", "highlight": True},
+        json_schema_extra={"unit": "-", "symbol": "TL_max", "highlight": True},
     )
 
 

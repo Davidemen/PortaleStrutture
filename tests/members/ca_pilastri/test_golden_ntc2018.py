@@ -32,13 +32,13 @@ def test_golden_pilastro_rettangolare_ntc2018():
     assert data.snellezza.lambda_ == pytest.approx(30.3109, rel=1e-5)
 
     by_name = {c.name: c.passed for c in report.checks}
-    assert by_name["taglio"] is True
-    assert by_name["gerarchia_resistenze"] is True
-    assert by_name["percentuale_armatura"] is True  # simplified check: only the 4% ceiling now
-    assert by_name["snellezza"] is True
+    assert by_name["Resistenza a taglio"] is True
+    assert by_name["Gerarchia delle resistenze a taglio"] is True
+    assert by_name["Percentuale di armatura longitudinale"] is True  # simplified check: only the 4% ceiling now
+    assert by_name["Verifica di snellezza"] is True
     for name in (
-        "diametro_minimo_longitudinale", "interasse_massimo_longitudinale", "area_minima_longitudinale",
-        "diametro_minimo_staffe", "interasse_massimo_staffe",
+        "Diametro minimo delle barre longitudinali", "Interasse massimo delle barre longitudinali", "Area minima di armatura longitudinale",
+        "Diametro minimo delle staffe", "Interasse massimo delle staffe",
     ):
         assert by_name[name] is True, name
 
@@ -64,9 +64,9 @@ def test_golden_pilastro_circolare_ntc2018():
     assert data.snellezza.lambda_ == pytest.approx(50, rel=1e-6)
 
     by_name = {c.name: c.passed for c in report.checks}
-    assert by_name["taglio"] is True
-    assert by_name["gerarchia_resistenze"] is True
-    assert by_name["percentuale_armatura"] is False  # rs=0.04 not strictly < 0.04
+    assert by_name["Resistenza a taglio"] is True
+    assert by_name["Gerarchia delle resistenze a taglio"] is True
+    assert by_name["Percentuale di armatura longitudinale"] is False  # rs=0.04 not strictly < 0.04
     # Headline regression signal: the fixed λlim/i formulas flip this from OK (NTC2008, λ=40 <
     # λlim=960.988) to NO (NTC2018, λ=50 > λlim=30.39) for the identical geometry.
-    assert by_name["snellezza"] is False
+    assert by_name["Verifica di snellezza"] is False

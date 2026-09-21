@@ -41,8 +41,10 @@ def _si_e_profondita(raw: dict):
 @pytest.mark.unit
 def test_vista_titolo_e_forme_esempio() -> None:
     """L'esempio ha 5 strati fino a 118,9 m: molto oltre il budget di profondità visibile, quindi
-    lo strato più profondo è escluso (4 strati disegnati) e solo 3 sono etichettati (limite
-    `_MAX_STRATI_ETICHETTATI`), con un tratto "fantasma" a indicare la prosecuzione."""
+    lo strato più profondo è escluso (4 strati disegnati) e solo 2 sono etichettati (limite
+    `_MAX_STRATI_ETICHETTATI`, ciascuno con quota di spessore + etichetta Eed), con un tratto
+    "fantasma" a indicare la prosecuzione in profondità (oltre ai fantasma laterali e di
+    diffusione 2:1, sempre presenti)."""
     inputs, si, profondita = _si_e_profondita(TOOL.example)
     sketch = disegna(inputs, si, profondita)
 
@@ -50,10 +52,11 @@ def test_vista_titolo_e_forme_esempio() -> None:
     kinds = [f.kind for f in sketch.viste[0].forme]
     assert kinds[0] == "rect"
     assert kinds.count("rect") == 1 + 4  # plinto + 4 strati visibili (il 5° è oltre il ritaglio)
-    assert kinds.count("label") == 3 + 1  # 3 Eed (limite) + 1 Z_crit
-    assert kinds.count("line") == 1 + 1  # Z,crit + fantasma (niente falda nell'esempio)
-    assert kinds.count("dimension") == 1  # solo B: D=0 nell'esempio -> quota D omessa (degenere)
-    assert len(kinds) == 12
+    assert kinds.count("label") == 2 + 1  # 2 Eed (limite) + 1 Z_crit
+    assert kinds.count("dimension") == 2 + 1  # 2 Δz (spessore strato) + 1 B (D=0 nell'esempio -> quota D omessa)
+    # 2 diffusione 2:1 + 1 Z,crit + 2 fantasma laterali + 1 fantasma di profondità (ritagliato)
+    assert kinds.count("line") == 2 + 1 + 2 + 1
+    assert len(kinds) == 17
     assert "interrotta" in sketch.nota
 
 
@@ -113,15 +116,71 @@ def test_strati_seguono_la_tabella_di_ingresso() -> None:
 
 
 @pytest.mark.unit
-def test_al_massimo_tre_strati_etichettati_anche_con_molti_strati() -> None:
-    """Con una stratigrafia lunga (fino al limite di 20 righe della tabella) le etichette Eed
-    restano al massimo `_MAX_STRATI_ETICHETTATI`, cosi' non si accavallano mai."""
+def test_al_massimo_due_strati_etichettati_anche_con_molti_strati() -> None:
+    """Con una stratigrafia lunga (fino al limite di 20 righe della tabella) le etichette Eed e le
+    quote di spessore restano al massimo `_MAX_STRATI_ETICHETTATI`, cosi' non si accavallano mai."""
     strati = [{"z_top_m": float(i), "z_bot_m": float(i + 1), "modulo_MPa": 5.0 + i} for i in range(15)]
     modificato = {**TOOL.example, "strati": strati}
     inputs, si, profondita = _si_e_profondita(modificato)
     sketch = disegna(inputs, si, profondita)
-    etichette_eed = [f for f in sketch.viste[0].forme if f.kind == "label" and f.testo.startswith("Eed =")]
-    assert len(etichette_eed) <= 3
+    forme = sketch.viste[0].forme
+    etichette_eed = [f for f in forme if f.kind == "label" and f.testo.startswith("Eed =")]
+    quote_spessore = [f for f in forme if f.kind == "dimension" and f.testo.startswith("Δz =")]
+    assert len(etichette_eed) <= 2
+    assert len(quote_spessore) <= 2
+    assert len(quote_spessore) == len(etichette_eed)
+    # il primo strato (il più superficiale) è sempre fra quelli etichettati.
+    assert any(f.testo == "Eed = 5,0 MPa" for f in etichette_eed)
+
+
+@pytest.mark.unit
+def test_blocco_di_terreno_largo_3b_con_fantasma_laterali() -> None:
+    """Il blocco di terreno è disegnato 3 volte più largo del plinto (non deve leggersi come un
+    palo) e ha un tacco tratteggiato "fantasma" per lato, a segnalare che il terreno prosegue oltre."""
+    inputs, si, profondita = _si_e_profondita(TOOL.example)
+    sketch = disegna(inputs, si, profondita)
+    forme = sketch.viste[0].forme
+    primo_strato = next(f for f in forme if f.kind == "rect" and f.stile == "terreno")
+    assert primo_strato.w == pytest.approx(si.b_m * 3.0)
+    fantasmi_laterali = [f for f in forme if f.kind == "line" and f.stile == "fantasma"
+                          and f.p1[1] == pytest.approx(f.p2[1])]  # orizzontali (non la diffusione 2:1, obliqua)
+    assert len(fantasmi_laterali) == 2
+    estremi_esterni = sorted(f.p2[0] for f in fantasmi_laterali)
+    assert estremi_esterni[0] < -primo_strato.w / 2  # oltre il bordo sinistro del blocco di terreno
+    assert estremi_esterni[1] > primo_strato.w / 2  # oltre il bordo destro del blocco di terreno
+
+
+@pytest.mark.unit
+def test_quota_b_sopra_il_plinto() -> None:
+    """Correzione P1: la quota B sta sopra il plinto (il lato superiore, non sotto la base)."""
+    inputs, si, profondita = _si_e_profondita(TOOL.example)
+    sketch = disegna(inputs, si, profondita)
+    forme = sketch.viste[0].forme
+    plinto = forme[0]
+    quota_b = next(f for f in forme if f.kind == "dimension" and f.testo.startswith("B ="))
+    sommo_plinto = plinto.y + plinto.h
+    assert quota_b.p1[1] == pytest.approx(sommo_plinto)
+    assert quota_b.distanza > 0  # verso l'alto: fuori dal plinto
+
+
+@pytest.mark.unit
+def test_diffusione_2a1_tratteggiata_fino_a_zcrit() -> None:
+    """Correzione P1 (solo edometrico): due linee tratteggiate di diffusione 2:1 dal filo del
+    plinto fino alla quota (disegnata) di Z,crit — pendenza 2 verticale : 1 orizzontale."""
+    inputs, si, profondita = _si_e_profondita(TOOL.example)
+    sketch = disegna(inputs, si, profondita)
+    forme = sketch.viste[0].forme
+    plinto = forme[0]
+    diffusione = [f for f in forme if f.kind == "line" and f.stile == "fantasma"
+                  and f.p1[0] != f.p2[0] and f.p1[1] != f.p2[1]]  # oblique (non i fantasma orizzontali/verticali)
+    assert len(diffusione) == 2
+    sinistra, destra = sorted(diffusione, key=lambda f: f.p1[0])
+    assert sinistra.p1[0] == pytest.approx(-si.b_m / 2)
+    assert sinistra.p1[1] == pytest.approx(plinto.y)  # dal filo del plinto (piano di posa)
+    profondita_diffusione = sinistra.p1[1] - sinistra.p2[1]
+    sporgenza = sinistra.p1[0] - sinistra.p2[0]
+    assert sporgenza == pytest.approx(profondita_diffusione / 2.0)  # pendenza 2:1
+    assert destra.p1[0] == pytest.approx(si.b_m / 2)
 
 
 @pytest.mark.unit

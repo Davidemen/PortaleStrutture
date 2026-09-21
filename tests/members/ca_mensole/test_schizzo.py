@@ -24,6 +24,10 @@ def _geometria(inputs: MensolaTozzaInput):
     return geometria(inputs.a_mm, inputs.h_mm, inputs.c_mm)
 
 
+def _a_disegnato_mm(inputs: MensolaTozzaInput) -> float:
+    return max(inputs.a_mm, schizzo_module._A_MINIMO_SU_H * inputs.h_mm)
+
+
 @pytest.mark.unit
 def test_vista_titolo_e_forme_esempio() -> None:
     inputs = MensolaTozzaInput.model_validate(TOOL.example)
@@ -35,21 +39,39 @@ def test_vista_titolo_e_forme_esempio() -> None:
     assert kinds.count("rect") == 1
     assert kinds.count("polygon") == 1
     assert kinds.count("arrow") == 1
-    assert kinds.count("line") == 2  # puntone + tirante
+    assert kinds.count("line") == 4  # 2 tratti "fantasma" del pilastro + puntone + tirante
     assert kinds.count("dimension") == 2  # a, h
-    assert kinds.count("label") == 1  # b (fuori piano)
+    assert kinds.count("label") == 1  # P_Ed (l'etichetta "b" fuori piano è stata rimossa)
 
 
 @pytest.mark.unit
-def test_mensola_segue_gli_input() -> None:
+def test_mensola_segue_gli_input_con_lo_scostamento_minimo_di_a() -> None:
+    """L'esempio (a=177mm, h=450mm) ha a < 0.6h (270mm): il cuneo è disegnato con lo scostamento
+    minimo schematico, non con il vero a (troppo vicino al pilastro per restare leggibile)."""
     inputs = MensolaTozzaInput.model_validate(TOOL.example)
     geo = _geometria(inputs)
     sketch = disegna(inputs, geo)
+    a_disegnato_m = _a_disegnato_mm(inputs) / 1000.0
+    assert a_disegnato_m > inputs.a_mm / 1000.0  # conferma che lo scostamento minimo è scattato
+
     poligono = next(f for f in sketch.viste[0].forme if f.kind == "polygon")
     assert poligono.punti[0] == pytest.approx((0.0, 0.0))
-    assert poligono.punti[1] == pytest.approx((inputs.a_mm / 1000.0, 0.0))
-    assert poligono.punti[2] == pytest.approx((inputs.a_mm / 1000.0, geo.d_mm / 1000.0))
+    assert poligono.punti[1] == pytest.approx((a_disegnato_m, 0.0))
+    assert poligono.punti[2] == pytest.approx((a_disegnato_m, geo.d_mm / 1000.0))
     assert poligono.punti[3] == pytest.approx((0.0, inputs.h_mm / 1000.0))
+    assert sketch.nota != ""
+
+
+@pytest.mark.unit
+def test_mensola_con_a_gia_oltre_il_minimo_non_viene_alterata() -> None:
+    """Con a >= 0.6h il cuneo è disegnato al vero valore di a, senza nota di schema."""
+    modificato = {**TOOL.example, "a_mm": 300, "h_mm": 450}  # 300 >= 0.6*450=270
+    inputs = MensolaTozzaInput.model_validate(modificato)
+    geo = _geometria(inputs)
+    sketch = disegna(inputs, geo)
+    poligono = next(f for f in sketch.viste[0].forme if f.kind == "polygon")
+    assert poligono.punti[1] == pytest.approx((0.3, 0.0))
+    assert sketch.nota == ""
 
 
 @pytest.mark.unit
@@ -69,20 +91,42 @@ def test_cambiando_h_mm_cambia_il_vertice_superiore_del_poligono_e_la_quota_h() 
 
 
 @pytest.mark.unit
-def test_quota_a_e_etichetta_b_seguono_gli_input() -> None:
+def test_quota_a_riporta_sempre_il_valore_vero_e_letichetta_b_e_stata_rimossa() -> None:
     inputs = MensolaTozzaInput.model_validate(TOOL.example)
     geo = _geometria(inputs)
     sketch = disegna(inputs, geo)
 
     quote = [f for f in sketch.viste[0].forme if f.kind == "dimension"]
     quota_a = next(q for q in quote if q.testo.startswith("a ="))
-    assert quota_a.testo == "a = 177 mm"
+    assert quota_a.testo == "a = 177 mm"  # il vero a, non lo scostamento disegnato (270 mm)
+
+    etichette = [f for f in sketch.viste[0].forme if f.kind == "label"]
+    assert all(e.simbolo != "b" for e in etichette)  # b è fuori piano: nessuna etichetta
+
+
+@pytest.mark.unit
+def test_colonna_ha_tratti_fantasma_tratteggiati_alle_due_estremita() -> None:
+    inputs = MensolaTozzaInput.model_validate(TOOL.example)
+    geo = _geometria(inputs)
+    sketch = disegna(inputs, geo)
+    fantasmi = [f for f in sketch.viste[0].forme if f.kind == "line" and f.stile == "fantasma"]
+    assert len(fantasmi) == 2
+    assert all(f.tratteggio is True for f in fantasmi)
+
+
+@pytest.mark.unit
+def test_etichetta_ped_e_sopra_la_coda_della_freccia() -> None:
+    inputs = MensolaTozzaInput.model_validate(TOOL.example)
+    geo = _geometria(inputs)
+    sketch = disegna(inputs, geo)
+    freccia = next(f for f in sketch.viste[0].forme if f.kind == "arrow")
+    assert freccia.testo == ""  # il testo vive nell'etichetta separata, non sulla freccia
 
     etichetta = next(f for f in sketch.viste[0].forme if f.kind == "label")
-    assert etichetta.simbolo == "b"
-    # regola 4 (COMPOSITION RULES): con `simbolo` impostato, `testo` è solo il valore.
-    assert etichetta.testo == "800 mm"
-    assert not etichetta.testo.startswith("b")
+    assert etichetta.simbolo == "P_Ed"
+    assert etichetta.testo == "136 kN"  # regola 4: solo il valore, il simbolo è separato
+    assert etichetta.punto[0] == pytest.approx(freccia.coda[0])
+    assert etichetta.punto[1] > freccia.coda[1]  # sopra la coda, non sulla coda
 
 
 @pytest.mark.unit
@@ -90,11 +134,10 @@ def test_carico_puntone_e_tirante_convergono_sul_punto_di_carico() -> None:
     inputs = MensolaTozzaInput.model_validate(TOOL.example)
     geo = _geometria(inputs)
     sketch = disegna(inputs, geo)
-    punto_carico = (inputs.a_mm / 1000.0, geo.d_mm / 1000.0)
+    punto_carico = (_a_disegnato_mm(inputs) / 1000.0, geo.d_mm / 1000.0)
 
     freccia = next(f for f in sketch.viste[0].forme if f.kind == "arrow")
     assert freccia.punta == pytest.approx(punto_carico)
-    assert freccia.testo == "P_Ed = 136 kN"
 
     puntone = next(f for f in sketch.viste[0].forme if f.stile == "puntone")
     tirante = next(f for f in sketch.viste[0].forme if f.stile == "tirante")

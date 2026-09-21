@@ -20,7 +20,8 @@ class TrazioneResult(BaseModel):
     ntrd_kN: float = Field(description="Forza assiale resistente a trazione Nt,Rd", json_schema_extra={"unit": "kN", "symbol": "N_t,Rd"}, gt=0)
     verifica: Check
     tasso_lavoro: float = Field(
-        description="Tasso di lavoro a trazione NEd/Nt,Rd", json_schema_extra={"unit": "-", "highlight": True}, ge=0
+        description="Tasso di lavoro a trazione, azione di progetto su resistenza",
+        json_schema_extra={"unit": "-", "symbol": "η_t", "highlight": True}, ge=0
     )
 
 

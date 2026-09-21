@@ -42,6 +42,22 @@ def test_highlight_count_at_most_three():
         assert count <= 3, f"{tool.name}: {count} highlighted output fields (max 3)"
 
 
+def test_highlighted_fields_have_a_symbol_and_no_formula_in_description():
+    """Design-review finding: a highlighted output with no `symbol` renders as a long italic
+    description in the Sintesi summary; descriptions must read as prose, not as a formula or a
+    Python-ish variable name (e.g. "OR = MSTAB/MRIB", "wed(f)")."""
+    for tool in TOOLS:
+        out_schema = tool.output_model.model_json_schema()
+        defs = out_schema.get("$defs", {})
+        for name, field_schema in _resolve(out_schema, defs).items():
+            if field_schema.get("highlight") is not True:
+                continue
+            symbol = field_schema.get("symbol")
+            assert symbol, f"{tool.name}.{name}: highlighted field has no symbol"
+            description = field_schema.get("description", "")
+            assert "=" not in description, f"{tool.name}.{name}: description looks like a formula: {description!r}"
+
+
 def test_group_and_condition_and_chart_refer_to_real_fields():
     for tool in TOOLS:
         in_schema = tool.input_model.model_json_schema()

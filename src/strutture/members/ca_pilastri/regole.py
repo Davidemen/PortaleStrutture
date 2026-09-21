@@ -37,11 +37,11 @@ class RuleSet:
     staffe_diametro_combinatore: AsMinCombinatore  # "auto" = legacy MIN / code-standard MAX (today's behaviour); "max" = always MAX (EC2's own formula)
     as_min_area_ratio: float
     as_min_combinatore: AsMinCombinatore
-    rs_controlla_minimo: bool  # False -> "percentuale_armatura" only checks the 4% ceiling (NTC2018/EC2 sheets)
-    as_max_check: bool  # True -> add a standalone "area_massima_longitudinale" detailing check (EC2)
+    rs_controlla_minimo: bool  # False -> "Percentuale di armatura longitudinale" only checks the 4% ceiling (NTC2018/EC2 sheets)
+    as_max_check: bool  # True -> add a standalone "Area massima di armatura longitudinale" detailing check (EC2)
     a_fisso: float | None  # EC2 slenderness coefficient A; None -> derive from phi_ef (default 0.7)
     c_fisso: float | None  # EC2 slenderness coefficient C; None -> derive as 1.7-rm
-    long_bar_max_spacing_mm: float  # "interasse_massimo_longitudinale" (§7.4.6.2.2 seismic 250mm vs the sheet's own non-seismic 300mm)
+    long_bar_max_spacing_mm: float  # "Interasse massimo delle barre longitudinali" (§7.4.6.2.2 seismic 250mm vs the sheet's own non-seismic 300mm)
 
 
 _NTC2008_LEGACY = RuleSet(

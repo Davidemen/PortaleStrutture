@@ -79,6 +79,18 @@ def test_run_fixed_mode_capacity_design_shear_uses_lt_and_returns_a_force():
 
 
 @pytest.mark.unit
+def test_check_names_are_readable_italian_phrases_not_python_keys():
+    """Design review (P0): `Check(name=...)` must be a readable Italian phrase, never a raw
+    snake_case Python key, so no check name may contain an underscore."""
+    tool = TOOLS[0]
+    report = execute(tool, tool.example)
+    assert report.ok, report.errors
+    assert report.checks
+    for check in report.checks:
+        assert "_" not in check.name, check.name
+
+
+@pytest.mark.unit
 def test_classe_duttilita_cda_changes_lunghezza_critica_and_gamma_rd():
     cdb = run(TraveRettangolareInput(classe_duttilita="CDB", **BASE_KWARGS)).data
     cda = run(TraveRettangolareInput(classe_duttilita="CDA", **BASE_KWARGS)).data

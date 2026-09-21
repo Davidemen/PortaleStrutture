@@ -37,10 +37,26 @@ def test_vista_titolo_e_forme_esempio() -> None:
     assert report.ok, report.errors
     sketch = report.data.schizzo
     assert [v.titolo for v in sketch.viste] == ["Pianta"]
-    kinds = [f.kind for f in sketch.viste[0].forme]
-    assert kinds[0] == "rect"
+    forme = sketch.viste[0].forme
+    kinds = [f.kind for f in forme]
+    assert kinds.count("rect") == 1
     assert kinds.count("polygon") == 2  # u0 + perimetro governante (esempio senza armatura)
     assert kinds.count("dimension") == 2
+
+
+@pytest.mark.unit
+def test_colonna_disegnata_sopra_i_perimetri_paint_order() -> None:
+    """Design review (P0): l'ordine di disegno è l'ordine di stampa — i perimetri (poligoni/
+    cerchi) vanno disegnati PRIMA, la colonna/area caricata per ULTIMA, così il riempimento
+    traslucido del perimetro governante non copre mai la colonna né le quote."""
+    report = execute(TOOL, TOOL.example)
+    assert report.ok, report.errors
+    forme = report.data.schizzo.viste[0].forme
+    indice_colonna = next(i for i, f in enumerate(forme) if f.kind == "rect" and f.stile == "calcestruzzo")
+    indici_perimetri = [i for i, f in enumerate(forme) if f.kind in ("polygon", "circle")]
+    assert indice_colonna > max(indici_perimetri)
+    indici_quote = [i for i, f in enumerate(forme) if f.kind == "dimension"]
+    assert indice_colonna < min(indici_quote)  # le quote restano leggibili sopra alla colonna
 
 
 @pytest.mark.unit
@@ -66,7 +82,7 @@ def test_colonna_rettangolare_segue_gli_input() -> None:
         v_ed_i_MPa=capacity.v_ed_i_MPa, rapporto=capacity.rapporto, armatura_necessaria=capacity.armatura_necessaria,
     )
     sketch = disegna(inputs, geometria, perimetro_critico, None)
-    rettangolo = sketch.viste[0].forme[0]
+    rettangolo = next(f for f in sketch.viste[0].forme if f.kind == "rect")
     assert rettangolo.w == pytest.approx(inputs.lato_a_mm / 1000.0)
     assert rettangolo.h == pytest.approx(inputs.lato_b_mm / 1000.0)
     assert rettangolo.x == pytest.approx(-inputs.lato_a_mm / 2000.0)
@@ -79,8 +95,8 @@ def test_geometria_segue_una_dimensione_modificata() -> None:
     modificato = {**TOOL.example, "lato_a_mm": 600}
     report = execute(TOOL, modificato)
     assert report.ok, report.errors
-    rettangolo_base = base.data.schizzo.viste[0].forme[0]
-    rettangolo_mod = report.data.schizzo.viste[0].forme[0]
+    rettangolo_base = next(f for f in base.data.schizzo.viste[0].forme if f.kind == "rect")
+    rettangolo_mod = next(f for f in report.data.schizzo.viste[0].forme if f.kind == "rect")
     assert rettangolo_base.w == pytest.approx(0.4)
     assert rettangolo_mod.w == pytest.approx(0.6)
 
@@ -91,9 +107,9 @@ def test_colonna_circolare_disegna_cerchi() -> None:
     report = execute(TOOL, modificato)
     assert report.ok, report.errors
     kinds = [f.kind for f in report.data.schizzo.viste[0].forme]
-    assert kinds[0] == "circle"
-    cerchio = report.data.schizzo.viste[0].forme[0]
-    assert cerchio.r == pytest.approx(0.225)
+    assert kinds.count("circle") >= 1
+    colonna = next(f for f in report.data.schizzo.viste[0].forme if f.kind == "circle" and f.stile == "calcestruzzo")
+    assert colonna.r == pytest.approx(0.225)
 
 
 @pytest.mark.unit
@@ -106,11 +122,17 @@ def test_colonna_circolare_perimetri_di_verifica_sono_tratteggiati() -> None:
     assert report.data.armatura is not None
     cerchi = [f for f in report.data.schizzo.viste[0].forme if f.kind == "circle"]
     assert len(cerchi) == 4  # colonna + u0 + governante + u0,out
-    colonna, u0, governante, u_out = cerchi
-    assert colonna.stile == "calcestruzzo" and colonna.tratteggio is False
-    assert u0.stile == "quota" and u0.tratteggio is True
-    assert governante.stile == "evidenza" and governante.tratteggio is False
-    assert u_out.stile == "quota" and u_out.tratteggio is True
+    colonna = next(f for f in cerchi if f.stile == "calcestruzzo")
+    governante = next(f for f in cerchi if f.stile == "evidenza")
+    tratteggiati = [f for f in cerchi if f.stile == "quota"]
+    assert len(tratteggiati) == 2  # u0 e u0,out
+    assert colonna.tratteggio is False
+    assert governante.tratteggio is False
+    assert all(f.tratteggio is True for f in tratteggiati)
+    # paint order: i perimetri (poligoni/cerchi non "calcestruzzo") vengono prima della colonna
+    forme = report.data.schizzo.viste[0].forme
+    indice_colonna = forme.index(colonna)
+    assert all(forme.index(f) < indice_colonna for f in (governante, *tratteggiati))
 
 
 @pytest.mark.parametrize("posizione,n_linee_bordo", [("interno", 0), ("centrato", 0), ("bordo", 1), ("angolo", 2)])

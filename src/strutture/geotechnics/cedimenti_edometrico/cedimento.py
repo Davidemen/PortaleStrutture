@@ -14,8 +14,8 @@ class CedimentoResult(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    w_ed_cm: float = Field(description="Cedimento edometrico totale wed(f)", json_schema_extra={"unit": "cm", "symbol": "w_ed", "highlight": True})
-    w_ed_mm: float = Field(description="Cedimento edometrico totale wed(f)", json_schema_extra={"unit": "mm", "symbol": "w_ed"})
+    w_ed_cm: float = Field(description="Cedimento edometrico totale", json_schema_extra={"unit": "cm", "symbol": "w_ed", "highlight": True})
+    w_ed_mm: float = Field(description="Cedimento edometrico totale", json_schema_extra={"unit": "mm", "symbol": "w_ed"})
 
 
 def cedimento_totale(righe: tuple[RigaResult, ...], z_crit_utilizzato_m: float) -> CedimentoResult:

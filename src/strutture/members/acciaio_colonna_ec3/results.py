@@ -125,8 +125,8 @@ class Interazione(BaseModel):
     kyz: float = Field(description="Fattore di interazione kyz (X43)")
     kzy: float = Field(description="Fattore di interazione kzy (X44)")
     kzz: float = Field(description="Fattore di interazione kzz (X45)")
-    utilizzo_yy: float = Field(description="Rapporto di utilizzo dell'interazione N-My-Mz, asse forte", json_schema_extra={"unit": "-", "symbol": "N/N_Rd+...", "highlight": True})
-    utilizzo_zz: float = Field(description="Rapporto di utilizzo dell'interazione N-My-Mz, asse debole", json_schema_extra={"unit": "-", "symbol": "N/N_Rd+...", "highlight": True})
+    utilizzo_yy: float = Field(description="Rapporto di utilizzo dell'interazione N-My-Mz, asse forte", json_schema_extra={"unit": "-", "symbol": "N_Ed/N_Rd + ΣM_Ed/M_Rd (yy)", "highlight": True})
+    utilizzo_zz: float = Field(description="Rapporto di utilizzo dell'interazione N-My-Mz, asse debole", json_schema_extra={"unit": "-", "symbol": "N_Ed/N_Rd + ΣM_Ed/M_Rd (zz)", "highlight": True})
     verifica_yy: Check
     verifica_zz: Check
 

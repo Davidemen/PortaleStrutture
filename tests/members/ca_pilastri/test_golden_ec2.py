@@ -37,14 +37,14 @@ def test_golden_pilastro_rettangolare_ec2():
     assert data.armatura_minima.as_min_mm2 == pytest.approx(320.0, rel=1e-5)  # MAX(320, 306.667), EC2's own coefficient 0.002
 
     by_name = {c.name: c.passed for c in report.checks}
-    assert by_name["taglio"] is True
-    assert by_name["gerarchia_resistenze"] is True
-    assert by_name["diametro_minimo_longitudinale"] is True  # 16mm > 8mm (EC2 threshold, not 12mm)
-    assert by_name["area_minima_longitudinale"] is True
-    assert by_name["area_massima_longitudinale"] is True  # EC2-only standalone check, 1608.5 <= 6400
+    assert by_name["Resistenza a taglio"] is True
+    assert by_name["Gerarchia delle resistenze a taglio"] is True
+    assert by_name["Diametro minimo delle barre longitudinali"] is True  # 16mm > 8mm (EC2 threshold, not 12mm)
+    assert by_name["Area minima di armatura longitudinale"] is True
+    assert by_name["Area massima di armatura longitudinale"] is True  # EC2-only standalone check, 1608.5 <= 6400
     # Headline behavioural divergence: EC2's own slenderness formula genuinely fails this geometry
     # (30.31 > 16.78), unlike the NTC2018 sheet's "OK" for the identical inputs.
-    assert by_name["snellezza"] is False
+    assert by_name["Verifica di snellezza"] is False
 
 
 @pytest.mark.golden
@@ -70,6 +70,6 @@ def test_golden_pilastro_circolare_ec2():
     assert data.snellezza.lambda_ == pytest.approx(50, rel=1e-6)
 
     by_name = {c.name: c.passed for c in report.checks}
-    assert by_name["taglio"] is True
-    assert by_name["gerarchia_resistenze"] is True
-    assert by_name["snellezza"] is False  # 50 > 21.37, FAILS (same headline pattern as rect)
+    assert by_name["Resistenza a taglio"] is True
+    assert by_name["Gerarchia delle resistenze a taglio"] is True
+    assert by_name["Verifica di snellezza"] is False  # 50 > 21.37, FAILS (same headline pattern as rect)

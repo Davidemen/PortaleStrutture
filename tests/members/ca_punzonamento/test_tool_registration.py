@@ -81,6 +81,19 @@ def test_at_most_three_highlighted_outputs():
     assert ("ArmaturaOutput", "ved_su_vrd") in highlighted
 
 
+def test_check_names_are_readable_italian_phrases_not_python_keys():
+    """Design review (P0): `Check(name=...)` must be a readable Italian phrase, never a raw
+    snake_case Python key, so no check name may contain an underscore."""
+    from strutture.shared.tool import execute
+
+    tool = TOOLS[0]
+    report = execute(tool, {**tool.example, "legacy_compat": True})  # forces the armatura checks too
+    assert report.ok, report.errors
+    assert report.checks
+    for check in report.checks:
+        assert "_" not in check.name, check.name
+
+
 def test_righe_field_has_chart_hint():
     schema = PunzonamentoOutput.model_json_schema()
     righe_prop = schema["$defs"]["PerimetroCriticoOutput"]["properties"]["righe"]

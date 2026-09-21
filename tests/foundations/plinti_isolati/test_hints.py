@@ -18,6 +18,17 @@ def test_al_massimo_tre_highlight() -> None:
     assert len(highlighted) <= 3
 
 
+def test_highlight_ha_simbolo_e_nessuna_formula_in_descrizione() -> None:
+    """Un highlight senza `symbol` viene reso come una lunga descrizione in corsivo nella Sintesi;
+    la descrizione deve leggersi come prosa, non come una formula."""
+    schema = TOOL.output_model.model_json_schema()
+    for name, prop in schema["properties"].items():
+        if prop.get("highlight") is not True:
+            continue
+        assert prop.get("symbol"), f"{name}: highlight senza symbol"
+        assert "=" not in prop.get("description", ""), f"{name}: descrizione simile a una formula"
+
+
 def test_reazioni_e_resistenze_hanno_widget_tabella() -> None:
     schema = TOOL.input_model.model_json_schema()
     assert schema["properties"]["reazioni"]["widget"] == "table"

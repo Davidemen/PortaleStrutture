@@ -57,3 +57,14 @@ def test_execute_maps_validation_error_to_failed_report():
 def test_apertura_fessure_semp_input_model_matches_tool():
     tool = next(t for t in TOOLS if t.name == "ca-apertura-fessure-semplificata")
     assert tool.input_model is AperturaFessureSempInput
+
+
+def test_check_names_are_readable_italian_phrases_not_python_keys():
+    """Design review (P0): `Check(name=...)` must be a readable Italian phrase, never a raw
+    snake_case Python key, so no check name may contain an underscore."""
+    for tool in TOOLS:
+        report = execute(tool, tool.example)
+        assert report.ok, report.errors
+        assert report.checks
+        for check in report.checks:
+            assert "_" not in check.name, (tool.name, check.name)

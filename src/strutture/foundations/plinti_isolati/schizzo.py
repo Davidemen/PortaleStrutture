@@ -1,18 +1,20 @@
-"""Live sketch for `fond-plinto-isolato`: Pianta (footing, pedestal, eccentric resultant,
-dimensions) and Sezione (footing, column, load arrows N/M/V, base-pressure diagram with
-sigma_max/sigma_min of the governing row) — docs/ui/WORKBENCH_SPEC.md §7. Pure function of the
-validated inputs + the governing row; a failure here must never fail the calculation (guarded
-in `tool.run`).
+"""Live sketch for `fond-plinto-isolato`: Pianta (footing, column, plan axes, eccentric resultant
+of the governing row with its e_x/e_y) and Sezione (footing, column, load arrow N with M stated as
+a label beside it, base-pressure diagram with sigma_max on the side of the eccentricity) —
+docs/ui/WORKBENCH_SPEC.md §7. Pure function of the validated inputs + the governing row; a failure
+here must never fail the calculation (guarded in `tool.run`).
 
-Sezione is a SCHEMA (`Sketch.nota`): when there is no pedestal/bicchiere the column is still drawn
-with an illustrative width/height so the view stays legible and within the 1:3.5-3.5:1 aspect
-target (`shared/sketch.py` COMPOSITION RULES) — its position/existence follows the inputs, its
-size does not claim to be the real column size."""
+Both views are a SCHEMA (`Sketch.nota`): when there is no pedestal/bicchiere the column is still
+drawn with an illustrative width/height so the view stays legible and within the 1:3.5-3.5:1
+aspect target (`shared/sketch.py` COMPOSITION RULES) — its position/existence follows the inputs,
+its size does not claim to be the real column size. A moment is not a force vector, so M is stated
+in a label next to N rather than drawn as a straight arrow (that would misrepresent it)."""
 from strutture.shared.sketch import (
     Cerchio,
     Diagramma,
     Etichetta,
     Freccia,
+    Linea,
     Quota,
     Rettangolo,
     Sketch,
@@ -25,6 +27,8 @@ from .riga_verifica import RigaVerifica
 
 _MARGINE_QUOTA = 0.07  # frazione del lato maggiore, per lo scostamento delle linee di quota (6-8 %)
 _ASPETTO_BERSAGLIO = 3.0  # aspetto target della Sezione (< 3.5 di soglia, con margine)
+_ALTEZZA_RELATIVA_DIAGRAMMA = 0.35
+_ESTENSIONE_ASSI = 1.15  # gli assi sporgono oltre il plinto di questa frazione del semilato
 
 
 def disegna(inputs: PlintoIsolatoInput, governante: RigaVerifica) -> Sketch:
@@ -37,12 +41,14 @@ def disegna(inputs: PlintoIsolatoInput, governante: RigaVerifica) -> Sketch:
 
 def _pianta(inputs: PlintoIsolatoInput, governante: RigaVerifica) -> Vista:
     ax, by = inputs.ax_m, inputs.by_m
+    col_w, col_d = _colonna_pianta(inputs, ax, by)
     scostamento = _MARGINE_QUOTA * max(ax, by)
     forme = [
         Rettangolo(x=-ax / 2, y=-by / 2, w=ax, h=by, stile="calcestruzzo"),
-        *_pilastro_pianta(inputs),
-        Cerchio(centro=(governante.ex_m, governante.ey_m), r=0.02 * max(ax, by), stile="carico"),
-        Etichetta(punto=(governante.ex_m, governante.ey_m), simbolo="N", ancora="start", stile="carico"),
+        Rettangolo(x=-col_w / 2, y=-col_d / 2, w=col_w, h=col_d, stile="calcestruzzo"),
+        Linea(p1=(-ax / 2 * _ESTENSIONE_ASSI, 0.0), p2=(ax / 2 * _ESTENSIONE_ASSI, 0.0), stile="asse"),
+        Linea(p1=(0.0, -by / 2 * _ESTENSIONE_ASSI), p2=(0.0, by / 2 * _ESTENSIONE_ASSI), stile="asse"),
+        *_eccentricita(governante, ax, by),
         Quota(p1=(-ax / 2, -by / 2), p2=(ax / 2, -by / 2), distanza=-scostamento,
               testo=etichetta_quota("A_X", ax, "m")),
         Quota(p1=(-ax / 2, -by / 2), p2=(-ax / 2, by / 2), distanza=scostamento,
@@ -51,16 +57,35 @@ def _pianta(inputs: PlintoIsolatoInput, governante: RigaVerifica) -> Vista:
     return Vista(titolo="Pianta", forme=tuple(forme))
 
 
-def _pilastro_pianta(inputs: PlintoIsolatoInput) -> tuple[Rettangolo, ...]:
-    if inputs.a_pedestal_m <= 0 or inputs.b_pedestal_m <= 0:
-        return ()
-    return (Rettangolo(x=-inputs.a_pedestal_m / 2, y=-inputs.b_pedestal_m / 2,
-                        w=inputs.a_pedestal_m, h=inputs.b_pedestal_m, stile="calcestruzzo"),)
+def _eccentricita(governante: RigaVerifica, ax: float, by: float) -> tuple:
+    """Punto della risultante eccentrica della combinazione governante, con le sue componenti
+    e_x/e_y accanto (solo il valore in `testo`: il simbolo è già reso da `Etichetta.simbolo`)."""
+    ex, ey = governante.ex_m, governante.ey_m
+    raggio = 0.02 * max(ax, by)
+    gap_x = 3.0 * raggio
+    gap_y = 0.12 * max(ax, by)
+    return (
+        Cerchio(centro=(ex, ey), r=raggio, stile="evidenza"),
+        Etichetta(punto=(ex + gap_x, ey + gap_y / 2), simbolo="e_x", testo=_valore_m(ex), ancora="start", stile="evidenza"),
+        Etichetta(punto=(ex + gap_x, ey - gap_y / 2), simbolo="e_y", testo=_valore_m(ey), ancora="start", stile="evidenza"),
+    )
+
+
+def _valore_m(valore: float) -> str:
+    return f"{valore:.2f} m".replace(".", ",")
+
+
+def _colonna_pianta(inputs: PlintoIsolatoInput, ax: float, by: float) -> tuple[float, float]:
+    """(larghezza, profondità) della colonna in pianta: dimensioni reali del bicchiere se presente,
+    altrimenti un ingombro indicativo (stessa logica di `_colonna` per la Sezione)."""
+    larghezza = inputs.a_pedestal_m if inputs.a_pedestal_m > 0 else min(max(0.25 * ax, 0.4), 0.5 * ax)
+    profondita = inputs.b_pedestal_m if inputs.b_pedestal_m > 0 else min(max(0.25 * by, 0.4), 0.5 * by)
+    return larghezza, profondita
 
 
 def _colonna(inputs: PlintoIsolatoInput, ax: float, h: float) -> tuple[float, float]:
-    """(larghezza, altezza) della colonna: dimensioni reali se c'è il bicchiere, altrimenti un
-    ingombro indicativo dimensionato per tenere la Sezione entro l'aspetto target."""
+    """(larghezza, altezza) della colonna in sezione: dimensioni reali se c'è il bicchiere,
+    altrimenti un ingombro indicativo dimensionato per tenere la Sezione entro l'aspetto target."""
     ha_bicchiere = inputs.a_pedestal_m > 0 and inputs.h_pedestal_sopra_m > 0
     larghezza = inputs.a_pedestal_m if inputs.a_pedestal_m > 0 else min(max(0.25 * ax, 0.4), 0.5 * ax)
     altezza_min_aspetto = max(ax / _ASPETTO_BERSAGLIO - h, 0.0)
@@ -71,33 +96,50 @@ def _colonna(inputs: PlintoIsolatoInput, ax: float, h: float) -> tuple[float, fl
 def _sezione(inputs: PlintoIsolatoInput, governante: RigaVerifica) -> Vista:
     ax, h = inputs.ax_m, inputs.h_plinto_m
     col_w, col_h = _colonna(inputs, ax, h)
-    y_sommo = h + col_h
+    altezza_totale = h + col_h
+    y_sommo = altezza_totale
     scostamento = _MARGINE_QUOTA * ax
-    lunghezza_freccia = max(0.3 * col_h, 0.3)
+    lunghezza_freccia_n = 0.5 * altezza_totale
     forme = [
         Rettangolo(x=-ax / 2, y=0.0, w=ax, h=h, stile="calcestruzzo"),
         Rettangolo(x=-col_w / 2, y=h, w=col_w, h=col_h, stile="calcestruzzo"),
-        Freccia(coda=(0.0, y_sommo + lunghezza_freccia), punta=(0.0, y_sommo), stile="carico",
+        Freccia(coda=(0.0, y_sommo + lunghezza_freccia_n), punta=(0.0, y_sommo), stile="carico",
                  testo=etichetta_quota("N", governante.n_kN, "kN", 0)),
-        Quota(p1=(-ax / 2, 0.0), p2=(ax / 2, 0.0), distanza=-scostamento,
+        Etichetta(punto=(0.0, y_sommo + lunghezza_freccia_n + 0.3 * altezza_totale), simbolo="M",
+                   testo=_valore_kNm(governante.myy_kNm), ancora="middle", stile="carico"),
+        # sotto il diagramma delle pressioni (altezza resa ~ altezza_relativa * lato minore).
+        Quota(p1=(-ax / 2, 0.0), p2=(ax / 2, 0.0), distanza=-(2 * scostamento + _ALTEZZA_RELATIVA_DIAGRAMMA * altezza_totale),
               testo=etichetta_quota("A_X", ax, "m")),
         _diagramma_pressioni(governante, ax),
     ]
-    if abs(governante.myy_kNm) > 1e-9:
-        y_m = y_sommo + lunghezza_freccia + max(0.5 * col_h, 0.4)
-        forme.append(Freccia(coda=(-0.3 * col_w, y_m), punta=(0.3 * col_w, y_m), stile="carico",
-                              testo=etichetta_quota("M", governante.myy_kNm, "kNm", 0)))
     if abs(governante.mu_scorrimento or 0.0) > 1e-9:
-        forme.append(Freccia(coda=(-ax / 2 - lunghezza_freccia, h / 2), punta=(-ax / 2, h / 2),
+        lunghezza_freccia_v = max(0.3 * col_h, 0.3)
+        forme.append(Freccia(coda=(-ax / 2 - lunghezza_freccia_v, h / 2), punta=(-ax / 2, h / 2),
                               stile="carico", testo="V"))
     return Vista(titolo="Sezione", forme=tuple(forme))
 
 
+def _valore_kNm(valore: float) -> str:
+    return f"{valore:.0f} kNm"
+
+
 def _diagramma_pressioni(governante: RigaVerifica, ax: float) -> Diagramma:
+    """`base` runs right (x=+ax/2) -> left (x=-ax/2); `valori` must put σmax on the side the
+    resultant is eccentric towards (ex>=0 -> +x is more loaded -> σmax at base[0]=+ax/2; ex<0 ->
+    σmax at base[1]=-ax/2), not always at the same end regardless of the actual eccentricity.
+    Zero ends (fully out-of-kern crack) stay unlabelled."""
+    if governante.ex_m >= 0:
+        coppie = (("σmax", governante.sigma_max_kpa), ("σmin", governante.sigma_min_kpa))
+    else:
+        coppie = (("σmin", governante.sigma_min_kpa), ("σmax", governante.sigma_max_kpa))
     return Diagramma(
         base=((ax / 2, 0.0), (-ax / 2, 0.0)),  # right->left: ordinates hang below the footing base
-        valori=(governante.sigma_max_kpa, governante.sigma_min_kpa),
-        etichette=(etichetta_quota("σmax", governante.sigma_max_kpa, "kPa", 0),
-                   etichetta_quota("σmin", governante.sigma_min_kpa, "kPa", 0)),
+        valori=tuple(v for _, v in coppie),
+        etichette=tuple(_etichetta_pressione(s, v) for s, v in coppie),
         stile="pressione",
+        altezza_relativa=_ALTEZZA_RELATIVA_DIAGRAMMA,
     )
+
+
+def _etichetta_pressione(simbolo: str, valore_kpa: float) -> str:
+    return etichetta_quota(simbolo, valore_kpa, "kPa", 0) if valore_kpa > 0 else ""

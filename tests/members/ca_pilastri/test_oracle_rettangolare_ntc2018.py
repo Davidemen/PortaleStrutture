@@ -48,7 +48,7 @@ def test_oracle_case(case: dict):
     assert data.geometria.ac_mm2 == pytest.approx(outputs["H22"], rel=1e-6)
     assert data.geometria.as_mm2 == pytest.approx(outputs["H23"], rel=1e-6)
     assert data.geometria.rs == pytest.approx(outputs["H24"], rel=1e-6)
-    assert by_name["percentuale_armatura"] is _sheet_ok(outputs["J24"])  # ceiling-only check
+    assert by_name["Percentuale di armatura longitudinale"] is _sheet_ok(outputs["J24"])  # ceiling-only check
     assert data.geometria.e_min_mm == pytest.approx(outputs["H19"], rel=1e-6)
     assert data.geometria.med_ecc_kNm == pytest.approx(outputs["H20"], rel=1e-6)
     assert data.geometria.med_calc_kNm == pytest.approx(outputs["H21"], rel=1e-6)
@@ -57,11 +57,11 @@ def test_oracle_case(case: dict):
     assert data.taglio.vrdc_kN == pytest.approx(outputs["Z15"], rel=1e-6)
     assert data.taglio.vrds_kN == pytest.approx(outputs["Z16"], rel=1e-6)
     assert data.taglio.vrd_kN == pytest.approx(outputs["Z17"], rel=1e-6)
-    assert by_name["taglio"] is _sheet_ok(outputs["Y18"])
-    assert by_name["gerarchia_resistenze"] is _sheet_ok(outputs["Y20"])
-    assert by_name["flessione"] is _sheet_ok(outputs["G26"])
+    assert by_name["Resistenza a taglio"] is _sheet_ok(outputs["Y18"])
+    assert by_name["Gerarchia delle resistenze a taglio"] is _sheet_ok(outputs["Y20"])
+    assert by_name["Resistenza a pressoflessione"] is _sheet_ok(outputs["G26"])
     assert data.compressione.nrcd_kN == pytest.approx(outputs["H27"], rel=1e-6)
-    assert by_name["compressione"] is _sheet_ok(outputs["G28"])
+    assert by_name["Resistenza a compressione"] is _sheet_ok(outputs["G28"])
     assert data.confinamento.hcr_mm == pytest.approx(outputs["Z24"], rel=1e-6)
     assert data.confinamento.passo_max_confinato_mm == pytest.approx(outputs["Z25"], rel=1e-6)
     assert data.snellezza.lambda_lim == pytest.approx(outputs["J53"], rel=1e-5)
@@ -69,13 +69,13 @@ def test_oracle_case(case: dict):
     assert data.snellezza.lambda_ == pytest.approx(outputs["J57"], rel=1e-6)
     assert data.dettagli.interasse_long_calcolato_mm == pytest.approx(outputs["CX24"], rel=1e-6)
     assert data.dettagli.diametro_long_min_mm == pytest.approx(outputs["J61"], rel=1e-6)
-    assert by_name["diametro_minimo_longitudinale"] is _sheet_ok(outputs["L61"])
+    assert by_name["Diametro minimo delle barre longitudinali"] is _sheet_ok(outputs["L61"])
     assert data.dettagli.interasse_long_max_mm == pytest.approx(outputs["J62"], rel=1e-6)
-    assert by_name["interasse_massimo_longitudinale"] is _sheet_ok(outputs["L62"])
+    assert by_name["Interasse massimo delle barre longitudinali"] is _sheet_ok(outputs["L62"])
     assert data.dettagli.as_long_min_mm2 == pytest.approx(outputs["J63"], rel=1e-6)
-    assert by_name["area_minima_longitudinale"] is _sheet_ok(outputs["L63"])
+    assert by_name["Area minima di armatura longitudinale"] is _sheet_ok(outputs["L63"])
     # J64/L64 (diametro minimo staffe): same H-vs-text-cell bug as the NTC2008 sheet, always "OK".
-    assert by_name["diametro_minimo_staffe"] is True
+    assert by_name["Diametro minimo delle staffe"] is True
     assert _sheet_ok(outputs["L64"]) is True
     assert data.dettagli.interasse_staffe_max_mm == pytest.approx(outputs["J65"], rel=1e-6)
-    assert by_name["interasse_massimo_staffe"] is _sheet_ok(outputs["L65"])
+    assert by_name["Interasse massimo delle staffe"] is _sheet_ok(outputs["L65"])

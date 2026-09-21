@@ -35,7 +35,8 @@ def run(inputs: VentoCpeInput) -> Report[VentoCpeOutput]:
         logger.exception("errore nel disegno dello schizzo per vento-cpe-rettangolare")
         schizzo = None
 
-    data = VentoCpeOutput(classification=classify(dir1.h_d, dir2.h_d), dir1=dir1, dir2=dir2, schizzo=schizzo)
+    classification = classify(dir1.h_d, dir2.h_d, legacy_compat=inputs.legacy_compat)
+    data = VentoCpeOutput(classification=classification, dir1=dir1, dir2=dir2, schizzo=schizzo)
     return success(data, inputs)
 
 

@@ -72,8 +72,8 @@ def test_golden_case():
 def test_golden_case_checks():
     report = run(PunzonamentoInput(**GOLDEN_INPUTS))
     by_name = {c.name: c for c in report.checks}
-    assert by_name["punzonamento_faccia_pilastro"].passed is True
-    assert by_name["punzonamento_perimetro_critico"].passed is True
-    assert by_name["resistenza_con_armatura"].passed is True
+    assert by_name["Punzonamento al filo del pilastro"].passed is True
+    assert by_name["Punzonamento al perimetro critico"].passed is True
+    assert by_name["Resistenza a punzonamento con armatura"].passed is True
     # sheet F46: a1,eff=400mm is above a1,max=215mm — the sheet itself flags this ("<di a1max!")
-    assert by_name["a1_eff_nel_range"].passed is False
+    assert by_name["Distanza della prima fila di cuciture nell'intervallo ammesso"].passed is False

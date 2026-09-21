@@ -50,8 +50,9 @@ def test_falda_esempio_una_falda_disegna_una_sola_falda() -> None:
     sketch = disegna_carico_falda(inputs, output)
     assert [v.titolo for v in sketch.viste] == ["Sezione copertura"]
     kinds = [f.kind for f in sketch.viste[0].forme]
-    assert kinds.count("line") == 1
+    assert kinds.count("line") == 2  # falda + richiamo verticale al blocco di carico
     assert kinds.count("diagram") == 1
+    assert kinds.count("label") == 2  # μ e α
     assert sketch.nota != ""
 
 
@@ -63,8 +64,9 @@ def test_falda_due_falde_disegna_entrambe_le_falde() -> None:
     assert output.qs is None and output.qs1 is not None and output.qs2 is not None
     sketch = disegna_carico_falda(inputs, output)
     kinds = [f.kind for f in sketch.viste[0].forme]
-    assert kinds.count("line") == 2
+    assert kinds.count("line") == 3  # 2 falde + un richiamo condiviso al colmo
     assert kinds.count("diagram") == 2
+    assert kinds.count("label") == 4  # μ_1, μ_2, α_1, α_2
 
 
 @pytest.mark.unit
@@ -75,7 +77,7 @@ def test_falda_legacy_compat_disegna_entrambi_i_blocchi_insieme() -> None:
     assert output.qs is not None and output.qs1 is not None and output.qs2 is not None
     sketch = disegna_carico_falda(inputs, output)
     kinds = [f.kind for f in sketch.viste[0].forme]
-    assert kinds.count("line") == 3
+    assert kinds.count("line") == 5  # (falda+richiamo) singola + (2 falde+richiamo condiviso) doppia
     assert kinds.count("diagram") == 3
 
 
@@ -95,13 +97,15 @@ def test_falda_diagramma_riporta_qs_e_letichetta_mu_e_solo_il_valore() -> None:
 
 @pytest.mark.unit
 def test_falda_geometria_segue_langolo_e_la_risalita_e_limitata() -> None:
-    """Un angolo molto ripido non fa esplodere l'altezza disegnata (schema, non scala)."""
+    """Un angolo molto ripido non fa esplodere l'altezza disegnata (schema, non scala); un angolo
+    nullo non produce una falda piatta (sliver): la risalita minima è il 15% della semiluce."""
     inputs_piatta, output_piatta = _output_falda({"a": 0})
     inputs_ripida, output_ripida = _output_falda({"a": 89})
     linea_piatta = disegna_carico_falda(inputs_piatta, output_piatta).viste[0].forme[0]
     linea_ripida = disegna_carico_falda(inputs_ripida, output_ripida).viste[0].forme[0]
-    assert linea_piatta.p2[1] == pytest.approx(0.0)
-    assert 0.0 < linea_ripida.p2[1] <= schizzo_module.RISALITA_MAX_M + 1e-9
+    risalita_minima = schizzo_module._RISALITA_MIN_FRAZIONE * schizzo_module.SEMILUCE_M
+    assert linea_piatta.p2[1] == pytest.approx(risalita_minima)
+    assert risalita_minima <= linea_ripida.p2[1] <= schizzo_module.RISALITA_MAX_M + 1e-9
 
 
 @pytest.mark.unit

@@ -11,7 +11,7 @@ def test_golden_case():
     assert report.ok
     data = report.data
 
-    assert data.classification == "EDIFICIO TOZZO"
+    assert data.classification == "EDIFICIO TOZZO"  # legacy_compat=True: stringa esatta del foglio
 
     assert data.dir1.h_d == pytest.approx(0.75, rel=1e-6)
     assert data.dir1.cpe_windward == pytest.approx(0.775, rel=1e-6)

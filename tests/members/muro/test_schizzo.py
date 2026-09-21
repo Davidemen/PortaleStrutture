@@ -26,9 +26,10 @@ def test_vista_titolo_e_forme_esempio() -> None:
     kinds = [f.kind for f in sketch.viste[0].forme]
     assert kinds[0] == "rect"  # fondazione
     assert kinds.count("polygon") == 2  # paramento + terreno di riporto
-    assert "diagram" in kinds
+    assert kinds.count("diagram") == 2  # pressioni di base + banda del sovraccarico
     assert kinds.count("dimension") == 2  # B, H
-    assert kinds.count("arrow") >= 2  # sovraccarico + spinte statica/sismica
+    assert kinds.count("arrow") == 2  # spinte statica/sismica (il sovraccarico non è più una freccia)
+    assert kinds.count("label") == 2  # valore di S_stat/S_sism, ancorato alla coda di ciascuna freccia
 
 
 @pytest.mark.unit
@@ -64,22 +65,73 @@ def test_geometria_segue_una_dimensione_modificata() -> None:
 
 @pytest.mark.unit
 def test_sovraccarico_assente_quando_q_zero() -> None:
+    """Il sovraccarico è una `Diagramma` stile "carico" (non una freccia): senza sovraccarico deve
+    sparire, restando solo il diagramma delle pressioni di base (stile "pressione")."""
     modificato = {**TOOL.example, "q_kN_m2": 0.0}
     report = execute(TOOL, modificato)
     assert report.ok, report.errors
-    frecce = [f for f in report.data.schizzo.viste[0].forme if f.kind == "arrow"]
-    # senza sovraccarico restano solo le frecce di spinta statica/sismica
-    assert all(not f.testo.startswith("q =") for f in frecce)
+    diagrammi = [f for f in report.data.schizzo.viste[0].forme if f.kind == "diagram"]
+    assert len(diagrammi) == 1
+    assert diagrammi[0].stile == "pressione"
+
+
+@pytest.mark.unit
+def test_sovraccarico_e_banda_con_un_solo_valore_etichettato() -> None:
+    """Il sovraccarico q è uniforme: una sola etichetta (valore, il simbolo "q" è nel testo perché
+    `Diagramma` non separa simbolo/valore come `Etichetta`), l'altro capo resta senza testo."""
+    report = execute(TOOL, TOOL.example)
+    assert report.ok, report.errors
+    sovraccarico = next(f for f in report.data.schizzo.viste[0].forme if f.kind == "diagram" and f.stile == "carico")
+    assert sovraccarico.valori[0] == pytest.approx(sovraccarico.valori[1])  # banda uniforme
+    assert sovraccarico.etichette[0].startswith("q =")
+    assert sovraccarico.etichette[1] == ""
+    # sinistra -> destra: la banda sporge verso l'alto (sopra il rinterro), non verso il basso.
+    assert sovraccarico.base[0][0] < sovraccarico.base[1][0]
+
+
+@pytest.mark.unit
+def test_frecce_spinta_hanno_etichetta_separata_ancorata_alla_coda() -> None:
+    """Correzione P1: il testo della spinta non è più incorporato nella `Freccia` (poteva cadere
+    sul paramento a seconda di come il renderer posiziona il testo di una freccia) ma un `Etichetta`
+    a sé, ancorata (`ancora="start"`) alla coda, sul lato libero del cuneo di terreno."""
+    report = execute(TOOL, TOOL.example)
+    assert report.ok, report.errors
+    forme = report.data.schizzo.viste[0].forme
+    frecce_spinta = [f for f in forme if f.kind == "arrow"]
+    assert all(f.testo == "" for f in frecce_spinta)
+    etichette_spinta = [f for f in forme if f.kind == "label" and f.simbolo in ("S_stat", "S_sism")]
+    assert len(etichette_spinta) == 2
+    for etichetta, freccia in zip(etichette_spinta, frecce_spinta, strict=True):
+        assert etichetta.ancora == "start"
+        assert etichetta.punto == freccia.coda
+        assert not etichetta.testo.startswith(etichetta.simbolo)  # testo = solo valore
 
 
 @pytest.mark.unit
 def test_diagramma_pressioni_riporta_p_valle_e_p_monte() -> None:
+    """`base` va da x=B (monte, destra) a x=0 (valle, sinistra): `valori`/`etichette` devono seguire
+    lo stesso ordine (monte poi valle), altrimenti il diagramma risulta specchiato (bug P0 della
+    revisione di design: il picco compariva sotto il tacco invece che sotto la punta)."""
     report = execute(TOOL, TOOL.example)
-    diagramma = next(f for f in report.data.schizzo.viste[0].forme if f.kind == "diagram")
+    diagramma = next(f for f in report.data.schizzo.viste[0].forme if f.kind == "diagram" and f.stile == "pressione")
     governante = max(report.data.pressioni_terreno, key=lambda p: max(p.p_valle_kPa, p.p_monte_kPa))
-    assert diagramma.valori == pytest.approx((governante.p_valle_kPa, governante.p_monte_kPa))
-    assert diagramma.etichette[0].startswith("p_valle =")
-    assert diagramma.etichette[1].startswith("p_monte =")
+    assert diagramma.base[0][0] > diagramma.base[1][0]  # base[0] è il lato monte (x=B, destra)
+    assert diagramma.valori == pytest.approx((governante.p_monte_kPa, governante.p_valle_kPa))
+    # l'ordinata più grande deve stare dal lato di x corrispondente alla pressione più grande.
+    lato_monte_x, lato_valle_x = diagramma.base[0][0], diagramma.base[1][0]
+    valore_al_monte, _valore_alla_valle = diagramma.valori
+    if governante.p_monte_kPa >= governante.p_valle_kPa:
+        assert valore_al_monte == pytest.approx(max(governante.p_monte_kPa, governante.p_valle_kPa))
+    assert lato_monte_x > lato_valle_x
+    # capi a pressione nulla restano senza etichetta.
+    if governante.p_monte_kPa <= 0:
+        assert diagramma.etichette[0] == ""
+    else:
+        assert diagramma.etichette[0].startswith("p_monte =")
+    if governante.p_valle_kPa <= 0:
+        assert diagramma.etichette[1] == ""
+    else:
+        assert diagramma.etichette[1].startswith("p_valle =")
 
 
 @pytest.mark.unit

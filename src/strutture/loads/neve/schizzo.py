@@ -25,25 +25,40 @@ NOTA_SCHEMA = "Schema non in scala."
 # --- neve-carico-falda ---------------------------------------------------------------------------
 SEMILUCE_M = 3.0  # semiluce orizzontale illustrativa: il tool non ha un input di luce, solo angoli
 RISALITA_MAX_M = 1.5 * SEMILUCE_M  # tetto schematico alla risalita, per angoli molto ripidi (schema)
+_RISALITA_MIN_FRAZIONE = 0.15  # risalita minima schematica, frazione della semiluce (mai una falda piatta)
 _ALTEZZA_COLMO_M = RISALITA_MAX_M  # quota illustrativa del colmo, sopra la risalita massima di una falda
 _OFFSET_ETICHETTA_MU_M = 0.35  # scostamento verticale dell'etichetta μ sopra la linea di falda
+_GAP_CARICO_M = 0.6  # distanza verticale tra il colmo/la gronda alta e il blocco di carico
+_OFFSET_ETICHETTA_ALFA_M = 0.15  # scostamento dell'etichetta α dalla gronda
 
 
 def _risalita_m(angolo_deg: float) -> float:
-    """Risalita della falda su `SEMILUCE_M`, con un tetto schematico per angoli molto ripidi."""
-    return min(SEMILUCE_M * tan(radians(angolo_deg)), RISALITA_MAX_M)
+    """Risalita della falda su `SEMILUCE_M`: mai una falda piatta (minimo il 15% della semiluce,
+    una sliver visiva anche per α=0°) né, per angoli molto ripidi, oltre un tetto schematico."""
+    risalita = SEMILUCE_M * tan(radians(angolo_deg))
+    return min(max(risalita, _RISALITA_MIN_FRAZIONE * SEMILUCE_M), RISALITA_MAX_M)
 
 
-def _pitch(p1: Punto, p2: Punto, simbolo_mu: str, mu: float, qs: float, qsk: float) -> tuple[Linea, Diagramma, Etichetta]:
-    """Linea di falda tra `p1` e `p2` + diagramma di carico uniforme `qs` (etichettato al colmo,
-    l'estremo alto) + etichetta del coefficiente di forma μ a centro falda."""
-    punto_medio = ((p1[0] + p2[0]) / 2.0, (p1[1] + p2[1]) / 2.0 + _OFFSET_ETICHETTA_MU_M)
-    numero_mu = f"{mu:.2f}".replace(".", ",")
-    return (
-        Linea(p1=p1, p2=p2, stile="calcestruzzo"),
-        Diagramma(base=(p1, p2), valori=(qs, qs), etichette=(etichetta_quota("q_s", qs, "kN/m²"),), stile="pressione"),
-        Etichetta(punto=punto_medio, simbolo=simbolo_mu, testo=numero_mu, ancora="middle", stile="asse"),
+def _blocco_carico(colmo_x_m: float, gronda_x_m: float, y_base_m: float, simbolo_q: str, qs: float) -> Diagramma:
+    """Il carico neve è verticale per unità di superficie in pianta: un blocco su base ORIZZONTALE
+    sopra il colmo, con ordinate verticali (non normali alla falda, che leggerebbero come vento)."""
+    x0_m, x1_m = (gronda_x_m, colmo_x_m) if gronda_x_m < colmo_x_m else (colmo_x_m, gronda_x_m)
+    return Diagramma(
+        base=((x0_m, y_base_m), (x1_m, y_base_m)), valori=(qs, qs),
+        etichette=(etichetta_quota(simbolo_q, qs, "kN/m²"),), stile="pressione",
     )
+
+
+def _etichetta_mu(colmo: Punto, gronda: Punto, simbolo: str, mu: float) -> Etichetta:
+    punto_medio = ((colmo[0] + gronda[0]) / 2.0, (colmo[1] + gronda[1]) / 2.0 + _OFFSET_ETICHETTA_MU_M)
+    return Etichetta(punto=punto_medio, simbolo=simbolo, testo=f"{mu:.2f}".replace(".", ","), ancora="middle", stile="asse")
+
+
+def _etichetta_alfa(gronda: Punto, simbolo: str, angolo_deg: float) -> Etichetta:
+    """Angolo di falda α, etichettato vicino alla gronda (regola 6: le grandezze si etichettano
+    dove sono più leggibili, non impilate sul carico)."""
+    punto = (gronda[0], gronda[1] + _OFFSET_ETICHETTA_ALFA_M)
+    return Etichetta(punto=punto, simbolo=simbolo, testo=f"{angolo_deg:.0f}°", ancora="middle", stile="asse")
 
 
 def disegna_carico_falda(inputs: CaricoFaldaInput, output: CaricoFaldaOutput) -> Sketch:
@@ -54,14 +69,29 @@ def disegna_carico_falda(inputs: CaricoFaldaInput, output: CaricoFaldaOutput) ->
         assert inputs.a is not None  # garantito da run_carico_falda quando qs è valorizzato
         eave: Punto = (0.0, 0.0)
         ridge: Punto = (SEMILUCE_M, _risalita_m(inputs.a))
-        forme.extend(_pitch(eave, ridge, "μ", output.mu, output.qs, output.qsk))
+        y_base_m = ridge[1] + _GAP_CARICO_M
+        forme.append(Linea(p1=eave, p2=ridge, stile="calcestruzzo"))
+        # linea di richiamo dal colmo al blocco di carico: collega visivamente il carico alla
+        # falda a cui si applica, e porta l'estensione verticale del blocco nell'ingombro disegnato.
+        forme.append(Linea(p1=ridge, p2=(ridge[0], y_base_m), stile="quota", tratteggio=True))
+        forme.append(_blocco_carico(ridge[0], eave[0], y_base_m, "q_s", output.qs))
+        forme.append(_etichetta_mu(ridge, eave, "μ", output.mu))
+        forme.append(_etichetta_alfa(eave, "α", inputs.a))
     if output.qs1 is not None and output.qs2 is not None:
         assert inputs.a1 is not None and inputs.a2 is not None  # garantito da run_carico_falda
         colmo: Punto = (0.0, _ALTEZZA_COLMO_M)
         gronda1: Punto = (-SEMILUCE_M, _ALTEZZA_COLMO_M - _risalita_m(inputs.a1))
         gronda2: Punto = (SEMILUCE_M, _ALTEZZA_COLMO_M - _risalita_m(inputs.a2))
-        forme.extend(_pitch(colmo, gronda1, "μ_1", output.mu1, output.qs1, output.qsk))
-        forme.extend(_pitch(colmo, gronda2, "μ_2", output.mu2, output.qs2, output.qsk))
+        y_base_m = colmo[1] + _GAP_CARICO_M
+        forme.append(Linea(p1=colmo, p2=gronda1, stile="calcestruzzo"))
+        forme.append(Linea(p1=colmo, p2=gronda2, stile="calcestruzzo"))
+        forme.append(Linea(p1=colmo, p2=(colmo[0], y_base_m), stile="quota", tratteggio=True))
+        forme.append(_blocco_carico(colmo[0], gronda1[0], y_base_m, "q_s1", output.qs1))
+        forme.append(_blocco_carico(colmo[0], gronda2[0], y_base_m, "q_s2", output.qs2))
+        forme.append(_etichetta_mu(colmo, gronda1, "μ_1", output.mu1))
+        forme.append(_etichetta_mu(colmo, gronda2, "μ_2", output.mu2))
+        forme.append(_etichetta_alfa(gronda1, "α_1", inputs.a1))
+        forme.append(_etichetta_alfa(gronda2, "α_2", inputs.a2))
     return Sketch(viste=(Vista(titolo="Sezione copertura", forme=tuple(forme)),), nota=NOTA_SCHEMA)
 
 

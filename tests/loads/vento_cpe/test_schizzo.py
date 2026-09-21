@@ -40,12 +40,16 @@ def test_viste_titoli_e_forme_esempio() -> None:
     sketch = disegna(inputs, dir1, dir2)
 
     assert [v.titolo for v in sketch.viste] == ["Pianta — direzione 1", "Pianta — direzione 2"]
+    vista1, vista2 = sketch.viste
     for vista in sketch.viste:
         kinds = [f.kind for f in vista.forme]
         assert kinds.count("rect") == 1
         assert kinds.count("arrow") == 1
-        assert kinds.count("label") == 4  # sopravento + 2 laterali + sottovento
         assert kinds.count("dimension") == 2
+    # sopravento + sottovento + zone A/B/C sul lato laterale libero (regola del budget di 8 testi):
+    # direzione 1 ha solo le zone A/B (zona C degenere per questo esempio), direzione 2 ha A/B/C.
+    assert [f.kind for f in vista1.forme].count("label") == 4
+    assert [f.kind for f in vista2.forme].count("label") == 5
 
 
 @pytest.mark.unit
@@ -92,7 +96,7 @@ def test_meno_facce_definite_quando_hd_supera_cinque() -> None:
     # la geometria resta disegnata, solo le etichette del cpe spariscono
     assert any(f.kind == "rect" for f in vista1.forme)
     assert any(f.kind == "arrow" for f in vista1.forme)
-    assert sum(1 for f in vista2.forme if f.kind == "label") == 4
+    assert sum(1 for f in vista2.forme if f.kind == "label") == 5  # sopravento+sottovento+A+B+C
 
 
 @pytest.mark.unit
@@ -102,12 +106,41 @@ def test_etichette_c_pe_riportano_il_simbolo_e_il_valore_giusti() -> None:
     sketch = disegna(inputs, dir1, dir2)
     etichette = [f for f in sketch.viste[0].forme if f.kind == "label"]
     simboli = sorted(e.simbolo for e in etichette)
-    assert simboli == ["c_pe,l", "c_pe,l", "c_pe,s", "c_pe,w"]
+    assert simboli == ["A", "B", "c_pe,s", "c_pe,w"]  # zona C degenere in questo esempio (vedi sopra)
     windward = next(e for e in etichette if e.simbolo == "c_pe,w")
     # regola 4 (COMPOSITION RULES): con `simbolo` impostato, `testo` è solo il valore.
-    assert windward.testo == f"{dir1.cpe_windward:.2f}".replace(".", ",")
+    assert windward.testo == "+" + f"{dir1.cpe_windward:.2f}".replace(".", ",")
     assert not windward.testo.startswith("c_pe")
     assert not windward.testo.endswith(" ")  # cpe è adimensionale: nessuna unità in coda
+
+
+@pytest.mark.unit
+def test_segno_tipografico_meno_e_più_esplicito() -> None:
+    """Design review: il segno meno è il vero "−" tipografico (non il trattino ASCII "-"), e i
+    valori positivi hanno un "+" esplicito."""
+    inputs = VentoCpeInput.model_validate(TOOL.example)
+    dir1, dir2 = _dirs(TOOL.example)
+    sketch = disegna(inputs, dir1, dir2)
+    etichette = [f for f in sketch.viste[0].forme if f.kind == "label"]
+
+    windward = next(e for e in etichette if e.simbolo == "c_pe,w")  # positivo
+    assert windward.testo.startswith("+")
+    assert "-" not in windward.testo  # nessun trattino ASCII
+
+    laterale = next(e for e in etichette if e.simbolo == "A")  # negativo
+    assert laterale.testo.startswith("−")
+    assert "-" not in laterale.testo
+
+
+@pytest.mark.unit
+def test_zone_laterali_hanno_linee_di_confine_su_entrambe_le_pareti() -> None:
+    """Le linee di confine zona (trattini) compaiono su ENTRAMBE le pareti laterali (simmetriche),
+    anche se solo una delle due porta le etichette A/B/C (budget di 8 testi, regola 4)."""
+    inputs = VentoCpeInput.model_validate(TOOL.example)
+    dir1, dir2 = _dirs(TOOL.example)
+    sketch = disegna(inputs, dir1, dir2)
+    linee_confine = [f for f in sketch.viste[0].forme if f.kind == "line" and f.stile == "quota"]
+    assert len(linee_confine) == 2  # una zona A/B (nessuna C): un confine per parete, 2 pareti
 
 
 @pytest.mark.unit
@@ -175,3 +208,15 @@ def test_errore_nel_disegno_non_fa_fallire_il_calcolo(monkeypatch: pytest.Monkey
 def test_modulo_schizzo_importabile_e_puro() -> None:
     """Il modulo non tocca I/O: verifica solo che sia importabile senza effetti collaterali."""
     assert hasattr(schizzo_module, "disegna")
+
+
+@pytest.mark.unit
+def test_valore_con_segno_copre_i_tre_rami() -> None:
+    assert schizzo_module._valore_con_segno(0.77) == "+0,77"
+    assert schizzo_module._valore_con_segno(-0.9) == "−0,90"
+    assert schizzo_module._valore_con_segno(0.0) == "0,00"
+
+
+@pytest.mark.unit
+def test_confini_zona_frazione_con_profondita_nulla() -> None:
+    assert schizzo_module._confini_zona_frazione(10.0, 0.0, 5.0) == (0.0, 0.0)

@@ -62,3 +62,13 @@ def test_run_as_lnk_boundary_a_equals_half_h() -> None:
     report = run(MensolaTozzaInput(**{**_BASE, "a_mm": 225.0, "h_mm": 450.0}, legacy_compat=True))
     expected = 0.5 * _BASE["ped_kN"] * 1000 / report.data.materiali.fyd_MPa
     assert report.data.armature.as_lnk_min_mm2 == pytest.approx(expected, rel=1e-9)
+
+
+@pytest.mark.unit
+def test_check_names_are_readable_italian_phrases_not_python_keys() -> None:
+    """Design review (P0): `Check(name=...)` must be a readable Italian phrase, never a raw
+    snake_case Python key, so no check name may contain an underscore."""
+    report = run(MensolaTozzaInput(**_BASE))
+    assert report.checks
+    for check in report.checks:
+        assert "_" not in check.name, check.name

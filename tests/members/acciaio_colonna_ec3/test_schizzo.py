@@ -29,8 +29,8 @@ def test_vista_titolo_e_forme_esempio() -> None:
     kinds = [f.kind for f in sketch.viste[0].forme]
     assert kinds.count("rect") == 3
     assert kinds.count("line") == 2
-    assert kinds.count("dimension") == 4
-    assert kinds.count("label") == 2
+    assert kinds.count("dimension") == 3  # h, b, t_f (t_w è un'etichetta, non una quota)
+    assert kinds.count("label") == 3  # y, z, t_w
 
 
 @pytest.mark.unit
@@ -72,8 +72,8 @@ def test_spessori_sottili_ricevono_uno_spessore_minimo_schematico() -> None:
     assert anima.w > inputs.tw_mm / 1000.0  # spessore disegnato > vero spessore dell'anima
     assert ala_superiore.h >= inputs.tf_mm / 1000.0  # spessore ala disegnato >= vero spessore
 
-    quote = {q.testo.split(" =")[0]: q.testo for q in sketch.viste[0].forme if q.kind == "dimension"}
-    assert quote["t_w"] == "t_w = 8 mm"  # il vero valore, non quello disegnato
+    etichetta_tw = next(f for f in sketch.viste[0].forme if f.kind == "label" and f.simbolo == "t_w")
+    assert etichetta_tw.testo == "8 mm"  # il vero valore, non quello disegnato (regola 4: solo il valore)
 
 
 @pytest.mark.unit
@@ -83,13 +83,13 @@ def test_assi_yy_zz_con_etichette() -> None:
     linee = [f for f in sketch.viste[0].forme if f.kind == "line"]
     etichette = [f for f in sketch.viste[0].forme if f.kind == "label"]
 
-    assert {e.simbolo for e in etichette} == {"y", "z"}
+    assert {e.simbolo for e in etichette} == {"y", "z", "t_w"}
     for linea in linee:
         assert linea.stile == "asse"
     for etichetta in etichette:
         assert etichetta.stile == "asse"
-    # y-y è ancorata all'estremo sinistro (libero da h e t_f), z-z all'estremo superiore
-    # (spostata lateralmente, libera da t_w): vedi il docstring del modulo.
+    # y-y è ancorata all'estremo sinistro (libero da h e t_w, entrambi a destra a mezzeria),
+    # z-z all'estremo superiore (spostata lateralmente, libera da t_f): vedi il docstring del modulo.
     etichetta_y = next(e for e in etichette if e.simbolo == "y")
     etichetta_z = next(e for e in etichette if e.simbolo == "z")
     assert etichetta_y.ancora == "end"
@@ -129,7 +129,8 @@ def test_quote_riportano_i_valori_corretti() -> None:
     assert quote["h"] == "h = 500 mm"
     assert quote["b"] == "b = 280 mm"
     assert quote["t_f"] == "t_f = 12 mm"
-    assert quote["t_w"] == "t_w = 8 mm"
+    etichetta_tw = next(f for f in sketch.viste[0].forme if f.kind == "label" and f.simbolo == "t_w")
+    assert etichetta_tw.testo == "8 mm"
 
 
 @pytest.mark.unit
@@ -151,6 +152,22 @@ def test_sezioni_realistiche_non_hanno_problemi_di_layout(b_mm: float, h_mm: flo
     sketch = disegna(inputs)
     problems = layout_problems(sketch) + readability_problems(sketch) + overlap_problems(sketch)
     assert problems == [], problems
+
+
+@pytest.mark.unit
+def test_etichetta_tw_e_ancorata_sullanima_non_una_quota() -> None:
+    """Design review: t_w è un'etichetta (non una linea di quota) ancorata vicino all'anima, sul
+    lato libero tra l'anima e la punta dell'ala; t_f resta invece una quota fuori dall'ala."""
+    inputs = ColonnaEc3Input.model_validate(TOOL.example)
+    sketch = disegna(inputs)
+    b_m, tw_m = inputs.b_mm / 1000.0, inputs.tw_mm / 1000.0
+    etichetta_tw = next(f for f in sketch.viste[0].forme if f.kind == "label" and f.simbolo == "t_w")
+    assert 0.0 < etichetta_tw.punto[0] < b_m / 2.0  # tra l'anima e la punta dell'ala, non oltre
+    assert etichetta_tw.punto[0] > tw_m / 2.0  # fuori dal rettangolo dell'anima stessa
+
+    quota_tf = next(f for f in sketch.viste[0].forme if f.kind == "dimension" and f.testo.startswith("t_f"))
+    assert quota_tf.p1[0] == pytest.approx(-b_m / 2)  # sul filo dell'ala sinistra
+    assert quota_tf.distanza > 0  # spostata ulteriormente fuori dal profilo (a sinistra)
 
 
 @pytest.mark.unit
