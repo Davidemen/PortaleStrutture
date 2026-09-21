@@ -88,6 +88,12 @@ class TraveRettangolareInput(BaseModel):
     )
     mrc_kNm: float = Field(description="Momento resistente del pilastro convergente nel nodo", json_schema_extra={"unit": "kNm", "symbol": "M_Rc", "group": "Sollecitazioni di progetto"}, gt=0)
     lt_m: float = Field(description="Luce della trave", json_schema_extra={"unit": "m", "symbol": "L_t", "group": "Geometria della sezione"}, gt=0)
+    v_gravita_kN: float = Field(
+        default=0.0, ge=0,
+        description="Taglio dovuto ai carichi gravitazionali della combinazione sismica, trave considerata "
+                    "appoggiata agli estremi: si somma al taglio di gerarchia delle resistenze (NTC2018 §7.4.4.1.1)",
+        json_schema_extra={"unit": "kN", "symbol": "V_g", "group": "Sollecitazioni di progetto"},
+    )
     legacy_compat: bool = Field(
         default=False, description="Riproduci il foglio Excel originale (errori inclusi)",
         json_schema_extra={"advanced": True, "group": "Avanzate"},

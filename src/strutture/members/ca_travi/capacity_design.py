@@ -77,7 +77,8 @@ def lunghezza_ancoraggio_mm(diametro_staffe1_mm: float, diametro_staffe2_mm: flo
 
 
 def taglio_capacity_design_kN(
-    mrb_kNm: float, mrc_kNm: float, classe: ClasseDuttilita, *, lt_m: float, legacy_compat: bool = False
+    mrb_kNm: float, mrc_kNm: float, classe: ClasseDuttilita, *, lt_m: float, v_gravita_kN: float = 0.0,
+    legacy_compat: bool = False,
 ) -> float:
     """VEd,max (K81).
 
@@ -87,12 +88,15 @@ def taglio_capacity_design_kN(
 
     `legacy_compat=False` implements NTC2018 §7.4.4.1.1's amplified capacity-design shear:
     VEd = (Mi,d + Mj,d)/Lt, with Mi,d = Mj,d = γRd·MRb·min(1,ΣMRc/ΣMRb) (the sheet supplies a
-    single beam moment capacity for both ends, so both end moments use the same MRb/MRc pair).
+    single beam moment capacity for both ends, so both end moments use the same MRb/MRc pair),
+    PLUS `v_gravita_kN`: the shear of the gravity loads of the seismic combination on the beam taken
+    as simply supported, which the same clause requires adding (the sheet has no such term — found by
+    the engineering proof-read of the calculation report; ignored under `legacy_compat`).
     """
     momento_amplificato_kNm = GAMMA_RD_CAPACITY[classe] * mrb_kNm * min(1.0, mrc_kNm / mrb_kNm)
     if legacy("ca-travi/taglio-capacity-design-ignora-luce", legacy_compat):
         return momento_amplificato_kNm
-    return 2.0 * momento_amplificato_kNm / lt_m
+    return 2.0 * momento_amplificato_kNm / lt_m + v_gravita_kN
 
 
 def dettagli_costruttivi(
@@ -110,6 +114,7 @@ def dettagli_costruttivi(
     mrb_kNm: float,
     mrc_kNm: float,
     lt_m: float,
+    v_gravita_kN: float = 0.0,
     legacy_compat: bool = False,
 ) -> CapacityDesignOutput:
     return CapacityDesignOutput(
@@ -128,5 +133,7 @@ def dettagli_costruttivi(
             legacy_compat=legacy_compat,
         ),
         lunghezza_ancoraggio_mm=lunghezza_ancoraggio_mm(diametro_staffe1_mm, diametro_staffe2_mm),
-        ved_max_kN=taglio_capacity_design_kN(mrb_kNm, mrc_kNm, classe, lt_m=lt_m, legacy_compat=legacy_compat),
+        ved_max_kN=taglio_capacity_design_kN(
+            mrb_kNm, mrc_kNm, classe, lt_m=lt_m, v_gravita_kN=v_gravita_kN, legacy_compat=legacy_compat,
+        ),
     )

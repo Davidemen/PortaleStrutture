@@ -118,18 +118,18 @@ def test_variazione_blocco_opzionale_vuoto_classe_normativa_assente():
     assert_relazione_coerente(TOOL, variazione)
 
 
-def test_capacity_design_espone_gamma_rd_e_non_si_spaccia_per_verifica_completa():
-    """Review finding (WRONG_FORMULA + MISLEADING): il passo di capacity design a taglio
-    sommava già γRd nel coefficiente numerico iniziale (mai esposto come simbolo) e si presentava
-    come la verifica NTC2018 §7.4.4.1.1 completa pur mancando il contributo dei carichi
-    gravitazionali (sempre additivo, non calcolabile da questo tool): deve esporre γ_Rd come
-    valore a sé ed essere rinominato per non spacciarsi per la domanda completa."""
-    report = execute(TOOL, TOOL.example, con_relazione=True)
-    passi = [p for t in report.relazione for p in t.passi]
-    assert not any(p.simbolo == "V_Ed,max" for p in passi)
-    passo = next(p for p in passi if p.simbolo == "V_Ed,M")
-    assert any(v.simbolo == "γ_Rd" for v in passo.valori)
-    assert "gravitazional" in passo.nota.lower()
+def test_capacity_design_e_la_domanda_completa_di_ntc2018_7_4_4_1_1():
+    """Il passo espone γ_Rd come valore a sé e SOMMA il taglio dei carichi gravitazionali V_g
+    (dato di ingresso, aggiunto dopo che la rilettura di questa stessa traccia ne aveva segnalato
+    l'assenza): con V_g = 0 la nota dice che la verifica considera i soli momenti di estremità."""
+    esempio = {k: v for k, v in TOOL.example.items() if k != "legacy_compat"}
+    for v_g, attesa_nota in ((0.0, True), (40.0, False)):
+        report = execute(TOOL, {**esempio, "v_gravita_kN": v_g}, con_relazione=True)
+        passo = next(p for t in report.relazione for p in t.passi if p.simbolo == "V_Ed,max")
+        assert {"γ_Rd", "V_g"} <= {v.simbolo for v in passo.valori}
+        assert next(v.valore for v in passo.valori if v.simbolo == "V_g") == v_g
+        assert ("gravitazional" in passo.nota.lower()) is attesa_nota
+        assert passo.risultato == report.data.dettagli_costruttivi.ved_max_kN
 
 
 def test_asw_min_cita_ntc_e_ec2():

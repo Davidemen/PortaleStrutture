@@ -107,30 +107,29 @@ def _passo_vrd(inputs: TraveRettangolareInput, output: TraveRettangolareOutput) 
 
 
 def _passo_ved_max(inputs: TraveRettangolareInput, output: TraveRettangolareOutput) -> Passo:
-    """Review finding (WRONG_FORMULA + MISLEADING): NTC2018 §7.4.4.1.1's full capacity-design shear
-    demand also SUMS the shear from gravity loads on the beam taken as simply supported in the
-    seismic combination (a term always additive, never available as an input of this tool); the
-    quantity restated here is only the moment-based contribution, so it is named `V_Ed,M` (never
-    `V_Ed,max`, which would claim completeness) and γ_Rd is exposed as its own `Valore` instead of
-    being folded into a numeric literal coefficient."""
+    """NTC2018 §7.4.4.1.1, complete: the shear from the amplified end moments PLUS the shear of the
+    gravity loads of the seismic combination on the simply-supported beam (`v_gravita_kN`, an input
+    since the engineering proof-read of this very trace found the term missing). γ_Rd is its own
+    `Valore`, never folded into a numeric literal."""
     dettagli, mrd_kNm = output.dettagli_costruttivi, output.flessione.mrd_kNm
     classe: ClasseDuttilita = inputs.classe_duttilita
     gamma_rd = GAMMA_RD_CAPACITY[classe]
     soddisfatta = dettagli.ved_max_kN <= output.taglio.vrd_kN
     return Passo(
-        simbolo="V_Ed,M",
-        formula="γ_Rd * (M_Rd + M_Rd) * min(1, M_Rc / M_Rd) / L_t <= V_Rd",
+        simbolo="V_Ed,max",
+        formula="γ_Rd * (M_Rd + M_Rd) * min(1, M_Rc / M_Rd) / L_t + V_g <= V_Rd",
         valori=(
             Valore(simbolo="γ_Rd", valore=gamma_rd, descrizione=f"fattore di sovraresistenza NTC2018 §7.4.4.1.1 per {classe}"),
             Valore(simbolo="M_Rd", valore=mrd_kNm, unita="kNm", descrizione="momento resistente della trave a entrambe le estremità (pari a MRb)"),
             Valore(simbolo="M_Rc", valore=inputs.mrc_kNm, unita="kNm", descrizione="momento resistente del pilastro convergente nel nodo"),
             Valore(simbolo="L_t", valore=inputs.lt_m, unita="m", descrizione="luce della trave"),
+            Valore(simbolo="V_g", valore=inputs.v_gravita_kN, unita="kN",
+                   descrizione="taglio dei carichi gravitazionali della combinazione sismica, trave appoggiata agli estremi"),
             Valore(simbolo="V_Rd", valore=output.taglio.vrd_kN, unita="kN"),
         ),
         risultato=dettagli.ved_max_kN, unita="kN", clausola="NTC2018 §7.4.4.1.1",
         esito="soddisfatta" if soddisfatta else "non soddisfatta",
-        nota="Solo il contributo dei momenti resistenti di estremità: la domanda di gerarchia delle "
-             "resistenze completa richiede di sommarvi il taglio da carichi gravitazionali sulla trave "
-             "appoggiata-appoggiata nella combinazione sismica (NTC2018 §7.4.4.1.1), non calcolato da "
-             "questo strumento e quindi non incluso nel confronto con V_Rd sopra.",
+        nota="" if inputs.v_gravita_kN > 0.0 else
+             "V_g = 0: il taglio dei carichi gravitazionali non è stato inserito, la verifica considera i soli "
+             "momenti resistenti di estremità.",
     )

@@ -190,5 +190,26 @@
   "uscite": [],
   "ramo": "nessuno",
   "motivo_senza_ramo": "È una scelta di modellazione dell'input (un solo campo classe_duttilita alimenta entrambi i calcoli): non esiste alcun comportamento alternativo da selezionare con un ramo legacy_compat."
+ },
+ {
+  "id": "ca-travi/taglio-gerarchia-senza-carichi-gravitazionali",
+  "titolo": "Il taglio di gerarchia delle resistenze non somma il taglio dei carichi gravitazionali",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "ca-trave-rettangolare"
+  ],
+  "cella": "Travi sez. rettangolare!K81",
+  "foglio": "il taglio di progetto da gerarchia delle resistenze è ricavato dai soli momenti resistenti di estremità; il foglio non ha alcun dato per il taglio dovuto ai carichi gravitazionali della combinazione sismica",
+  "corretto": "VEd = γRd·(MRb,i + MRb,j)·min(1; MRc/MRb)/Lt + Vg, con Vg dato di ingresso (taglio dei carichi gravitazionali, trave appoggiata agli estremi); con Vg = 0 lo strumento avvisa che la verifica è incompleta",
+  "clausola": "NTC2018 §7.4.4.1.1",
+  "impatto": "nessuno sul caso guida (Vg non presente nel foglio: 0); con Vg = 40 kN il taglio di progetto passa da 51,75 a 91,75 kN",
+  "uscite": [
+   "dettagli_costruttivi.ved_max_kN"
+  ],
+  "ramo": "condiviso",
+  "motivo_senza_ramo": "In modalità Excel il ramo di ca-travi/taglio-capacity-design-ignora-luce restituisce il valore del foglio prima che Vg venga sommato: il dato è ignorato insieme alla luce.",
+  "riprodotta_da": [
+   "ca-travi/taglio-capacity-design-ignora-luce"
+  ]
  }
 ]

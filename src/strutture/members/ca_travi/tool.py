@@ -230,7 +230,8 @@ def _dettagli(inputs: TraveRettangolareInput, d_mm: float, mrb_kNm: float) -> Ca
         diametro_staffe1_mm=inputs.diametro_staffe1_mm, diametro_staffe2_mm=inputs.diametro_staffe2_mm,
         n_bracci_staffe2=inputs.n_bracci_staffe2, diametro_ferri1_mm=inputs.diametro_ferri1_mm, n_ferri1=inputs.n_ferri1,
         diametro_ferri2_mm=inputs.diametro_ferri2_mm, n_ferri2=inputs.n_ferri2,
-        mrb_kNm=mrb_kNm, mrc_kNm=inputs.mrc_kNm, lt_m=inputs.lt_m, legacy_compat=inputs.legacy_compat,
+        mrb_kNm=mrb_kNm, mrc_kNm=inputs.mrc_kNm, lt_m=inputs.lt_m, v_gravita_kN=inputs.v_gravita_kN,
+        legacy_compat=inputs.legacy_compat,
     )
 
 
@@ -264,7 +265,19 @@ def run(inputs: TraveRettangolareInput) -> Report[TraveRettangolareOutput]:
         schizzo=schizzo,
     )
     checks = _checks(inputs, armatura, flessione, taglio, sle_tensioni, fessurazione, dettagli)
-    return success(data, inputs, checks=checks)
+    return success(data, inputs, checks=checks, warnings=_avvisi(inputs))
+
+
+AVVISO_TAGLIO_GRAVITAZIONALE = (
+    "Gerarchia delle resistenze a taglio: il contributo dei carichi gravitazionali (V_g, NTC2018 §7.4.4.1.1) "
+    "non è stato inserito; il taglio di progetto considera i soli momenti resistenti di estremità."
+)
+
+
+def _avvisi(inputs: TraveRettangolareInput) -> tuple[str, ...]:
+    if inputs.legacy_compat or inputs.v_gravita_kN > 0.0:
+        return ()
+    return (AVVISO_TAGLIO_GRAVITAZIONALE,)
 
 
 TOOLS = (

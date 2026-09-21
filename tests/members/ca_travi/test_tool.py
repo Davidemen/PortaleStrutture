@@ -96,3 +96,20 @@ def test_classe_duttilita_cda_changes_lunghezza_critica_and_gamma_rd():
     cda = run(TraveRettangolareInput(classe_duttilita="CDA", **BASE_KWARGS)).data
     assert cda.dettagli_costruttivi.lunghezza_critica_mm == pytest.approx(1.5 * cdb.dettagli_costruttivi.lunghezza_critica_mm)
     assert cda.dettagli_costruttivi.ved_max_kN > cdb.dettagli_costruttivi.ved_max_kN
+
+
+def test_capacity_design_shear_includes_the_gravity_term_and_warns_when_it_is_missing():
+    """NTC2018 §7.4.4.1.1: V_Ed = γ_Rd·ΣM_Rd/L_t + V_g. With V_g left at 0 the check is incomplete
+    (non-conservative): the tool says so; with V_g given, the demand grows by exactly V_g."""
+    from strutture.members.ca_travi.tool import TOOLS
+    from strutture.shared.tool import execute
+
+    tool = TOOLS[0]
+    base = {k: v for k, v in tool.example.items() if k != "legacy_compat"}
+    senza = execute(tool, base)
+    con = execute(tool, {**base, "v_gravita_kN": 40.0})
+    assert senza.ok and con.ok
+    assert con.data.dettagli_costruttivi.ved_max_kN == pytest.approx(senza.data.dettagli_costruttivi.ved_max_kN + 40.0)
+    avviso = "carichi gravitazionali"
+    assert any(avviso in w for w in senza.warnings)
+    assert not any(avviso in w for w in con.warnings)

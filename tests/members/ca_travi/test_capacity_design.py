@@ -121,3 +121,18 @@ def test_dettagli_costruttivi_composes_all_four_outputs():
     assert out.passo_max_zona_critica_mm == pytest.approx(0.0)
     assert out.lunghezza_ancoraggio_mm == pytest.approx(120)
     assert out.ved_max_kN == pytest.approx(207.01, rel=1e-4)
+
+
+# --- NTC2018 §7.4.4.1.1: the gravity-load shear is ADDED to the shear from the end moments ----------
+
+def test_gravity_shear_is_added_to_the_capacity_design_shear():
+    senza = taglio_capacity_design_kN(207.01, 350, "CDB", lt_m=8)
+    con = taglio_capacity_design_kN(207.01, 350, "CDB", lt_m=8, v_gravita_kN=40.0)
+    assert senza == pytest.approx(2 * 207.01 / 8)
+    assert con == pytest.approx(senza + 40.0)
+
+
+def test_excel_mode_ignores_the_gravity_shear_like_the_sheet():
+    a = taglio_capacity_design_kN(207.01, 350, "CDB", lt_m=8, legacy_compat=True)
+    b = taglio_capacity_design_kN(207.01, 350, "CDB", lt_m=8, v_gravita_kN=40.0, legacy_compat=True)
+    assert a == b
