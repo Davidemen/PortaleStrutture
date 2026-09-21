@@ -8,6 +8,12 @@ capacities directly, no direction search needed. Biaxial case: search the neutra
 same direction as `(Mx_Ed, My_Ed)` — since the domain is convex and contains the origin, the
 mapping `theta -> atan2(My, Mx)` sweeps monotonically once around the circle as `theta` does, so a
 coarse angular scan brackets the crossing and `shared.numeric.bisect` refines it.
+
+"Contains the origin" is NOT guaranteed at every `N`: near an axial extreme, or with asymmetric
+reinforcement, the domain's M interval at `N_Ed` can lie entirely on one side of zero (both
+`M_Rd+` and `M_Rd-` positive). There the ray from the origin is meaningless — even `M_Ed = 0` is
+outside the domain. `rapporto_uniassiale` handles that case explicitly; the biaxial branch refuses
+it (never "inside") rather than searching a direction that may not exist.
 """
 from math import atan2, hypot, pi
 
@@ -60,9 +66,35 @@ def _cerca_theta_direzione(sezione: Sezione, n_ed_kN: float, phi_ed: float) -> f
     raise CalcError("Impossibile individuare la direzione del momento resistente richiesta.")
 
 
-def _rapporto_uniassiale(sezione: Sezione, n_ed_kN: float, asse: Asse, m_ed_kNm: float) -> tuple[float, float]:
+def rapporto_uniassiale(m_ed_kNm: float, mrd_pos_kNm: float, mrd_neg_kNm: float) -> float:
+    """Utilisation of `M_Ed` against the domain's M interval `[M_Rd-, M_Rd+]` at `N = N_Ed`; by
+    construction `<= 1` exactly when `M_Rd- <= M_Ed <= M_Rd+`.
+
+    Interval containing zero (the ordinary case): the classic `|M_Ed| / |M_Rd|` with `M_Rd` in the
+    sign of `M_Ed` — the ratio along the ray from the origin, the number an engineer expects.
+    Interval excluding zero: distance of `M_Ed` from the interval's centre over its half-width (the
+    ray from the origin does not cross the domain at all; picking a branch by the sign of `M_Ed`
+    and dividing reported points OUTSIDE the domain as verified)."""
+    if mrd_neg_kNm <= 0.0 <= mrd_pos_kNm:
+        mrd = mrd_pos_kNm if m_ed_kNm >= 0.0 else mrd_neg_kNm
+        if mrd == 0.0:
+            return 0.0 if m_ed_kNm == 0.0 else float("inf")
+        return abs(m_ed_kNm) / abs(mrd)
+    centro, semiampiezza = (mrd_pos_kNm + mrd_neg_kNm) / 2.0, (mrd_pos_kNm - mrd_neg_kNm) / 2.0
+    if semiampiezza <= 0.0:
+        return 0.0 if m_ed_kNm == centro else float("inf")
+    return abs(m_ed_kNm - centro) / semiampiezza
+
+
+def _verifica_uniassiale(sezione: Sezione, n_ed_kN: float, asse: Asse, m_ed_kNm: float) -> Verifica:
     mrd_pos, mrd_neg = m_rd(sezione, n_ed_kN, asse)
-    return (m_ed_kNm, mrd_pos) if m_ed_kNm >= 0.0 else (m_ed_kNm, mrd_neg)
+    rapporto = rapporto_uniassiale(m_ed_kNm, mrd_pos, mrd_neg)
+    return Verifica(rapporto=rapporto, dentro=rapporto <= 1.0, m_rd_direzione=mrd_pos if m_ed_kNm >= 0.0 else mrd_neg)
+
+
+def _origine_nel_dominio(sezione: Sezione, n_ed_kN: float) -> bool:
+    """Necessary condition for the ray-from-the-origin search: M = 0 inside both uniaxial intervals."""
+    return all(neg <= 0.0 <= pos for pos, neg in (m_rd(sezione, n_ed_kN, "x"), m_rd(sezione, n_ed_kN, "y")))
 
 
 def verifica(sezione: Sezione, n_ed_kN: float, mx_ed_kNm: float, my_ed_kNm: float) -> Verifica:
@@ -78,14 +110,15 @@ def verifica(sezione: Sezione, n_ed_kN: float, mx_ed_kNm: float, my_ed_kNm: floa
     if not n_min <= n_ed_kN <= n_max:
         return Verifica(rapporto=float("inf"), dentro=False, m_rd_direzione=0.0)
     if my_ed_kNm == 0.0:
-        m_ed, mrd = _rapporto_uniassiale(sezione, n_ed_kN, "x", mx_ed_kNm)
-    elif mx_ed_kNm == 0.0:
-        m_ed, mrd = _rapporto_uniassiale(sezione, n_ed_kN, "y", my_ed_kNm)
-    else:
-        phi_ed = atan2(my_ed_kNm, mx_ed_kNm)
-        theta = _cerca_theta_direzione(sezione, n_ed_kN, phi_ed)
-        mx, my = mx_my_a_theta(sezione, n_ed_kN, theta)
-        m_ed, mrd = hypot(mx_ed_kNm, my_ed_kNm), hypot(mx, my)
-
-    rapporto = abs(m_ed) / abs(mrd) if mrd != 0.0 else float("inf")
+        return _verifica_uniassiale(sezione, n_ed_kN, "x", mx_ed_kNm)
+    if mx_ed_kNm == 0.0:
+        return _verifica_uniassiale(sezione, n_ed_kN, "y", my_ed_kNm)
+    if not _origine_nel_dominio(sezione, n_ed_kN):
+        # conservative: a point may still be inside, but no ray from the origin can prove it
+        return Verifica(rapporto=float("inf"), dentro=False, m_rd_direzione=0.0)
+    phi_ed = atan2(my_ed_kNm, mx_ed_kNm)
+    theta = _cerca_theta_direzione(sezione, n_ed_kN, phi_ed)
+    mx, my = mx_my_a_theta(sezione, n_ed_kN, theta)
+    mrd = hypot(mx, my)
+    rapporto = hypot(mx_ed_kNm, my_ed_kNm) / mrd if mrd != 0.0 else float("inf")
     return Verifica(rapporto=rapporto, dentro=rapporto <= 1.0, m_rd_direzione=mrd)

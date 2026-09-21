@@ -135,6 +135,34 @@ def test_diagramma_pressioni_riporta_p_valle_e_p_monte() -> None:
 
 
 @pytest.mark.unit
+def test_piano_campagna_valle_appare_quando_d_e_impostata() -> None:
+    """HIGH finding: D (profondità di posa a VALLE) va mostrata nello schizzo, non solo descritta
+    nel campo, così un valore riferito per errore al piano di campagna a monte risulta visivamente
+    incoerente con l'altezza del muro."""
+    modificato = {
+        **TOOL.example, "terreno_condizione": "drenata", "terreno_phi_k_deg": 28.0, "terreno_c_k_kpa": 5.0,
+        "terreno_gamma_kn_m3": 18.0, "terreno_profondita_posa_m": 0.3,
+    }
+    report = execute(TOOL, modificato)
+    assert report.ok, report.errors
+    forme = report.data.schizzo.viste[0].forme
+    linee_tratteggiate = [f for f in forme if f.kind == "line" and f.tratteggio]
+    assert len(linee_tratteggiate) == 1
+    etichette_d = [f for f in forme if f.kind == "label" and f.simbolo == "D"]
+    assert len(etichette_d) == 1
+    assert etichette_d[0].testo == "0,30 m"
+
+
+@pytest.mark.unit
+def test_piano_campagna_valle_assente_quando_d_non_impostata() -> None:
+    report = execute(TOOL, TOOL.example)
+    assert report.ok, report.errors
+    forme = report.data.schizzo.viste[0].forme
+    assert not any(f.kind == "line" for f in forme)
+    assert not any(f.kind == "label" and f.simbolo == "D" for f in forme)
+
+
+@pytest.mark.unit
 def test_esempio_ha_schizzo_e_gira_in_meno_di_300ms() -> None:
     inizio = time.perf_counter()
     report = execute(TOOL, TOOL.example)
@@ -172,6 +200,10 @@ _CASI_COMPOSIZIONE = {
     "muro alto": {"h_muro_m": 4.0, "b_valle_m": 0.5, "b_monte_m": 2.2, "s_base_m": 0.8},
     "sovraccarico elevato": {"q_kN_m2": 20.0},
     "fondazione larga": {"b_valle_m": 1.5, "b_monte_m": 3.0},
+    "blocco terreno compilato": {
+        "terreno_condizione": "drenata", "terreno_phi_k_deg": 28.0, "terreno_c_k_kpa": 5.0,
+        "terreno_gamma_kn_m3": 18.0, "terreno_profondita_posa_m": 0.3,
+    },
 }
 
 

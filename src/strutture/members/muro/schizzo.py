@@ -9,6 +9,7 @@ from strutture.shared.sketch import (
     Diagramma,
     Etichetta,
     Freccia,
+    Linea,
     Poligono,
     Quota,
     Rettangolo,
@@ -111,6 +112,27 @@ def _valore_kN(valore: float) -> str:
     return f"{valore:.0f} kN"
 
 
+def _valore_m(valore: float) -> str:
+    return f"{valore:.2f} m".replace(".", ",")
+
+
+def _piano_campagna_valle(inputs: MuroSostegnoInput, geometria: GeometriaResult) -> tuple:
+    """HIGH finding: `terreno_profondita_posa_m` (D) è misurata dal piano campagna A VALLE (lato
+    mancia): mostrarla nello schizzo, non solo nella descrizione del campo, così un valore riferito
+    per errore al piano di campagna a monte (più in alto di h_muro + s_fond) risulta visivamente
+    incoerente con l'altezza del muro invece di passare inosservato. Assente quando il blocco
+    'Terreno di fondazione' non è compilato."""
+    if inputs.terreno_profondita_posa_m is None:
+        return ()
+    d = inputs.terreno_profondita_posa_m
+    x_sinistra = -0.12 * geometria.b_fond_m
+    x_destra = inputs.b_valle_m
+    return (
+        Linea(p1=(x_sinistra, d), p2=(x_destra, d), stile="quota", tratteggio=True),
+        Etichetta(punto=(x_sinistra, d), simbolo="D", testo=_valore_m(d), ancora="end", stile="quota"),
+    )
+
+
 def _diagramma_pressioni(pressioni_terreno: tuple[PressioniCombo, ...], geometria: GeometriaResult) -> Diagramma:
     """`base` runs right (x=B, lato monte) -> left (x=0, lato valle): `valori`/`etichette` must be
     ordered the same way (monte first, valle second) so each ordinate lands at the pressure's own
@@ -149,6 +171,7 @@ def _sezione(
               testo=etichetta_quota("B", geometria.b_fond_m, "m")),
         Quota(p1=(0.0, 0.0), p2=(0.0, geometria.h_muro_tot_m), distanza=scostamento_v,
               testo=etichetta_quota("H", geometria.h_muro_tot_m, "m")),
+        *_piano_campagna_valle(inputs, geometria),
     ]
     statica = _spinta("STR_1", spinte, ribaltamento_scorrimento)
     if statica is not None:

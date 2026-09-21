@@ -11,6 +11,7 @@ SIGLE: dict[str, str] = {
     "ca-pilastro-rettangolare": "PIR", "ca-pilastro-circolare": "PIC", "ca-mensola-tozza": "MEN",
     "ca-sle-limitazione-tensioni": "SLE", "ca-apertura-fessure": "FES",
     "ca-apertura-fessure-semplificata": "FSS", "ca-punzonamento": "PUN",
+    "ca-sezione-dominio-mn": "SMN",
     "acciaio-colonna-h-ec3": "COL", "acciaio-sezione-h-rimpiattata": "SHR",
     "acciaio-resistenza-incendio": "INC", "acciaio-proprieta-temperatura": "TMP",
     "geo-cedimento-edometrico": "EDO", "geo-cedimento-elastico-newmark": "NEW",

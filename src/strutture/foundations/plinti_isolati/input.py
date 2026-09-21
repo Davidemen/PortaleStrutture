@@ -17,6 +17,9 @@ SistemaUnita = Literal["SI", "tecnico"]
 _CONDIZIONE_TERRENO_IMPOSTATA = {"field": "terreno_condizione", "equals": ["drenata", "non_drenata"]}
 _COND_DRENATA = {"field": "terreno_condizione", "equals": ["drenata"]}
 _COND_NON_DRENATA = {"field": "terreno_condizione", "equals": ["non_drenata"]}
+_CAMPI_BLOCCO_TERRENO = (
+    "terreno_phi_k_deg", "terreno_c_k_kpa", "terreno_cu_k_kpa", "terreno_gamma_kn_m3", "terreno_profondita_falda_m",
+)
 
 
 class PlintoIsolatoInput(BaseModel):
@@ -127,8 +130,23 @@ class PlintoIsolatoInput(BaseModel):
 
     def _valida_blocco_terreno(self) -> None:
         """Il blocco 'Terreno' è opzionale (`terreno_condizione` assente = non compilato); quando è
-        compilato, i parametri richiesti dalla condizione di drenaggio scelta sono obbligatori."""
+        compilato, i parametri richiesti dalla condizione di drenaggio scelta sono obbligatori.
+
+        HIGH finding: un blocco compilato a metà nel verso opposto (parametri valorizzati ma
+        `terreno_condizione` non selezionata) veniva prima saltato in silenzio da entrambi i rami
+        (`if self.terreno_condizione is None: return`): la verifica di capacità portante restava
+        vuota (`capacita_portante.righe == ()`, nessun avviso) e l'utente credeva di averla
+        attivata. Qui viene invece rifiutato esplicitamente."""
+        campi_valorizzati = tuple(
+            nome for nome in _CAMPI_BLOCCO_TERRENO if getattr(self, nome) is not None
+        )
         if self.terreno_condizione is None:
+            if campi_valorizzati:
+                raise ValueError(
+                    "blocco 'Terreno': selezionare la condizione di drenaggio (terreno_condizione) "
+                    "per attivare la verifica di capacità portante, oppure svuotare i campi "
+                    f"{', '.join(campi_valorizzati)}"
+                )
             return
         if self.terreno_gamma_kn_m3 is None:
             raise ValueError("terreno_gamma_kn_m3 è obbligatorio quando il blocco Terreno è compilato")

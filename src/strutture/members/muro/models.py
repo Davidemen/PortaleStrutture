@@ -96,7 +96,10 @@ class MuroSostegnoInput(BaseModel):
     )
     terreno_profondita_posa_m: float | None = Field(
         default=None, ge=0,
-        description="Approfondimento del piano di posa della fondazione rispetto al piano di campagna D",
+        description="Approfondimento del piano di posa della fondazione D, misurato dal piano campagna "
+                    "a VALLE (lato mancia, non il piano campagna a monte/tacco: un valore riferito al "
+                    "monte sovrastima il sovraccarico q' e la capacità portante, vedi l'avviso se D "
+                    "supera l'altezza fuori terra del muro h_muro)",
         json_schema_extra={"unit": "m", "symbol": "D", "group": "Terreno di fondazione", "condition": {"field": "terreno_condizione", "equals": ["drenata", "non_drenata"]}},
     )
     terreno_profondita_falda_m: float | None = Field(
@@ -111,8 +114,28 @@ class MuroSostegnoInput(BaseModel):
     @model_validator(mode="after")
     def _terreno_fondazione_coerente(self) -> "MuroSostegnoInput":
         """Cross-field validation of the optional 'Terreno di fondazione' block: when a
-        `terreno_condizione` is selected, the fields the chosen condition needs must be present."""
+        `terreno_condizione` is selected, the fields the chosen condition needs must be present.
+
+        HIGH finding: a block filled in the OPPOSITE direction (phi'k/c'k/gamma/D valorized but
+        `terreno_condizione` left unset) used to be skipped in silence (both branches returned
+        immediately on `terreno_condizione is None`): `capacita_portante_fondazione` came back
+        `None` with only the generic "non calcolata da questo strumento" warning, and the engineer
+        believed the check had run. Rejected explicitly here instead."""
+        campi_blocco_valorizzati = [
+            nome for nome, valore in (
+                ("terreno_phi_k_deg", self.terreno_phi_k_deg), ("terreno_c_k_kpa", self.terreno_c_k_kpa),
+                ("terreno_cu_k_kpa", self.terreno_cu_k_kpa), ("terreno_gamma_kn_m3", self.terreno_gamma_kn_m3),
+                ("terreno_profondita_posa_m", self.terreno_profondita_posa_m),
+                ("terreno_profondita_falda_m", self.terreno_profondita_falda_m),
+            ) if valore is not None
+        ]
         if self.terreno_condizione is None:
+            if campi_blocco_valorizzati:
+                raise ValueError(
+                    "blocco 'Terreno di fondazione': selezionare la condizione di drenaggio "
+                    "(terreno_condizione) per attivare la verifica di capacità portante, oppure "
+                    f"svuotare i campi {', '.join(campi_blocco_valorizzati)}"
+                )
             return self
         mancanti = [
             nome for nome, valore in (
@@ -257,7 +280,10 @@ class CapacitaPortanteFondazioneResult(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    combinazioni: tuple[CapacitaPortanteCombo, ...] = Field(description="q_lim, R_d e grado di sfruttamento per combinazione (8 righe, ordine ALL_COMBOS)")
+    combinazioni: tuple[CapacitaPortanteCombo, ...] = Field(
+        description="q_lim, R_d e grado di sfruttamento per combinazione (STR_1, STR_2, SISMA_1, SISMA_2: "
+                    "le uniche coerenti con i parametri caratteristici del terreno non ridotti e il γR usati "
+                    "qui; GEO_1/GEO_2/EQU_1/EQU_2 userebbero uno schema Approccio/γR diverso, non implementato)")
     combo_governante: NomeCombo = Field(description="Combinazione con il grado di sfruttamento N_Ed/R_d maggiore")
     rapporto_governante: float = Field(
         description="Grado di sfruttamento governante N_Ed/R_d", ge=0,

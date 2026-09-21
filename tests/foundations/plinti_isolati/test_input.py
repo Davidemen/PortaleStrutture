@@ -59,6 +59,15 @@ def test_input_blocco_terreno_non_drenata_completo_accettato() -> None:
 
 
 @pytest.mark.unit
+def test_input_blocco_terreno_compilato_senza_condizione_rifiutato() -> None:
+    """HIGH: se l'utente valorizza phi'k/c'k/gamma (o gli altri campi del blocco) senza selezionare
+    `terreno_condizione`, il blocco non deve essere silenziosamente saltato (nessun errore, nessuna
+    verifica): deve essere rifiutato con un messaggio che indichi come attivare la verifica."""
+    with pytest.raises(ValueError, match="terreno_condizione"):
+        PlintoIsolatoInput(**_SCALARI, terreno_phi_k_deg=30.0, terreno_c_k_kpa=0.0, terreno_gamma_kn_m3=18.0)
+
+
+@pytest.mark.unit
 def test_input_blocco_terreno_falda_resta_opzionale() -> None:
     """`terreno_profondita_falda_m` resta opzionale anche a blocco compilato (falda assente)."""
     inputs = PlintoIsolatoInput(**_SCALARI, terreno_condizione="drenata", terreno_phi_k_deg=30.0,

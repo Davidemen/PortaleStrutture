@@ -9,7 +9,7 @@ from strutture.foundations.plinti_isolati.capacita_portante import (
     capacita_portante,
 )
 from strutture.foundations.plinti_isolati.capacita_portante_checks import checks_capacita_portante
-from strutture.foundations.plinti_isolati.capacita_portante_riga import RigaCapacitaPortante
+from strutture.foundations.plinti_isolati.capacita_portante_riga import RigaCapacitaPortante, capacita_portante_riga
 from strutture.foundations.plinti_isolati.input import PlintoIsolatoInput
 from strutture.foundations.plinti_isolati.riga_verifica import riga_verifica
 
@@ -68,6 +68,27 @@ def test_capacita_portante_blocco_compilato() -> None:
 
 
 @pytest.mark.unit
+def test_capacita_portante_piano_di_posa_include_altezza_plinto() -> None:
+    """HIGH: `h_interro_m` e' la copertura di terreno SOPRA il plinto (pesi_propri.py la usa come
+    tale), non l'affondamento del piano di posa: il piano di posa e' a h_interro_m + h_plinto_m dal
+    piano campagna. `capacita_portante()` deve passare quella somma a `capacita_portante_riga`, non
+    `h_interro_m` da solo (altrimenti q' e' sottostimato di gamma*h_plinto e gamma' e' riferito a
+    una base troppo alta)."""
+    inputs = _inputs(terreno_condizione="drenata", terreno_phi_k_deg=30.0, terreno_c_k_kpa=5.0,
+                      terreno_gamma_kn_m3=18.0)
+    righe = _righe_verifica(inputs)
+    output, _ = capacita_portante(righe, inputs)
+    atteso = capacita_portante_riga(
+        righe[0], ax_m=inputs.ax_m, by_m=inputs.by_m,
+        profondita_piano_posa_m=inputs.h_interro_m + inputs.h_plinto_m,
+        condizione="drenata", phi_k_deg=inputs.terreno_phi_k_deg, c_k_kpa=inputs.terreno_c_k_kpa,
+        cu_k_kpa=None, gamma_kn_m3=inputs.terreno_gamma_kn_m3, profondita_falda_m=None,
+    )
+    assert output.righe[0].q_lim_kpa == pytest.approx(atteso.q_lim_kpa)
+    assert output.righe[0].r_d_kn == pytest.approx(atteso.r_d_kn)
+
+
+@pytest.mark.unit
 def test_capacita_portante_famiglia_sismica_avviso() -> None:
     inputs = _inputs(
         terreno_condizione="drenata", terreno_phi_k_deg=30.0, terreno_c_k_kpa=0.0, terreno_gamma_kn_m3=18.0,
@@ -77,6 +98,25 @@ def test_capacita_portante_famiglia_sismica_avviso() -> None:
     righe = _righe_verifica(inputs)
     _, avvisi = capacita_portante(righe, inputs)
     assert avvisi == (AVVISO_SISMICO,)
+
+
+@pytest.mark.unit
+def test_capacita_portante_ignora_famiglie_sle() -> None:
+    """MEDIUM: SLE_RARA/SLE_FREQ/SLE_QP sono famiglie di esercizio, non hanno significato nella
+    verifica SLU di NTC2018 §6.4.2.1 e non devono comparire in `righe`/`inviluppo`/`governante`
+    (ne' diventare la riga governante al posto di una SLU_STR realmente meno verificata)."""
+    inputs = _inputs(
+        terreno_condizione="drenata", terreno_phi_k_deg=30.0, terreno_c_k_kpa=0.0, terreno_gamma_kn_m3=18.0,
+        reazioni=(_reazione(famiglia="SLU_STR", fz_kN=300.0),
+                  _reazione(nodo=2, combo="C2", famiglia="SLE_RARA", fz_kN=900.0)),
+        resistenze=({"famiglia": "SLU_STR", "sigma_ammissibile": 2.0}, {"famiglia": "SLE_RARA", "sigma_ammissibile": 2.0}),
+    )
+    righe = _righe_verifica(inputs)
+    output, _ = capacita_portante(righe, inputs)
+    assert len(output.righe) == 1
+    assert output.righe[0].famiglia == "SLU_STR"
+    assert output.governante is not None and output.governante.famiglia == "SLU_STR"
+    assert len(output.inviluppo) == 1
 
 
 @pytest.mark.unit
@@ -107,3 +147,17 @@ def test_checks_capacita_portante_pass_fail() -> None:
     riga_bocciata = riga.model_copy(update={"ratio": 1.5, "n_ed_kn": 1500.0})
     checks_ko = checks_capacita_portante(CapacitaPortanteOutput(righe=(riga_bocciata,), governante=riga_bocciata))
     assert not checks_ko[0].passed
+
+
+@pytest.mark.unit
+def test_checks_capacita_portante_riga_sismica_usa_clausola_sismica() -> None:
+    """MEDIUM: una riga sismica (SLV_STR/SLV_EQU) governante viene verificata con la formula
+    statica dell'Annesso D sotto gamma_R statico (2.3, non 2.3 sismico dedicato): il Check deve
+    citare la clausola sismica e segnalare l'esito come da confermare, non presentarsi come un
+    ordinario 'passato/non passato' di §6.4.2.1."""
+    riga = RigaCapacitaPortante(nodo=1, combo="C1", famiglia="SLV_STR", q_lim_kpa=500.0, r_d_kn=1000.0,
+                                 n_ed_kn=300.0, ratio=0.3, b_eff_m=2.0, l_eff_m=2.0)
+    checks = checks_capacita_portante(CapacitaPortanteOutput(righe=(riga,), governante=riga))
+    assert len(checks) == 1
+    assert "7.11.5.3.1" in checks[0].clause
+    assert "confermare" in checks[0].detail.lower()

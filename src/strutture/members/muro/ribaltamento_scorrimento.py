@@ -68,8 +68,20 @@ def fattore_sicurezza_ribaltamento(*, m_stab_kNm: float, m_rib_kNm: float) -> fl
     return m_stab_kNm / m_rib_kNm
 
 
+def forze_normale_tangente_base(*, n_tot_kN: float, r_tot_kN: float, omega_rad: float) -> tuple[float, float]:
+    """Scompone la risultante (Ntot verticale, Rtot orizzontale) sulla base di fondazione inclinata
+    di `omega_rad` rispetto all'orizzontale: componente normale alla base (compressione, l'N usato
+    da EN1997-1 Annesso D quando la base e' inclinata, Annex D.2 nota 2: H/V vanno presi relativi
+    alla base) e componente tangenziale alla base (taglio, la stessa che governa lo scorrimento).
+    Stessa geometria gia' usata da `fattore_sicurezza_scorrimento`; estratta qui perche' anche la
+    verifica di capacita' portante ne ha bisogno (docs/architecture-phase4.md §C, HIGH finding: H
+    e V non venivano prima scomposti sulla base inclinata)."""
+    normale_kN = n_tot_kN * math.cos(omega_rad) + r_tot_kN * math.sin(omega_rad)
+    tangente_kN = -n_tot_kN * math.sin(omega_rad) + r_tot_kN * math.cos(omega_rad)
+    return normale_kN, tangente_kN
+
+
 def fattore_sicurezza_scorrimento(*, phi_d_rad: float, n_tot_kN: float, r_tot_kN: float, omega_rad: float) -> float:
     """OS (col S) = tanφd·(Ntot·cosω+Rtot·sinω) / (-Ntot·sinω+Rtot·cosω), verifica se OS ≥ 1."""
-    numeratore = math.tan(phi_d_rad) * (n_tot_kN * math.cos(omega_rad) + r_tot_kN * math.sin(omega_rad))
-    denominatore = -n_tot_kN * math.sin(omega_rad) + r_tot_kN * math.cos(omega_rad)
-    return numeratore / denominatore
+    normale_kN, tangente_kN = forze_normale_tangente_base(n_tot_kN=n_tot_kN, r_tot_kN=r_tot_kN, omega_rad=omega_rad)
+    return math.tan(phi_d_rad) * normale_kN / tangente_kN

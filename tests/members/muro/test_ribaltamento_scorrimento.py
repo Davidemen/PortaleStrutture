@@ -6,6 +6,7 @@ import pytest
 from strutture.members.muro.ribaltamento_scorrimento import (
     fattore_sicurezza_ribaltamento,
     fattore_sicurezza_scorrimento,
+    forze_normale_tangente_base,
     momento_ribaltante,
     momento_stabilizzante,
     risultante_orizzontale,
@@ -44,6 +45,27 @@ def test_fattore_sicurezza_scorrimento_nonzero_omega_uses_both_terms():
     phi_d, n_tot, r_tot, omega = math.radians(30), 100.0, 30.0, math.radians(10)
     atteso = math.tan(phi_d) * (n_tot * math.cos(omega) + r_tot * math.sin(omega)) / (-n_tot * math.sin(omega) + r_tot * math.cos(omega))
     assert fattore_sicurezza_scorrimento(phi_d_rad=phi_d, n_tot_kN=n_tot, r_tot_kN=r_tot, omega_rad=omega) == pytest.approx(atteso)
+
+
+def test_forze_normale_tangente_base_omega_zero_is_identity():
+    """A base orizzontale (omega=0) la normale/tangente coincidono con Ntot/Rtot."""
+    normale, tangente = forze_normale_tangente_base(n_tot_kN=100.0, r_tot_kN=30.0, omega_rad=0.0)
+    assert normale == pytest.approx(100.0)
+    assert tangente == pytest.approx(30.0)
+
+
+def test_forze_normale_tangente_base_matches_scorrimento_geometry():
+    """Stessa scomposizione geometrica gia' usata (e collaudata) dal denominatore/numeratore di
+    `fattore_sicurezza_scorrimento` per lo stesso omega: la funzione estratta deve riprodurla
+    esattamente, cosi' la capacita' portante puo' riusarla per H/V sulla base inclinata (HIGH
+    finding: prima non venivano scomposti affatto)."""
+    n_tot, r_tot, omega = 100.0, 30.0, math.radians(10)
+    normale, tangente = forze_normale_tangente_base(n_tot_kN=n_tot, r_tot_kN=r_tot, omega_rad=omega)
+    assert normale == pytest.approx(n_tot * math.cos(omega) + r_tot * math.sin(omega))
+    assert tangente == pytest.approx(-n_tot * math.sin(omega) + r_tot * math.cos(omega))
+    phi_d = math.radians(28.0)
+    atteso_os = math.tan(phi_d) * normale / tangente
+    assert fattore_sicurezza_scorrimento(phi_d_rad=phi_d, n_tot_kN=n_tot, r_tot_kN=r_tot, omega_rad=omega) == pytest.approx(atteso_os)
 
 
 def test_spinte_seismic_factor_scales_all_terms():

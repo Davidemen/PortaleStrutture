@@ -50,6 +50,7 @@ from .ribaltamento_scorrimento import (
     GAMMA_R_RIBALTAMENTO_R3,
     fattore_sicurezza_ribaltamento,
     fattore_sicurezza_scorrimento,
+    forze_normale_tangente_base,
     momento_ribaltante,
     momento_stabilizzante,
     risultante_orizzontale,
@@ -75,6 +76,21 @@ ESEMPIO_TRATTO_A = {
 CLAUSE_RIBALTAMENTO = "NTC2018 §6.5.3.1.2"
 CLAUSE_SCORRIMENTO = "NTC2018 §6.5.3.1.1 / EC7 §6.5.4"
 CLAUSE_CAPACITA_PORTANTE = "NTC2018 §6.5.3.1.1, Tab. 6.5.I, §6.4.2.1 / EN1997-1 Annex D"
+# HIGH finding: NTC2018 §6.4.2.1 offre due schemi non miscelabili — Approccio 2 (A1+M1+R3, i
+# parametri caratteristici del terreno non ridotti, gamma_R=1.4/Tab. 6.5.I R3 statico) e Approccio
+# 1 Combinazione 2 (A2+M2+R2, gamma_phi'=1.25 sul terreno, gamma_R=1.0). Questo modulo applica
+# sempre i parametri caratteristici non ridotti al terreno DI FONDAZIONE (M1, vedi
+# `_capacita_portante_riga` sotto): questo e' coerente solo con le righe A1+M1 (STR_1/STR_2, lo
+# stesso schema di `fond-plinto-isolato`) e con le sismiche (gamma_R dedicato §7.11.6.2.1, gia'
+# separato sotto). GEO_1/GEO_2 (A2+M2) ed EQU_1/EQU_2 (approccio EQU) userebbero un gamma_R/uno
+# schema di parametri geotecnici diverso (non implementato qui): restano quindi ESCLUSE da questa
+# verifica piuttosto che essere valutate con lo schema sbagliato (prima: gamma_R=1.4 applicato
+# anche a queste righe, fino a +92% di sovrastima della capacita' con omega=30 deg).
+CLAUSE_CAPACITA_PORTANTE_SISMICA = (
+    "NTC2018 §7.11.5.3.1 / §7.11.6.2.1 (formula statica dell'Annesso D, riduzione inerziale del "
+    "terreno non implementata)"
+)
+COMBO_CAPACITA_PORTANTE: tuple[NomeCombo, ...] = ("STR_1", "STR_2") + SEISMIC_COMBOS
 # NTC2018 Tab. 6.5.I γR per le opere di sostegno (capacità portante): R3 = 1.4 statico (identico a
 # `ntc_combos.fattori_resistenza("capacita_portante").r3`, la stessa tabella già usata da
 # ribaltamento/scorrimento in questo modulo); 1.2 sismico (§7.11.6.2.1) era già citato
@@ -82,12 +98,15 @@ CLAUSE_CAPACITA_PORTANTE = "NTC2018 §6.5.3.1.1, Tab. 6.5.I, §6.4.2.1 / EN1997-
 # pacchetto piuttosto che un nuovo numero da inventare (docs/BUILD_CONTRACT.md).
 GAMMA_R_CAPACITA_PORTANTE_STATICO = fattori_resistenza("capacita_portante").r3
 GAMMA_R_CAPACITA_PORTANTE_SISMA = 1.2
+AVVISO_ECCENTRICITA_LIMITE = (
+    "L'eccentricità è qui verificata solo contro |e| > B/2 (risultante fuori "
+    "dalla fondazione), non contro i limiti di normativa dell'§6.4.2.1."
+)
 AVVISO_CAPACITA_PORTANTE = (
     "La verifica a collasso per capacità portante del terreno (NTC2018 §6.5.3.1.1, γR=1.4 statico / "
     "1.2 sismico, Tab. 6.5.I) non è calcolata da questo strumento: usare uno strumento geotecnico "
     "dedicato per confrontare la pressione di contatto con qlim, oppure compilare il blocco facoltativo "
-    "'Terreno di fondazione'. L'eccentricità è qui verificata solo contro |e| > B/2 (risultante fuori "
-    "dalla fondazione), non contro i limiti di normativa dell'§6.4.2.1."
+    "'Terreno di fondazione'. " + AVVISO_ECCENTRICITA_LIMITE
 )
 AVVISO_TERRENO_IGNORATO_LEGACY = (
     "Modalità legacy_compat: il blocco 'Terreno di fondazione' è stato compilato ma viene ignorato "
@@ -97,6 +116,23 @@ AVVISO_CAPACITA_PORTANTE_SISMICA = (
     "Capacità portante in condizioni sismiche: inerzia del terreno di fondazione non considerata, "
     "da confermare."
 )
+# HIGH finding: `terreno_profondita_posa_m` (D, models.py) non e' mai incrociata con la geometria
+# del muro. Un D piu' grande dell'altezza fuori terra del muro e' un segnale forte che l'utente ha
+# inserito la quota del piano campagna a MONTE (dove il terreno arriva quasi in sommita' al
+# paramento) invece che a VALLE (dove D va misurato, per la mancia): D piu' grande produce sempre
+# un q'/gamma' maggiore, quindi un esito meno cautelativo, mai piu' cautelativo, proprio quando
+# l'utente crede di essere prudente aumentando D.
+_SOGLIA_PROFONDITA_POSA_SOSPETTA_M = 1.0  # D oltre 1 m e' gia' insolito per una mancia di fondazione
+
+
+def _avviso_profondita_posa_implausibile(d_m: float, h_muro_m: float) -> str | None:
+    if d_m <= h_muro_m or d_m <= _SOGLIA_PROFONDITA_POSA_SOSPETTA_M:
+        return None
+    return (
+        f"Profondità di posa D={d_m:.2f} m maggiore dell'altezza fuori terra del muro "
+        f"(h_muro={h_muro_m:.2f} m): controlla che D sia misurata dal piano campagna a VALLE (lato "
+        "mancia), non dal piano campagna a monte/tacco (più in alto di h_muro + s_fond)."
+    )
 
 
 def _spinta_combo(nome: NomeCombo, *, inputs: MuroSostegnoInput, geometria: GeometriaResult, s_sismico: float) -> SpintaCombo:
@@ -264,13 +300,19 @@ def _capacita_portante_riga(
     spinta: SpintaCombo, verifica: RibaltamentoScorrimentoCombo, pressioni: PressioniCombo, *, inputs: MuroSostegnoInput, geometria: GeometriaResult
 ) -> CapacitaPortanteCombo:
     gamma_r = GAMMA_R_CAPACITA_PORTANTE_SISMA if spinta.sismica else GAMMA_R_CAPACITA_PORTANTE_STATICO
+    # HIGH finding: la base di fondazione puo' essere inclinata di `omega_deg` (gia' un input,
+    # gia' usato dalla verifica a scorrimento). EN1997-1 Annesso D richiede H/V relativi alla base
+    # quando questa e' inclinata (non Ntot/Rtot globali): stessa scomposizione, gia' collaudata,
+    # di `fattore_sicurezza_scorrimento`.
+    omega_rad = math.radians(inputs.omega_deg)
+    normale_kn, tangente_kn = forze_normale_tangente_base(n_tot_kN=verifica.n_tot_kN, r_tot_kN=verifica.r_tot_kN, omega_rad=omega_rad)
     return capacita_portante_combo(
         spinta.nome,
         condizione=inputs.terreno_condizione,
         b_fond_m=geometria.b_fond_m,
         eccentricita_m=pressioni.eccentricita_m,
-        n_ed_kn=verifica.n_tot_kN,
-        h_kn=verifica.r_tot_kN,
+        n_ed_kn=normale_kn,
+        h_kn=abs(tangente_kn),
         profondita_posa_m=inputs.terreno_profondita_posa_m,
         gamma_kn_m3=inputs.terreno_gamma_kn_m3,
         profondita_falda_m=inputs.terreno_profondita_falda_m,
@@ -278,6 +320,7 @@ def _capacita_portante_riga(
         c_k_kpa=inputs.terreno_c_k_kpa,
         cu_k_kpa=inputs.terreno_cu_k_kpa,
         gamma_r=gamma_r,
+        alpha_base_deg=inputs.omega_deg,
     )
 
 
@@ -289,16 +332,27 @@ def _run_capacita_portante_fondazione(
     inputs: MuroSostegnoInput,
     geometria: GeometriaResult,
 ) -> CapacitaPortanteFondazioneResult:
+    # HIGH finding: solo le righe A1+M1 (STR_1/STR_2, coerenti con i parametri caratteristici non
+    # ridotti usati sotto) e le sismiche (gamma_R dedicato) entrano in questa verifica — vedi
+    # `COMBO_CAPACITA_PORTANTE` sopra per il perche' GEO_1/GEO_2/EQU_1/EQU_2 restano escluse.
     combinazioni = tuple(
         _capacita_portante_riga(spinta, verifica, pressioni, inputs=inputs, geometria=geometria)
         for spinta, verifica, pressioni in zip(spinte, ribaltamento_scorrimento, pressioni_terreno, strict=True)
+        if spinta.nome in COMBO_CAPACITA_PORTANTE
     )
     governante = max(combinazioni, key=lambda c: c.rapporto)
+    # MEDIUM finding: la riga governante sismica usa la stessa formula statica dell'Annesso D
+    # senza la riduzione inerziale (Paolucci-Pecker, §7.11.5.3.1/§7.11.6.2.1): il Check deve citare
+    # quella clausola e segnalare l'esito come da confermare, non come un ordinario passato/fallito.
+    sismica = governante.nome.startswith("SISMA")
+    detail = f"N_Ed/R_d={governante.rapporto:.3f} sulla combinazione governante {governante.nome}"
+    if sismica:
+        detail += " — esito da confermare: coefficienti sismici (Paolucci-Pecker) non applicati"
     verifica = Check(
         name="Capacità portante del terreno di fondazione",
         passed=governante.rapporto <= 1.0,
-        detail=f"N_Ed/R_d={governante.rapporto:.3f} sulla combinazione governante {governante.nome}",
-        clause=CLAUSE_CAPACITA_PORTANTE,
+        detail=detail,
+        clause=CLAUSE_CAPACITA_PORTANTE_SISMICA if sismica else CLAUSE_CAPACITA_PORTANTE,
         value=governante.rapporto,
         limit=1.0,
         unit="-",
@@ -479,13 +533,18 @@ def _esito_capacita_portante(
     """Wires the optional 'Terreno di fondazione' block into the report (docs/architecture-phase4.md
     §C "Integration"): block empty -> today's behaviour unchanged (AVVISO_CAPACITA_PORTANTE, no
     check); block filled + legacy_compat -> ignored, with a dedicated warning on top; block filled
-    in standard mode -> the check replaces the "non calcolata" warning."""
+    in standard mode -> the "non calcolata" sentence drops out (it IS calculated now) but the
+    eccentricity caveat (MEDIUM finding: this check still has no e/B limit of its own) stays."""
     if inputs.terreno_condizione is None:
         return None, (), (AVVISO_CAPACITA_PORTANTE,)
     if legacy("muro-sostegno/verifica-portanza-non-segnalata", inputs.legacy_compat):
         return None, (), (AVVISO_CAPACITA_PORTANTE, AVVISO_TERRENO_IGNORATO_LEGACY)
     risultato = _run_capacita_portante_fondazione(spinte, ribaltamento_scorrimento, pressioni_terreno, inputs=inputs, geometria=geometria)
-    return risultato, (risultato.verifica,), (AVVISO_CAPACITA_PORTANTE_SISMICA,)
+    avvisi = (AVVISO_ECCENTRICITA_LIMITE, AVVISO_CAPACITA_PORTANTE_SISMICA)
+    avviso_profondita = _avviso_profondita_posa_implausibile(inputs.terreno_profondita_posa_m, inputs.h_muro_m)
+    if avviso_profondita is not None:
+        avvisi = (avviso_profondita, *avvisi)
+    return risultato, (risultato.verifica,), avvisi
 
 
 def run_muro_sostegno(inputs: MuroSostegnoInput) -> Report[MuroSostegnoOutput]:

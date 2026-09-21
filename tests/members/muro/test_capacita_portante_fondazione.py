@@ -73,6 +73,17 @@ def test_monotonic_in_load_inclination(h_kn):
     assert inclinato.rapporto > verticale.rapporto
 
 
+def test_alpha_base_deg_reduces_r_d_like_shared_module():
+    """HIGH: prima `alpha_base_deg` non veniva mai passato a `carico_limite_*` (bq=bgamma=bc=1
+    sempre): con una base inclinata la capacita' reale e' minore di quella statica su base
+    orizzontale (EN1997-1 Annesso D.4)."""
+    orizzontale = capacita_portante_combo("STR_1", eccentricita_m=0.0, **_BASE)
+    inclinata = capacita_portante_combo("STR_1", eccentricita_m=0.0, alpha_base_deg=10.0, **_BASE)
+    assert inclinata.q_lim_kPa < orizzontale.q_lim_kPa
+    assert inclinata.r_d_kN < orizzontale.r_d_kN
+    assert inclinata.rapporto > orizzontale.rapporto
+
+
 def test_non_drenata_branch_uses_cu():
     r = capacita_portante_combo(
         "SISMA_1", condizione="non_drenata", b_fond_m=2.0, eccentricita_m=0.0, n_ed_kn=300.0, h_kn=20.0,
