@@ -165,8 +165,11 @@ def _verifiche(standard: list[dict[str, Any]], excel: list[dict[str, Any]]) -> l
     cambiate = []
     for nome in dict.fromkeys((*per_nome_standard, *per_nome_excel)):
         a, b = _esito(per_nome_standard.get(nome)), _esito(per_nome_excel.get(nome))
-        if a is None or b is None or a["passed"] != b["passed"] or not _uguali(a["value"], b["value"]):
-            cambiate.append({"nome": nome, "standard": a, "excel": b})
+        cambia_esito = a is None or b is None or a["passed"] != b["passed"]
+        if cambia_esito or not _uguali(a["value"], b["value"]):
+            # `cambia_esito`: the verdict itself differs (or the check exists in one mode only) — a
+            # check whose utilisation merely moves is listed too, but it is a different kind of news
+            cambiate.append({"nome": nome, "standard": a, "excel": b, "cambia_esito": cambia_esito})
     return cambiate
 
 

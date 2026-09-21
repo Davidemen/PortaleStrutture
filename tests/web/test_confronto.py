@@ -90,13 +90,23 @@ def test_check_outcomes_that_change_are_listed_by_name() -> None:
     excel = _report({}, checks=[{"name": "Flessione", "passed": True, "value": 0.9}, {"name": "Taglio", "passed": True, "value": 0.4}])
     result = confronta(standard, excel, "demo-tool", ())
     assert result["verifiche"] == [
-        {"nome": "Flessione", "standard": {"passed": False, "value": 1.2}, "excel": {"passed": True, "value": 0.9}}
+        {"nome": "Flessione", "standard": {"passed": False, "value": 1.2}, "excel": {"passed": True, "value": 0.9},
+         "cambia_esito": True}
     ]
+
+
+def test_a_check_whose_value_moves_but_not_its_outcome_is_flagged_as_such() -> None:
+    standard = _report({}, checks=[{"name": "Scorrimento", "passed": True, "value": 1.26}])
+    excel = _report({}, checks=[{"name": "Scorrimento", "passed": True, "value": 1.18}])
+    (verifica,) = confronta(standard, excel, "demo-tool", ())["verifiche"]
+    assert verifica["cambia_esito"] is False
 
 
 def test_a_check_present_in_one_mode_only_is_listed() -> None:
     result = confronta(_report({}, checks=[{"name": "Nuova", "passed": True, "value": 0.1}]), _report({}), "demo-tool", ())
-    assert result["verifiche"] == [{"nome": "Nuova", "standard": {"passed": True, "value": 0.1}, "excel": None}]
+    assert result["verifiche"] == [
+        {"nome": "Nuova", "standard": {"passed": True, "value": 0.1}, "excel": None, "cambia_esito": True}
+    ]
 
 
 def test_the_list_is_capped_but_the_total_is_always_reported() -> None:

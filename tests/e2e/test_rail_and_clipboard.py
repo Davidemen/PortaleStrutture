@@ -15,7 +15,11 @@ from ._actions import field_id, goto_tool, load_example
 
 pytestmark = pytest.mark.e2e
 
-RAIL_DESTINATIONS = ["Home", "Cerca", "Preferiti", "Recenti", "Carichi", "Calcestruzzo armato", "Acciaio", "Geotecnica", "Fondazioni"]
+RAIL_DESTINATIONS = [
+    "Home", "Cerca", "Preferiti", "Recenti", "Registro correzioni",
+    "Carichi", "Calcestruzzo armato", "Acciaio", "Geotecnica", "Fondazioni",
+]
+FIXED_DESTINATIONS = 5  # Home, Cerca, Preferiti, Recenti, Registro correzioni (WORKBENCH_SPEC §13.1)
 
 
 def _class_regex(fragment: str) -> re.Pattern[str]:
@@ -58,17 +62,21 @@ def _category_names(page: Page) -> list[str]:
 
 
 def test_collapsed_rail_has_nine_destinations_and_toggle(page: Page, base_url: str) -> None:
-    """WORKBENCH_SPEC #12: collapsed = Home, Cerca, Preferiti, Recenti + one destination per
-    top-level category (exactly the five named ones on the production registry) + the expand/
-    collapse toggle -- no individual tools."""
+    """WORKBENCH_SPEC #12/#13.1: collapsed = Home, Cerca, Preferiti, Recenti, Registro correzioni
+    + one destination per top-level category (exactly the five named ones on the production
+    registry) + the expand/collapse toggle -- no individual tools."""
     goto_tool(page, base_url, "muro-sostegno")
     page.locator(".rail-toggle").click()  # force collapsed at >=1100px
     categories = _category_names(page)
     items = page.locator("#tool-index .rail-list > .rail-item")
-    expect(items).to_have_count(4 + len(categories))
+    expect(items).to_have_count(FIXED_DESTINATIONS + len(categories))
     names = items.evaluate_all("els => els.map(e => e.querySelector('.rail-label').textContent)")
-    assert names[:4] == RAIL_DESTINATIONS[:4], f"unexpected/out-of-order fixed destinations: {names[:4]}"
-    assert names[4:4 + 5] == RAIL_DESTINATIONS[4:], f"the five named categories must come first, in order: {names[4:]}"
+    assert names[:FIXED_DESTINATIONS] == RAIL_DESTINATIONS[:FIXED_DESTINATIONS], (
+        f"unexpected/out-of-order fixed destinations: {names[:FIXED_DESTINATIONS]}"
+    )
+    assert names[FIXED_DESTINATIONS:FIXED_DESTINATIONS + 5] == RAIL_DESTINATIONS[FIXED_DESTINATIONS:], (
+        f"the five named categories must come first, in order: {names[FIXED_DESTINATIONS:]}"
+    )
     assert page.locator("#tool-index .rail-toggle").count() == 1
     # no individual tool row exists outside an opened flyout
     assert page.locator("#tool-index .rail-list .rail-row").count() == 0
@@ -81,7 +89,7 @@ def test_all_icon_path_data_are_distinct(page: Page, base_url: str) -> None:
     paths = page.evaluate(
         """async () => {
           const { buildIcon } = await import('/js/icons.js');
-          const keys = ['home', 'cerca', 'preferiti', 'recenti', 'carichi', 'calcestruzzo-armato', 'acciaio', 'geotecnica', 'fondazioni'];
+          const keys = ['home', 'cerca', 'preferiti', 'recenti', 'registro', 'carichi', 'calcestruzzo-armato', 'acciaio', 'geotecnica', 'fondazioni'];
           return keys.map(key => {
             const svg = buildIcon(key);
             return [...svg.querySelectorAll('path')].map(p => p.getAttribute('d')).join('|');
@@ -189,7 +197,7 @@ def test_forced_collapsed_between_720_and_1099(tablet_page: tuple[Page, object],
     page, _ = tablet_page
     goto_tool(page, base_url, "muro-sostegno")
     items = page.locator("#tool-index .rail-list > .rail-item")
-    expect(items).to_have_count(4 + len(_category_names(page)))
+    expect(items).to_have_count(FIXED_DESTINATIONS + len(_category_names(page)))
     assert page.locator("#tool-index .rail-list .rail-row").count() == 0, "still no individual tools, forced-collapsed or not"
     expect(page.locator("#app")).to_have_class(_class_regex("rail-collapsed"))
 
