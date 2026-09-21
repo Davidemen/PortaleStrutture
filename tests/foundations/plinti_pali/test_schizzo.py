@@ -1,6 +1,8 @@
 """Live sketch for `fond-plinto-su-pali` (docs/ui/WORKBENCH_SPEC.md §7): Pianta + Prospetto S&T
 follow the inputs, and a drawing failure must never fail the calculation."""
+import sys
 import time
+from pathlib import Path
 
 import pytest
 
@@ -10,6 +12,9 @@ from strutture.foundations.plinti_pali.schizzo import disegna
 from strutture.foundations.plinti_pali.tool import TOOLS
 from strutture.shared.pile_group import pile_coordinates
 from strutture.shared.tool import execute
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "shared"))
+from test_sketch_layout import layout_problems, overlap_problems, readability_problems
 
 TOOL = TOOLS[0]
 
@@ -24,8 +29,9 @@ def test_viste_titoli_e_forme_esempio() -> None:
     pianta, prospetto = sketch.viste
     assert [f.kind for f in pianta.forme] == ["rect", "rect", "bars", "dimension", "dimension",
                                                "dimension", "dimension"]
-    assert prospetto.forme[0].kind == "rect"
-    assert prospetto.forme[1].kind == "bars"
+    assert prospetto.forme[0].kind == "rect"  # base del meccanismo
+    assert prospetto.forme[1].kind == "rect"  # tratto di colonna (sempre presente, indicativo)
+    assert prospetto.forme[2].kind == "bars"
     assert "line" in [f.kind for f in prospetto.forme]
     assert "arrow" in [f.kind for f in prospetto.forme]
 
@@ -74,8 +80,8 @@ def test_schema_1x1_appoggio_diretto_senza_puntoni() -> None:
     assert pt.puntone.theta_deg is None
     sketch = disegna(inputs, piles, pt, 1000.0)
     prospetto = sketch.viste[1]
-    assert [f.kind for f in prospetto.forme] == ["rect", "bars", "arrow"]
-    palo = prospetto.forme[1]
+    assert [f.kind for f in prospetto.forme] == ["rect", "rect", "bars", "arrow"]
+    palo = prospetto.forme[2]
     assert palo.centri == ((0.0, 0.0),)
 
 
@@ -102,3 +108,41 @@ def test_errore_nel_disegno_non_fa_fallire_il_calcolo(monkeypatch: pytest.Monkey
     report = execute(TOOL, TOOL.example)
     assert report.ok, report.errors
     assert report.data.schizzo is None
+
+
+# --- composizione: layout/leggibilità/sovrapposizioni su input realistici oltre l'esempio --------
+
+_CASI_COMPOSIZIONE = {
+    "plinto molto largo": {"ax_m": 8.0, "by_m": 8.0, "lx_m": 4.0, "ly_m": 4.0},
+    "plinto alto": {"h_plinto_m": 2.5},
+}
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("nome", list(_CASI_COMPOSIZIONE))
+def test_composizione_su_input_realistici(nome: str) -> None:
+    modificato = {**TOOL.example, **_CASI_COMPOSIZIONE[nome]}
+    report = execute(TOOL, modificato)
+    assert report.ok, report.errors
+    sketch = report.data.schizzo
+    problemi = layout_problems(sketch) + readability_problems(sketch) + overlap_problems(sketch)
+    assert problemi == [], f"{nome}: {problemi}"
+
+
+@pytest.mark.unit
+def test_composizione_schema_1x1() -> None:
+    """Schema 1x1 (appoggio diretto): `tool.run` ha un bug pre-esistente non nostro su questo
+    schema (nessun tirante -> `max()` a un solo argomento non iterabile) — si costruisce lo
+    schizzo direttamente, bypassando `run`, senza toccare quel codice di calcolo."""
+    inputs = PlintoSuPaliInput.model_validate({**TOOL.example, "schema_pali": "1x1", "lx_m": 0.0, "ly_m": 0.0})
+    piles = pile_coordinates("1x1", 0.0, 0.0)
+    pt = puntoni_tiranti(
+        1, 1, 0.0, 0.0, inputs.h_plinto_m, inputs.copriferro_cm * 10.0,
+        inputs.diametro_inf_x_mm, inputs.diametro_inf_y_mm, inputs.diametro_pila_mm,
+        inputs.diametro_tirante_xy_mm, inputs.diametro_tirante_x_mm, inputs.diametro_tirante_y_mm,
+        inputs.n_tirante_xy, inputs.n_tirante_x, inputs.n_tirante_y, 1000.0,
+        inputs.bx_pilastro_m * 1000.0, inputs.by_pilastro_m * 1000.0, 32.0, 1.5, 391.3, legacy_compat=False,
+    )
+    sketch = disegna(inputs, piles, pt, 1000.0)
+    problemi = layout_problems(sketch) + readability_problems(sketch) + overlap_problems(sketch)
+    assert problemi == [], problemi

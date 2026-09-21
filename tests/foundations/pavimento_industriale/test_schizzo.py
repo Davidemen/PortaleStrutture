@@ -1,6 +1,8 @@
 """Live sketch for `fond-pavimento-industriale` (docs/ui/WORKBENCH_SPEC.md §7): Pianta follows the
 inputs, and a drawing failure must never fail the calculation."""
+import sys
 import time
+from pathlib import Path
 
 import pytest
 
@@ -10,6 +12,9 @@ from strutture.foundations.pavimento_industriale.schizzo import disegna
 from strutture.foundations.pavimento_industriale.sottofondo import sottofondo
 from strutture.foundations.pavimento_industriale.tool import TOOLS
 from strutture.shared.tool import execute
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "shared"))
+from test_sketch_layout import layout_problems, overlap_problems, readability_problems
 
 TOOL = TOOLS[0]
 _L_MM_ESEMPIO = 1200.0  # valore comodo per i test che non ricalcolano il sottofondo
@@ -97,17 +102,20 @@ def test_impronte_posizionate_per_centro_bordo_spigolo() -> None:
 
 
 @pytest.mark.unit
-def test_impronte_sulla_stessa_posizione_sono_affiancate_non_sovrapposte() -> None:
-    """Nell'esempio 'ruota motrice' e 'ruote anteriori' sono entrambe in posizione 'centro': la
-    seconda deve essere scostata lungo x rispetto alla prima, non sovrapposta esattamente."""
+def test_impronte_sulla_stessa_posizione_condividono_il_centro() -> None:
+    """Nell'esempio 'ruota motrice' e 'ruote anteriori' sono entrambe in posizione 'centro':
+    entrambe le impronte sono centrate sullo stesso punto (approssimazione accettabile per lo
+    schema), ma le rispettive etichette sono impilate verticalmente per non sovrapporsi."""
     inputs = PavimentoIndustrialeInput.model_validate(TOOL.example)
     sketch = disegna(inputs, _L_MM_ESEMPIO)
     rettangoli_carico = [f for f in sketch.viste[0].forme if f.kind == "rect" and f.stile == "carico"]
     primo_centro, secondo_centro = rettangoli_carico[0], rettangoli_carico[3]
-    assert primo_centro.x != pytest.approx(secondo_centro.x)
+    assert primo_centro.x + primo_centro.w / 2 == pytest.approx(secondo_centro.x + secondo_centro.w / 2)
 
     etichette = [f for f in sketch.viste[0].forme if f.kind == "label"]
     assert [e.testo for e in etichette] == [r["caso"] for r in TOOL.example["carichi"]]
+    etichetta_centro_1, etichetta_centro_2 = etichette[0], etichette[3]
+    assert etichetta_centro_1.punto[1] != pytest.approx(etichetta_centro_2.punto[1])  # livelli diversi
 
 
 @pytest.mark.unit
@@ -138,3 +146,28 @@ def test_errore_nel_disegno_non_fa_fallire_il_calcolo(monkeypatch: pytest.Monkey
 @pytest.mark.unit
 def test_modulo_schizzo_importabile_e_puro() -> None:
     assert hasattr(schizzo_module, "disegna")
+
+
+# --- composizione: layout/leggibilità/sovrapposizioni su input realistici oltre l'esempio --------
+
+_UNA_RIGA = [{"caso": "ruota", "posizione": "centro", "p_kN": 15.5, "impronta_a_mm": 500,
+              "impronta_b_mm": 100, "gamma": 1.5, "psi1": 0.9}]
+
+_CASI_COMPOSIZIONE = {
+    "pannello molto stretto": {"a_contrazione_m": 24.0, "b_contrazione_m": 8.0},
+    "molti carichi stessa posizione": {"carichi": [
+        {"caso": f"caso {i}", "posizione": "centro", "p_kN": 10.0 + i, "impronta_a_mm": 200 + i * 10,
+         "impronta_b_mm": 150, "gamma": 1.5, "psi1": 0.9} for i in range(8)
+    ]},
+    "pannello piccolo": {"a_contrazione_m": 4.0, "b_contrazione_m": 3.5, "carichi": _UNA_RIGA},
+}
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("nome", list(_CASI_COMPOSIZIONE))
+def test_composizione_su_input_realistici(nome: str) -> None:
+    modificato = {**TOOL.example, **_CASI_COMPOSIZIONE[nome]}
+    inputs = PavimentoIndustrialeInput.model_validate(modificato)
+    sketch = disegna(inputs, _l_mm(inputs))
+    problemi = layout_problems(sketch) + readability_problems(sketch) + overlap_problems(sketch)
+    assert problemi == [], f"{nome}: {problemi}"

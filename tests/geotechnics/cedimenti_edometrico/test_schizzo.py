@@ -1,6 +1,8 @@
 """Live sketch for `geo-cedimento-edometrico` (docs/ui/WORKBENCH_SPEC.md §7): the section follows
 the inputs, and a drawing failure must never fail the calculation."""
+import sys
 import time
+from pathlib import Path
 
 import pytest
 
@@ -12,6 +14,9 @@ from strutture.geotechnics.cedimenti_edometrico.profondita_critica import profon
 from strutture.geotechnics.cedimenti_edometrico.schizzo import disegna
 from strutture.geotechnics.cedimenti_edometrico.tool import TOOLS
 from strutture.shared.tool import execute
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "shared"))
+from test_sketch_layout import layout_problems, overlap_problems, readability_problems
 
 TOOL = TOOLS[0]
 
@@ -35,18 +40,21 @@ def _si_e_profondita(raw: dict):
 
 @pytest.mark.unit
 def test_vista_titolo_e_forme_esempio() -> None:
+    """L'esempio ha 5 strati fino a 118,9 m: molto oltre il budget di profondità visibile, quindi
+    lo strato più profondo è escluso (4 strati disegnati) e solo 3 sono etichettati (limite
+    `_MAX_STRATI_ETICHETTATI`), con un tratto "fantasma" a indicare la prosecuzione."""
     inputs, si, profondita = _si_e_profondita(TOOL.example)
     sketch = disegna(inputs, si, profondita)
 
     assert [v.titolo for v in sketch.viste] == ["Sezione"]
     kinds = [f.kind for f in sketch.viste[0].forme]
-    # 1 plinto + 5 strati*(rect+label) + niente falda + zcrit(line+label) + 2 quote
     assert kinds[0] == "rect"
-    assert kinds.count("rect") == 1 + 5
-    assert kinds.count("label") == 5 + 1
-    assert kinds.count("line") == 1  # niente falda nell'esempio (falda non impostata)
+    assert kinds.count("rect") == 1 + 4  # plinto + 4 strati visibili (il 5° è oltre il ritaglio)
+    assert kinds.count("label") == 3 + 1  # 3 Eed (limite) + 1 Z_crit
+    assert kinds.count("line") == 1 + 1  # Z,crit + fantasma (niente falda nell'esempio)
     assert kinds.count("dimension") == 1  # solo B: D=0 nell'esempio -> quota D omessa (degenere)
-    assert len(kinds) == 14
+    assert len(kinds) == 12
+    assert "interrotta" in sketch.nota
 
 
 @pytest.mark.unit
@@ -96,12 +104,24 @@ def test_strati_seguono_la_tabella_di_ingresso() -> None:
     inputs, si, profondita = _si_e_profondita(TOOL.example)
     sketch = disegna(inputs, si, profondita)
     rettangoli_terreno = [f for f in sketch.viste[0].forme if f.kind == "rect" and f.stile == "terreno"]
-    assert len(rettangoli_terreno) == 5
+    assert len(rettangoli_terreno) == 4  # il 5° strato (fino a 118,9 m) è oltre il ritaglio
     primo = rettangoli_terreno[0]
     assert primo.y == pytest.approx(-3.70)  # D=0 nell'esempio: nessuno scostamento visibile
     assert primo.h == pytest.approx(3.70)
     etichette = [f for f in sketch.viste[0].forme if f.kind == "label" and f.testo.startswith("Eed =")]
-    assert etichette[0].testo == "Eed = 5,5 MPa"
+    assert etichette[0].testo == "Eed = 5,5 MPa"  # il primo strato è sempre fra quelli etichettati
+
+
+@pytest.mark.unit
+def test_al_massimo_tre_strati_etichettati_anche_con_molti_strati() -> None:
+    """Con una stratigrafia lunga (fino al limite di 20 righe della tabella) le etichette Eed
+    restano al massimo `_MAX_STRATI_ETICHETTATI`, cosi' non si accavallano mai."""
+    strati = [{"z_top_m": float(i), "z_bot_m": float(i + 1), "modulo_MPa": 5.0 + i} for i in range(15)]
+    modificato = {**TOOL.example, "strati": strati}
+    inputs, si, profondita = _si_e_profondita(modificato)
+    sketch = disegna(inputs, si, profondita)
+    etichette_eed = [f for f in sketch.viste[0].forme if f.kind == "label" and f.testo.startswith("Eed =")]
+    assert len(etichette_eed) <= 3
 
 
 @pytest.mark.unit
@@ -121,20 +141,31 @@ def test_strati_sono_relativi_al_piano_di_posa_non_al_piano_campagna() -> None:
 
 
 @pytest.mark.unit
-def test_zcrit_e_offset_dalla_profondita_di_posa() -> None:
-    """`z_crit_utilizzato_m` è misurato dal piano di posa: con D>0 la linea disegnata deve stare
-    alla profondità assoluta D+Z,crit dal piano campagna, non a Z,crit da solo."""
+def test_zcrit_etichetta_riporta_sempre_la_profondita_reale() -> None:
+    """`z_crit_utilizzato_m` è misurato dal piano di posa: con D>0 il testo deve riportare la
+    profondità assoluta D+Z,crit dal piano campagna (schema non in scala: la LINEA può essere
+    ritagliata al budget di profondità visibile, ma il testo riporta sempre il valore vero)."""
     # `d` non è mai convertito (sempre metri, anche in sistema "tecnico": vedi `ingresso.py`).
-    modificato = {**TOOL.example, "d": 1.5}  # z_crit_input resta 10000 cm = 100 m
+    modificato = {**TOOL.example, "d": 1.5}  # z_crit_input resta 10000 cm = 100 m -> ritagliato
     inputs, si, profondita = _si_e_profondita(modificato)
     sketch = disegna(inputs, si, profondita)
-    linea_zcrit = next(f for f in sketch.viste[0].forme if f.kind == "line")
     etichetta_zcrit = next(f for f in sketch.viste[0].forme if f.kind == "label" and f.testo.startswith("Z_crit ="))
     atteso_m = si.d_m + profondita.z_crit_utilizzato_m
     assert atteso_m == pytest.approx(1.5 + 100.0)
-    assert linea_zcrit.p1[1] == pytest.approx(-atteso_m)
-    assert linea_zcrit.p2[1] == pytest.approx(-atteso_m)
     assert etichetta_zcrit.testo == f"Z_crit = {atteso_m:.2f} m".replace(".", ",")
+
+
+@pytest.mark.unit
+def test_zcrit_linea_alla_profondita_reale_quando_entro_il_ritaglio() -> None:
+    """Quando Z,crit cade entro il budget di profondità visibile, la linea è disegnata alla sua
+    vera posizione (nessun ritaglio necessario)."""
+    modificato = {**TOOL.example, "z_crit_input": 300}  # tecnico: 300 cm = 3 m, ben entro il budget
+    inputs, si, profondita = _si_e_profondita(modificato)
+    sketch = disegna(inputs, si, profondita)
+    linea_zcrit = next(f for f in sketch.viste[0].forme if f.kind == "line" and f.stile == "evidenza")
+    atteso_m = si.d_m + profondita.z_crit_utilizzato_m
+    assert atteso_m == pytest.approx(3.0)
+    assert linea_zcrit.p1[1] == pytest.approx(-atteso_m)
 
 
 @pytest.mark.unit
@@ -142,9 +173,7 @@ def test_falda_disegnata_quando_presente() -> None:
     modificato = {**TOOL.example, "falda": 200}  # tecnico: 200 cm = 2.0 m
     inputs, si, profondita = _si_e_profondita(modificato)
     sketch = disegna(inputs, si, profondita)
-    linee = [f for f in sketch.viste[0].forme if f.kind == "line"]
-    assert len(linee) == 2  # falda + zcrit
-    falda = next(f for f in linee if f.stile == "acqua")
+    falda = next(f for f in sketch.viste[0].forme if f.kind == "line" and f.stile == "acqua")
     assert falda.tratteggio is True
     assert falda.p1[1] == pytest.approx(-2.0)
     assert falda.p2[1] == pytest.approx(-2.0)
@@ -186,3 +215,23 @@ def test_errore_nel_disegno_non_fa_fallire_il_calcolo(monkeypatch: pytest.Monkey
 @pytest.mark.unit
 def test_modulo_schizzo_importabile_e_puro() -> None:
     assert hasattr(schizzo_module, "disegna")
+
+
+# --- composizione: layout/leggibilità/sovrapposizioni su input realistici oltre l'esempio --------
+
+_CASI_COMPOSIZIONE = {
+    "infissione profonda": {"d": 1.8},  # `d` non è mai convertito: sempre metri (limite del campo: 200 m)
+    "molti strati": {"strati": [{"z_top_m": float(i) * 0.8, "z_bot_m": float(i + 1) * 0.8,
+                                  "modulo_MPa": 5.0 + i} for i in range(12)]},
+    "plinto molto largo": {"b": 1200, "l": 1200},  # tecnico: 1200 cm = 12 m
+}
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("nome", list(_CASI_COMPOSIZIONE))
+def test_composizione_su_input_realistici(nome: str) -> None:
+    modificato = {**TOOL.example, **_CASI_COMPOSIZIONE[nome]}
+    inputs, si, profondita = _si_e_profondita(modificato)
+    sketch = disegna(inputs, si, profondita)
+    problemi = layout_problems(sketch) + readability_problems(sketch) + overlap_problems(sketch)
+    assert problemi == [], f"{nome}: {problemi}"

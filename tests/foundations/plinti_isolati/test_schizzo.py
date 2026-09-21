@@ -1,6 +1,8 @@
 """Live sketch for `fond-plinto-isolato` (docs/ui/WORKBENCH_SPEC.md §7): Pianta + Sezione follow
 the inputs, and a drawing failure must never fail the calculation."""
+import sys
 import time
+from pathlib import Path
 
 import pytest
 
@@ -10,6 +12,9 @@ from strutture.foundations.plinti_isolati.schizzo import disegna
 from strutture.foundations.plinti_isolati.tool import TOOLS
 from strutture.shared.load_table import ReactionRow
 from strutture.shared.tool import execute
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "shared"))
+from test_sketch_layout import layout_problems, overlap_problems, readability_problems
 
 TOOL = TOOLS[0]
 
@@ -136,3 +141,25 @@ def test_errore_nel_disegno_non_fa_fallire_il_calcolo(monkeypatch: pytest.Monkey
 def test_modulo_schizzo_importabile_e_puro() -> None:
     """Il modulo non tocca I/O: verifica solo che sia importabile senza effetti collaterali."""
     assert hasattr(schizzo_module, "disegna")
+
+
+# --- composizione: layout/leggibilità/sovrapposizioni su input realistici oltre l'esempio --------
+
+_CASI_COMPOSIZIONE = {
+    "plinto molto largo": {"ax_m": 8.0, "by_m": 8.0, "h_plinto_m": 0.6},
+    "bicchiere alto": {"a_pedestal_m": 1.0, "b_pedestal_m": 1.0, "h_pedestal_sopra_m": 2.2},
+    "carico eccentrico": {"ex_m": 0.6, "ey_m": 0.4},
+}
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("nome", list(_CASI_COMPOSIZIONE))
+def test_composizione_su_input_realistici(nome: str) -> None:
+    from strutture.foundations.plinti_isolati.input import PlintoIsolatoInput
+
+    modificato = {**TOOL.example, **_CASI_COMPOSIZIONE[nome]}
+    inputs = PlintoIsolatoInput.model_validate(modificato)
+    governante = _governante(modificato)
+    sketch = disegna(inputs, governante)
+    problemi = layout_problems(sketch) + readability_problems(sketch) + overlap_problems(sketch)
+    assert problemi == [], f"{nome}: {problemi}"

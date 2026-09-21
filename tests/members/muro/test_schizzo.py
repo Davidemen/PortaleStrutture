@@ -1,12 +1,17 @@
 """Live sketch for `muro-sostegno` (docs/ui/WORKBENCH_SPEC.md §7): the section follows the
 inputs, and a drawing failure must never fail the calculation."""
+import sys
 import time
+from pathlib import Path
 
 import pytest
 
 from strutture.members.muro.models import MuroSostegnoInput
 from strutture.members.muro.tool import TOOLS
 from strutture.shared.tool import execute
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "shared"))
+from test_sketch_layout import layout_problems, overlap_problems, readability_problems
 
 TOOL = TOOLS[0]
 
@@ -107,3 +112,23 @@ def test_errore_nel_disegno_non_fa_fallire_il_calcolo(monkeypatch: pytest.Monkey
     report = execute(TOOL, TOOL.example)
     assert report.ok, report.errors
     assert report.data.schizzo is None
+
+
+# --- composizione: layout/leggibilità/sovrapposizioni su input realistici oltre l'esempio --------
+
+_CASI_COMPOSIZIONE = {
+    "muro alto": {"h_muro_m": 4.0, "b_valle_m": 0.5, "b_monte_m": 2.2, "s_base_m": 0.8},
+    "sovraccarico elevato": {"q_kN_m2": 20.0},
+    "fondazione larga": {"b_valle_m": 1.5, "b_monte_m": 3.0},
+}
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("nome", list(_CASI_COMPOSIZIONE))
+def test_composizione_su_input_realistici(nome: str) -> None:
+    modificato = {**TOOL.example, **_CASI_COMPOSIZIONE[nome]}
+    report = execute(TOOL, modificato)
+    assert report.ok, report.errors
+    sketch = report.data.schizzo
+    problemi = layout_problems(sketch) + readability_problems(sketch) + overlap_problems(sketch)
+    assert problemi == [], f"{nome}: {problemi}"

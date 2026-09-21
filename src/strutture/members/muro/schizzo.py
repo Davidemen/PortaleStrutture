@@ -24,7 +24,7 @@ from .models import (
     SpintaCombo,
 )
 
-_MARGINE_QUOTA = 0.15  # frazione della dimensione maggiore, per lo scostamento delle linee di quota
+_MARGINE_QUOTA = 0.07  # frazione della dimensione maggiore, per lo scostamento delle linee di quota (6-8 %)
 _SBALZO_SOVRACCARICO_M = 0.4  # lunghezza delle frecce di sovraccarico
 
 
@@ -33,7 +33,8 @@ def disegna(
     ribaltamento_scorrimento: tuple[RibaltamentoScorrimentoCombo, ...], pressioni_terreno: tuple[PressioniCombo, ...],
 ) -> Sketch:
     """Sezione trasversale del muro con spinte e diagramma delle pressioni di base."""
-    return Sketch(viste=(_sezione(inputs, geometria, spinte, ribaltamento_scorrimento, pressioni_terreno),))
+    return Sketch(viste=(_sezione(inputs, geometria, spinte, ribaltamento_scorrimento, pressioni_terreno),),
+                  nota="Schema non in scala")
 
 
 def _faccia_interna_stem_x(y_m: float, inputs: MuroSostegnoInput) -> float:

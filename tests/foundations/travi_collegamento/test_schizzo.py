@@ -1,7 +1,9 @@
 """Live sketch for `fond-trave-collegamento` (docs/ui/WORKBENCH_SPEC.md §7): Sezione follows the
 inputs on both the NTC2018 and EN1998 branches, and a drawing failure must never fail the
 calculation on either branch."""
+import sys
 import time
+from pathlib import Path
 
 import pytest
 
@@ -10,6 +12,9 @@ from strutture.foundations.travi_collegamento.models import TraviCollegamentoInp
 from strutture.foundations.travi_collegamento.schizzo import disegna
 from strutture.foundations.travi_collegamento.tool import TOOLS
 from strutture.shared.tool import execute
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "shared"))
+from test_sketch_layout import layout_problems, overlap_problems, readability_problems
 
 TOOL = TOOLS[0]
 _ESEMPIO_EN1998 = {
@@ -146,3 +151,22 @@ def test_punto_a_distanza_ricade_sul_fallback_con_lati_degeneri() -> None:
     la funzione deve ricadere sull'ultimo estremo invece di sollevare un'eccezione."""
     lati = (((0.0, 0.0), (0.0, 0.0), 0.0),)
     assert schizzo_module._punto_a_distanza(lati, 5.0) == (0.0, 0.0)
+
+
+# --- composizione: layout/leggibilità/sovrapposizioni su input realistici oltre l'esempio --------
+
+_CASI_COMPOSIZIONE = {
+    "trave larga e bassa": {"b_mm": 900, "h_mm": 300},
+    "trave alta e stretta": {"b_mm": 300, "h_mm": 900},
+    "molte barre": {"n_barre": 20, "b_mm": 500, "h_mm": 500},
+}
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("nome", list(_CASI_COMPOSIZIONE))
+def test_composizione_su_input_realistici(nome: str) -> None:
+    modificato = {**TOOL.example, **_CASI_COMPOSIZIONE[nome]}
+    inputs = TraviCollegamentoInput.model_validate(modificato)
+    sketch = disegna(inputs)
+    problemi = layout_problems(sketch) + readability_problems(sketch) + overlap_problems(sketch)
+    assert problemi == [], f"{nome}: {problemi}"

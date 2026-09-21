@@ -13,13 +13,13 @@ from strutture.shared.sketch import Barre, Punto, Quota, Rettangolo, Sketch, Vis
 
 from .models import TraviCollegamentoInput
 
-_MARGINE_QUOTA = 0.15  # frazione del lato maggiore, per lo scostamento delle linee di quota
+_MARGINE_QUOTA = 0.07  # frazione del lato maggiore, per lo scostamento delle linee di quota (6-8 %)
 _Lato = tuple[Punto, Punto, float]  # (estremo iniziale, estremo finale, lunghezza) di un lato
 
 
 def disegna(inputs: TraviCollegamentoInput) -> Sketch:
     """Sezione trasversale della trave di collegamento con staffa e barre longitudinali."""
-    return Sketch(viste=(_sezione(inputs),))
+    return Sketch(viste=(_sezione(inputs),), nota="Schema non in scala")
 
 
 def _sezione(inputs: TraviCollegamentoInput) -> Vista:

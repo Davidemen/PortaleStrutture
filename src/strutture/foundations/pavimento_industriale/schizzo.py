@@ -12,14 +12,16 @@ from strutture.shared.sketch import Cerchio, Etichetta, Forma, Quota, Rettangolo
 from .carico_row import CaricoRow
 from .models import PavimentoIndustrialeInput
 
-_MARGINE_QUOTA = 0.15  # frazione del lato maggiore, per lo scostamento delle linee di quota
-_GAP_ETICHETTA_M = 0.05  # distanza verticale tra l'impronta e la sua etichetta
-_GAP_SOVRAPPOSIZIONE_M = 0.05  # scostamento laterale tra impronte con la stessa posizione (affiancate)
+_MARGINE_QUOTA = 0.07  # frazione del lato maggiore, per lo scostamento delle linee di quota (6-8 %)
+_GAP_ETICHETTA_M = 0.05  # distanza verticale tra l'impronta e la prima etichetta del gruppo
+_MAX_ETICHETTE_CARICHI = 5  # testi "caso" al massimo, indipendentemente dal numero di righe in tabella
+_MAX_ETICHETTE_PER_POSIZIONE = 2  # livelli impilati al massimo per una stessa posizione (evita di
+# crescere fino a toccare le quote a'/b' fuori dalla piastra)
 
 
 def disegna(inputs: PavimentoIndustrialeInput, l_mm: float) -> Sketch:
     """Pianta della piastra (pannello di contrazione) con impronte di carico e raggio di Westergaard."""
-    return Sketch(viste=(_pianta(inputs, l_mm),))
+    return Sketch(viste=(_pianta(inputs, l_mm),), nota="Schema non in scala")
 
 
 def _pianta(inputs: PavimentoIndustrialeInput, l_mm: float) -> Vista:
@@ -43,19 +45,24 @@ def _basi_posizione(a: float, b: float) -> dict[str, tuple[float, float]]:
 
 
 def _forme_carichi(carichi: tuple[CaricoRow, ...], a: float, b: float) -> tuple[Forma, ...]:
-    """Impronta + etichetta per ogni riga della tabella. Righe con la stessa `posizione` (nell'esempio
-    due carichi 'centro': ruota motrice e ruote anteriori) sono affiancate lungo x invece che
-    sovrapposte, cosi' le etichette non si accavallano; carichi realmente coincidenti nella realta'
-    (es. ruote di uno stesso mezzo) restano un'approssimazione accettabile ai fini del disegno."""
+    """Impronta per ogni riga, centrata sul punto della sua `posizione` (carichi realmente
+    coincidenti, es. ruote di uno stesso mezzo, restano un'approssimazione accettabile ai fini del
+    disegno). Le etichette "caso" (al massimo `_MAX_ETICHETTE_CARICHI`, poi le righe restano senza
+    testo) sono impilate verticalmente per ogni posizione, con un passo proporzionale al pannello:
+    a differenza di uno scostamento orizzontale legato alla piccola impronta, questo resta leggibile
+    qualunque sia il rapporto fra dimensioni del pannello e dell'impronta."""
     basi = _basi_posizione(a, b)
-    scostamenti = dict.fromkeys(basi, 0.0)
+    passo_riga = 0.12 * max(a, b)
+    livello = dict.fromkeys(basi, 0)
     forme: list[Forma] = []
+    etichette_rimaste = _MAX_ETICHETTE_CARICHI
     for riga in carichi:
         w, h = riga.impronta_a_mm / 1000.0, riga.impronta_b_mm / 1000.0
         base_x, base_y = basi[riga.posizione]
-        cx = base_x + scostamenti[riga.posizione]
-        forme.append(Rettangolo(x=cx - w / 2, y=base_y - h / 2, w=w, h=h, stile="carico"))
-        forme.append(Etichetta(punto=(cx, base_y + h / 2 + _GAP_ETICHETTA_M), testo=riga.caso,
-                                ancora="middle", stile="carico"))
-        scostamenti[riga.posizione] += w + _GAP_SOVRAPPOSIZIONE_M
+        forme.append(Rettangolo(x=base_x - w / 2, y=base_y - h / 2, w=w, h=h, stile="carico"))
+        if etichette_rimaste > 0 and livello[riga.posizione] < _MAX_ETICHETTE_PER_POSIZIONE:
+            y_testo = base_y + h / 2 + _GAP_ETICHETTA_M + livello[riga.posizione] * passo_riga
+            forme.append(Etichetta(punto=(base_x, y_testo), testo=riga.caso, ancora="middle", stile="carico"))
+            livello[riga.posizione] += 1
+            etichette_rimaste -= 1
     return tuple(forme)

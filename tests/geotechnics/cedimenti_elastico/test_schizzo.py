@@ -1,7 +1,9 @@
 """Live sketches shared by `geo-cedimento-elastico-newmark` and
 `geo-cedimento-elastico-timoshenko-goodier` (docs/ui/WORKBENCH_SPEC.md §7): the sections follow the
 inputs, and a drawing failure must never fail the calculation."""
+import sys
 import time
+from pathlib import Path
 
 import pytest
 
@@ -12,6 +14,9 @@ from strutture.geotechnics.cedimenti_elastico.schizzo import disegna_newmark, di
 from strutture.geotechnics.cedimenti_elastico.tool_newmark import TOOLS as NEWMARK_TOOLS
 from strutture.geotechnics.cedimenti_elastico.tool_timoshenko_goodier import TOOLS as TG_TOOLS
 from strutture.shared.tool import execute
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "shared"))
+from test_sketch_layout import layout_problems, overlap_problems, readability_problems
 
 NEWMARK_TOOL = NEWMARK_TOOLS[0]
 TG_TOOL = TG_TOOLS[0]
@@ -28,15 +33,19 @@ _PUNTO_ESEMPIO = {
 
 @pytest.mark.unit
 def test_newmark_centro_vista_titolo_e_forme() -> None:
+    """L'esempio ha 5 strati fino a 120 m: molto oltre il budget di profondità visibile, quindi
+    l'ultimo strato è escluso (4 disegnati) e al massimo 3 etichette Eed compaiono, con un tratto
+    "fantasma" a indicare la prosecuzione."""
     inputs = NewmarkInput.model_validate(NEWMARK_TOOL.example)
     sketch = disegna_newmark(inputs)
     assert [v.titolo for v in sketch.viste] == ["Sezione"]
     kinds = [f.kind for f in sketch.viste[0].forme]
     assert kinds[0] == "rect"
-    assert kinds.count("rect") == 1 + 5
-    assert kinds.count("label") == 5 + 1
-    assert kinds.count("line") == 1
+    assert kinds.count("rect") == 1 + 4  # plinto + 4 strati visibili
+    assert kinds.count("label") <= 3 + 1  # <=3 Eed (limite/scostamento minimo) + 1 z_max
+    assert kinds.count("line") == 1 + 1  # z_max + fantasma
     assert kinds.count("dimension") == 2  # B e D (d_m=1.10 > 0)
+    assert "interrotta" in sketch.nota
 
 
 @pytest.mark.unit
@@ -56,10 +65,12 @@ def test_newmark_centro_plinto_e_quote_seguono_gli_input() -> None:
 
 @pytest.mark.unit
 def test_newmark_centro_evidenza_a_d_piu_zmax() -> None:
+    """D + z_max = 10,20 m è entro il budget di profondità visibile (12,32 m): la linea sta alla
+    sua vera posizione (nessun ritaglio necessario per l'evidenza stessa)."""
     inputs = NewmarkInput.model_validate(NEWMARK_TOOL.example)
     sketch = disegna_newmark(inputs)
     forme = sketch.viste[0].forme
-    linea = next(f for f in forme if f.kind == "line")
+    linea = next(f for f in forme if f.kind == "line" and f.stile == "evidenza")
     etichetta = next(f for f in forme if f.kind == "label" and f.testo.startswith("z_max ="))
     assert linea.p1[1] == pytest.approx(-(1.10 + 9.10))
     assert linea.p2[1] == pytest.approx(-(1.10 + 9.10))
@@ -131,14 +142,17 @@ def test_newmark_punto_o_puo_cadere_fuori_dal_rettangolo() -> None:
 
 @pytest.mark.unit
 def test_tg_vista_titolo_e_forme() -> None:
+    """Con B=1 m il budget di profondità visibile (2,2×larghezza terreno) è piccolo: anche H (5×B
+    di default) cade oltre, quindi compare il tratto "fantasma"."""
     inputs = TimoshenkoGoodierInput.model_validate(TG_TOOL.example)
     sketch = disegna_timoshenko_goodier(inputs)
     assert [v.titolo for v in sketch.viste] == ["Sezione"]
     kinds = [f.kind for f in sketch.viste[0].forme]
     assert kinds.count("rect") == 1 + 2
     assert kinds.count("label") == 2 + 1
-    assert kinds.count("line") == 1
+    assert kinds.count("line") == 1 + 1  # H + fantasma
     assert kinds.count("dimension") == 2  # B e D (d_m=0.5 > 0)
+    assert "interrotta" in sketch.nota
 
 
 @pytest.mark.unit
@@ -216,3 +230,42 @@ def test_tg_errore_nel_disegno_non_fa_fallire_il_calcolo(monkeypatch: pytest.Mon
 def test_modulo_schizzo_importabile_e_puro() -> None:
     assert hasattr(schizzo_module, "disegna_newmark")
     assert hasattr(schizzo_module, "disegna_timoshenko_goodier")
+
+
+# --- composizione: layout/leggibilità/sovrapposizioni su input realistici oltre l'esempio --------
+
+_CASI_NEWMARK = {
+    "infissione profonda": {"d": 250},  # tecnico: 250 cm = 2.5 m
+    "molti strati": {"strati": [{"z_top_m": float(i) * 0.8, "z_bot_m": float(i + 1) * 0.8,
+                                  "modulo_MPa": 5.0 + i} for i in range(12)]},
+    "plinto molto largo": {"b": 1200, "l": 1200},  # tecnico: 1200 cm = 12 m
+    "modalità PUNTO": {"modalita": "PUNTO", "b": None, "l": None,
+                        "side_p": 350, "side_q": 500, "e1": 100, "e2": 150},
+}
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("nome", list(_CASI_NEWMARK))
+def test_newmark_composizione_su_input_realistici(nome: str) -> None:
+    modificato = {**NEWMARK_TOOL.example, **_CASI_NEWMARK[nome]}
+    inputs = NewmarkInput.model_validate(modificato)
+    sketch = disegna_newmark(inputs)
+    problemi = layout_problems(sketch) + readability_problems(sketch) + overlap_problems(sketch)
+    assert problemi == [], f"{nome}: {problemi}"
+
+
+_CASI_TG = {
+    "infissione profonda": {"d": 3.0},
+    "profondità significativa elevata": {"h_significativo": 15.0},
+    "plinto molto largo": {"b": 6.0, "l": 6.0},
+}
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("nome", list(_CASI_TG))
+def test_tg_composizione_su_input_realistici(nome: str) -> None:
+    modificato = {**TG_TOOL.example, **_CASI_TG[nome]}
+    inputs = TimoshenkoGoodierInput.model_validate(modificato)
+    sketch = disegna_timoshenko_goodier(inputs)
+    problemi = layout_problems(sketch) + readability_problems(sketch) + overlap_problems(sketch)
+    assert problemi == [], f"{nome}: {problemi}"
