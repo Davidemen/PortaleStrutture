@@ -17,6 +17,7 @@ import { el, clear } from "./dom.js";
 const appEl = document.getElementById("app");
 const indexRoot = document.getElementById("tool-index");
 const homeRoot = document.getElementById("home-pane");
+const registroRoot = document.getElementById("registro-pane");
 const formRoot = document.getElementById("form-root");
 const toolTitleEl = document.getElementById("tool-title");
 const runErrorEl = document.getElementById("run-error");
@@ -54,6 +55,24 @@ function showHome() {
   if (bottomBarEl) bottomBarEl.hidden = true;
   indexApi.setActive("");
   renderHome(homeRoot, { onSelect: (name) => navigate(name) });
+}
+
+// #/registro (WORKBENCH_SPEC §13.1): a fixed rail destination, not a tool -- full-width page, no
+// Dati/Sintesi split. Lazy-imported like the other packages' own dynamic imports below: a syntax
+// error there must not take the rail/Home/palette down with it.
+function showRegistro(params) {
+  if (appEl) appEl.dataset.view = "registro";
+  clear(formRoot);
+  toolTitleEl.textContent = "";
+  updatePicker("");
+  if (bottomBarEl) bottomBarEl.hidden = true;
+  indexApi.setActive("registro");
+  import("./registro.js")
+    .then(({ renderRegistro }) => renderRegistro(registroRoot, { params }))
+    .catch(() => {
+      clear(registroRoot);
+      registroRoot.append(el("p", { text: "Impossibile caricare il registro delle correzioni." }));
+    });
 }
 
 function showUnknownTool(name) {
@@ -99,6 +118,10 @@ async function selectTool(name, params) {
 function onRouteChange({ tool, params }) {
   if (!tool) {
     showHome();
+    return;
+  }
+  if (tool === "registro") {
+    showRegistro(params);
     return;
   }
   selectTool(tool, params);
@@ -148,6 +171,8 @@ async function loadSideEffectModules() {
     import("./results.js"),
     import("./relazione-print.js"),
     import("./relazione-overlay.js"),
+    import("./confronto.js"),
+    import("./registro-indicator.js"),
   ]);
 }
 

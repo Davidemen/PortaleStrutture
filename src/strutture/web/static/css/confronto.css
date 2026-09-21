@@ -1,0 +1,122 @@
+/* "Confronta con Excel" (WORKBENCH_SPEC §13.3): the results-toolbar toggle + the comparison panel
+   mounted under the Sintesi (js/confronto.js). Same ruled-table language as results.css -- no new
+   colours, no card kit. */
+
+.cf-toggle[aria-pressed="true"] {
+  background: var(--marker);
+  border-color: var(--marker);
+}
+
+.cf-panel {
+  margin: 0 var(--s5) var(--s4);
+  padding: var(--s4) 0 0;
+  border-top: 1px solid var(--hairline);
+}
+.cf-title {
+  font-family: var(--font-label);
+  font-size: var(--t-m);
+  font-weight: 600;
+  margin: 0 0 var(--s2);
+}
+.cf-summary {
+  font-size: var(--t-s);
+  margin: 0 0 var(--s3);
+}
+
+/* Stale-while-recomputing: identical treatment to the results sheet's own `.r-sheet--stale`
+   (results.css) -- dimmed, never blanked. */
+.cf-panel--stale {
+  opacity: 0.6;
+}
+
+.cf-checks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  margin-bottom: var(--s4);
+}
+.cf-check {
+  display: grid;
+  grid-template-columns: minmax(10rem, 1fr) minmax(9rem, auto) minmax(9rem, auto);
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s1) 0;
+  border-bottom: 1px solid var(--hairline);
+  font-size: var(--t-s);
+}
+.cf-check-name {
+  font-weight: 500;
+}
+.cf-check-verdict {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.cf-check-verdict-label {
+  color: var(--graphite);
+  font-size: var(--t-xs);
+}
+@media (max-width: 719.98px) {
+  .cf-check {
+    grid-template-columns: 1fr;
+    row-gap: var(--s1);
+  }
+}
+
+.cf-table-scroll {
+  overflow-x: auto;
+}
+.cf-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.cf-table th {
+  position: sticky;
+  top: 0;
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+  text-align: left;
+  padding: var(--s2) var(--s3);
+  font-family: var(--font-label);
+  font-size: var(--t-xs);
+  color: var(--graphite);
+  white-space: nowrap;
+}
+.cf-table td {
+  padding: var(--s2) var(--s3);
+  border-bottom: 1px solid var(--hairline);
+  font-size: var(--t-s);
+}
+.cf-num {
+  text-align: right;
+}
+.cf-correzione {
+  max-width: 18rem;
+  overflow-wrap: anywhere;
+}
+.cf-correzione a {
+  color: var(--ink);
+}
+
+.cf-note {
+  color: var(--graphite);
+  font-size: var(--t-xs);
+  margin: var(--s2) 0 0;
+}
+
+/* Folded lists (js/confronto.js foldable): a plain ruled disclosure, same ink as the group headers. */
+.cf-fold {
+  border-top: 1px solid var(--hairline, #c9d1d8);
+  margin-top: var(--s3, 0.75rem);
+}
+.cf-fold-summary {
+  cursor: pointer;
+  padding: var(--s2, 0.5rem) 0;
+  font-weight: 600;
+}
+.cf-fold-summary:focus-visible {
+  outline: 2px solid var(--ink, #14181d);
+  outline-offset: 2px;
+}

@@ -1,8 +1,9 @@
 // Rail navigation, redesigned (WORKBENCH_SPEC.md #12, user feedback: "icons are all the same;
-// collapsed it is almost impossible to navigate"). Collapsed (56px) = an activity bar of 9
-// distinct destinations -- Home, Cerca, Preferiti, Recenti, the five categories -- + the expand/
-// collapse toggle, NO individual tools; a category/Preferiti/Recenti button opens a 280px flyout
-// (js/rail-flyout.js) listing its tools. Expanded (240px, >=1100px only) shows the same
+// collapsed it is almost impossible to navigate"). Collapsed (56px) = an activity bar of
+// destinations -- Home, Cerca, Preferiti, Recenti, "Registro correzioni" (WORKBENCH_SPEC §13.1),
+// the five categories -- + the expand/collapse toggle, NO individual tools; a category/Preferiti/
+// Recenti button opens a 280px flyout (js/rail-flyout.js) listing its tools; Registro is a plain
+// destination link (like Home), not a flyout. Expanded (240px, >=1100px only) shows the same
 // destinations with text; Preferiti/Recenti/categories become accordions instead of flyouts.
 // 720-1099px forces the collapsed activity bar (css/layout.css already pins the grid column
 // width there); <720px the mobile picker (layout.js relocates this whole <nav>) always gets the
@@ -11,6 +12,7 @@
 import { el, clear } from "./dom.js";
 import { readJSON, writeJSON } from "./storage.js";
 import { fetchTools } from "./api.js";
+import { fetchTotalePendenti } from "./registro-api.js";
 import { buildIcon } from "./icons.js";
 import { createFlyout } from "./rail-flyout.js";
 import { groupByCategory, categoryOf, listFavourites, listRecents, toggleFavourite, buildRowSections } from "./nav-state.js";
@@ -52,7 +54,19 @@ export function renderIndex(root, { onSelect }) {
   let allTools = [];
   let currentName = null;
   let loadError = false;
+  let pendingCount = 0;
   const flyout = createFlyout();
+
+  function loadPendingCount() {
+    fetchTotalePendenti()
+      .then((count) => {
+        pendingCount = count;
+        refreshDynamic();
+      })
+      .catch(() => {
+        /* the badge stays at its last known count (or 0) -- a failed refresh is not worth an error state on the whole rail */
+      });
+  }
 
   function onToggleFav(name) {
     toggleFavourite(name);
@@ -150,7 +164,17 @@ export function renderIndex(root, { onSelect }) {
     return details;
   }
 
-  function buildNavButton({ title, icon, hint, onClick, current }) {
+  function buildNavButton({ title, icon, hint, onClick, current, badge = 0 }) {
+    const iconWrap = el("span", { class: "rail-icon" }, [buildIcon(icon)]);
+    // `badge` (WORKBENCH_SPEC §13.1's "count chip", currently only "Registro correzioni"), in two
+    // places and css/nav.css shows exactly one: a corner badge on the icon when the rail is
+    // collapsed (the icon is all there is), a plain count at the END of the row when it is expanded
+    // -- a three-digit badge sitting on the pictogram hid the very icon that identifies the entry.
+    const children = [iconWrap, el("span", { class: "rail-label", text: title })];
+    if (badge > 0) {
+      iconWrap.append(el("span", { class: "rail-pending-badge", "aria-hidden": "true", text: String(badge) }));
+      children.push(el("span", { class: "rail-pending-count", text: String(badge), title: `${badge} da confermare` }));
+    }
     return el(
       "button",
       {
@@ -160,7 +184,7 @@ export function renderIndex(root, { onSelect }) {
         "aria-current": current ? "true" : undefined,
         onclick: onClick,
       },
-      [el("span", { class: "rail-icon" }, [buildIcon(icon)]), el("span", { class: "rail-label", text: title })]
+      children
     );
   }
 
@@ -207,11 +231,24 @@ export function renderIndex(root, { onSelect }) {
       { type: "preferiti", title: "Preferiti", icon: "preferiti" },
       { type: "recenti", title: "Recenti", icon: "recenti" },
     ];
-    for (const [level1] of groupByCategory(allTools)) groupKinds.push({ type: "category", title: level1, icon: CATEGORY_ICONS[level1] || "progetti" });
+    groupKinds.forEach((kind) => list.append(collapsed ? buildFlyoutTrigger(kind) : buildAccordion(kind)));
 
-    groupKinds.forEach((kind, index) => {
+    // "Rail: one fixed entry 'Registro correzioni' below Recenti" (WORKBENCH_SPEC §13.1) -- a
+    // plain destination link like Home, not a flyout/accordion (it has no "its own tools" list).
+    list.append(
+      buildNavButton({
+        title: "Registro correzioni",
+        icon: "registro",
+        onClick: () => onSelect("registro"),
+        current: currentName === "registro",
+        badge: pendingCount,
+      })
+    );
+
+    const categoryKinds = [...groupByCategory(allTools)].map(([level1]) => ({ type: "category", title: level1, icon: CATEGORY_ICONS[level1] || "progetti" }));
+    categoryKinds.forEach((kind, index) => {
       const node = collapsed ? buildFlyoutTrigger(kind) : buildAccordion(kind);
-      if (kind.type === "category" && groupKinds[index - 1]?.type !== "category") node.classList.add("rail-sep-before");
+      if (index === 0) node.classList.add("rail-sep-before");
       list.append(node);
     });
 
@@ -237,10 +274,15 @@ export function renderIndex(root, { onSelect }) {
       loadError = true;
       render();
     });
+  loadPendingCount();
 
   wideQuery.addEventListener("change", render);
   narrowQuery.addEventListener("change", render);
   document.addEventListener("strutture:nav-state-changed", refreshDynamic);
+  // A sign-off (single or bulk, js/registro.js) changes the pending count -- refetch it so the
+  // badge (and the per-tool indicator, js/registro-indicator.js, listening to the SAME event)
+  // never goes stale after a decision the engineer just made.
+  document.addEventListener("strutture:registro-changed", loadPendingCount);
 
   return {
     setActive(name) {

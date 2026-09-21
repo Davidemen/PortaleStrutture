@@ -194,11 +194,19 @@ export function wireValueCopy(cellEl, copyValue, announce) {
 
 // `groups` = [{id, label, setOpen}] collected while building the groups; `onFilterChange(only)`
 // flips the Verifiche group's row filter. `printBtn`, when given, joins the SAME row (finding E:
-// one compact toolbar, not three stacked buttons above a jump-link strip).
-export function buildToolbar({ groups, onFilterChange, hasChecks, printBtn }) {
+// one compact toolbar, not three stacked buttons above a jump-link strip). `canCompare` (results.js:
+// the tool's own input schema carries `legacy_compat`) adds the "Confronta con Excel" toggle
+// (WORKBENCH_SPEC §13.3) -- built fresh on every render like every other toolbar control, but its
+// click handling and `aria-pressed` state live in js/confronto.js (same delegated-rebuild pattern
+// `printBtn` already uses for "Stampa relazione", js/relazione-overlay.js).
+export function buildToolbar({ groups, onFilterChange, hasChecks, printBtn, canCompare }) {
   const bar = el("div", { class: "r-toolbar" });
 
   if (printBtn) bar.append(printBtn);
+
+  if (canCompare) {
+    bar.append(el("button", { type: "button", class: "r-action cf-toggle", "aria-pressed": "false", text: "Confronta con Excel" }));
+  }
 
   if (hasChecks) {
     const filterBtn = el("button", {

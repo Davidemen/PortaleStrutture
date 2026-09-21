@@ -65,6 +65,18 @@ textarea {
   display: block;
 }
 
+/* #/registro (WORKBENCH_SPEC §13.1): "full width (no Dati/Sintesi split)" -- same slot/visibility
+   pattern as #home-pane just above, alongside the rail rather than inside either the Dati or the
+   results column. */
+#registro-pane {
+  grid-area: pane;
+  background: var(--paper);
+  display: none;
+}
+#app[data-view="registro"] #registro-pane {
+  display: block;
+}
+
 #form-pane {
   grid-area: pane;
   background: var(--film);
@@ -93,7 +105,8 @@ textarea {
       "head head head"
       "index form results";
   }
-  #home-pane {
+  #home-pane,
+  #registro-pane {
     grid-area: unset;
     grid-row: 2;
     grid-column: 2 / -1;
@@ -108,7 +121,8 @@ textarea {
   #tool-index,
   #form-pane,
   #results-pane,
-  #home-pane {
+  #home-pane,
+  #registro-pane {
     height: calc(100dvh - var(--head-h, 2.9rem));
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -125,7 +139,9 @@ textarea {
     z-index: 1;
   }
   #app[data-view="home"] #form-pane,
-  #app[data-view="home"] #results-pane {
+  #app[data-view="home"] #results-pane,
+  #app[data-view="registro"] #form-pane,
+  #app[data-view="registro"] #results-pane {
     display: none;
   }
 }
@@ -170,7 +186,8 @@ textarea {
   }
   #home-pane,
   #form-pane,
-  #results-pane {
+  #results-pane,
+  #registro-pane {
     grid-area: pane;
   }
   #home-pane[hidden],
@@ -180,7 +197,10 @@ textarea {
   }
   #app[data-view="home"] #form-pane,
   #app[data-view="home"] #results-pane,
-  #app[data-view="home"] .app-tablist {
+  #app[data-view="home"] .app-tablist,
+  #app[data-view="registro"] #form-pane,
+  #app[data-view="registro"] #results-pane,
+  #app[data-view="registro"] .app-tablist {
     display: none;
   }
   #app[data-view="tool"] #home-pane {

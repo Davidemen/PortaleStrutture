@@ -37,7 +37,10 @@ function formatSummaryNumber(value) {
 function summaryToken(field, value) {
   if (value === null || value === undefined || value === "") return null;
   let text = null;
-  if (typeof value === "boolean") text = value ? "sì" : "no";
+  // Review finding 22 ("symbol tokens only"): a field WITHOUT a symbol contributes its value alone
+  // ("rettangolare", "C25/30", "3 righe") -- its label is a whole sentence, and gluing the value to
+  // it printed "Forma della sezione trasversalerettangolare". A bare "sì"/"no" says nothing: skipped.
+  if (typeof value === "boolean") text = field.symbol ? (value ? "sì" : "no") : null;
   else if (typeof value === "number") text = Number.isFinite(value) ? formatSummaryNumber(value) : null;
   else if (Array.isArray(value)) text = field.kind === "list" ? `${value.length} valori` : `${value.length} righe`;
   else text = String(value);
@@ -55,7 +58,6 @@ export function summarizeValues(fields, values) {
 function buildTokenNode({ field, text }) {
   const span = el("span", { class: "f-section-summary-token" });
   if (field.symbol) span.append(symbolNode(field.symbol));
-  else span.append(document.createTextNode(field.label));
   // No leading space here -- `.f-section-summary-token`'s own flex `gap` (forms.css) already
   // spaces the symbol/label from the value; a literal space too would double it up.
   span.append(document.createTextNode(text));

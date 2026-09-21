@@ -216,6 +216,21 @@ export function firstChartNode(nodes) {
   return null;
 }
 
+// Flat `path -> node` index over a describeOutput() tree: every scalar leaf, plus a rows node's
+// own columns (keyed by the column's own dotted path, e.g. "righe.eta" -- a caller matching a
+// runtime path like "righe[2].eta" strips the row index itself before looking it up here, since
+// the schema has no notion of "which row"). Shared by js/registro-outputs.js (a register entry's
+// `uscite`) and js/confronto.js (a compare diff's `percorso`) -- both resolve "which output does
+// this path belong to" from the SAME kind of tree, one keyed on the tool's own output schema.
+export function indexScalarPaths(nodes, map = new Map()) {
+  for (const node of nodes) {
+    if (node.kind === "scalar") map.set(node.path, node);
+    else if (node.kind === "group") indexScalarPaths(node.children, map);
+    else if (node.kind === "rows") for (const column of node.columns) map.set(column.path, column);
+  }
+  return map;
+}
+
 // True when `node` (a "group") has at least one descendant scalar/rows with a non-null value --
 // used to decide whether an otherwise-empty group should be rendered at all.
 export function groupHasContent(node, data) {

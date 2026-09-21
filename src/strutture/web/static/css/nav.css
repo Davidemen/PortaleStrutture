@@ -100,6 +100,44 @@
   border-radius: var(--radius);
 }
 
+/* Pending-count chip (WORKBENCH_SPEC §13.1 "Registro correzioni"): same corner as the sigla badge
+   above, opposite side, ink-filled so it reads as a live count rather than a static label -- it is
+   never the only signal (the rail-label text "Registro correzioni" already names the destination,
+   this just adds "how many"). Hidden at 0 by the caller (js/tool-index.js), never by CSS. */
+/* Expanded rail: the count closes the row, the icon stays clean. Collapsed: the corner badge. */
+.rail-pending-count {
+  margin-left: auto;
+  padding: 0 0.4em;
+  font-size: var(--t-xs, 0.8125rem);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--paper);
+  background: var(--ink);
+  border-radius: 999px;
+}
+#app.rail-collapsed .rail-pending-count {
+  display: none;
+}
+#app:not(.rail-collapsed) .rail-pending-badge {
+  display: none;
+}
+.rail-pending-badge {
+  position: absolute;
+  right: -9px;
+  top: -7px;
+  min-width: 0.9375rem;
+  padding: 0 3px;
+  font-family: var(--font-ui);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.0625rem;
+  text-align: center;
+  color: var(--paper);
+  background: var(--ink);
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
 /* Tool names wrap to two lines instead of truncating mid-word -- the `title` attribute still
    carries the full name/tooltip. */
 .rail-label {
