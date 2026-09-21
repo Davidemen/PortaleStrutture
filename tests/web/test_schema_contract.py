@@ -36,7 +36,7 @@ def client() -> TestClient:
 
 def test_schema_endpoint_carries_identity_example_and_hints(client: TestClient) -> None:
     body = client.get("/api/tools/span/schema").json()
-    assert set(body) == {"name", "title", "group", "norm", "summary", "live", "example", "input", "output"}
+    assert set(body) == {"name", "title", "group", "norm", "summary", "live", "sigla", "example", "input", "output"}
     assert (body["name"], body["title"], body["norm"], body["example"]) == ("span", "Freccia", "NTC2018 §4", {"luce_m": 5.0})
     assert body["input"]["properties"]["luce_m"]["group"] == "Geometria"
     assert body["output"]["properties"]["freccia_mm"]["highlight"] is True
@@ -110,3 +110,16 @@ def test_developer_docstrings_are_not_served_to_the_ui() -> None:
             if leak.search(json.dumps(schema, ensure_ascii=False)):
                 offenders.append(f"{name}.{side}: {leak.search(json.dumps(schema, ensure_ascii=False)).group(0)!r}")
     assert offenders == []
+
+
+def test_every_tool_has_a_unique_short_navigation_code() -> None:
+    from strutture.shared.tool import discover
+    from strutture.web.presentation import MAX_SIGLA, SIGLE
+
+    tools = discover()
+    assert set(tools) <= set(SIGLE), f"tools without a sigla: {sorted(set(tools) - set(SIGLE))}"
+    codes = [SIGLE[name] for name in tools]
+    assert len(set(codes)) == len(codes), "duplicate sigle"
+    assert all(2 <= len(code) <= MAX_SIGLA and code.isupper() and code.isalpha() for code in codes)
+    listed = {t["name"]: t for t in TestClient(create_app()).get("/api/tools").json()}
+    assert listed["fond-plinto-isolato"]["sigla"] == "PLI" and listed["muro-sostegno"]["sigla"] == "MUR"

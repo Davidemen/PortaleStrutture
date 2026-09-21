@@ -16,6 +16,7 @@ def test_list_tools_returns_summaries(client: TestClient) -> None:
         "norm": "TEST §1",
         "summary": "",
         "live": True,
+        "sigla": "SO",  # fallback: first letters of the title
     }
 
 

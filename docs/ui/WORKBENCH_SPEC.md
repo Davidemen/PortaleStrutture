@@ -217,3 +217,49 @@ The default is always the COMPLETE report of §10; the overlay is where the engi
 - Acceptance: defaults produce the §10 document byte-for-byte; unticking a section removes it from preview and
   print and adds it to the "omessi" line; options persist across reload; keyboard-only operation; Esc restores
   focus; print output contains no overlay chrome; works at 390 px.
+
+## 12. Navigation rail, redesigned (user feedback 2026-09-21: "icons are all the same; collapsed it is almost
+impossible to navigate")
+**Diagnosis.** The collapsed rail lists all 30 tools as identical dots and all recents as identical clocks:
+thirty indistinguishable targets. Thirty pictograms at 24 px would not be recognisable either. The collapsed rail
+must show FEW, DISTINCT destinations and reach the tools through flyouts.
+
+**Collapsed rail (56 px) = activity bar.** Top to bottom, one 44×44 target each, icon + tooltip (name + shortcut):
+Home · Cerca (opens the palette, ⌘K/Ctrl K) · Preferiti · Recenti · ─ · the FIVE categories (Carichi,
+Calcestruzzo armato, Acciaio, Geotecnica, Fondazioni) · ─ · at the bottom: expand/collapse. No individual tools.
+- A category / Preferiti / Recenti button opens a **flyout** (280 px panel to the right of the rail, over the
+  content, `role="dialog"` non-modal; opens on click or Enter/Space/→, NOT on hover; closes on Esc, outside click,
+  selection or ←): title, then its tools grouped by sub-group ("Neve", "Sisma", "Vento"), each row = **sigla
+  chip** + title (2 lines max) + norm in small type + ★ toggle; ↑↓ move, Enter opens, type-ahead jumps by title.
+- The active tool's category button is marked (ink left rule + marker background) and shows the tool's
+  **sigla** as a small badge, so the collapsed rail always says where you are.
+**Expanded rail (240 px).** Same items with text; categories are accordions (only the active one open by
+default); each tool row starts with its sigla chip instead of a dot, so rows are scannable; Preferiti and Recenti
+(max 5) list tools the same way.
+**Sigla.** `GET /api/tools` now returns `sigla` (2–3 capital letters, unique, e.g. PLI plinto isolato, PLP plinto su
+pali, MUR muro, TRV trave, PUN punzonamento — backend done, `src/strutture/web/presentation.py`). The chip is a
+28×20 px rounded-2 outline in tabular capitals; it is also shown on Home cards, in the palette rows and next to
+the tool title. Missing sigla -> first two letters of the title.
+**Pictograms.** One inline-SVG icon per destination, drawn in the drafting vernacular of the app (24×24 viewBox,
+`fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"`; built with
+createElementNS from the path data below — no icon font, no external file, CSP-safe), in `js/icons.js`:
+| key | meaning | path data (`d`), extra shapes |
+|---|---|---|
+| home | house | `M4 11 12 4l8 7M6 10v10h12V10` |
+| cerca | magnifier | circle cx10.5 cy10.5 r5.5 + `M15 15l5 5` |
+| preferiti | star | `M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.9 6.8 19.6l1-5.8L3.5 9.7l5.9-.8z` |
+| recenti | clock | circle cx12 cy12 r8 + `M12 7.5V12l3 2` |
+| carichi | distributed load on a beam | `M4 5h16M6 5v6M10 5v6M14 5v6M18 5v6M4.8 9.5 6 11l1.2-1.5M8.8 9.5 10 11l1.2-1.5M12.8 9.5 14 11l1.2-1.5M16.8 9.5 18 11l1.2-1.5M3 14h18M5 14l-2 4h4zM19 14l-2 4h4z` |
+| calcestruzzo-armato | RC section with bars | `M6 4h12v16H6z` + filled circles r1.1 at (9,17) (12,17) (15,17) (9,7) (15,7) |
+| acciaio | I section | `M6 4h12v3h-4.5v10H18v3H6v-3h4.5V7H6z` |
+| geotecnica | ground with soil layers | `M3 8h18M5 8l-2 3M9 8l-2 3M13 8l-2 3M17 8l-2 3M21 8l-2 3M3 14h18M3 19h18` (the last two dashed `2 2`) |
+| fondazioni | footing under a column | `M10 3h4v9h-4zM4 12h16v5H4zM3 20h18` |
+| registro | checklist (Phase 1) | `M5 6l1.5 1.5L9 5M5 12l1.5 1.5L9 11M5 18l1.5 1.5L9 17M12 6h7M12 12h7M12 18h7` |
+| progetti | folder (Phase 3) | `M3 7h6l2 2h10v10H3z` |
+| espandi / comprimi | chevrons | `M9 6l6 6-6 6` / `M15 6l-6 6 6 6` |
+Icons inherit `currentColor` (graphite, ink when active); `aria-hidden="true"`, the button carries the label.
+**Acceptance.** Collapsed: exactly 9 destination buttons + the toggle, every icon's path data differs, each has an
+accessible name and a tooltip; keyboard: Tab to a category, Enter opens the flyout with focus on the first tool, ↓↓
+Enter navigates and closes it, Esc returns focus to the button; the active category is marked and shows the active
+tool's sigla; every tool is reachable in ≤ 2 actions from the collapsed rail; sigle unique; 44 px targets; works at
+720–1099 px where the rail is forced collapsed; no layout shift of the content when a flyout opens.

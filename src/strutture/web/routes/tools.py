@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from strutture.shared.tool import Tool, execute
 
 from ..envelope import error_envelope, internal_error_envelope, report_envelope
+from ..presentation import sigla_for
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +63,7 @@ def build_tools_router(tools: dict[str, Tool]) -> APIRouter:
 def _summary(tool: Tool) -> dict[str, Any]:
     return {
         "name": tool.name, "title": tool.title, "group": tool.group, "norm": tool.norm,
-        "summary": tool.summary, "live": tool.live,
+        "summary": tool.summary, "live": tool.live, "sigla": sigla_for(tool.name, tool.title),
     }
 
 
