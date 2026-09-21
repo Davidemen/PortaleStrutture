@@ -3,7 +3,10 @@
 // precision kept in `title` and used verbatim (decimal comma) for copy/CSV.
 const SUPERSCRIPT = { "-": "⁻", "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹" };
 
-function toSuperscript(exponent) {
+// Exported for js/relazione-formule-testo.js: the printed display factor ("...·10⁻³",
+// docs/architecture-phase2.md §3) uses the SAME digit/minus-sign superscript mapping as every
+// other scientific-notation value on the sheet, rather than a second translation table.
+export function toSuperscript(exponent) {
   return String(exponent).split("").map((ch) => SUPERSCRIPT[ch] ?? ch).join("");
 }
 

@@ -86,7 +86,18 @@ function risultatiRows(resolved, outputNodes, onGruppo) {
   return wrap;
 }
 
-export function buildContenutoFieldset(resolved, { outputNodes, onPreset, onSezione, onGruppo }) {
+// docs/architecture-phase2.md §5: "Overlay option 'Sviluppo dei calcoli' (default ON when the
+// tool offers it; hidden otherwise)" -- `hasFormule` (from the tool's own schema/summary
+// `relazione: bool`, threaded down by js/relazione-overlay.js) gates whether the checkbox exists
+// at all, never just its checked state.
+function sviluppoRow(resolved, hasFormule, onSezione) {
+  if (!hasFormule) return null;
+  return checkboxRow("rel-sezione-sviluppo", "Sviluppo dei calcoli", resolved.sezioni.sviluppo, {
+    onChange: (on) => onSezione({ sviluppo: on }),
+  });
+}
+
+export function buildContenutoFieldset(resolved, { outputNodes, hasFormule, onPreset, onSezione, onGruppo }) {
   const locked = sectionLocked(resolved);
   const fieldset = el("fieldset", { class: "rel-fieldset" }, [el("legend", { text: "Contenuto" }), presetRadios(resolved, onPreset)]);
 
@@ -102,6 +113,8 @@ export function buildContenutoFieldset(resolved, { outputNodes, onPreset, onSezi
     checkboxRow("rel-sezione-sintesi", "Sintesi", resolved.sezioni.sintesi, { onChange: (on) => onSezione({ sintesi: on }) }),
     verificheRows(resolved, onSezione),
   );
+  const sviluppo = sviluppoRow(resolved, hasFormule, onSezione);
+  if (sviluppo) fieldset.append(sviluppo);
   const risultati = risultatiRows(resolved, outputNodes, onGruppo);
   if (risultati) fieldset.append(risultati);
   fieldset.append(

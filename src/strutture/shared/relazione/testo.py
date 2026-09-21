@@ -5,8 +5,9 @@ plain-text export (DOCX). Also composes the printed three-line equation (§5) �
 substituted values, result — directly from a `Passo`, the same text a human reads when reviewing
 a trace without a browser.
 """
+import re
 from collections.abc import Callable, Mapping
-from math import log10
+from math import floor, log10
 
 from .modelli import Passo, Traccia
 from .notazione import Cmp, Fn, Id, Neg, Nodo, Num, Op, Par, analizza, simbolo_identificatore
@@ -95,9 +96,17 @@ def _con_fattore(espressione: str, ast: Nodo, scala: float) -> str:
     return f"({espressione})·{fattore}" if serve_parentesi else f"{espressione}·{fattore}"
 
 
+_ESPONENTE_UNITA = re.compile(r"([a-zA-Zα-ωΑ-Ω])([234])(?![a-zA-Z0-9])")
+
+
+def unita_a_testo(unita: str) -> str:
+    """"mm2" -> "mm²", "kN/m3" -> "kN/m³" (same rule as the browser's format.js `formatUnit`)."""
+    return _ESPONENTE_UNITA.sub(lambda m: m.group(1) + m.group(2).translate(_APICI), unita)
+
+
 def _riga_risultato(passo: Passo, ast: Nodo, valori: Mapping[str, float]) -> str:
     if not passo.esito:
-        unita = f" {passo.unita}" if passo.unita and passo.unita != UNITA_ADIMENSIONALE else ""
+        unita = f" {unita_a_testo(passo.unita)}" if passo.unita and passo.unita != UNITA_ADIMENSIONALE else ""
         return f"= {valore_a_testo(passo.risultato)}{unita}"
     assert isinstance(ast, Cmp)  # `esito` is non-empty iff `formula` is a top-level comparison
     unita_map = {v.simbolo: v.unita for v in passo.valori if v.unita}
@@ -120,7 +129,11 @@ def _numero_a_cifre_significative(valore: float, cifre: int) -> str:
         return "0"
     grezzo = f"{valore:.{cifre}g}"
     if "e" in grezzo or "E" in grezzo:
-        grezzo = f"{valore:f}".rstrip("0").rstrip(".")
+        # beyond the `g` format's range: still `cifre` significant digits, in plain positional notation
+        # (3859521.93 -> "3860000", never the float's own twelve digits; 1.23456e-4 -> "0.0001235")
+        decimali = max(cifre - 1 - floor(log10(abs(valore))), 0)
+        arrotondato = round(valore, cifre - 1 - floor(log10(abs(valore))))
+        grezzo = f"{arrotondato:.{decimali}f}"
     if "." in grezzo:
         grezzo = grezzo.rstrip("0").rstrip(".")
     return grezzo.replace(".", ",")

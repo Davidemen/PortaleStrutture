@@ -297,12 +297,16 @@ export function getReportState() {
 }
 
 document.addEventListener("strutture:tool-schema", (event) => {
-  const { name, output, input, title, norm } = event.detail;
+  const { name, output, input, title, norm, relazione } = event.detail;
   const fields = describeFields(input || {});
   // WORKBENCH_SPEC §13.3: the "Confronta con Excel" toggle only exists "when the input schema has
   // legacy_compat" -- no per-tool name check, purely schema-driven like every other hint.
   const canCompare = fields.some((field) => field.name === "legacy_compat");
-  currentTool = { name, output, title, norm, fields, canCompare, outputNodes: describeOutput(output) };
+  // docs/architecture-phase2.md §5: whether "Sviluppo dei calcoli" exists for this tool at all
+  // (GET /api/tools/{name}/schema's own `relazione: bool`, routes.py `_summary`) -- read here,
+  // not re-derived, so js/relazione-overlay.js and the print builder agree with the backend on
+  // whether a `?relazione=1` run is even worth requesting.
+  currentTool = { name, output, title, norm, fields, canCompare, relazione: Boolean(relazione), outputNodes: describeOutput(output) };
   previousReport = null;
   const root = document.getElementById("results-root");
   if (root) renderEmpty(root);

@@ -84,6 +84,7 @@ export function resultGroups(outputNodes) {
 function sintesiSezioni(outputNodes) {
   return {
     passaggi: false,
+    sviluppo: false,
     tabelle: false,
     grafici: false,
     avvisi: false,

@@ -156,3 +156,20 @@ def test_a_factor_that_is_not_a_power_of_ten_is_printed_as_a_number() -> None:
 
     passo = _passo(formula="a", valori=(Valore(simbolo="a", valore=10.0),), risultato=98.0665, unita="kPa", scala=9.80665)
     assert passo_a_testo(passo).splitlines()[0] == "V_Rd = a·9,807"
+
+
+# --- proof-read findings: big numbers and unit exponents -------------------------------------------
+
+def test_a_large_value_is_rounded_to_the_significant_digits_not_printed_with_float_noise() -> None:
+    from strutture.shared.relazione.testo import valore_a_testo
+
+    assert valore_a_testo(3859521.926595) == "3860000"
+    assert valore_a_testo(125000.0) == "125000"
+    assert valore_a_testo(0.000123456) == "0,0001235"
+
+
+def test_unit_exponents_are_typographic() -> None:
+    from strutture.shared.relazione.testo import passo_a_testo
+
+    assert passo_a_testo(_passo(unita="mm2", scala=1.0, risultato=180000.0)).splitlines()[-1] == "= 180000 mm²"
+    assert passo_a_testo(_passo(unita="kN/m3", scala=1.0, risultato=180000.0)).splitlines()[-1] == "= 180000 kN/m³"

@@ -79,6 +79,7 @@ function renderOptionsPane() {
   pane.append(
     buildContenutoFieldset(session.resolved, {
       outputNodes: session.outputNodes,
+      hasFormule: Boolean(session.tool.relazione),
       onPreset: (preset) => applyChange(applyPreset(preset, session.resolved, session.outputNodes)),
       onSezione: (patch) => applyChange(editSezioni(session.resolved, patch)),
       onGruppo: (path, included) => applyChange(editGruppo(session.resolved, path, included)),

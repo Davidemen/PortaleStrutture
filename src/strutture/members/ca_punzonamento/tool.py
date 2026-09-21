@@ -3,6 +3,7 @@ from strutture.shared.tool import Tool
 
 from .compose import run
 from .models import PunzonamentoInput, PunzonamentoOutput
+from .relazione import relazione
 
 # docs/specs/ca-punzonamento.md §8 golden case (Shotblast_225N).
 EXAMPLE = {
@@ -22,5 +23,6 @@ TOOLS = (
         run=run,
         example=EXAMPLE,
         summary="Verifica a punzonamento di un solaio o platea su pilastro o palo e progetta le armature verticali se necessarie.",
+        relazione=relazione,
     ),
 )

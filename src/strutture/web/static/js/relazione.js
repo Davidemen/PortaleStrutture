@@ -9,6 +9,7 @@ import { extractByPredicate, readPath, rowsHighlightPairs, firstChartNode } from
 import { buildCartiglio } from "./print.js";
 import { buildInputsSection } from "./relazione-inputs.js";
 import { buildVerificheSection, buildGroupsSection, buildAvvisiSection } from "./relazione-groups.js";
+import { buildSviluppoSection } from "./relazione-sviluppo.js";
 import { renderSintesi } from "./sintesi.js";
 import { renderSketch } from "./sketch.js";
 
@@ -24,6 +25,11 @@ export const DEFAULT_OPTIONS = {
     verifiche: "tutte", // "tutte" | "non_soddisfatte" | false
     gruppi: {}, // { [output-path]: false } -- missing/true = included
     passaggi: true,
+    // docs/architecture-phase2.md §5: "default ON when the tool offers it; hidden otherwise" --
+    // the overlay only ever shows this checkbox for a tool whose schema says `relazione: true`
+    // (js/relazione-overlay-contenuto.js), and `buildSviluppoSection` itself is a no-op whenever
+    // there is no trace/warning to show, so this default stays harmless for every other tool.
+    sviluppo: true,
     tabelle: true,
     grafici: true,
     avvisi: true,
@@ -98,7 +104,14 @@ export function buildRelazione(container, { tool, report, outputNodes, fields } 
   const legacyMode = Boolean(report.inputs_echo && report.inputs_echo.legacy_compat);
 
   container.append(buildCartiglio(tool, legacyMode ? "foglio Excel" : "standard", resolved.cartiglio));
-  const omitted = omittedSections(resolved);
+  // "Sviluppo dei calcoli" is only ever relevant for a tool whose schema says `relazione: true`
+  // (`tool.relazione`, results.js) -- `omittedSections` itself stays tool-agnostic (pure over
+  // `options` alone, reused by every other §11 caller), so a tool that never had formulas can
+  // never be misreported as having had this section "reduced" out of it.
+  const omitted = [
+    ...omittedSections(resolved),
+    ...(!resolved.sezioni.sviluppo && tool && tool.relazione ? ["Sviluppo dei calcoli"] : []),
+  ];
   if (omitted.length > 0) {
     container.append(el("p", { class: "print-omessi", text: `Contenuto ridotto dall'utente — omessi: ${omitted.join(", ")}` }));
   }
@@ -132,6 +145,12 @@ export function buildRelazione(container, { tool, report, outputNodes, fields } 
     renderSintesi(sintesiRoot, { report, highlightPairs, chartFallback, options: { copy: false, sketches: false, warnings: false } });
   }
   buildVerificheSection(container, report.checks || [], resolved.sezioni);
+  // docs/architecture-phase2.md §5: "Sviluppo dei calcoli" AFTER "Verifiche", before the plain
+  // result groups/tables/charts.
+  if (resolved.sezioni.sviluppo) {
+    const sviluppo = buildSviluppoSection(report.relazione || [], report.warnings || []);
+    if (sviluppo) container.append(sviluppo);
+  }
   buildGroupsSection(container, treeNodes, data, tool ? tool.name : "", resolved.sezioni, resolved.tabelle);
   buildAvvisiSection(container, report.warnings || [], resolved.sezioni);
   // Review finding 24: a closing signature line -- unconditional (not a §11 toggle), the last

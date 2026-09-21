@@ -7,7 +7,6 @@
 // primitives (reused by the overlay's own "opening applies the stale rule" step) and the
 // `beforeprint` FALLBACK for a print the overlay never got a chance to intercept.
 import { el, clear } from "./dom.js";
-import { runTool } from "./api.js";
 import { getReportState } from "./results.js";
 import { validateValues } from "./validate.js";
 import { visibleValues } from "./forms-sections.js";
@@ -54,24 +53,43 @@ export function clearRefusal() {
   if (box && box.textContent === REFUSAL_TEXT) box.hidden = true;
 }
 
-// Recalculates through the SAME run pipeline as a live update (reason "live": never steals focus/
-// scroll, WORKBENCH_SPEC §2 seam in main.js) so the on-screen sheet also catches up -- the fresh
-// report is used for print/preview either way.
-async function recalculate(name, values) {
+// A direct fetch rather than `js/api.js::runTool` (which has no notion of query parameters): the
+// ONLY caller in the whole app that ever needs `?relazione=1` (docs/architecture-phase2.md §1
+// cost model: "the trace is built only on request"), so the one extra query string stays local to
+// this print-only path instead of growing the shared, everywhere-else-used `runTool` contract.
+async function runToolForPrint(name, values, relazione) {
+  const suffix = relazione ? "?relazione=1" : "";
+  const response = await fetch(`/api/tools/${encodeURIComponent(name)}/run${suffix}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(values),
+  });
+  return { status: response.status, report: await response.json() };
+}
+
+// Recalculates through the SAME run-start/run-result events as a live update (reason "live": never
+// steals focus/scroll, WORKBENCH_SPEC §2 seam in main.js) so the on-screen sheet also catches up --
+// the fresh report is used for print/preview either way.
+async function recalculate(name, values, relazione) {
   document.dispatchEvent(new CustomEvent("strutture:run-start", { detail: { name, reason: "live" } }));
-  const { status, report } = await runTool(name, values);
+  const { status, report } = await runToolForPrint(name, values, relazione);
   document.dispatchEvent(new CustomEvent("strutture:run-result", { detail: { name, status, values, report, reason: "live" } }));
   return report && report.ok ? report : null;
 }
 
 // Resolves to the Report to print, or null when printing/opening the overlay must be refused.
-// Only this (awaitable) path can actually recalculate -- `beforeprint` (below) cannot.
+// Only this (awaitable) path can actually recalculate -- `beforeprint` (below) cannot. A tool that
+// declares `relazione` (docs/architecture-phase2.md §5) is ALWAYS recalculated fresh here, even
+// when the on-screen report is not stale -- the cached report from an ordinary run never carries a
+// trace (it is never requested during live calculation), so printing "Sviluppo dei calcoli" needs
+// its own `?relazione=1` run regardless of staleness.
 export async function resolveReportForPrint(state) {
   if (!state.tool) return null;
   const { values, invalid } = currentValuesAndValidity(state.tool.fields);
   if (invalid) return null;
-  if (!isStaleOnScreen()) return state.report;
-  return recalculate(state.tool.name, values);
+  const vuoleRelazione = Boolean(state.tool.relazione);
+  if (!isStaleOnScreen() && !vuoleRelazione) return state.report;
+  return recalculate(state.tool.name, values, vuoleRelazione);
 }
 
 // `state.tool` is results.js's own `currentTool` shape (`{name, title, norm, fields,

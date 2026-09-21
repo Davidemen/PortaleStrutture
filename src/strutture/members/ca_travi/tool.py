@@ -37,6 +37,7 @@ from .models import (
     TraveRettangolareInput,
     TraveRettangolareOutput,
 )
+from .relazione import relazione as relazione_trave_rettangolare
 from .schizzo import disegna as disegna_schizzo
 from .sle_tensioni import verifica_sle_tensioni
 from .taglio_slu import verifica_taglio_slu
@@ -277,5 +278,6 @@ TOOLS = (
         run=run,
         example=ESEMPIO_AUREO,
         summary="Progetta e verifica una trave in c.a. a sezione rettangolare a flessione, taglio e stato limite di esercizio.",
+        relazione=relazione_trave_rettangolare,
     ),
 )

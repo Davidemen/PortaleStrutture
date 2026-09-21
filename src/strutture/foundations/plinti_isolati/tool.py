@@ -15,6 +15,7 @@ from .input import PlintoIsolatoInput
 from .inviluppo import eccentricita_globale, inviluppo
 from .materiali import materiali
 from .models import PlintoIsolatoOutput
+from .relazione import relazione
 from .riga_verifica import RigaVerifica, riga_verifica
 from .schizzo import disegna as disegna_schizzo
 from .sle import sle, sle_checks
@@ -118,5 +119,6 @@ TOOLS = (
         example=ESEMPIO,
         summary="Verifica portanza, scorrimento, ribaltamento e armatura di un plinto isolato su tutte le combinazioni di carico.",
         live=False,
+        relazione=relazione,
     ),
 )

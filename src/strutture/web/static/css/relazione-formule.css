@@ -1,0 +1,98 @@
+/* "Sviluppo dei calcoli" (docs/architecture-phase2.md §5): the printed report's per-Traccia
+   formula trace, built by js/relazione-sviluppo.js + js/relazione-formule.js. NOT scoped to
+   `media="print"` the way css/print.css's own page-layout overrides are -- the overlay's live A4
+   preview (js/relazione-preview.js) renders this SAME `buildRelazione` output on screen, and both
+   places need to look right. Print-only pagination rules (`break-inside`, margins) live in
+   css/print.css alongside every other print-only override. */
+
+.r-sviluppo {
+  margin-bottom: var(--s5, 1.5rem);
+}
+
+.r-passo {
+  padding: var(--s2, 0.5rem) 0;
+  border-bottom: 1px solid var(--hairline, #c9d1d8);
+}
+
+.r-passo:last-child {
+  border-bottom: none;
+}
+
+/* `line-height` explicit + a top margin between consecutive lines: a bare `<math>` element's own
+   vertical metrics (no ascender/descender the way ordinary text has) otherwise leave successive
+   `.r-passo-riga` rows close enough to visually overlap (measured: "= 500 − 50" sitting under
+   "d = h − c" with no gap at all for a Passo with neither a clause nor a nota to add spacing). */
+.r-passo-riga {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  column-gap: var(--s3, 0.75rem);
+  row-gap: var(--s1, 0.25rem);
+  line-height: 1.6;
+}
+
+.r-passo-riga + .r-passo-riga {
+  margin-top: 0.2rem;
+}
+
+/* Line 1 only: "simbolo = formula" on the left, the code clause pinned to the right edge --
+   docs/architecture-phase2.md §5 "the clause right-aligned in muted ink". */
+.r-passo-riga--formula {
+  justify-content: space-between;
+}
+
+.r-passo-clausola {
+  flex: none;
+  margin-left: auto;
+  color: var(--graphite, #5b6773);
+  font-size: var(--t-xs, 0.8125rem);
+  white-space: nowrap;
+}
+
+.r-passo-unita {
+  color: var(--graphite, #5b6773);
+  font-size: var(--t-s, 0.9375rem);
+}
+
+.r-passo-nota {
+  margin: var(--s1, 0.25rem) 0 0;
+  color: var(--graphite, #5b6773);
+  font-size: var(--t-xs, 0.8125rem);
+  font-style: italic;
+}
+
+/* A check step's outcome: icon + word (docs/architecture-phase2.md §5), same colour convention as
+   js/verdict.js's own pass/fail rows. */
+.r-passo-esito {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1, 0.25rem);
+  font-weight: 600;
+}
+
+.r-passo-esito--ok {
+  color: var(--ok, #1f7a4d);
+}
+
+.r-passo-esito--ko {
+  color: var(--ko, #b42318);
+}
+
+.r-sviluppo-assente {
+  color: var(--graphite, #5b6773);
+  font-style: italic;
+}
+
+/* MathML root (js/relazione-formule.js) and its plain-text fallback (unsupported browser, task
+   brief: "MathML must degrade gracefully"): the STIX Two Text family already shipped for every
+   other symbol on the sheet (js/symbols.js, --font-sym), plus the platform's own math-aware
+   fallbacks -- no STIX Two Math font file is bundled (none was already in static_next/fonts). */
+.r-passo math,
+.r-eq-fallback {
+  font-family: var(--font-sym, "STIX Two Text"), "STIX Two Math", "Cambria Math", serif;
+  font-size: var(--t-s, 0.9375rem);
+}
+
+.r-eq-fallback {
+  white-space: pre-wrap;
+}

@@ -185,6 +185,18 @@
     font-variant-numeric: tabular-nums lining-nums;
   }
 
+  /* -- Sviluppo dei calcoli: one Traccia can run to 40 Passi, so the SECTION breaks freely across
+     pages (same reasoning as the tall "Dati di ingresso" fix above) while each individual Passo
+     never splits (docs/architecture-phase2.md §5 "break-inside: avoid per Passo"). ------------- */
+
+  .r-sviluppo .r-group {
+    break-inside: auto;
+  }
+
+  .r-passo {
+    break-inside: avoid;
+  }
+
   /* -- group/row/check/table chrome, shared with the interactive sheet ------------------------ */
 
   .r-group {
