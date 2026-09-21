@@ -168,3 +168,52 @@ Acceptance (e2e, print media emulation): with every group collapsed, the checks 
 filter on and a table on page 2, the printed document still contains every group title, every check, every table
 row (count equals the data), the sketch views BEFORE the inputs, and a Dati di ingresso table whose row count equals
 the number of input fields of the tool with every numeric value followed by its unit; stale results refuse to print.
+
+## 11. Report personalisation overlay (user rule, 2026-09-21)
+"Stampa relazione" (button, `⋯` menu, Ctrl/Cmd+P) opens a **full-window overlay** before anything is generated.
+The default is always the COMPLETE report of §10; the overlay is where the engineer changes that on purpose.
+```
+┌ Relazione di calcolo ─────────────────────────────────────────────── [Annulla] [Stampa / Salva PDF] ┐
+│ OPZIONI (380 px, scroll)                      │ ANTEPRIMA (live, paged A4, scroll, zoom fit-width)   │
+│ Cartiglio   progetto · committente · elemento │ ┌──────────────┐ ┌──────────────┐                    │
+│             relazione n. · revisione · sigla  │ │ cartiglio    │ │ verifiche    │   pagina 1 di 6     │
+│             data · note                       │ │ schizzo      │ │ …            │                    │
+│ Contenuto   ◉ Completa  ○ Sintetica  ○ Person.│ │ dati         │ │              │                    │
+│   ☑ Schizzo  ☑ Dati di ingresso  ☑ Sintesi    │ └──────────────┘ └──────────────┘                    │
+│   ☑ Verifiche (tutte | solo non soddisfatte)  │                                                     │
+│   ☑ Risultati: ☑ gruppo 1 ☑ gruppo 2 …        │                                                     │
+│   ☑ Passaggi di calcolo  ☑ Tabelle  ☑ Grafici │                                                     │
+│   ☑ Avvisi  ☑ Nota sulle correzioni           │                                                     │
+│ Tabelle     righe: tutte | prime N | governanti│                                                     │
+│ Pagina      A4 verticale | orizzontale · corpo │                                                     │
+│             testo normale | compatto · numeri  │                                                     │
+│             di pagina · intestazione ripetuta  │                                                     │
+└───────────────────────────────────────────────┴─────────────────────────────────────────────────────┘
+```
+- **Presets.** *Completa* (default; everything of §10), *Sintetica* (cartiglio, schizzo, dati di ingresso, sintesi,
+  verifiche), *Personalizzata* (any change to a checkbox switches to it). The sketch and the input data can be
+  unticked only in *Personalizzata*.
+- **Transparency.** When anything is omitted the report says so under the cartiglio: "Contenuto ridotto
+  dall'utente — omessi: Passaggi di calcolo, Tabelle". A reduced report is never mistaken for the complete one.
+- **Cartiglio** fields: progetto, committente, elemento (default = tool title), relazione n., revisione, sigla,
+  data (default today, editable), note. Persisted (`sm.cartiglio`, per browser; per project once Phase 3 exists);
+  contents choices persisted per tool (`sm.relazione.<tool>`); "Ripristina predefiniti".
+- **Preview.** The right pane renders the actual report DOM (the same `js/relazione.js` output) scaled to fit,
+  split into A4 pages with CSS (`break-*` rules + a page frame per sheet on screen); it updates within 300 ms of
+  an option change; very large tables render the first page of rows in the preview with "… N righe in stampa".
+- **Behaviour.** Opening it runs the stale-results rule of §10 first (recalculate or refuse). Focus is trapped,
+  Esc / Annulla closes and returns focus to the trigger, the underlying page does not scroll, the overlay is a
+  labelled dialog (`role="dialog"`, `aria-modal`). "Stampa / Salva PDF" prints exactly the previewed document
+  (the overlay chrome is hidden in print). Browser print (Ctrl/Cmd+P) opens the overlay instead of printing the
+  raw page; `beforeprint` without the overlay (menu print, OS shortcut that cannot be intercepted) falls back to
+  the complete report with the saved cartiglio.
+- **Mobile (< 720 px):** options first, "Anteprima" as a second step (segmented control), same actions.
+- **Contract.** `js/relazione.js` exports `buildRelazione(container, data, options)` with
+  `options = {preset, sezioni: {schizzo, dati, sintesi, verifiche: "tutte"|"non_soddisfatte"|false, gruppi:
+  {<path>: bool}, passaggi, tabelle, grafici, avvisi, nota_correzioni}, tabelle: {righe: "tutte"|"prime"|
+  "governanti", n}, pagina: {orientamento, corpo: "normale"|"compatto", numeri, intestazione}, cartiglio: {…}}`;
+  missing keys = complete. New modules: `js/relazione-overlay.js`, `js/relazione-options.js` (pure: defaults,
+  presets, persistence, the "omessi" sentence), `js/relazione-preview.js`, `css/relazione-overlay.css`.
+- Acceptance: defaults produce the §10 document byte-for-byte; unticking a section removes it from preview and
+  print and adds it to the "omessi" line; options persist across reload; keyboard-only operation; Esc restores
+  focus; print output contains no overlay chrome; works at 390 px.
