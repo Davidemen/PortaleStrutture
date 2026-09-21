@@ -4,10 +4,23 @@
 // / "Solo non soddisfatte" / "Espandi tutto", finding E: one compact row, no jump links -- the
 // collapsed group headers already are the navigation) and the click-to-copy-a-value utility.
 import { el, clear } from "./dom.js";
-import { formatValue } from "./format.js";
+import { formatValue, formatUnit } from "./format.js";
+import { symbolNode } from "./symbols.js";
 import { copyText, buildManualCopyField } from "./clipboard.js";
 
 const COPY_STATUS_MS = 1600;
+
+// A collapsed group's one-line preview ("H 2,7 m · B 1,9 m"): the symbol as real sub/superscript
+// markup (symbols.js), the unit with typographic exponents and never the dimensionless "-" -- it
+// used to be one plain string, which printed the raw hint notation ("A_s,nec 1,546 cm2/m").
+function fillPreview(previewEl, previewPairs) {
+  clear(previewEl);
+  previewPairs.forEach(({ node, value }, index) => {
+    if (index > 0) previewEl.append(" · ");
+    const unit = node.unit && node.unit !== "-" ? ` ${formatUnit(node.unit)}` : "";
+    previewEl.append(node.symbol ? symbolNode(node.symbol) : node.label, ` ${formatValue(value, node).text}${unit}`);
+  });
+}
 
 export function groupId(path) {
   return `r-group-${(path || "root").replace(/\./g, "-")}`;
@@ -28,10 +41,9 @@ export function buildCollapsibleGroup(id, label, { defaultOpen = false, badge = 
   });
   header.append(el("span", { class: "r-group-title", text: label }));
   if (previewPairs.length > 0) {
-    const preview = previewPairs
-      .map(({ node, value }) => `${node.symbol || node.label} ${formatValue(value, node).text}${node.unit ? ` ${node.unit}` : ""}`)
-      .join(" · ");
-    header.append(el("span", { class: "r-group-preview", text: preview }));
+    const previewEl = el("span", { class: "r-group-preview" });
+    fillPreview(previewEl, previewPairs);
+    header.append(previewEl);
   }
   if (badge > 0) header.append(el("span", { class: "r-group-badge", text: `${badge} non soddisfatte` }));
   const body = el("div", { class: "r-group-body", id: bodyId });
@@ -50,14 +62,11 @@ function updateGroupChrome(header, label, { badge = 0, previewPairs = [] } = {})
   if (titleEl) titleEl.textContent = label;
   let previewEl = header.querySelector(".r-group-preview");
   if (previewPairs.length > 0) {
-    const text = previewPairs
-      .map(({ node, value }) => `${node.symbol || node.label} ${formatValue(value, node).text}${node.unit ? ` ${node.unit}` : ""}`)
-      .join(" · ");
     if (!previewEl) {
       previewEl = el("span", { class: "r-group-preview" });
       header.insertBefore(previewEl, header.querySelector(".r-group-badge") || null);
     }
-    previewEl.textContent = text;
+    fillPreview(previewEl, previewPairs);
   } else if (previewEl) {
     previewEl.remove();
   }

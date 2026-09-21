@@ -681,7 +681,34 @@
 /* `min-width: 0` is required, not optional, for a flex item's truncation to engage (same fix as
    `.f-section-summary` in forms.css) -- otherwise the preview's own min-content width keeps the
    header on 2 lines whenever it doesn't fit the row. */
+/* Symbol markup inside the one-line preview must not stretch the header's line box: the STIX
+   italic of `.r-symbol` has taller metrics than Barlow under `line-height: normal`, and a
+   <sub>/<sup> shifts its own box -- each collapsed group grew 2px, 8px over the muro-sostegno
+   results height budget in total. A NUMERIC line-height makes the line box ignore font metrics. */
+.r-group-preview,
+.r-group-preview .r-symbol,
+.r-group-preview .r-symbol * {
+  line-height: 1.25;
+}
+/* `vertical-align: sub/super` moves the inline box itself and so still grows the line by a pixel;
+   a relatively positioned baseline box draws in the same place and takes no part in line layout. */
+.r-group-preview sub,
+.r-group-preview sup {
+  position: relative;
+  vertical-align: baseline;
+  line-height: 0;
+}
+.r-group-preview sub {
+  top: 0.3em;
+}
+.r-group-preview sup {
+  top: -0.4em;
+}
+
+/* `align-self: center`, not the row's own `baseline`: a baseline-aligned item whose first line
+   carries the taller STIX ascent pushes the whole header a pixel taller per group. */
 .r-group-preview {
+  align-self: center;
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
