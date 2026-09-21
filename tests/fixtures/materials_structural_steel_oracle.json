@@ -1,0 +1,5 @@
+[
+ {"grado": "S235", "fyk_MPa": 235.0, "fuk_MPa": 360.0},
+ {"grado": "S275", "fyk_MPa": 275.0, "fuk_MPa": 430.0},
+ {"grado": "S355", "fyk_MPa": 355.0, "fuk_MPa": 510.0}
+]

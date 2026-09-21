@@ -1,0 +1,51 @@
+"""NTC 2018 §3.2.3.5 eq. 3.2.4 (η→1/q substitution) — design spectrum ordinate Sd(T) (Sisma!J
+column).
+
+Sisma!J56:J149 = `IF(N25="slu", N/I41, N)`: divides the elastic ordinate by q only for the ultimate
+limit states (SLV/SLC); serviceability states (SLO/SLD) use the elastic ordinate unreduced.
+
+NTC18 §3.2.3.5 builds Sd(T) from the elastic spectrum formula "sostituendo η con 1/q", not by
+dividing Se(T) by q. On the TB≤T branches that substitution is algebraically identical to Se(T)/q
+(η only appears as a linear multiplier there), so `se_g / q` is correct for those. On 0≤T<TB, η
+also appears inside the `1/(η·F0)` reciprocal term, so substituting η=1/q there is NOT the same as
+dividing by q: `Sd(T) = ag·S·F0/q·(T/TB) + ag·S·(1−T/TB)`. At T=0 this collapses to `Sd(0) = ag·S`
+exactly, for any q — matching the sheet's own `Sisma!J55 = =N55` (undivided). That cell is
+code-compliant, not a bug: both legacy and fixed modes agree at T=0 (see
+`docs/divergences/sisma.md`).
+
+The only real divergence from the sheet is the missing floor "Sd(T) non può essere inferiore a
+0.2·ag", which only binds on the design (ULS) branch at large T.
+"""
+from typing import Final
+
+DESIGN_SPECTRUM_FLOOR_RATIO: Final[float] = 0.2  # NTC2018 §3.2.3.2.1: Sd(T) >= 0.2·ag (SLV/SLC)
+
+
+def valore_spettro(
+    se_g: float,
+    q: float,
+    t_s: float,
+    *,
+    is_uls: bool,
+    ag_g: float,
+    s: float,
+    f0: float,
+    tb_s: float,
+    legacy_compat: bool,
+) -> float:
+    """Sd(T) for ULS states (SLV/SLC), Se(T) unreduced for SLE states (SLO/SLD)."""
+    if not is_uls:
+        return se_g
+    if legacy_compat:
+        if t_s == 0.0:
+            return se_g  # Sisma!J55: the T=0 row skips the SLU division applied everywhere else
+        return se_g / q
+    sd_g = _sd_uls(se_g, q, t_s, ag_g=ag_g, s=s, f0=f0, tb_s=tb_s)
+    return max(sd_g, DESIGN_SPECTRUM_FLOOR_RATIO * ag_g)
+
+
+def _sd_uls(se_g: float, q: float, t_s: float, *, ag_g: float, s: float, f0: float, tb_s: float) -> float:
+    """Unfloored Sd(T), NTC18 eq. 3.2.4 with η replaced by 1/q."""
+    if t_s < tb_s:
+        return ag_g * s * f0 / q * (t_s / tb_s) + ag_g * s * (1.0 - t_s / tb_s)
+    return se_g / q

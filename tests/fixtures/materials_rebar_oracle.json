@@ -1,0 +1,10 @@
+[
+ {"grado": "B450C", "fyk_MPa": 450.0, "ftk_MPa": 540.0, "sigma_amm_MPa": 225.0, "legacy_grade": false},
+ {"grado": "B450A", "fyk_MPa": 450.0, "ftk_MPa": 540.0, "sigma_amm_MPa": null, "legacy_grade": false},
+ {"grado": "B500C", "fyk_MPa": 500.0, "ftk_MPa": 600.0, "sigma_amm_MPa": 400.0, "legacy_grade": true},
+ {"grado": "FeB22k", "fyk_MPa": 215.0, "ftk_MPa": 335.0, "sigma_amm_MPa": 115.0, "legacy_grade": true},
+ {"grado": "FeB32k", "fyk_MPa": 315.0, "ftk_MPa": 490.0, "sigma_amm_MPa": 155.0, "legacy_grade": true},
+ {"grado": "FeB38k", "fyk_MPa": 375.0, "ftk_MPa": 450.0, "sigma_amm_MPa": 215.0, "legacy_grade": true},
+ {"grado": "FeB44k", "fyk_MPa": 430.0, "ftk_MPa": 540.0, "sigma_amm_MPa": 255.0, "legacy_grade": true},
+ {"grado": "RB500W", "fyk_MPa": 500.0, "ftk_MPa": 650.0, "sigma_amm_MPa": 280.0, "legacy_grade": true}
+]

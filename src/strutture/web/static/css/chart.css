@@ -1,0 +1,146 @@
+/* Chart package: inline SVG line chart, legend and pointer/keyboard tooltip. */
+
+.c-chart-wrap {
+  position: relative;
+  margin: 0 0 var(--s4) 0;
+}
+
+.c-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.c-chart-wrap:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Axes and guides -- geometry via SVG presentation attributes, colour via CSS only. */
+.c-axis line {
+  stroke: var(--rule);
+  stroke-width: 1;
+}
+
+.c-axis text {
+  fill: var(--graphite);
+  font-family: var(--font-label);
+  font-size: var(--t-xs);
+}
+
+.c-guide line {
+  stroke: var(--graphite);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+}
+
+.c-guide text {
+  fill: var(--graphite);
+  font-family: var(--font-label);
+  font-size: var(--t-xs);
+}
+
+.c-crosshair {
+  stroke: var(--graphite);
+  stroke-width: 1;
+}
+
+/* Series colour + solid/dashed pattern for colour-vision-deficiency and b/w print safety. */
+.c-series-1 {
+  color: var(--series-1);
+}
+
+.c-series-2 {
+  color: var(--series-2);
+}
+
+.c-series-2 path {
+  stroke-dasharray: 6 3;
+}
+
+/* Direct end-of-line labels wear text tokens, never the series colour: colour alone is not a
+   reliable channel (CVD, b/w print) and the legend swatch already carries it. */
+.c-series-1 text,
+.c-series-2 text {
+  fill: var(--ink);
+  font-family: var(--font-label);
+  font-size: var(--t-xs);
+}
+
+.c-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s4);
+  list-style: none;
+  margin: 0 0 var(--s2) 0;
+  padding: 0;
+  font-family: var(--font-label);
+  font-size: var(--t-xs);
+}
+
+/* The series colour lives on the swatch only; the label text always wears the ink token
+   (`.c-legend li` beats the `.c-series-*` colour rule on specificity: class+type > class). */
+.c-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  color: var(--ink);
+}
+
+.c-legend-swatch {
+  display: inline-block;
+  width: 1.25rem;
+  height: 2px;
+}
+
+.c-series-1 .c-legend-swatch {
+  background: var(--series-1);
+}
+
+.c-series-2 .c-legend-swatch {
+  background: none;
+  border-top: 2px dashed var(--series-2);
+  height: 0;
+}
+
+.c-tooltip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translateX(var(--tt-x, 0px));
+  background: var(--paper);
+  border: 1px solid var(--hairline);
+  padding: var(--s2) var(--s3);
+  font-family: var(--font-ui);
+  font-size: var(--t-xs);
+  color: var(--ink);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.c-tooltip p {
+  margin: 0;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .c-tooltip {
+    transition: transform 0.05s linear;
+  }
+}
+
+/* Below 720px chart.js switches to a narrower/shorter viewBox (NARROW_VB) so the SVG-to-viewport
+   scale stays close to 1:1; this min-height stops the box itself collapsing under 200px when the
+   column is unusually narrow, and the bumped tick font-size keeps axis text >=11px legible. */
+@media (max-width: 719.98px) {
+  .c-svg {
+    min-height: 200px;
+  }
+
+  .c-axis text,
+  .c-guide text,
+  .c-series-1 text,
+  .c-series-2 text {
+    font-size: 12px;
+  }
+}

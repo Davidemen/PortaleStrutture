@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>StruttureMenni</title>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/forms.css">
+  <link rel="stylesheet" href="css/results.css">
+  <link rel="stylesheet" href="css/chart.css">
+  <link rel="stylesheet" href="css/print.css" media="print">
+</head>
+<body>
+  <div id="app" data-pane="dati">
+    <h1 class="app-h1">StruttureMenni</h1>
+
+    <details class="app-picker">
+      <summary>Strumenti</summary>
+    </details>
+
+    <nav id="tool-index" aria-label="Elenco strumenti"></nav>
+
+    <div class="app-tablist" role="tablist">
+      <button type="button" class="app-tab" id="tab-dati" role="tab" aria-selected="true" aria-controls="form-pane">Dati</button>
+      <button type="button" class="app-tab" id="tab-risultati" role="tab" aria-selected="false" aria-controls="results-pane">Risultati</button>
+    </div>
+
+    <div id="form-pane">
+      <h2 id="tool-title" tabindex="-1"></h2>
+      <div id="form-root"></div>
+      <div id="run-error" role="alert" hidden></div>
+      <div id="error-summary" role="alert" tabindex="-1" hidden></div>
+      <div id="form-actions"></div>
+    </div>
+
+    <div id="results-pane" aria-live="polite" aria-atomic="false" hidden>
+      <div id="results-root"></div>
+    </div>
+  </div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

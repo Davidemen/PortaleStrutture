@@ -1,0 +1,552 @@
+{
+  "_meta": {
+    "purpose": "Engineer-persona UI hints for the 9 registered LOAD tools. Consumed by the schema-driven renderer (and, later, copied into pydantic json_schema_extra by a backend agent). Field names are the real schema names; nested output fields use dot paths.",
+    "conventions": {
+      "input_groups": "Section title per input field. Section order = first appearance, and the intended reading order is Sito -> Geometria -> Materiali -> Azioni -> Parametri di calcolo -> Avanzate.",
+      "symbols": "NTC 2018 notation. Underscore = subscript, Greek letters as Unicode. Rendered in mathematical italic next to the label.",
+      "highlight": "<=3 governing outputs per tool: the numbers the engineer copies into the relazione.",
+      "units_missing": "Fields whose schema has no unit; '-' means adimensionale and must still be printed so the column is never empty."
+    }
+  },
+
+  "neve-carico-falda": {
+    "input_groups": {
+      "comune": "Sito",
+      "zona": "Sito",
+      "as_m": "Sito",
+      "topografia": "Sito",
+      "ct": "Sito",
+      "tipo_copertura": "Geometria della copertura",
+      "a": "Geometria della copertura",
+      "parapetto": "Geometria della copertura",
+      "a1": "Geometria della copertura",
+      "parapetto1": "Geometria della copertura",
+      "a2": "Geometria della copertura",
+      "parapetto2": "Geometria della copertura",
+      "legacy_compat": "Avanzate"
+    },
+    "label_fixes": {
+      "comune": "Comune",
+      "zona": "Zona neve (se nota, in alternativa al comune)",
+      "as_m": "Altitudine s.l.m.",
+      "topografia": "Esposizione topografica",
+      "ct": "Coefficiente termico",
+      "tipo_copertura": "Tipo di copertura",
+      "a": "Angolo di falda",
+      "parapetto": "Barriera al bordo inferiore",
+      "a1": "Angolo falda 1",
+      "parapetto1": "Barriera falda 1",
+      "a2": "Angolo falda 2",
+      "parapetto2": "Barriera falda 2",
+      "legacy_compat": "Riproduci il foglio Excel originale (errori inclusi)",
+      "qsk": "Carico neve al suolo",
+      "ce": "Coefficiente di esposizione",
+      "mu": "Coefficiente di forma",
+      "qs": "Carico neve sulla copertura",
+      "mu1": "Coefficiente di forma, falda 1",
+      "qs1": "Carico neve sulla copertura, falda 1",
+      "mu2": "Coefficiente di forma, falda 2",
+      "qs2": "Carico neve sulla copertura, falda 2"
+    },
+    "symbols": {
+      "as_m": "a_s",
+      "ct": "C_t",
+      "a": "α",
+      "a1": "α_1",
+      "a2": "α_2",
+      "qsk": "q_sk",
+      "ce": "C_E",
+      "mu": "μ_1",
+      "qs": "q_s",
+      "mu1": "μ_1",
+      "qs1": "q_s1",
+      "mu2": "μ_2",
+      "qs2": "q_s2"
+    },
+    "units_missing": {
+      "ct": "-",
+      "ce": "-",
+      "mu": "-",
+      "mu1": "-",
+      "mu2": "-"
+    },
+    "highlight": ["qs", "qs1", "qs2"]
+  },
+
+  "neve-accumulo": {
+    "input_groups": {
+      "comune": "Sito",
+      "zona": "Sito",
+      "as_m": "Sito",
+      "topografia": "Sito",
+      "ct": "Sito",
+      "b1": "Geometria",
+      "b2": "Geometria",
+      "h": "Geometria",
+      "a": "Geometria",
+      "gamma": "Proprietà della neve",
+      "m1_input": "Coefficienti di forma",
+      "msup": "Coefficienti di forma",
+      "neve_sheet_as_m": "Avanzate",
+      "legacy_compat": "Avanzate"
+    },
+    "label_fixes": {
+      "comune": "Comune",
+      "zona": "Zona neve (se nota, in alternativa al comune)",
+      "as_m": "Altitudine s.l.m.",
+      "topografia": "Esposizione topografica",
+      "ct": "Coefficiente termico",
+      "b1": "Larghezza della costruzione più alta",
+      "b2": "Larghezza della copertura più bassa",
+      "h": "Dislivello tra le due coperture",
+      "gamma": "Peso specifico della neve",
+      "a": "Angolo di falda della copertura più alta",
+      "m1_input": "Coefficiente di forma imposto, bordo lontano",
+      "msup": "Coefficiente di forma della falda superiore",
+      "neve_sheet_as_m": "Altitudine del foglio «Neve» (solo modalità Excel)",
+      "legacy_compat": "Riproduci il foglio Excel originale (errori inclusi)",
+      "qsk": "Carico neve al suolo",
+      "ce": "Coefficiente di esposizione",
+      "ls": "Lunghezza della zona di accumulo (calcolata)",
+      "mw": "Coefficiente di forma da ridistribuzione del vento",
+      "ms": "Coefficiente di forma da scivolamento",
+      "m2": "Coefficiente di forma totale al muro",
+      "m1_final": "Coefficiente di forma di progetto, bordo lontano",
+      "m2_final": "Coefficiente di forma di progetto, al muro",
+      "ls_final": "Lunghezza di progetto della zona di accumulo",
+      "qs1_final": "Carico neve di progetto, bordo lontano",
+      "qs2_final": "Carico neve di progetto, al muro"
+    },
+    "symbols": {
+      "as_m": "a_s",
+      "ct": "C_t",
+      "b1": "b_1",
+      "b2": "b_2",
+      "h": "h",
+      "gamma": "γ",
+      "a": "α",
+      "m1_input": "μ_1,imp",
+      "msup": "μ_sup",
+      "qsk": "q_sk",
+      "ce": "C_E",
+      "ls": "l_s",
+      "mw": "μ_w",
+      "ms": "μ_s",
+      "m2": "μ_2",
+      "m1_final": "μ_1",
+      "m2_final": "μ_2",
+      "ls_final": "l_s",
+      "qs1_final": "q_s1",
+      "qs2_final": "q_s2"
+    },
+    "units_missing": {
+      "ct": "-",
+      "m1_input": "-",
+      "msup": "-",
+      "ce": "-",
+      "mw": "-",
+      "ms": "-",
+      "m2": "-",
+      "m1_final": "-",
+      "m2_final": "-"
+    },
+    "highlight": ["qs2_final", "qs1_final", "ls_final"]
+  },
+
+  "sisma-vita-riferimento": {
+    "input_groups": {
+      "comune": "Sito",
+      "provincia": "Sito",
+      "vn_anni": "Vita nominale e classe d'uso",
+      "classe_uso": "Vita nominale e classe d'uso",
+      "legacy_compat": "Avanzate"
+    },
+    "label_fixes": {
+      "comune": "Comune",
+      "provincia": "Provincia (per comuni omonimi)",
+      "vn_anni": "Vita nominale",
+      "classe_uso": "Classe d'uso",
+      "legacy_compat": "Riproduci il foglio Excel originale (errori inclusi)",
+      "comune_info": "Inquadramento del sito",
+      "vita": "Vita di riferimento",
+      "periodi_ritorno": "Periodi di ritorno per stato limite",
+      "vita.cu": "Coefficiente d'uso",
+      "vita.vr": "Vita di riferimento",
+      "periodi_ritorno.slo": "Periodo di ritorno, SLO",
+      "periodi_ritorno.sld": "Periodo di ritorno, SLD",
+      "periodi_ritorno.slv": "Periodo di ritorno, SLV",
+      "periodi_ritorno.slc": "Periodo di ritorno, SLC",
+      "comune_info.zona_sismica": "Zona sismica (1 = più severa)"
+    },
+    "symbols": {
+      "vn_anni": "V_N",
+      "vita.cu": "C_U",
+      "vita.vr": "V_R",
+      "periodi_ritorno.slo": "T_R,SLO",
+      "periodi_ritorno.sld": "T_R,SLD",
+      "periodi_ritorno.slv": "T_R,SLV",
+      "periodi_ritorno.slc": "T_R,SLC"
+    },
+    "units_missing": {},
+    "highlight": ["vita.vr", "periodi_ritorno.slv", "vita.cu"]
+  },
+
+  "sisma-parametri-sito": {
+    "input_groups": {
+      "categoria_sottosuolo": "Sito",
+      "categoria_topografica": "Sito",
+      "ag_g": "Pericolosità di base",
+      "f0": "Pericolosità di base",
+      "tc_star_s": "Pericolosità di base",
+      "legacy_compat": "Avanzate"
+    },
+    "label_fixes": {
+      "categoria_sottosuolo": "Categoria di sottosuolo",
+      "categoria_topografica": "Categoria topografica",
+      "ag_g": "Accelerazione massima al sito",
+      "f0": "Fattore di amplificazione massima",
+      "tc_star_s": "Periodo di inizio del tratto a velocità costante",
+      "legacy_compat": "Riproduci il foglio Excel originale (errori inclusi)",
+      "amplificazione": "Coefficienti di amplificazione",
+      "periodi": "Periodi caratteristici dello spettro",
+      "amplificazione.ss": "Amplificazione stratigrafica",
+      "amplificazione.cc": "Correzione del periodo",
+      "amplificazione.st": "Amplificazione topografica",
+      "amplificazione.s": "Amplificazione del suolo",
+      "periodi.tb": "Inizio del tratto ad accelerazione costante",
+      "periodi.tc": "Inizio del tratto a velocità costante",
+      "periodi.td": "Inizio del tratto a spostamento costante"
+    },
+    "symbols": {
+      "ag_g": "a_g",
+      "f0": "F_0",
+      "tc_star_s": "T*_C",
+      "amplificazione.ss": "S_S",
+      "amplificazione.cc": "C_C",
+      "amplificazione.st": "S_T",
+      "amplificazione.s": "S",
+      "periodi.tb": "T_B",
+      "periodi.tc": "T_C",
+      "periodi.td": "T_D"
+    },
+    "units_missing": {},
+    "highlight": ["amplificazione.s", "periodi.tb", "periodi.tc"]
+  },
+
+  "sisma-fattori-struttura": {
+    "input_groups": {
+      "stato_limite": "Stato limite",
+      "q0": "Struttura",
+      "regolare_altezza": "Struttura",
+      "qv": "Struttura",
+      "xi_pct": "Smorzamento",
+      "legacy_compat": "Avanzate"
+    },
+    "label_fixes": {
+      "xi_pct": "Smorzamento viscoso equivalente",
+      "q0": "Fattore di struttura massimo",
+      "regolare_altezza": "Regolarità in altezza",
+      "stato_limite": "Stato limite",
+      "qv": "Fattore di struttura, componente verticale",
+      "legacy_compat": "Riproduci il foglio Excel originale (errori inclusi)",
+      "eta": "Correzione per smorzamento, componente orizzontale",
+      "q": "Fattore di struttura, componente orizzontale",
+      "eta_vert": "Correzione per smorzamento, componente verticale",
+      "q_vert": "Fattore di struttura, componente verticale"
+    },
+    "symbols": {
+      "xi_pct": "ξ",
+      "q0": "q_0",
+      "qv": "q_v",
+      "eta": "η",
+      "q": "q",
+      "eta_vert": "η_v",
+      "q_vert": "q_v"
+    },
+    "units_missing": {
+      "eta": "-",
+      "q": "-",
+      "eta_vert": "-",
+      "q_vert": "-"
+    },
+    "highlight": ["q", "eta", "q_vert"]
+  },
+
+  "sisma-spettro": {
+    "input_groups": {
+      "stato_limite": "Stato limite",
+      "ag_g": "Pericolosità di base",
+      "f0": "Pericolosità di base",
+      "s": "Parametri di sito",
+      "tb_s": "Parametri di sito",
+      "tc_s": "Parametri di sito",
+      "td_s": "Parametri di sito",
+      "eta": "Struttura",
+      "q": "Struttura",
+      "t_start_s": "Campionamento",
+      "t_end_s": "Campionamento",
+      "step_s": "Campionamento",
+      "legacy_compat": "Avanzate"
+    },
+    "label_fixes": {
+      "s": "Amplificazione del suolo",
+      "eta": "Correzione per smorzamento",
+      "q": "Fattore di struttura",
+      "ag_g": "Accelerazione massima al sito",
+      "f0": "Fattore di amplificazione massima",
+      "tb_s": "Inizio del tratto ad accelerazione costante",
+      "tc_s": "Inizio del tratto a velocità costante",
+      "td_s": "Inizio del tratto a spostamento costante",
+      "stato_limite": "Stato limite",
+      "t_start_s": "Periodo iniziale",
+      "t_end_s": "Periodo finale",
+      "step_s": "Passo di campionamento",
+      "legacy_compat": "Riproduci il foglio Excel originale (errori inclusi)",
+      "punti": "Spettro di risposta"
+    },
+    "symbols": {
+      "s": "S",
+      "eta": "η",
+      "q": "q",
+      "ag_g": "a_g",
+      "f0": "F_0",
+      "tb_s": "T_B",
+      "tc_s": "T_C",
+      "td_s": "T_D",
+      "t_start_s": "T_min",
+      "t_end_s": "T_max",
+      "step_s": "ΔT"
+    },
+    "units_missing": {},
+    "highlight": [],
+    "chart": {
+      "punti": {
+        "x": "t_s",
+        "y": ["se_g", "sd_g"],
+        "x_label": "T [s]",
+        "y_label": "S [g]"
+      }
+    }
+  },
+
+  "sisma-completo": {
+    "input_groups": {
+      "comune": "Sito",
+      "provincia": "Sito",
+      "categoria_sottosuolo": "Sito",
+      "categoria_topografica": "Sito",
+      "vn_anni": "Vita nominale e classe d'uso",
+      "classe_uso": "Vita nominale e classe d'uso",
+      "stato_limite": "Stato limite",
+      "ag_g": "Pericolosità di base",
+      "f0": "Pericolosità di base",
+      "tc_star_s": "Pericolosità di base",
+      "q0": "Struttura",
+      "regolare_altezza": "Struttura",
+      "qv": "Struttura",
+      "xi_pct": "Struttura",
+      "t_start_s": "Campionamento dello spettro",
+      "t_end_s": "Campionamento dello spettro",
+      "step_s": "Campionamento dello spettro",
+      "legacy_compat": "Avanzate"
+    },
+    "label_fixes": {
+      "comune": "Comune",
+      "provincia": "Provincia (per comuni omonimi)",
+      "vn_anni": "Vita nominale",
+      "classe_uso": "Classe d'uso",
+      "stato_limite": "Stato limite",
+      "ag_g": "Accelerazione massima al sito",
+      "f0": "Fattore di amplificazione massima",
+      "tc_star_s": "Periodo di inizio del tratto a velocità costante",
+      "categoria_sottosuolo": "Categoria di sottosuolo",
+      "categoria_topografica": "Categoria topografica",
+      "xi_pct": "Smorzamento viscoso equivalente",
+      "q0": "Fattore di struttura massimo",
+      "regolare_altezza": "Regolarità in altezza",
+      "qv": "Fattore di struttura, componente verticale",
+      "t_start_s": "Periodo iniziale",
+      "t_end_s": "Periodo finale",
+      "step_s": "Passo di campionamento",
+      "legacy_compat": "Riproduci il foglio Excel originale (errori inclusi)",
+      "vita_riferimento": "Vita di riferimento e periodi di ritorno",
+      "parametri_sito": "Parametri di sito",
+      "fattori_struttura": "Fattori di struttura",
+      "spettro": "Spettro di risposta",
+      "vita_riferimento.comune_info": "Inquadramento del sito",
+      "vita_riferimento.vita.cu": "Coefficiente d'uso",
+      "vita_riferimento.vita.vr": "Vita di riferimento",
+      "vita_riferimento.periodi_ritorno.slv": "Periodo di ritorno, SLV",
+      "parametri_sito.amplificazione.s": "Amplificazione del suolo",
+      "fattori_struttura.q": "Fattore di struttura, componente orizzontale",
+      "spettro.punti": "Spettro di risposta"
+    },
+    "symbols": {
+      "vn_anni": "V_N",
+      "ag_g": "a_g",
+      "f0": "F_0",
+      "tc_star_s": "T*_C",
+      "xi_pct": "ξ",
+      "q0": "q_0",
+      "qv": "q_v",
+      "vita_riferimento.vita.cu": "C_U",
+      "vita_riferimento.vita.vr": "V_R",
+      "vita_riferimento.periodi_ritorno.slo": "T_R,SLO",
+      "vita_riferimento.periodi_ritorno.sld": "T_R,SLD",
+      "vita_riferimento.periodi_ritorno.slv": "T_R,SLV",
+      "vita_riferimento.periodi_ritorno.slc": "T_R,SLC",
+      "parametri_sito.amplificazione.ss": "S_S",
+      "parametri_sito.amplificazione.cc": "C_C",
+      "parametri_sito.amplificazione.st": "S_T",
+      "parametri_sito.amplificazione.s": "S",
+      "parametri_sito.periodi.tb": "T_B",
+      "parametri_sito.periodi.tc": "T_C",
+      "parametri_sito.periodi.td": "T_D",
+      "fattori_struttura.eta": "η",
+      "fattori_struttura.q": "q",
+      "fattori_struttura.eta_vert": "η_v",
+      "fattori_struttura.q_vert": "q_v"
+    },
+    "units_missing": {
+      "fattori_struttura.eta": "-",
+      "fattori_struttura.q": "-",
+      "fattori_struttura.eta_vert": "-",
+      "fattori_struttura.q_vert": "-"
+    },
+    "highlight": [
+      "parametri_sito.amplificazione.s",
+      "fattori_struttura.q",
+      "vita_riferimento.periodi_ritorno.slv"
+    ],
+    "chart": {
+      "spettro.punti": {
+        "x": "t_s",
+        "y": ["se_g", "sd_g"],
+        "x_label": "T [s]",
+        "y_label": "S [g]"
+      }
+    }
+  },
+
+  "vento-pressione": {
+    "input_groups": {
+      "comune": "Sito",
+      "provincia": "Sito",
+      "zona": "Sito",
+      "altitudine_m": "Sito",
+      "categoria_esposizione": "Sito",
+      "ct": "Sito",
+      "altezza_edificio_m": "Geometria",
+      "periodo_ritorno_anni": "Azione di progetto",
+      "n_sezioni": "Campionamento",
+      "legacy_compat": "Avanzate"
+    },
+    "label_fixes": {
+      "comune": "Comune",
+      "provincia": "Provincia (per comuni omonimi)",
+      "zona": "Zona vento (se nota, in alternativa al comune)",
+      "altitudine_m": "Altitudine s.l.m.",
+      "periodo_ritorno_anni": "Periodo di ritorno",
+      "categoria_esposizione": "Categoria di esposizione",
+      "ct": "Coefficiente di topografia",
+      "altezza_edificio_m": "Altezza dell'edificio",
+      "n_sezioni": "Numero di sezioni del profilo",
+      "legacy_compat": "Riproduci il foglio Excel originale (errori inclusi)",
+      "vb0": "Velocità base di riferimento",
+      "a0": "Altitudine di riferimento della zona",
+      "ka": "Coefficiente di altitudine NTC 2008 (solo modalità Excel)",
+      "ks": "Coefficiente di zona (Tab. 3.3.I)",
+      "ca": "Coefficiente di altitudine",
+      "vref": "Velocità di riferimento (TR = 50 anni)",
+      "a_r": "Coefficiente di ritorno applicato",
+      "vr": "Velocità di riferimento di progetto",
+      "kr": "Fattore di terreno",
+      "z0": "Lunghezza di rugosità",
+      "zmin": "Quota minima del profilo",
+      "qb": "Pressione cinetica di riferimento",
+      "ce_h": "Coefficiente di esposizione alla quota H",
+      "p_h_kNm2": "Pressione del vento alla quota H (c_p = 1)",
+      "profilo": "Profilo di pressione lungo l'altezza"
+    },
+    "symbols": {
+      "altitudine_m": "a_s",
+      "periodo_ritorno_anni": "T_R",
+      "ct": "c_t",
+      "altezza_edificio_m": "H",
+      "vb0": "v_b,0",
+      "a0": "a_0",
+      "ka": "k_a",
+      "ks": "k_s",
+      "ca": "c_a",
+      "vref": "v_b",
+      "a_r": "c_r",
+      "vr": "v_r",
+      "kr": "k_r",
+      "z0": "z_0",
+      "zmin": "z_min",
+      "qb": "q_b",
+      "ce_h": "c_e(H)",
+      "p_h_kNm2": "p(H)"
+    },
+    "units_missing": {},
+    "highlight": ["p_h_kNm2", "ce_h", "vr"],
+    "chart": {
+      "profilo": {
+        "x": "z_m",
+        "y": ["p_kNm2"],
+        "x_label": "z [m]",
+        "y_label": "p [kN/m²]"
+      }
+    }
+  },
+
+  "vento-cpe-rettangolare": {
+    "input_groups": {
+      "b": "Geometria in pianta",
+      "d": "Geometria in pianta",
+      "h": "Geometria in pianta",
+      "legacy_compat": "Avanzate"
+    },
+    "label_fixes": {
+      "b": "Larghezza in pianta (vento ⟂ al lato b)",
+      "d": "Profondità in pianta",
+      "h": "Altezza dell'edificio",
+      "legacy_compat": "Riproduci il foglio Excel originale (errori inclusi)",
+      "classification": "Classificazione di snellezza",
+      "dir1": "Direzione 1 — vento perpendicolare al lato b",
+      "dir2": "Direzione 2 — vento perpendicolare al lato d",
+      "dir1.h_d": "Rapporto h/d",
+      "dir1.cpe_windward": "Parete sopravento",
+      "dir1.cpe_side": "Pareti laterali",
+      "dir1.cpe_leeward": "Parete sottovento",
+      "dir2.h_d": "Rapporto h/d",
+      "dir2.cpe_windward": "Parete sopravento",
+      "dir2.cpe_side": "Pareti laterali",
+      "dir2.cpe_leeward": "Parete sottovento"
+    },
+    "symbols": {
+      "b": "b",
+      "d": "d",
+      "h": "h",
+      "dir1.h_d": "h/d",
+      "dir1.cpe_windward": "c_pe,sopravento",
+      "dir1.cpe_side": "c_pe,laterale",
+      "dir1.cpe_leeward": "c_pe,sottovento",
+      "dir2.h_d": "h/d",
+      "dir2.cpe_windward": "c_pe,sopravento",
+      "dir2.cpe_side": "c_pe,laterale",
+      "dir2.cpe_leeward": "c_pe,sottovento"
+    },
+    "units_missing": {
+      "dir1.h_d": "-",
+      "dir1.cpe_windward": "-",
+      "dir1.cpe_side": "-",
+      "dir1.cpe_leeward": "-",
+      "dir2.h_d": "-",
+      "dir2.cpe_windward": "-",
+      "dir2.cpe_side": "-",
+      "dir2.cpe_leeward": "-"
+    },
+    "highlight": ["dir1.cpe_windward", "dir1.cpe_leeward", "classification"]
+  }
+}

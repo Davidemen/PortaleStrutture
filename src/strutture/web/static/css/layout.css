@@ -1,0 +1,310 @@
+/* Shell layout -- DESIGN_SPEC.md #2. Regions: #tool-index, #form-pane,
+   #results-pane inside #app. Breakpoints: >=1100px three columns,
+   720-1099px two columns (results below the form), <720px one column. */
+
+.app-h1 {
+  font-size: var(--t-s);
+  font-weight: 600;
+  color: var(--graphite);
+  margin: 0;
+  padding: var(--s3) var(--s4);
+  border-bottom: 1px solid var(--hairline);
+  grid-column: 1 / -1;
+}
+
+#app {
+  display: grid;
+  min-height: 100dvh;
+  grid-template-rows: auto 1fr;
+  grid-template-columns: var(--index-w) 1fr;
+  grid-template-areas:
+    "head head"
+    "index form";
+  background: var(--film);
+}
+
+#tool-index {
+  grid-area: index;
+  background: var(--paper);
+  border-right: 1px solid var(--hairline);
+}
+
+#form-pane {
+  grid-area: form;
+  background: var(--film);
+}
+
+#tool-title {
+  font-family: var(--font-label);
+  font-size: var(--t-l);
+  line-height: var(--lh-tight);
+  margin: 0 0 var(--s4);
+  padding: var(--s3) var(--s4) 0;
+}
+
+#results-pane {
+  grid-area: form;
+  display: none;
+  background: var(--paper);
+}
+
+/* >=1100px: three columns, index and results pane visible side by side */
+@media (min-width: 1100px) {
+  #app {
+    grid-template-columns: var(--index-w) var(--form-w) 1fr;
+    grid-template-areas:
+      "head head head"
+      "index form results";
+  }
+  #results-pane {
+    grid-area: results;
+    display: block;
+    border-left: 1px solid var(--hairline);
+  }
+  #tool-index,
+  #form-pane,
+  #results-pane {
+    height: calc(100dvh - var(--head-h, 2.9rem));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  #tool-index {
+    position: sticky;
+    top: 0;
+  }
+}
+
+/* 720-1099px: two columns, results below the form in the same column (own grid row, not
+   stacked in the same cell as the form -- a shared cell made the opaque results pane paint
+   over the form instead of sitting below it). */
+@media (min-width: 720px) and (max-width: 1099.98px) {
+  #app {
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas:
+      "head head"
+      "index form"
+      "index results";
+  }
+  #form-pane {
+    grid-area: form;
+    display: block;
+  }
+  #results-pane {
+    grid-area: results;
+    display: block;
+    border-left: none;
+    border-top: 1px solid var(--hairline);
+  }
+}
+
+/* <720px: single column, mobile tool picker + Dati/Risultati switch */
+@media (max-width: 719.98px) {
+  #app {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "head"
+      "picker"
+      "pane";
+  }
+  #tool-index {
+    display: none;
+  }
+  .app-picker {
+    grid-area: picker;
+    background: var(--paper);
+    border-bottom: 1px solid var(--hairline);
+  }
+  .app-picker[open] #tool-index {
+    display: block;
+  }
+  .app-pane-switch {
+    grid-area: pane;
+    display: block;
+  }
+  #form-pane,
+  #results-pane {
+    grid-area: pane;
+  }
+  /* The base rule (line 39) hides #results-pane by default for the >=720px layouts, where JS
+     toggles it back on above 1100px only; re-enable it here so `hidden` (layout.js/setPane)
+     is what actually controls visibility at this breakpoint, not a stale `display: none`. */
+  #results-pane {
+    display: block;
+  }
+  #results-pane[hidden] {
+    display: none;
+  }
+}
+
+.app-picker {
+  display: none;
+}
+@media (max-width: 719.98px) {
+  .app-picker {
+    display: block;
+  }
+}
+
+.app-picker > summary {
+  cursor: pointer;
+  min-height: var(--control-h);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--s4);
+  font-family: var(--font-label);
+  font-weight: 600;
+  list-style: none;
+}
+.app-picker > summary::-webkit-details-marker {
+  display: none;
+}
+.app-picker > summary::after {
+  content: "";
+  margin-left: auto;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+}
+.app-picker[open] > summary::after {
+  transform: rotate(-135deg);
+}
+
+.app-tablist {
+  display: none;
+  border-bottom: 1px solid var(--hairline);
+}
+@media (max-width: 719.98px) {
+  .app-tablist {
+    display: flex;
+  }
+}
+.app-tab {
+  flex: 1 1 0;
+  min-height: var(--control-h);
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--t-s);
+  cursor: pointer;
+}
+.app-tab[aria-selected="true"] {
+  border-bottom-color: var(--ink);
+  font-weight: 600;
+}
+.app-tab:hover {
+  background: var(--film);
+}
+
+/* Tool index -- ti-* [shell] */
+.ti-search-wrap {
+  padding: var(--s3) var(--s3) var(--s2);
+}
+#tool-search {
+  width: 100%;
+  height: var(--control-h);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--t-s);
+  padding: 0 var(--s3);
+}
+#tool-search:hover {
+  background: var(--film);
+}
+
+.ti-empty {
+  color: var(--graphite);
+  padding: 0 var(--s4);
+  font-size: var(--t-s);
+}
+
+.ti-group {
+  border-top: 1px solid var(--hairline);
+}
+.ti-group > summary {
+  cursor: pointer;
+  min-height: var(--control-h);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--s3);
+  font-family: var(--font-label);
+  font-weight: 600;
+  font-size: var(--t-s);
+  list-style: none;
+}
+.ti-group > summary::-webkit-details-marker {
+  display: none;
+}
+
+.ti-subgroup h3 {
+  font-family: var(--font-label);
+  font-size: var(--t-xs);
+  color: var(--graphite);
+  font-weight: 600;
+  margin: var(--s2) var(--s3);
+}
+
+.ti-item {
+  display: block;
+  width: 100%;
+  min-height: var(--control-h);
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--t-s);
+  padding: var(--s2) var(--s4);
+  cursor: pointer;
+}
+.ti-item:hover {
+  background: var(--film);
+}
+.ti-item[aria-current="true"] {
+  background: var(--marker);
+  color: var(--ink);
+}
+
+/* Results sheet sticky verdict -- only the one-line head sticks, not the whole check list
+   below it (a tall register like muro's 10 checks would otherwise cover most of the pane). */
+.r-verdict-head {
+  position: sticky;
+  top: 0;
+  background: var(--paper);
+  padding: var(--s3) 0;
+  border-bottom: 1px solid var(--hairline);
+  z-index: 1;
+}
+@media (max-width: 1099.98px) {
+  .r-verdict-head {
+    position: static;
+  }
+}
+
+/* Generic form-actions bar sticky at bottom, at >=1100px */
+#form-actions {
+  border-top: 1px solid var(--hairline);
+  background: var(--paper);
+}
+@media (min-width: 1100px) {
+  #form-actions {
+    position: sticky;
+    bottom: 0;
+  }
+}
+
+/* Table horizontal scroll wrapper is the only thing allowed to scroll sideways */
+.r-table-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+body {
+  overflow-x: hidden;
+}

@@ -1,0 +1,24 @@
+{
+  "LCOM-GEN": {
+    "1": {
+      "NAME": "SLU1",
+      "ACTIVE": "ACTIVE",
+      "iTYPE": 1,
+      "DESC": "1.3G1 + 1.5Q1",
+      "vCOMB": [
+        {"ANAL": "ST", "LCNAME": "G1", "FACTOR": 1.3},
+        {"ANAL": "ST", "LCNAME": "Q1", "FACTOR": 1.5}
+      ]
+    },
+    "2": {
+      "NAME": "SLE1",
+      "ACTIVE": "ACTIVE",
+      "iTYPE": 1,
+      "DESC": "G1 + Q1",
+      "vCOMB": [
+        {"ANAL": "ST", "LCNAME": "G1", "FACTOR": 1.0},
+        {"ANAL": "ST", "LCNAME": "Q1", "FACTOR": 1.0}
+      ]
+    }
+  }
+}

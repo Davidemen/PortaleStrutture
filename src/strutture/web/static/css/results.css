@@ -1,0 +1,367 @@
+/* Results sheet -- typeset like a page of a relazione di calcolo. Package: results. */
+
+#results-root {
+  padding: var(--s5, 1.5rem);
+  color: var(--ink, #15202b);
+}
+
+.r-empty {
+  color: var(--graphite, #5b6773);
+  font-size: var(--t-m, 1.0625rem);
+  max-width: 32rem;
+}
+
+#results-head {
+  font-size: var(--t-l, 1.3125rem);
+  line-height: var(--lh-tight, 1.25);
+  margin: 0 0 var(--s4, 1rem);
+}
+
+/* Only #results-head is ever *programmatically* focused (layout.js, after "Calcola"), purely so
+   screen-reader users land on the new heading -- there is no pointer/keyboard interaction to ring.
+   The global `:focus-visible { outline }` (tokens.css) still applies to every real keyboard-focus
+   target; this narrower `:focus` selector (id beats the global element-less selector) replaces the
+   outline with a 2px left rule for this one heading instead of boxing the whole title. */
+#results-head:focus {
+  outline: none;
+  padding-left: var(--s3, 0.75rem);
+  border-left: 2px solid var(--focus, var(--ink));
+}
+
+.print-relazione-head {
+  display: none;
+}
+
+.r-print-trigger {
+  height: var(--control-h, 2.75rem);
+  padding: 0 var(--s3, 0.75rem);
+  border: 1px solid var(--rule, #828a91);
+  border-radius: var(--radius, 3px);
+  background: var(--paper, #fff);
+  color: var(--ink, #15202b);
+  cursor: pointer;
+  margin-bottom: var(--s4, 1rem);
+}
+
+.r-print-trigger:hover {
+  background: var(--film, #eef1f3);
+}
+
+/* -- messages -------------------------------------------------------- */
+
+.r-errors,
+.r-warnings {
+  margin-bottom: var(--s4, 1rem);
+}
+
+.r-errors p,
+.r-warnings p {
+  margin: 0 0 var(--s2, 0.5rem);
+  padding: var(--s2, 0.5rem) var(--s3, 0.75rem);
+  border-radius: var(--radius, 3px);
+  font-size: var(--t-s, 0.9375rem);
+}
+
+.r-errors p {
+  background: var(--ko-bg, #fce9e7);
+  color: var(--ko, #b42318);
+}
+
+.r-warnings p {
+  background: var(--warn-bg, #fbf0da);
+  color: var(--warn, #8a5a00);
+}
+
+/* -- verdict ----------------------------------------------------------- */
+
+.r-verdict {
+  background: var(--paper, #fff);
+  margin-bottom: var(--s5, 1.5rem);
+}
+
+.r-verdict-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s2, 0.5rem);
+  font-size: var(--t-l, 1.3125rem);
+  line-height: var(--lh-tight, 1.25);
+}
+
+.r-verdict-word--ok {
+  color: var(--ok, #1f7a4d);
+}
+
+.r-verdict-word--ko {
+  color: var(--ko, #b42318);
+}
+
+.r-verdict-sintesi {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.r-icon {
+  flex: none;
+  color: currentColor;
+}
+
+.r-checks {
+  margin-top: var(--s4, 1rem);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2, 0.5rem);
+}
+
+.r-check {
+  display: grid;
+  grid-template-columns: 1.25rem minmax(7rem, 1fr) minmax(4rem, 8rem) 2fr minmax(7rem, 10rem);
+  align-items: center;
+  gap: var(--s3, 0.75rem);
+  padding: var(--s2, 0.5rem) 0;
+  border-bottom: 1px solid var(--hairline, #c9d1d8);
+  font-size: var(--t-s, 0.9375rem);
+}
+
+.r-check--pass .r-check-icon {
+  color: var(--ok, #1f7a4d);
+}
+
+.r-check--fail .r-check-icon {
+  color: var(--ko, #b42318);
+}
+
+.r-check-clause,
+.r-check-detail {
+  color: var(--graphite, #5b6773);
+  font-size: var(--t-xs, 0.8125rem);
+}
+
+/* -- utilisation bar ---------------------------------------------------- */
+
+.r-bar {
+  position: relative;
+}
+
+.r-bar-track {
+  position: relative;
+  height: 0.5rem;
+  background: var(--hairline, #c9d1d8);
+  border-radius: var(--radius, 3px);
+  overflow: hidden;
+}
+
+.r-bar-track::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: var(--graphite, #5b6773);
+}
+
+.r-bar-fill {
+  height: 100%;
+  width: calc(var(--util, 0) * 100%);
+  background: var(--ok, #1f7a4d);
+}
+
+.r-bar-fill--over {
+  background: var(--ko, #b42318);
+}
+
+/* -- output groups + rows ------------------------------------------------ */
+
+.r-group {
+  margin-bottom: var(--s5, 1.5rem);
+}
+
+.r-group h3,
+.r-group h4,
+.r-group h5 {
+  font-family: var(--font-label, inherit);
+  font-size: var(--t-m, 1.0625rem);
+  font-weight: 600;
+  margin: 0 0 var(--s3, 0.75rem);
+}
+
+.r-group--marker {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.r-norm {
+  color: var(--graphite, #5b6773);
+  font-size: var(--t-xs, 0.8125rem);
+  margin: 0 0 var(--s4, 1rem);
+}
+
+.r-row {
+  display: grid;
+  grid-template-columns: 2.75rem minmax(6rem, 1fr) 6rem 3.5rem minmax(0, 8rem);
+  align-items: baseline;
+  gap: var(--s3, 0.75rem);
+  padding: var(--s2, 0.5rem) 0;
+  border-bottom: 1px solid var(--hairline, #c9d1d8);
+}
+
+.r-row[data-highlight="true"] {
+  background: none;
+  color: var(--ink, #15202b);
+  border-bottom: none;
+}
+
+.r-row[data-highlight="true"] .r-cell-symbol,
+.r-row[data-highlight="true"] .r-cell-label,
+.r-row[data-highlight="true"] .r-cell-value,
+.r-row[data-highlight="true"] .r-cell-unit {
+  background: var(--marker, #ffe45c);
+  padding-block: 2px;
+}
+
+.r-cell-symbol {
+  font-style: italic;
+}
+
+.r-sym {
+  font-family: var(--font-sym, "STIX Two Text", serif);
+  font-style: italic;
+}
+
+.r-cell-value {
+  justify-self: end;
+  font-variant-numeric: tabular-nums lining-nums;
+  font-weight: 500;
+}
+
+.r-cell-unit {
+  justify-self: start;
+  min-width: 3.5rem;
+  color: var(--graphite, #5b6773);
+  font-size: var(--t-s, 0.9375rem);
+}
+
+.r-cell-clause {
+  color: var(--graphite, #5b6773);
+  font-size: var(--t-xs, 0.8125rem);
+  text-align: right;
+}
+
+@media (max-width: 719.98px) {
+  .r-row {
+    grid-template-columns: 2.25rem 1fr 5rem 3rem;
+    grid-template-areas:
+      "symbol label value unit"
+      "clause clause clause clause";
+  }
+  .r-cell-symbol { grid-area: symbol; }
+  .r-cell-label { grid-area: label; }
+  .r-cell-value { grid-area: value; }
+  .r-cell-unit { grid-area: unit; }
+  .r-cell-clause { grid-area: clause; text-align: left; }
+}
+
+/* -- row tables ----------------------------------------------------------- */
+
+.r-table-actions {
+  display: flex;
+  gap: var(--s2, 0.5rem);
+  margin-bottom: var(--s2, 0.5rem);
+}
+
+.r-action {
+  height: var(--control-h, 2.75rem);
+  padding: 0 var(--s3, 0.75rem);
+  border: 1px solid var(--rule, #828a91);
+  border-radius: var(--radius, 3px);
+  background: var(--paper, #fff);
+  color: var(--ink, #15202b);
+  cursor: pointer;
+}
+
+.r-action:hover {
+  background: var(--film, #eef1f3);
+}
+
+.r-action[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.r-table-scroll {
+  overflow-x: auto;
+}
+
+.r-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.r-table caption {
+  text-align: left;
+  color: var(--graphite, #5b6773);
+  font-size: var(--t-xs, 0.8125rem);
+  margin-bottom: var(--s2, 0.5rem);
+}
+
+/* One-line stand-in for the descriptions the header cells no longer repeat per column
+   (finding: symbol + description + [unit] headers wrapped to 5 lines on mobile). */
+.r-table-legend {
+  margin: var(--s1, 0.25rem) 0 0;
+  font-weight: 400;
+  font-size: var(--t-xs, 0.8125rem);
+}
+
+.r-table th {
+  position: sticky;
+  top: 0;
+  background: var(--paper, #fff);
+  border-bottom: 1px solid var(--rule, #828a91);
+  text-align: left;
+  padding: var(--s2, 0.5rem) var(--s3, 0.75rem);
+  font-family: var(--font-label, inherit);
+}
+
+.r-table td {
+  padding: var(--s2, 0.5rem) var(--s3, 0.75rem);
+  border-bottom: 1px solid var(--hairline, #c9d1d8);
+}
+
+.r-table td.r-num {
+  text-align: right;
+}
+
+.r-th-label {
+  display: block;
+  font-size: var(--t-s, 0.9375rem);
+}
+
+.r-th-unit {
+  display: block;
+  color: var(--graphite, #5b6773);
+  font-size: var(--t-xs, 0.8125rem);
+}
+
+.r-pager {
+  display: flex;
+  align-items: center;
+  gap: var(--s3, 0.75rem);
+  margin-top: var(--s2, 0.5rem);
+}
+
+.r-pager-status {
+  color: var(--graphite, #5b6773);
+  font-size: var(--t-s, 0.9375rem);
+}
+
+.r-clause {
+  color: var(--graphite, #5b6773);
+  font-size: var(--t-xs, 0.8125rem);
+  margin: var(--s2, 0.5rem) 0 0;
+}
+
+.r-chart {
+  margin-bottom: var(--s3, 0.75rem);
+}

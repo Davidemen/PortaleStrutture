@@ -1,0 +1,38 @@
+[project]
+name = "strutture"
+version = "0.1.0"
+description = "Structural-engineering calculation tools (NTC 2018 / Eurocodes) ported from Excel workbooks"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.7",
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "httpx>=0.28.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-cov>=5",
+    "httpx>=0.27",
+    "openpyxl>=3.1",
+    "xlrd>=2.0",
+    "ruff>=0.6",
+    "pytest-playwright>=0.9.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/strutture"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src", "."]
+testpaths = ["tests"]
+addopts = "--import-mode=importlib -m 'not e2e'"
+markers = ["e2e: browser end-to-end tests (run with: uv run pytest tests/e2e -m e2e)", "unit", "golden: values cached by Excel", "oracle: LibreOffice-recalculated fixtures", "integration"]
+
+[tool.ruff]
+line-length = 120

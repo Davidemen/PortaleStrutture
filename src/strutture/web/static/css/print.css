@@ -1,0 +1,174 @@
+/* "Stampa relazione" -- @media print only. Package: results. */
+
+@media print {
+  @page {
+    margin: 18mm 15mm;
+  }
+
+  :root {
+    --paper: #ffffff;
+    --ink: #000000;
+    --film: #ffffff;
+    --graphite: #333333;
+    --hairline: #999999;
+    --rule: #333333;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+  }
+
+  #app {
+    display: block;
+  }
+
+  #tool-index,
+  #tool-search,
+  .app-picker,
+  [role="tablist"],
+  #form-pane,
+  #form-actions,
+  .r-print-trigger,
+  .r-table-actions,
+  .r-pager,
+  .c-tooltip,
+  .c-crosshair {
+    display: none !important;
+  }
+
+  #results-pane,
+  #results-root {
+    display: block;
+    width: 100%;
+    overflow: visible;
+  }
+
+  /* Screen typography is 17px/1.45 -- on paper that runs the wind profile alone to ~39 pages;
+     print at report-body scale instead. */
+  #results-root {
+    padding: 0;
+    font-size: 9.5pt;
+    line-height: 1.3;
+  }
+
+  .r-row {
+    padding: 1mm 0;
+    grid-template-columns: 8mm minmax(0, 1fr) max-content 8mm;
+  }
+
+  .r-table th,
+  .r-table td {
+    padding: 0.6mm 2mm;
+    font-size: 8.5pt;
+  }
+
+  .r-table th {
+    text-align: right;
+  }
+
+  .r-table th:first-child {
+    text-align: left;
+  }
+
+  .r-table {
+    break-inside: auto;
+  }
+
+  .r-group:has(.r-table) {
+    break-inside: auto;
+  }
+
+  /* The group heading and the table caption already both say the same title; when a chart is
+     also present that is a third repeat -- drop the heading in that case only. */
+  .r-group h3:has(+ .r-chart) {
+    display: none;
+  }
+
+  .r-verdict {
+    position: static;
+  }
+
+  .print-relazione-head {
+    display: block;
+    margin-bottom: 12mm;
+  }
+
+  .print-cartiglio {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4mm 8mm;
+    border-bottom: 1.5pt solid #000;
+    padding-bottom: 3mm;
+    margin-bottom: 4mm;
+  }
+
+  .print-cartiglio-field {
+    display: flex;
+    flex-direction: column;
+    font-size: 9pt;
+  }
+
+  .print-cartiglio-field input {
+    border: none;
+    border-bottom: 1px solid #000;
+    font: inherit;
+    color: #000;
+    background: transparent;
+  }
+
+  .print-cartiglio-meta {
+    display: grid;
+    grid-template-columns: repeat(4, max-content);
+    gap: 2mm 6mm;
+    font-size: 9pt;
+    margin: 0;
+  }
+
+  .print-cartiglio-meta dt {
+    font-weight: 600;
+  }
+
+  .print-inputs,
+  .print-inputs-list {
+    margin-bottom: 4mm;
+  }
+
+  .print-inputs-list {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 1mm 4mm;
+  }
+
+  .r-group,
+  .r-check,
+  figure,
+  .r-chart {
+    break-inside: avoid;
+  }
+
+  .r-row[data-highlight="true"] {
+    border-left: 1.5pt solid #000;
+    padding-left: 3mm;
+    font-weight: 700;
+  }
+
+  .r-row[data-highlight="true"] .r-cell-symbol,
+  .r-row[data-highlight="true"] .r-cell-label,
+  .r-row[data-highlight="true"] .r-cell-value,
+  .r-row[data-highlight="true"] .r-cell-unit {
+    background: transparent;
+  }
+
+  .r-table thead {
+    display: table-header-group;
+  }
+
+  .r-table th {
+    position: static;
+  }
+
+  .r-bar-fill {
+    background: #000 !important;
+  }
+}

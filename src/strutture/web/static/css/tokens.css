@@ -1,0 +1,231 @@
+/* Design tokens -- DESIGN_SPEC.md #1. Light is default; dark overrides the
+   same custom properties under prefers-color-scheme. No .dark class, no toggle. */
+
+/* -- Fonts: self-hosted OFL releases, woff2 only, font-display: swap -- */
+
+@font-face {
+  font-family: "Barlow";
+  src: url("../fonts/barlow-latin-400-normal.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F, U+20AC, U+2122;
+}
+@font-face {
+  font-family: "Barlow";
+  src: url("../fonts/barlow-latin-ext-400-normal.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0100-024F, U+0300-036F, U+1E00-1EFF;
+}
+@font-face {
+  font-family: "Barlow";
+  src: url("../fonts/barlow-latin-500-normal.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F, U+20AC, U+2122;
+}
+@font-face {
+  font-family: "Barlow";
+  src: url("../fonts/barlow-latin-ext-500-normal.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0100-024F, U+0300-036F, U+1E00-1EFF;
+}
+@font-face {
+  font-family: "Barlow";
+  src: url("../fonts/barlow-latin-600-normal.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F, U+20AC, U+2122;
+}
+@font-face {
+  font-family: "Barlow";
+  src: url("../fonts/barlow-latin-ext-600-normal.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0100-024F, U+0300-036F, U+1E00-1EFF;
+}
+
+@font-face {
+  font-family: "Barlow Semi Condensed";
+  src: url("../fonts/barlow-semi-condensed-latin-400-normal.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F, U+20AC, U+2122;
+}
+@font-face {
+  font-family: "Barlow Semi Condensed";
+  src: url("../fonts/barlow-semi-condensed-latin-ext-400-normal.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0100-024F, U+0300-036F, U+1E00-1EFF;
+}
+@font-face {
+  font-family: "Barlow Semi Condensed";
+  src: url("../fonts/barlow-semi-condensed-latin-600-normal.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F, U+20AC, U+2122;
+}
+@font-face {
+  font-family: "Barlow Semi Condensed";
+  src: url("../fonts/barlow-semi-condensed-latin-ext-600-normal.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0100-024F, U+0300-036F, U+1E00-1EFF;
+}
+
+@font-face {
+  font-family: "STIX Two Text";
+  src: url("../fonts/stix-two-text-latin-400-normal.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "STIX Two Text";
+  src: url("../fonts/stix-two-text-latin-400-italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "STIX Two Text";
+  src: url("../fonts/stix-two-text-greek-400-normal.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0370-03FF, U+1F00-1FFF, U+2126, U+00B5;
+}
+@font-face {
+  font-family: "STIX Two Text";
+  src: url("../fonts/stix-two-text-greek-400-italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+  unicode-range: U+0370-03FF, U+1F00-1FFF, U+2126, U+00B5;
+}
+
+/* Barlow has no Greek: this extra family is STIX regular restricted to the
+   Greek/coptic + letterlike-symbols ranges, placed first in the UI/label
+   stacks so gamma/mu/phi/eta render from STIX instead of a system fallback. */
+@font-face {
+  font-family: "SymGreek";
+  src: url("../fonts/stix-two-text-greek-400-normal.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0370-03FF, U+1F00-1FFF, U+2126, U+00B5;
+}
+
+:root {
+  /* Colour -- light */
+  --film: #EEF1F3;
+  --paper: #FFFFFF;
+  --ink: #15202B;
+  --graphite: #5B6773;
+  --rule: #828A91;
+  --hairline: #C9D1D8;
+  --marker: #FFE45C;
+  --ok: #1F7A4D;
+  --ko: #B42318;
+  --warn: #8A5A00;
+  --ok-bg: #E6F2EA;
+  --ko-bg: #FCE9E7;
+  --warn-bg: #FBF0DA;
+  --series-1: #1B5FA8;
+  --series-2: #B4451A;
+  --focus: var(--ink);
+
+  /* Type */
+  --font-ui: "SymGreek", "Barlow", sans-serif;
+  --font-label: "SymGreek", "Barlow Semi Condensed", sans-serif;
+  --font-sym: "STIX Two Text", serif;
+  --t-xs: .8125rem;
+  --t-s: .9375rem;
+  --t-m: 1.0625rem;
+  --t-l: 1.3125rem;
+  --t-xl: 1.75rem;
+  --lh-tight: 1.25;
+  --lh: 1.45;
+
+  /* Spacing (4px base) */
+  --s1: .25rem;
+  --s2: .5rem;
+  --s3: .75rem;
+  --s4: 1rem;
+  --s5: 1.5rem;
+  --s6: 2rem;
+  --s7: 3rem;
+
+  /* Radii / shadows */
+  --radius: 3px;
+
+  /* Sizing */
+  --control-h: 2.75rem;
+  --field-max: 22rem;
+  --index-w: 240px;
+  --form-w: 380px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --film: #0F1417;
+    --paper: #161C21;
+    --ink: #E7ECEF;
+    --graphite: #9AA7B2;
+    --rule: #646D74;
+    --hairline: #2A333B;
+    --marker: #6B5700;
+    --ok: #4AD07F;
+    --ko: #F07068;
+    --warn: #E0B252;
+    --ok-bg: #12291D;
+    --ko-bg: #2E1614;
+    --warn-bg: #2C2312;
+    --series-1: #7FB3F0;
+    --series-2: #F0A070;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--film);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--t-m);
+  line-height: var(--lh);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: inherit;
+}

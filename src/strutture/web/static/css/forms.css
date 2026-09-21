@@ -1,0 +1,305 @@
+/* Form sections, fields and the table-input widget. Tokens come from css/tokens.css (shell). */
+
+.f-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s5);
+}
+
+.f-section {
+  padding-top: var(--s4);
+  border-top: 1px solid var(--hairline);
+}
+
+.f-section:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+.f-section h3 {
+  font-family: var(--font-label);
+  font-size: var(--t-m);
+  line-height: var(--lh-tight);
+  margin: 0 0 var(--s3);
+  grid-column: 1 / -1;
+}
+
+/* Pack short numeric fields two-up on roomy pointers so long forms (pilastro ~25 fields,
+   muro ~30) are not a one-field-per-screen scroll marathon; comune/select stay full-width. */
+@media (pointer: fine) {
+  .f-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+    gap: var(--s3) var(--s4);
+  }
+  .f-field {
+    margin-bottom: 0;
+  }
+  .f-field[data-kind="text"],
+  .f-field[data-kind="enum"],
+  .f-field[data-kind="table"] {
+    grid-column: 1 / -1;
+  }
+}
+
+.f-advanced > summary {
+  cursor: pointer;
+  font-family: var(--font-label);
+  font-size: var(--t-m);
+  padding: var(--s2) 0;
+}
+
+.f-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  margin-bottom: var(--s4);
+}
+
+/* Author `display` rules win over the UA stylesheet's `[hidden] { display: none }` at equal
+   specificity -- restate it explicitly for every `.f-field` variant, or conditional fields
+   (DESIGN_SPEC §3 `condition` hint) would stay visible while `[hidden]`. */
+.f-field[hidden] {
+  display: none;
+}
+
+.f-field label {
+  font-family: var(--font-label);
+  font-size: var(--t-s);
+  color: var(--ink);
+}
+
+.f-unit {
+  color: var(--graphite);
+  margin-left: var(--s1);
+}
+
+.f-field input[type="text"],
+.f-field input[type="number"],
+.f-field select {
+  height: var(--control-h);
+  max-width: var(--field-max);
+  width: 100%;
+  padding: 0 var(--s3);
+  font-family: var(--font-ui);
+  font-size: var(--t-s);
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+
+.f-field input:hover,
+.f-field select:hover {
+  background: var(--film);
+}
+
+@media (pointer: fine) {
+  .f-field input[type="number"] {
+    max-width: 9rem;
+    text-align: right;
+  }
+}
+
+.f-field input[disabled],
+.f-field select[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.f-field input[aria-invalid="true"],
+.f-field select[aria-invalid="true"],
+.f-table[aria-invalid="true"] {
+  border-color: var(--ko);
+  background: var(--ko-bg);
+}
+
+.f-field-checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.f-field-checkbox input[type="checkbox"] {
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: var(--ink);
+}
+
+.f-field-checkbox label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: var(--control-h);
+  padding-block: var(--s2);
+}
+
+.f-help {
+  color: var(--graphite);
+  font-size: var(--t-xs);
+  margin: 0;
+}
+
+.f-error {
+  color: var(--ko);
+  font-size: var(--t-xs);
+  margin: 0;
+}
+
+.f-error[hidden],
+.f-help:empty {
+  display: none;
+}
+
+.f-run-button {
+  height: var(--control-h);
+  padding: 0 var(--s5);
+  font-family: var(--font-label);
+  font-size: var(--t-s);
+  color: var(--paper);
+  background: var(--ink);
+  border: 1px solid var(--ink);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.f-run-button[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.f-example-button,
+.f-copylink-button {
+  height: var(--control-h);
+  padding: 0 var(--s4);
+  font-family: var(--font-label);
+  font-size: var(--t-s);
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+/* Table-input widget (soil layers, support reactions, ...). */
+
+.f-table-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin-bottom: var(--s2);
+}
+
+.f-table-btn {
+  min-height: var(--control-h);
+  padding: 0 var(--s3);
+  font-family: var(--font-label);
+  font-size: var(--t-xs);
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
+.f-table-btn[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.f-table-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.f-table-paste {
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: var(--s2) var(--s3);
+}
+
+.f-table-paste-area {
+  width: 100%;
+  min-height: 4.5rem;
+  font-family: var(--font-ui);
+  font-size: var(--t-s);
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  margin: var(--s2) 0;
+}
+
+.f-table-scroll {
+  overflow-x: auto;
+}
+
+.f-table-grid {
+  border-collapse: collapse;
+  width: 100%;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.f-table-grid th,
+.f-table-grid td {
+  padding: var(--s2);
+  border-bottom: 1px solid var(--hairline);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.f-table-grid th {
+  font-family: var(--font-label);
+  font-size: var(--t-xs);
+  color: var(--graphite);
+}
+
+.f-table-grid input,
+.f-table-grid select {
+  height: var(--control-h);
+  min-width: 6rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+}
+
+.f-table-grid input[aria-invalid="true"],
+.f-table-grid select[aria-invalid="true"] {
+  border-color: var(--ko);
+  background: var(--ko-bg);
+}
+
+.f-table-row-error td {
+  color: var(--ko);
+  background: var(--ko-bg);
+  font-size: var(--t-xs);
+  white-space: normal;
+}
+
+.f-table-preview-count {
+  color: var(--graphite);
+  font-size: var(--t-xs);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .f-field input,
+  .f-field select,
+  .f-run-button,
+  .f-example-button,
+  .f-copylink-button,
+  .f-table-btn {
+    transition: background-color 0.1s ease, border-color 0.1s ease;
+  }
+}
