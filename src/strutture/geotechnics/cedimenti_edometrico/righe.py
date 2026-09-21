@@ -23,7 +23,7 @@ class RigaResult(BaseModel):
     z_m: float = Field(description="Profondità dal piano di posa della fondazione", json_schema_extra={"unit": "m"})
     delta_sigma_approssimato_kPa: float = Field(description="Δσv,q approssimato (spread 2:1)", json_schema_extra={"unit": "kPa"})
     delta_sigma_newmark_kPa: float | None = Field(description="Δσv,q esatto (Newmark)", json_schema_extra={"unit": "kPa"})
-    delta_sigma_kPa: float = Field(description="Δσv,q utilizzato per il cedimento (per `metodo_tensioni`)", json_schema_extra={"unit": "kPa"})
+    delta_sigma_kPa: float = Field(description="Incremento di tensione verticale usato per il cedimento (secondo il metodo scelto)", json_schema_extra={"unit": "kPa"})
     sigma_v0_kPa: float = Field(
         description=(
             "Tensione litostatica efficace σ'v0: incremento Δσ'v sotto il piano di posa in "
