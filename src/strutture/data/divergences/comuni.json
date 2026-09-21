@@ -1,0 +1,38 @@
+[
+ {
+  "id": "comuni/provincia-nome-non-aggiornato",
+  "titolo": "Il nome provincia nei fogli sisma e vento non riflette le province istituite dopo il 2009",
+  "tipo": "errore_foglio",
+  "strumenti": ["vento-pressione", "sisma-vita-riferimento"],
+  "cella": "",
+  "foglio": "I fogli sisma e vento riportano il nome di provincia vecchio (es. 'Milano' per quello che oggi e' 'Monza e Brianza'); il foglio neve ha 105 righe rinominate",
+  "corretto": "La colonna Provincia viene presa dallo snapshot piu' recente (neve)",
+  "clausola": "",
+  "impatto": "nessuno sui comuni golden delle specifiche (province precedenti al 2009); interessa es. Agrate Brianza (Provincia: 'Monza' -> 'Monza e Brianza')",
+  "uscite": ["provincia", "comune_info.provincia"]
+ },
+ {
+  "id": "comuni/vento-zona-invalida-56-in-neve",
+  "titolo": "Lo snapshot comuni del foglio neve contiene un valore di zona vento non valido",
+  "tipo": "errore_foglio",
+  "strumenti": ["vento-pressione"],
+  "cella": "",
+  "foglio": "Lo snapshot comuni del foglio neve riporta il valore letterale 56 (collasso corrotto delle zone 5 e 6) su 377 righe su 8101 per la colonna zona vento",
+  "corretto": "La colonna zona vento viene presa dallo snapshot sisma/vento, sempre un valore valido 1..9",
+  "clausola": "",
+  "impatto": "nessuno sui comuni golden (i valori concordano gia' tra gli snapshot)",
+  "uscite": ["zona"]
+ },
+ {
+  "id": "comuni/zona-neve-mancante-in-sisma-vento",
+  "titolo": "Lo snapshot comuni dei fogli sisma e vento ha righe senza zona neve compilata",
+  "tipo": "errore_foglio",
+  "strumenti": ["neve-carico-falda", "neve-accumulo"],
+  "cella": "",
+  "foglio": "Lo snapshot comuni dei fogli sisma/vento ha 26 righe con la colonna zona neve vuota, mai compilata",
+  "corretto": "La zona neve viene presa dallo snapshot neve, che non ha righe vuote",
+  "clausola": "",
+  "impatto": "nessuno sui comuni golden (tutti gia' compilati in ogni snapshot)",
+  "uscite": ["zona"]
+ }
+]

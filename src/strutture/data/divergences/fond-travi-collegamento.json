@@ -1,0 +1,62 @@
+[
+ {
+  "id": "fond-travi-collegamento/trazione-confronta-resistenza-con-rapporto-non-con-forza",
+  "titolo": "La verifica a trazione confronta la resistenza con un rapporto di lavoro, non con la forza di progetto",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-trave-collegamento"
+  ],
+  "cella": "Travi collegamento NTC2018!C33, Travi colleg. EN 1998-1 e 5!C31",
+  "foglio": "Entrambi i fogli confrontano la resistenza a trazione Nt,Rd con il rapporto di lavoro a compressione (un numero adimensionale, tipicamente 0-1), non con la forza assiale di progetto NEd come indicano sia l'etichetta della riga sia tutte le altre verifiche del foglio — un errore di riferimento a una riga sbagliata; poiché una forza in kN è quasi sempre maggiore di un rapporto vicino a 0-1, questa verifica risulta 'OK' quasi sempre, indipendentemente dalla reale domanda di trazione.",
+  "corretto": "In modalità standard la verifica confronta Nt,Rd con NEd, coerentemente con l'etichetta e con le altre verifiche del foglio; in modalità legacy resta il confronto con il rapporto di lavoro a compressione.",
+  "clausola": "NTC2018 §7.2.5 / EN1998-1 §5.8.2",
+  "impatto": "nessuno sul caso guida (Nt,Rd=472,058 kN NTC / 629,411 kN EN, entrambi superano sia NEd=122,31 kN sia il rapporto ≈0,05); la divergenza è visibile solo con armatura ridotta e domanda elevata (Nt,Rd=39,33 kN < NEd=339,75 kN: fallisce in modalità standard, resta 'OK' in modalità legacy)",
+  "uscite": [
+   "trazione.verifica"
+  ]
+ },
+ {
+  "id": "fond-travi-collegamento/etichetta-tipo-spettro-en-invertita",
+  "titolo": "L'etichetta del tipo di spettro sismico EN è invertita rispetto alla norma, anche se il valore S usato è corretto",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-trave-collegamento"
+  ],
+  "cella": "Travi colleg. EN 1998-1 e 5!C7",
+  "foglio": "L'etichetta del tipo di spettro dice 'TIPO1' quando Ms≤5,5, l'opposto di quanto richiede EN1998-1 §3.2.2.2(2)P (che per Ms≤5,5 richiede il Tipo 2, con S maggiore); la scelta della colonna S (cella C8) è invece già corretta e coerente con la norma, indipendentemente da come la chiama l'etichetta C7.",
+  "corretto": "Il valore S è calcolato allo stesso modo in entrambe le modalità (coerente con la norma); cambia solo l'etichetta riportata: in modalità legacy resta quella (errata) del foglio, in modalità standard riporta l'etichetta corretta secondo la norma.",
+  "clausola": "EN1998-1 §3.2.2.2(2)P",
+  "impatto": "nessuno su S e amax_g (identici in entrambe le modalità: suolo B, Ms=5,6 → S=1,2, amax_g=0,1812); cambia solo l'etichetta del tipo di spettro riportata",
+  "uscite": [
+   "sismica_en.tipo_spettro"
+  ]
+ },
+ {
+  "id": "fond-travi-collegamento/etichetta-snellezza-lambda-scambiata",
+  "titolo": "L'etichetta della verifica di snellezza indica il confronto invertito rispetto alla formula realmente calcolata",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-trave-collegamento"
+  ],
+  "cella": "Travi collegamento NTC2018 / Travi colleg. EN 1998-1 e 5 (riga snellezza)",
+  "foglio": "La riga di snellezza è etichettata 'λ > λlim' ma la formula verifica in realtà 'λlim > λ'.",
+  "corretto": "Il calcolo segue sempre la formula reale (λlim > λ), non l'etichetta testuale; puramente un'imprecisione di etichetta, nessun valore numerico è interessato.",
+  "clausola": "",
+  "impatto": "nessuno (solo etichetta)",
+  "uscite": []
+ },
+ {
+  "id": "fond-travi-collegamento/coefficiente-alfa-terreno-a-ntc-vs-en",
+  "titolo": "NTC ed EN danno valori diversi del coefficiente alfa per il terreno di categoria A",
+  "tipo": "da_verificare",
+  "strumenti": [
+   "fond-trave-collegamento"
+  ],
+  "cella": "Tabelle!P118 (NTC), Tabelle!P131 (EN)",
+  "foglio": "La tabella NTC dà α_A=0,2 mentre la tabella EN dà α_A=0; EN1998-5 §5.4.1.2 punto 5 afferma che i tiranti non sono necessari per il terreno di tipo A, coerente con α=0 che azzera NEd, mentre NTC con α_A=0,2 non lo azzera.",
+  "corretto": "Entrambi i valori sono mantenuti così come sono (nessuna delle due norme è trattata come sbagliata): sembra una differenza intenzionale tra le due norme, non un errore.",
+  "clausola": "NTC2018 (Tabelle!P118) / EN1998-5 §5.4.1.2 punto 5",
+  "impatto": "",
+  "uscite": []
+ }
+]

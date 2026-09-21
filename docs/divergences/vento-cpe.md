@@ -1,13 +1,9 @@
-# Divergences — vento-cpe-rettangolare
+<!-- GENERATED FILE — do not edit by hand. Source: src/strutture/data/divergences/*.json, rendered by `python -m strutture.shared.divergences.render`. -->
 
-No spreadsheet bugs identified for this tool (spec §7: "No bugs confirmed; formulas are straightforward
-piecewise linear per code table"). `legacy_compat=True` and `legacy_compat=False` therefore produce
-identical numeric results; the flag exists for input-model consistency across the `strutture` tool
-contract but has no effect on `vento_cpe`'s calculation steps.
+# Divergences — `vento-cpe`
 
 ## Da verificare
 
-- `B10` classification string for the mixed (per-direction) case is not given verbatim in the spec; it
-  was read directly from the workbook formula (`"EDIFICIO SNELLO DIR 1"` / `"EDIFICIO SNELLO DIR 2"`) and
-  confirmed against the oracle fixtures (`tests/fixtures/vento_cpe_oracle.json`, cases 3 and 4). Not a
-  divergence, but flagged since it was not literally present in `docs/specs/vento.md`.
+| titolo | foglio | corretto | clausola | impatto | strumenti |
+|---|---|---|---|---|---|
+| L'etichetta di classificazione per il caso misto per direzione non e' scritta nella specifica originale | La cella genera le stringhe 'EDIFICIO SNELLO DIR 1' / 'EDIFICIO SNELLO DIR 2' per il caso misto per direzione, lette direttamente dalla formula del foglio | Le stesse stringhe sono riprodotte identiche, confermate contro i casi oracle |  | nessuno, comportamento identico in entrambe le modalita'; solo il testo non era presente letteralmente nella specifica | vento-cpe-rettangolare |

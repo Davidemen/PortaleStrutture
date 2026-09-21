@@ -1,0 +1,129 @@
+[
+ {
+  "id": "geo-cedimenti-elastico/profondita-integrazione-centro-t6-z6-diverse",
+  "titolo": "Le due stime di cedimento al centro sono integrate a profondità diverse e arbitrarie",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "geo-cedimento-elastico-newmark"
+  ],
+  "cella": "Elastico_centrale_Newmark!T6, Z6",
+  "foglio": "Le colonne T e Z dovrebbero dare risultati equivalenti (percorso principale e controllo di chiusura), ma i loro riempimenti si fermano a profondità diverse (9,00 m contro 8,10 m), non per un motivo fisico ma per un limite del foglio elettronico.",
+  "corretto": "In modalità legacy le due profondità fisse del foglio sono riprodotte esattamente; in modalità standard entrambi i percorsi vengono integrati fino alla stessa profondità scelta dall'utente, rendendoli davvero confrontabili.",
+  "clausola": "integrazione di Newmark classica (nessuna clausola NTC diretta)",
+  "impatto": "caso guida (legacy): w_centro=3,0768 cm, w_qa=3,0122 cm (scarto ≈2,1%, dovuto solo alla profondità diversa, non alla formula)",
+  "uscite": [
+   "centro.w_centro_cm",
+   "centro.w_qa_cm",
+   "centro.scarto_qa_pct"
+  ]
+ },
+ {
+  "id": "geo-cedimenti-elastico/blocco-500-profondita-integrazione-troncata",
+  "titolo": "Il blocco di calcolo del punto generico integra la tensione un passo più corto di quanto sembri dalla tabella",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "geo-cedimento-elastico-newmark"
+  ],
+  "cella": "500!K7:K87 (blocchi Δz/Δs)",
+  "foglio": "La colonna della profondità arriva a z=810 cm, ma ogni blocco di calcolo si ferma una riga prima (z=800 cm): 80 termini reali, non 81 come suggerirebbe il conteggio delle righe.",
+  "corretto": "In modalità legacy la profondità massima di 8,00 m è riprodotta esattamente (verificata bit per bit sui casi guida); il limite è documentato per evitare che una futura riscrittura lo 'corregga' rompendo l'accordo con i casi cablati.",
+  "clausola": "artefatto del foglio elettronico, non un errore di formula",
+  "impatto": "nessuno: è proprio questo limite a riprodurre i valori guida (I3=1,58273 cm, C2=6,33092 cm, C3=1,59762 cm)",
+  "uscite": []
+ },
+ {
+  "id": "geo-cedimenti-elastico/timoshenko-goodier-coefficiente-1-meno-mu",
+  "titolo": "Il cedimento elastico di Timoshenko & Goodier usa (1−μ) invece del corretto (1−μ²)",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "geo-cedimento-elastico-timoshenko-goodier"
+  ],
+  "cella": "Elastico_Timoshenko_Goodier_3!N17, P17",
+  "foglio": "La formula del cedimento immediato usa il termine (1−μ) invece del classico (1−μ²) della teoria di Timoshenko & Goodier (il sotto-termine IS usa correttamente (1−2μ)/(1−μ), che è un'altra formula e non è sbagliato).",
+  "corretto": "settlement_tg.py usa (1−μ) in modalità legacy e (1−μ²) in modalità standard.",
+  "clausola": "Timoshenko & Goodier (1942) / Poulos & Davis (nessuna clausola NTC diretta)",
+  "impatto": "caso guida (μ=0,35): ΔH_centro legacy=2,82917 mm, standard=3,82138 mm (+35,1%)",
+  "uscite": [
+   "cedimento.delta_h_centro_mm"
+  ]
+ },
+ {
+  "id": "geo-cedimenti-elastico/modulo-medio-pesato-solo-primi-4-strati",
+  "titolo": "Il modulo elastico medio (T&G) considera solo i primi 4 strati, senza limitarli all'altezza significativa",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "geo-cedimento-elastico-timoshenko-goodier"
+  ],
+  "cella": "Elastico_Timoshenko_Goodier_3!H11",
+  "foglio": "Il modulo medio pesato somma sempre e solo i primi 4 strati della tabella (mai un eventuale 5° strato), e non taglia lo spessore di uno strato quando questo supera l'altezza significativa H, sommando o perdendo spessore reale a seconda del profilo.",
+  "corretto": "weighted_es.py in modalità legacy riproduce esattamente la somma sui soli primi 4 strati senza taglio; in modalità standard usa un calcolo generale che considera qualunque numero di strati, tagliati esattamente a H, e segnala un errore se la stratigrafia non copre H.",
+  "clausola": "media pesata classica sulla profondità (nessuna clausola NTC diretta)",
+  "impatto": "nessuno sul caso guida (i due strati reali del caso guida rientrano per coincidenza nei primi 4 slot); in altri profili la differenza può superare il 20%",
+  "uscite": [
+   "modulo"
+  ]
+ },
+ {
+  "id": "geo-cedimenti-elastico/fattore-forma-bordo-usa-formula-di-spigolo",
+  "titolo": "Il cedimento al bordo (punto medio) usa la formula dello spigolo, non quella del punto medio",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "geo-cedimento-elastico-timoshenko-goodier"
+  ],
+  "cella": "Elastico_Timoshenko_Goodier_3!P15, P17",
+  "foglio": "Il fattore di influenza usato per il cedimento al bordo (punto medio del lato) è in realtà il fattore dello spigolo dell'intera fondazione, non il vero fattore del punto medio, che richiede la sovrapposizione di due mezze fondazioni.",
+  "corretto": "steinbrenner_factors.influence_factors riproduce in modalità legacy il fattore di spigolo del foglio; in modalità standard usa la sovrapposizione corretta di due rettangoli B×(L/2) che condividono il lato caricato.",
+  "clausola": "sovrapposizione classica al punto medio del bordo (Timoshenko & Goodier / Bowles)",
+  "impatto": "caso guida (fondazione quadrata, H=5B, μ=0,35): IS_bordo legacy=0,451165, standard=0,654946 (+45,2%); ΔH_bordo legacy=1,51615 mm, standard=2,97130 mm",
+  "uscite": [
+   "cedimento.delta_h_bordo_mm",
+   "fattori"
+  ]
+ },
+ {
+  "id": "geo-cedimenti-elastico/tensione-valutata-a-fondo-fetta",
+  "titolo": "L'incremento di tensione è valutato sempre al fondo di ogni fetta, sottostimando sistematicamente il cedimento integrato",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "geo-cedimento-elastico-newmark"
+  ],
+  "cella": "Elastico_centrale_Newmark, 500 (colonne di integrazione per profondità)",
+  "foglio": "L'incremento di tensione Δσz è sempre campionato al bordo inferiore di ogni fetta di integrazione (funzione monotona decrescente), sottostimando ogni fetta, tanto più quanto è grande il passo scelto dall'utente.",
+  "corretto": "integrate.py in modalità legacy riproduce la valutazione a fondo fetta; in modalità standard valuta Δσz al punto medio della fetta.",
+  "clausola": "quadratura del punto medio/trapezoidale classica (nessuna clausola NTC diretta)",
+  "impatto": "caso guida centro (dz=0,10 m, z_max=9,00 m): w_centro legacy=3,07680 cm, standard=3,11394 cm (+1,21%, differenza crescente con dz)",
+  "uscite": [
+   "centro.w_centro_cm",
+   "righe"
+  ]
+ },
+ {
+  "id": "geo-cedimenti-elastico/stratigrafia-senza-controllo-continuita",
+  "titolo": "La stratigrafia del terreno non era controllata per sovrapposizioni o buchi tra gli strati",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "geo-cedimento-elastico-newmark",
+   "geo-cedimento-elastico-timoshenko-goodier"
+  ],
+  "cella": "Elastico_centrale_Newmark, 500, Elastico_Timoshenko_Goodier_3 (tabella strati)",
+  "foglio": "La tabella degli strati non è mai stata validata per continuità: due righe sovrapposte vengono doppiamente contate (modulo sovrastimato), una riga con un buco fra due strati contribuisce zero nel numeratore ma resta nel denominatore (anche qui modulo sovrastimato).",
+  "corretto": "Una nuova validazione respinge esplicitamente righe sovrapposte o con un buco fra loro, in entrambe le modalità (un buco iniziale prima del primo strato resta ammesso, perché il riferimento è il piano campagna).",
+  "clausola": "coerenza classica della stratigrafia (nessuna clausola NTC diretta)",
+  "impatto": "nessuno sui casi guida/oracolo (tutti già continui)",
+  "uscite": []
+ },
+ {
+  "id": "geo-cedimenti-elastico/rettangolo-confronto-500-dieci-volte-piu-grande",
+  "titolo": "Il rettangolo di confronto del foglio 500 è dieci volte più grande dei fogli gemelli, forse un refuso",
+  "tipo": "da_verificare",
+  "strumenti": [
+   "geo-cedimento-elastico-newmark"
+  ],
+  "cella": "500!F5, F6 (confrontato con 400!F5, F6)",
+  "foglio": "Il rettangolo di confronto del foglio 500 misura 40 m, dieci volte quello dei fogli gemelli 400/350 (4 m), pur con carichi e affondamenti nello stesso ordine di grandezza — sembra mancare una virgola decimale.",
+  "corretto": "Non corretto in nessuna modalità: è un dato di input, non un bug di formula; il valore del foglio 500 è usato così com'è, come richiesto per il caso guida.",
+  "clausola": "",
+  "impatto": "",
+  "uscite": []
+ }
+]

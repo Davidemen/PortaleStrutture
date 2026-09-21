@@ -1,0 +1,30 @@
+[
+ {
+  "id": "footing-pressure/pressione-biassiale-sovrapposizione-approssimata",
+  "titolo": "La pressione massima biassiale è la somma di due verifiche uniassiali, non quella esatta",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-plinto-isolato"
+  ],
+  "cella": "CHECKS!AA",
+  "foglio": "La pressione massima combinata è calcolata come somma dei due massimi trapezoidali uniassiali (uno per x, uno per y) meno un termine di base, un'approssimazione non equivalente alla vera pressione biassiale sul piano rigido.",
+  "corretto": "footing_pressure.pressure con metodo esatto calcola il piano di Navier lineare dentro il nocciolo biassiale e risolve il problema della pressione senza trazione fuori dal nocciolo (metodo di punto fisso 2D); il metodo per sovrapposizione riproduce esattamente la formula del foglio ed è quello forzato in modalità legacy.",
+  "clausola": "NTC2018 §6.4.2.1",
+  "impatto": "nessuno sul caso guida (eccentricità piccole, ben dentro il nocciolo biassiale): i due metodi coincidono a 6 cifre significative (σt=1,66283 kg/cm²); i metodi divergono quando la risultante esce dal nocciolo in una o entrambe le direzioni",
+  "uscite": []
+ },
+ {
+  "id": "footing-pressure/fattore-mpa-kgcm2-approssimato",
+  "titolo": "Il fattore di conversione MPa -> kg/cm² usato per le colonne di pressione è un'approssimazione, non il valore esatto",
+  "tipo": "da_verificare",
+  "strumenti": [
+   "fond-plinto-isolato"
+  ],
+  "cella": "CHECKS!O, P, Q, R, W, Y, AA",
+  "foglio": "Le colonne di pressione in kg/cm² moltiplicano per il letterale 10 invece del fattore esatto 98,0665 kPa per kgf/cm² (1 kgf/cm² ≈ 10,1972, non 10).",
+  "corretto": "Questo modulo calcola sempre in kPa esatti; la conversione a kg/cm² con il fattore esatto o con il fattore approssimato del foglio è responsabilità dello strumento che lo consuma, a seconda della modalità.",
+  "clausola": "",
+  "impatto": "≈1,97% su qualunque pressione riportata in kg/cm² (es. σt,total 1,66283 kg/cm² con il fattore del foglio contro ≈1,6957 kg/cm² con il fattore esatto)",
+  "uscite": []
+ }
+]

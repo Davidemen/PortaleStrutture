@@ -1,0 +1,50 @@
+[
+ {
+  "id": "materials/fck-calcestruzzo-fill-down-083-rck",
+  "titolo": "fck del calcestruzzo è calcolato come 0,83·Rck invece del valore letterale di Tab. 4.1.I",
+  "tipo": "errore_foglio",
+  "strumenti": ["ca-trave-rettangolare", "ca-mensola-tozza", "ca-pilastro-rettangolare", "ca-pilastro-circolare", "ca-apertura-fessure"],
+  "cella": "ca-travi/ca-mensole/ca-pilastri!Tabelle O34:O41; ca-fessurazione!MATERIALE CLS C3:C14",
+  "foglio": "fck = 0,83·Rck per ogni classe (es. C35/45 -> fck=37,35), un'approssimazione, non il valore letterale della classe; solo la riga C35/45 del foglio fessurazione è già corretta a 35 a mano",
+  "corretto": "fck usa il valore letterale di Tab. 4.1.I per ogni classe",
+  "clausola": "NTC2018 §4.1.2.1.1.1, Tab. 4.1.I",
+  "impatto": "caso peggiore C35/45: fck 37,35 -> 35,0 MPa (-6,3%); fcd 21,165 -> 19,833 MPa (-6,3%, il foglio è non conservativo)",
+  "uscite": ["materiali.calcestruzzo.fck_MPa", "materiali.calcestruzzo.fcd_MPa"]
+ },
+ {
+  "id": "materials/acciaio-strutturale-fascia-spessore-ignorata",
+  "titolo": "Le proprietà dell'acciaio strutturale non considerano la fascia di spessore dell'elemento",
+  "tipo": "errore_foglio",
+  "strumenti": [],
+  "cella": "acciaio-colonne-ec3!Materiali!H19:J23",
+  "foglio": "una sola coppia fyk/fuk per classe, sempre la fascia t<=40mm, anche per spessori maggiori",
+  "corretto": "la fascia è scelta in base allo spessore reale t, come richiesto da EN1993-1-1 Tab. 3.1",
+  "clausola": "EN1993-1-1 §3.2.1, Tab. 3.1",
+  "impatto": "S355, t=60mm: fyk 355 -> 335 MPa (-5,6%, il foglio è non conservativo per spessori >40mm)",
+  "uscite": []
+ },
+ {
+  "id": "materials/acciaio-armatura-classificazione-storica",
+  "titolo": "Il catalogo acciai per armatura include gradi storici non più ammessi dalla normativa vigente",
+  "tipo": "aggiornamento_normativo",
+  "strumenti": ["ca-trave-rettangolare", "ca-mensola-tozza", "ca-pilastro-rettangolare", "ca-pilastro-circolare"],
+  "cella": "",
+  "foglio": "il catalogo unificato include B500C, FeB22k/FeB32k/FeB38k/FeB44k e RB500W, gradi non più ammessi da NTC2018 §11.3.2 Tab. 11.3.Ia per nuove armature ordinarie in Italia",
+  "corretto": "ogni proprietà acciaio riporta un flag legacy_grade che segnala i gradi non più ammessi; i valori numerici restano quelli del foglio",
+  "clausola": "NTC2018 §11.3.2, Tab. 11.3.Ia",
+  "impatto": "nessuno sui valori numerici, solo un flag informativo",
+  "uscite": ["materiali.acciaio.legacy_grade"]
+ },
+ {
+  "id": "materials/acciaio-en1993-gamma-s420-s460-non-verificati",
+  "titolo": "I gradi acciaio S420/S460 non sono verificabili contro un valore tabulato del foglio",
+  "tipo": "da_verificare",
+  "strumenti": [],
+  "cella": "",
+  "foglio": "il foglio tabula solo S235, S275, S355",
+  "corretto": "S420/S460 aggiunti con i valori standard EN1993-1-1 Tab. 3.1 per acciai normalizzati a grana fine, ma non verificabili contro un valore di cella; il grado S450 non è implementato",
+  "clausola": "EN1993-1-1 Tab. 3.1, EN10025-3",
+  "impatto": "",
+  "uscite": []
+ }
+]

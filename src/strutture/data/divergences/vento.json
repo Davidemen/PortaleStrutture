@@ -1,0 +1,62 @@
+[
+ {
+  "id": "vento/zona-lookup-su-provincia-invece-che-comune",
+  "titolo": "La zona di vento cerca la provincia nella colonna comune e fallisce spesso",
+  "tipo": "errore_foglio",
+  "strumenti": ["vento-pressione"],
+  "cella": "Vento!H7",
+  "foglio": "VLOOKUP cerca la provincia risolta dentro la colonna Comune della tabella Comuni, un copia-incolla errato",
+  "corretto": "La zona viene letta direttamente sul comune risolto",
+  "clausola": "",
+  "impatto": "nessuno sul caso golden (Milano, comune omonimo della provincia); su 'Agrate Brianza' (provincia Monza e Brianza) il foglio fallisce, il modo corretto restituisce zona=1",
+  "uscite": ["zona"]
+ },
+ {
+  "id": "vento/profilo-pressione-limitato-a-1000-righe",
+  "titolo": "Il profilo di pressione e' fisso a 1000 sezioni e non segue il parametro del foglio",
+  "tipo": "errore_foglio",
+  "strumenti": ["vento-pressione"],
+  "cella": "Tabelle!K4:Q1005",
+  "foglio": "La tabella del profilo e' scritta a mano per esattamente 1001 righe; l'ultima riga e' un valore letterale che non si aggiorna se si cambia il numero di sezioni",
+  "corretto": "profilo_pressione genera esattamente n_sezioni+1 righe per qualsiasi n_sezioni, senza limite fisso",
+  "clausola": "",
+  "impatto": "nessuno sul caso golden (n_sezioni=1000 riproduce la griglia del foglio); la divergenza riguarda solo numeri di sezioni diversi da 1000",
+  "uscite": ["profilo"]
+ },
+ {
+  "id": "vento/etichetta-ce-unita-di-misura-errata",
+  "titolo": "L'etichetta del coefficiente di esposizione riporta un'unita' di misura errata",
+  "tipo": "errore_foglio",
+  "strumenti": ["vento-pressione"],
+  "cella": "Vento!I37",
+  "foglio": "La cella etichetta ce(z) con l'unita' 'm', ma ce e' adimensionale",
+  "corretto": "ce_h e il ce di ogni riga del profilo sono documentati con unita' '-'",
+  "clausola": "",
+  "impatto": "nessuno (solo etichetta)",
+  "uscite": ["ce_h"]
+ },
+ {
+  "id": "vento/correzione-altitudine-formula-ntc2008",
+  "titolo": "La correzione di velocita' per l'altitudine usa la formula NTC2008 superata invece della NTC2018",
+  "tipo": "aggiornamento_normativo",
+  "strumenti": ["vento-pressione"],
+  "cella": "Vento!H10/H12",
+  "foglio": "vb = vb0 + ka*(as-a0) con i valori ka [1/s] della Tab. 3.3.I pre-2018, senza limite superiore di quota",
+  "corretto": "vb = vb0*ca secondo NTC2018 §3.3.2, con ks adimensionale (Tab. 3.3.I); oltre 1500 m viene sollevato un errore invece di estrapolare",
+  "clausola": "NTC2018 §3.3.2",
+  "impatto": "zona 4, as=1500m: formula vecchia vb=48.00 m/s, formula NTC2018 vb=48.16 m/s (+0.33%); nessun impatto sul caso golden (as=120m < a0)",
+  "uscite": ["ka", "ks", "ca", "vb0"]
+ },
+ {
+  "id": "vento/velocita-riferimento-rinormalizzata-su-tr50",
+  "titolo": "La velocita' di riferimento e' rinormalizzata su TR=50 in modo incoerente con il coefficiente a_r esposto",
+  "tipo": "errore_foglio",
+  "strumenti": ["vento-pressione"],
+  "cella": "Vento!H15",
+  "foglio": "vR(TR) viene ricalcolata dividendo per il fattore di Gumbel a TR=50, mentre il coefficiente a_r esposto in H14 resta quello non rinormalizzato, quindi a_r*vref non coincide con vr per TR diverso da 50",
+  "corretto": "vr = vref*a_r senza rinormalizzazione, coerente per costruzione con a_r esposto",
+  "clausola": "NTC2018 §3.3.2 eq. 3.3.3",
+  "impatto": "TR=200, vref=25 m/s: foglio da' vr=26.88611 m/s (incoerente con a_r*vref=26.90584), corretto da' vr=26.90584 m/s; nessun impatto sul caso golden (TR=50)",
+  "uscite": ["a_r", "vr"]
+ }
+]

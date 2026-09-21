@@ -1,0 +1,50 @@
+[
+ {
+  "id": "sisma/eta-verticale-reciproco-di-qv",
+  "titolo": "Il coefficiente dissipativo verticale e' calcolato come 1/qv invece che dallo smorzamento",
+  "tipo": "errore_foglio",
+  "strumenti": ["sisma-fattori-struttura"],
+  "cella": "Sisma!I45",
+  "foglio": "eta,v = 1/qv, non dipende dallo smorzamento nonostante l'etichetta 'coefficiente dissipativo'",
+  "corretto": "Stessa formula eta(xi) della componente orizzontale: eta,v = sqrt(10/(5+xi))",
+  "clausola": "NTC2018 §7.3.3.2",
+  "impatto": "caso golden (xi=5, qv=1.5): foglio da' eta,v=0.666667, corretto da' eta,v=1",
+  "uscite": ["eta_vert"]
+ },
+ {
+  "id": "sisma/spettro-progetto-senza-pavimento-0-2ag",
+  "titolo": "Lo spettro di progetto puo' scendere sotto 0.2ag per periodi lunghi",
+  "tipo": "errore_foglio",
+  "strumenti": ["sisma-spettro"],
+  "cella": "Sisma!J (colonna spettro di progetto)",
+  "foglio": "Il ramo 1/T^2 (T>=TD) puo' decadere sotto 0.2*ag per T grandi, senza limite inferiore",
+  "corretto": "Sd(T) = max(Se(T)/q, 0.2*ag) per gli stati limite ultimi (SLV/SLC)",
+  "clausola": "NTC2018 §3.2.3.2.1",
+  "impatto": "caso golden a T=5s: foglio da' Sd=0.00590732g, corretto da' Sd=0.0196g (+3.3x)",
+  "uscite": ["punti"]
+ },
+ {
+  "id": "sisma/spettro-elastico-t0-non-ancorato-ad-ags",
+  "titolo": "Lo spettro elastico non torna esattamente ad ag*S a T=0 quando lo smorzamento non e' 5%",
+  "tipo": "errore_foglio",
+  "strumenti": ["sisma-spettro"],
+  "cella": "Sisma!N56:N149",
+  "foglio": "Il termine reciproco perde il fattore eta, quindi Se(0) = eta*ag*S invece del valore di ancoraggio ag*S",
+  "corretto": "Se(T) = eta*ag*S*F0*[T/TB + 1/(eta*F0)*(1-T/TB)], che si riduce ad ag*S a T=0 per qualsiasi eta",
+  "clausola": "NTC2018 §3.2.3.2.1 eq. 3.2.4",
+  "impatto": "per xi=10% (eta=0.8165): foglio da' Se(0)=0.8165*ag*S (18% in meno), corretto da' Se(0)=ag*S esatto; caso golden (xi=5) non e' interessato",
+  "uscite": ["punti"]
+ },
+ {
+  "id": "sisma/eta-smorzamento-senza-limite-inferiore",
+  "titolo": "Il coefficiente eta di smorzamento non ha un limite inferiore per xi alti",
+  "tipo": "errore_foglio",
+  "strumenti": ["sisma-fattori-struttura"],
+  "cella": "Sisma!I38",
+  "foglio": "eta = sqrt(10/(5+xi)) senza alcun limite inferiore; xi e' validato solo come maggiore di zero",
+  "corretto": "eta = max(sqrt(10/(5+xi)), 0.55), applicato in entrambe le modalita' perche' e' un limite della formula stessa, non del foglio",
+  "clausola": "NTC2018 §3.2.3.2.1 eq. 3.2.6",
+  "impatto": "a xi=40%: eta senza limite = 0.4714, eta con limite = 0.55 (+16.7%, conservativo); caso golden (xi=5) non e' interessato",
+  "uscite": ["eta", "eta_vert"]
+ }
+]

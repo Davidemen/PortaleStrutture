@@ -1,0 +1,74 @@
+[
+ {
+  "id": "ca-fessurazione/link-esterno-morto-materiali",
+  "titolo": "Ecm e fctm puntano a un collegamento verso un altro file non disponibile",
+  "tipo": "errore_foglio",
+  "strumenti": ["ca-apertura-fessure"],
+  "cella": "Apertura delle fessure!E18/E19",
+  "foglio": "Ecm/fctm sono cercati in un file esterno collegato non disponibile in fase di lettura",
+  "corretto": "usa la tabella condivisa dei materiali calcestruzzo (stessa classe come input)",
+  "clausola": "NTC2018 §11.2.10.1 / Tab. 4.1.I",
+  "impatto": "nessuno per il caso golden (C28/35 riproduce esattamente Ecm=32588,1 MPa, fctm=2,83499 MPa)",
+  "uscite": ["materiale.ecm_MPa", "materiale.fctm_MPa"]
+ },
+ {
+  "id": "ca-fessurazione/opzione-trazione-eccentrica-divisione-per-zero",
+  "titolo": "L'opzione 'trazione eccentrica' del tipo di sollecitazione genera una divisione per zero ed è comunque inattingibile",
+  "tipo": "errore_foglio",
+  "strumenti": ["ca-apertura-fessure"],
+  "cella": "Apertura delle fessure!E6, V7/W7",
+  "foglio": "la terza opzione del menu calcola k2 dividendo per due celle vuote, generando un errore; la riga è inoltre fuori dall'intervallo effettivamente letto dalla formula funzionante",
+  "corretto": "opzione rimossa, restano solo 'caso di flessione' e 'caso di trazione semplice'",
+  "clausola": "Circolare 2019 §C4.1.9",
+  "impatto": "nessuno (il caso golden usa 'caso di flessione')",
+  "uscite": []
+ },
+ {
+  "id": "ca-fessurazione/limiti-sigma-s-senza-formula",
+  "titolo": "I limiti di tensione dell'acciaio (FRE/QPE) sono numeri digitati senza formula di supporto",
+  "tipo": "errore_foglio",
+  "strumenti": ["ca-apertura-fessure-semplificata"],
+  "cella": "Apertura delle fessure SEMP!D21/D43/D66 (FRE), D22/D44/D67 (QPE)",
+  "foglio": "280 MPa (FRE) e 240 MPa (QPE) digitati direttamente, identici nelle tre sezioni, senza formula visibile a supporto",
+  "corretto": "i limiti sono derivati dal diametro barra tramite la tabella C4.1.II (curva w3 per FRE, w2 per QPE)",
+  "clausola": "NTC2018 §4.1.2.2.4 / Tab. C4.1.II",
+  "impatto": "nessuno per il caso golden (Ø=16mm riproduce esattamente 280/240 MPa)",
+  "uscite": []
+ },
+ {
+  "id": "ca-fessurazione/sottotitolo-zero-invece-di-vuoto",
+  "titolo": "Il sottotitolo di sezione mostra 0 invece di restare vuoto quando la cella sorgente è vuota",
+  "tipo": "errore_foglio",
+  "strumenti": ["ca-apertura-fessure-semplificata"],
+  "cella": "Apertura delle fessure SEMP!B20/B65",
+  "foglio": "il collegamento a una cella vuota viene mostrato come il numero 0 invece che come testo vuoto",
+  "corretto": "sottotitolo vuoto quando non presente",
+  "clausola": "",
+  "impatto": "nessuno (solo estetico)",
+  "uscite": []
+ },
+ {
+  "id": "ca-fessurazione/costante-delta-sm-arrotondata",
+  "titolo": "La costante del ramo Δsm §C4.1.10 è arrotondata a 2 decimali invece del rapporto esatto 1,3/1,7",
+  "tipo": "errore_foglio",
+  "strumenti": ["ca-apertura-fessure"],
+  "cella": "Apertura delle fessure!E14",
+  "foglio": "Δsm = 0,75·(x1-x2), dove 0,75 è 1,3/1,7 arrotondato per difetto",
+  "corretto": "usa il rapporto esatto 1,3/1,7",
+  "clausola": "EN1992-1-1 eq. 7.14 / Circolare 2019 §C4.1.10",
+  "impatto": "circa +2% sull'apertura di fessura wk nel caso con interferro=300mm (Δsm 130,62 mm -> 133,18 mm), il valore del foglio è non conservativo",
+  "uscite": ["fessurazione.delta_sm_mm", "fessurazione.wk_mm"]
+ },
+ {
+  "id": "ca-fessurazione/classe-fissa-invece-di-condizioni-ambientali",
+  "titolo": "I limiti FRE/QPE sono fissi alla classe w3/w2, senza condizioni ambientali/sensibilità armatura",
+  "tipo": "aggiornamento_normativo",
+  "strumenti": ["ca-apertura-fessure-semplificata"],
+  "cella": "Apertura delle fessure SEMP!D21/22/43/44/66/67",
+  "foglio": "i limiti corrispondono solo alla riga 'condizioni ordinarie + armatura poco sensibile' della Tab. 4.1.IV, senza possibilità di scegliere altre condizioni",
+  "corretto": "nuovi input condizioni ambientali/sensibilità armatura risolvono la classe applicabile dalla Tab. 4.1.IV; le combinazioni non ammesse (che richiedono una verifica di decompressione) generano un errore",
+  "clausola": "NTC2018 Tab. 4.1.IV",
+  "impatto": "nessuno per gli input di default/golden (stesse classi w3/w2); per altre combinazioni il limite può ridursi fino al 40% (es. Ø16mm: 280 MPa foglio vs 200 MPa per condizioni molto aggressive/armatura sensibile)",
+  "uscite": []
+ }
+]

@@ -1,0 +1,50 @@
+[
+ {
+  "id": "shared-ca/tabella-fessurazione-solo-ricerca-esatta",
+  "titolo": "La tabella diametro-vs-tensione limite (Tab. C4.1.II) usa solo la ricerca esatta, senza interpolazione",
+  "tipo": "errore_foglio",
+  "strumenti": [],
+  "cella": "Tabelle!N67:R93",
+  "foglio": "ricerca a corrispondenza esatta del diametro; un diametro non tabulato genera un errore",
+  "corretto": "interpolazione lineare tra i due diametri tabellati più vicini",
+  "clausola": "NTC2018 Tab. C4.1.II",
+  "impatto": "nessuno sul caso golden di ca-travi (Ø=20mm è un valore esatto in tabella, σs,limite=240 MPa in entrambe le modalità)",
+  "uscite": []
+ },
+ {
+  "id": "shared-ca/tabella-tensione-vs-interferro-invertita",
+  "titolo": "La tabella tensione-vs-interferro delle barre era invertita e mancava della classe di apertura fessura",
+  "tipo": "errore_foglio",
+  "strumenti": [],
+  "cella": "",
+  "foglio": "n/a, riguarda un modulo di libreria condiviso (non legato a una cella specifica di ca-travi/ca-mensole/ca-pilastri): la tabella era indicizzata tensione->interferro massimo (la direzione della norma), ma veniva consultata come se fosse interferro->tensione, restituendo valori sbagliati e senza gestire la classe di apertura fessura",
+  "corretto": "la tabella è ora indicizzata correttamente interferro->tensione massima, con una colonna per ciascuna classe di apertura fessura (w1/w2/w3), invertita da Tab. C4.1.III/Table 7.3N",
+  "clausola": "NTC2018 Tab. C4.1.III / EN1992-1-1 Table 7.3N",
+  "impatto": "nessun caso golden/oracolo chiama questa funzione; solo test unitari",
+  "uscite": []
+ },
+ {
+  "id": "shared-ca/tabella-classe-fessurazione-celle-vuote",
+  "titolo": "Alcune combinazioni della tabella classe di apertura fessura sono vuote nel foglio",
+  "tipo": "errore_foglio",
+  "strumenti": [],
+  "cella": "Tabelle!M56:Q62",
+  "foglio": "tre combinazioni (aggressive/quasi permanente/sensibile; molto aggressive/frequente/sensibile; molto aggressive/quasi permanente/sensibile) sono celle vuote, lette come 0",
+  "corretto": "restituisce esplicitamente 'nessun limite di apertura' (richiede verifica di decompressione) per queste tre combinazioni, invece di un valore fittizio",
+  "clausola": "NTC2018 Tab. 4.1.IV",
+  "impatto": "nessuno sui casi golden (tutti usano condizioni ordinarie/poco sensibile)",
+  "uscite": []
+ },
+ {
+  "id": "shared-ca/asse-neutro-fessurato-generalizzato-a-doppia-armatura",
+  "titolo": "Asse neutro sezione fessurata generalizzato al caso con armatura compressa, oltre alla semplice del foglio",
+  "tipo": "aggiornamento_normativo",
+  "strumenti": ["ca-trave-rettangolare"],
+  "cella": "",
+  "foglio": "il foglio calcola solo il caso a semplice armatura (As2=0)",
+  "corretto": "formula generalizzata a sezione rettangolare con armatura compressa; con As2=0 si riduce esattamente alla formula del foglio",
+  "clausola": "",
+  "impatto": "nessuno, il caso As2=0 riproduce esattamente y=126,44mm del foglio",
+  "uscite": []
+ }
+]

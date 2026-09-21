@@ -1,0 +1,291 @@
+[
+ {
+  "id": "plinti-pali/peso-proprio-diviso-per-1-4-invece-di-gammag1",
+  "titolo": "Il peso proprio nella reazione minima per palo è diviso per 1,4 invece del vero coefficiente parziale",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-plinto-su-pali"
+  ],
+  "cella": "Footing check!AF12",
+  "foglio": "La reazione minima per palo (Nmin,env) divide il peso proprio per il letterale 1,4, che non corrisponde al coefficiente γG1 realmente usato per costruire quel peso (1,3).",
+  "corretto": "Si divide per il reale gamma_g1 in entrambe le modalità (legacy usa comunque il valore del foglio, ma la formula è tracciata correttamente).",
+  "clausola": "NTC2018 Tab. 2.6.I (azione permanente favorevole)",
+  "impatto": "Nmin,env passa da 244,236 a 258,758 kN (+14,5 kN) usando il coefficiente reale",
+  "uscite": [
+   "n_max_pila_kN"
+  ]
+ },
+ {
+  "id": "plinti-pali/coefficiente-k-taglio-non-limitato-a-2",
+  "titolo": "Il coefficiente di scala per il taglio senza armatura non è limitato al valore massimo previsto dalla norma",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-plinto-su-pali"
+  ],
+  "cella": "Footing check!AR99",
+  "foglio": "k = 1+√(200/d) non è mai limitato al tetto di 2,0 richiesto dalla norma.",
+  "corretto": "Il coefficiente k è limitato a 2,0 al massimo in entrambe le modalità.",
+  "clausola": "EC2 §6.2.2(1)",
+  "impatto": "nessuno sul caso guida (d=1102 mm dà k=1,426 < 2,0); diverge per altezze utili molto piccole",
+  "uscite": [
+   "taglio.k"
+  ]
+ },
+ {
+  "id": "plinti-pali/rho-taglio-divisa-per-larghezza-piena-plinto",
+  "titolo": "La percentuale di armatura per il taglio è divisa per l'intera larghezza del plinto, non per la fascia da 1 m",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-plinto-su-pali"
+  ],
+  "cella": "Footing check!AR100",
+  "foglio": "La densità di armatura per metro (mm²/m) viene divisa per l'intera larghezza del plinto in mm, sottostimando la percentuale di armatura di un fattore pari al rapporto tra larghezza e 1 m.",
+  "corretto": "Si divide per la fascia di un metro effettivamente dimensionata (As_real/(1000·d)).",
+  "clausola": "EC2 §6.2.2(1)",
+  "impatto": "rho passa da 0,0010263 a 0,0041052 (x4); di conseguenza VRd,c sale da 1486,18 a 1779,81 kN e l'utilizzo scende da 0,2206 a 0,1842",
+  "uscite": [
+   "taglio.rho",
+   "taglio.vrd_c_kN",
+   "taglio.utilizzo"
+  ]
+ },
+ {
+  "id": "plinti-pali/lunghezza-ancoraggio-fissa-non-legata-diametro-palo",
+  "titolo": "La lunghezza di appoggio usata per l'ancoraggio è un valore fisso, non collegato al diametro del palo realmente inserito",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-plinto-su-pali"
+  ],
+  "cella": "Footing check!BG13",
+  "foglio": "Il valore è un letterale fisso (600 mm) etichettato come diametro del palo/larghezza di appoggio, ma non collegato all'input del diametro del palo: se il diametro cambia, questa cella resta disallineata.",
+  "corretto": "La lunghezza di appoggio è sempre uguale al diametro del palo inserito, in entrambe le modalità.",
+  "clausola": "",
+  "impatto": "nessuno sul caso guida (entrambi 600 mm); diverge quando l'utente cambia il diametro del palo",
+  "uscite": []
+ },
+ {
+  "id": "plinti-pali/tiranti-ortogonali-stesso-angolo-griglia-non-quadrata",
+  "titolo": "Le forze nei tiranti ortogonali usano lo stesso angolo, corretto solo per una griglia quadrata",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-plinto-su-pali"
+  ],
+  "cella": "Footing check!BL13, BL14",
+  "foglio": "Entrambi i tiranti ortogonali usano cos(atan(Ly/Lx)), corretto solo quando Lx=Ly (dove cos=sin).",
+  "corretto": "Il tirante lungo X mantiene cos(alpha), il tirante lungo Y usa sin(alpha), con alpha=atan(Ly/Lx).",
+  "clausola": "EC2 §6.5.3",
+  "impatto": "nessuno sul caso guida (griglia quadrata Lx=Ly=2 m); diverge su una griglia rettangolare",
+  "uscite": [
+   "puntoni_tiranti.tirante_x",
+   "puntoni_tiranti.tirante_y"
+  ]
+ },
+ {
+  "id": "plinti-pali/taglio-riduzione-av-senza-limite-inferiore",
+  "titolo": "La riduzione del taglio per carico vicino all'appoggio non ha un limite inferiore sulla distanza",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-plinto-su-pali"
+  ],
+  "cella": "Footing check (riduzione taglio av/2d)",
+  "foglio": "Il coefficiente di riduzione beta=av/(2d) non ha alcun limite inferiore sulla distanza av usata; con l'av di default del foglio (120 mm) e d=1102 mm si ottiene beta=0,054, una riduzione non conservativa.",
+  "corretto": "av è limitato all'intervallo [0,5d, 2d] prima di calcolare beta, che risulta quindi sempre tra 0,25 e 1,0.",
+  "clausola": "EC2 §6.2.2(6)",
+  "impatto": "con av=120 mm sul caso guida: VEd,red passa da 83,7 a 384,3 kN (+4,6 volte, non più non conservativo); il caso guida usa av=470 mm (già oltre 0,5d) quindi il suo risultato non cambia",
+  "uscite": [
+   "taglio.ved_ridotto_kN"
+  ]
+ },
+ {
+  "id": "plinti-pali/taglio-verifica-equazione-6-5-mancante",
+  "titolo": "La verifica di taglio senza la riduzione per carico vicino all'appoggio (eq. 6.5) non era mai eseguita",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-plinto-su-pali"
+  ],
+  "cella": "Footing check (taglio, verifica complementare)",
+  "foglio": "La verifica EC2 eq. 6.5 (VEd ≤ 0,5·b·d·ν·fcd, senza la riduzione per carico vicino) non è mai calcolata.",
+  "corretto": "È ora calcolata come ved_max_kN ed entra nell'esito complessivo della verifica.",
+  "clausola": "EC2 eq. 6.5",
+  "impatto": "sul caso guida ved_max_kN è molto maggiore di ved_kN e non governa; nuovo campo, nessun valore preesistente cambia",
+  "uscite": [
+   "taglio.ved_max_kN"
+  ]
+ },
+ {
+  "id": "plinti-pali/punzonamento-colonna-alpha-cc-fisso-a-1",
+  "titolo": "La resistenza a punzonamento sulla colonna usa un coefficiente riduttivo del calcestruzzo pari a 1",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-plinto-su-pali"
+  ],
+  "cella": "Footing check (VRd,max punzonamento colonna)",
+  "foglio": "Il coefficiente riduttivo alpha_cc è fissato a 1,0 anche in modalità standard.",
+  "corretto": "In modalità standard si usa il valore normativo 0,85; in modalità legacy resta 1,0.",
+  "clausola": "NTC2018 §4.1.2.1.1.1",
+  "impatto": "sul caso guida (isolando questo effetto): vRd,max passa da 17220,1 a 14637,1 kN (-15%, non più non conservativo)",
+  "uscite": [
+   "punzonamento.vrd_max_kN"
+  ]
+ },
+ {
+  "id": "plinti-pali/coefficiente-vrd-max-taglio-punzonamento",
+  "titolo": "Il coefficiente della resistenza massima a taglio/punzonamento è un parametro normativo da scegliere",
+  "tipo": "scelta_ingegneristica",
+  "strumenti": [
+   "fond-plinto-su-pali"
+  ],
+  "cella": "Footing check (VRd,max = c·ν·fcd, entrambe le occorrenze)",
+  "foglio": "Il foglio usa sempre e incondizionatamente il coefficiente c=0,5 (accoppiato con alpha_cc=1,0).",
+  "corretto": "In modalità standard il coefficiente è un input esplicito (0,4 oppure 0,5), di default 0,4 (versione EN1992-1-1:2004/A1:2014); in modalità legacy resta il valore del foglio (0,5, con alpha_cc=1,0).",
+  "clausola": "EC2 §6.4.5(3)",
+  "impatto": "sul caso guida in modalità standard: vRd,max punzonamento colonna passa da 14637,1 kN (con alpha_cc corretto ma c=0,5) a 11709,7 kN col nuovo default c=0,4 (-20%)",
+  "uscite": [
+   "punzonamento.vrd_max_kN",
+   "taglio.ved_max_kN"
+  ]
+ },
+ {
+  "id": "plinti-pali/punzonamento-colonna-beta-eccentricita-ignorata",
+  "titolo": "La verifica a punzonamento sulla colonna non considerava l'effetto dell'eccentricità del carico",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-plinto-su-pali"
+  ],
+  "cella": "Footing check (punzonamento colonna, beta)",
+  "foglio": "Il coefficiente di amplificazione per eccentricità beta è assunto sempre uguale a 1 (nessun effetto di eccentricità).",
+  "corretto": "beta è calcolato con la formula semplificata per colonna interna (EC2 eq. 6.39) a partire dai momenti e dallo sforzo normale della combinazione governante.",
+  "clausola": "EC2 §6.4.3(2)/(6), eq. 6.39",
+  "impatto": "sul caso guida (Mx=241,6, My=741,5 kNm, NSd=3074,7 kN, bx=by=700 mm): beta≈1,65, il VEd effettivo risulta circa 5080 kN contro NSd=3074,7 kN (l'utilizzo era ottimistico del 65%)",
+  "uscite": [
+   "punzonamento.beta",
+   "punzonamento.utilizzo"
+  ]
+ },
+ {
+  "id": "plinti-pali/punzonamento-palo-perimetro-non-limitato-interasse",
+  "titolo": "Il perimetro a punzonamento del palo d'angolo non tiene conto dell'interasse tra pali o del bordo",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-plinto-su-pali"
+  ],
+  "cella": "Footing check (punzonamento palo, perimetro di controllo)",
+  "foglio": "Il perimetro di verifica è sempre il cerchio pieno a distanza 2d, indipendentemente dall'interasse tra pali o dal bordo del plinto: sul caso guida vale circa 16000 mm, rendendo la verifica fisicamente priva di significato e sempre positiva.",
+  "corretto": "Il perimetro è limitato alla distanza libera fino al palo vicino, all'interasse o al bordo del plinto (mai oltre 2d); quando il perimetro è ridotto, si applica la maggiorazione prevista dalla norma per il perimetro parziale.",
+  "clausola": "EC2 §6.4.2(5), §6.4.4(2)",
+  "impatto": "caso guida (interasse 2 m, plinto 4x4 m, palo Ø600 mm, d=1102 mm): la distanza usata passa da 2204 a 700 mm, il perimetro da 15733 a 6283 mm, la resistenza VRd,c scala proporzionalmente (l'utilizzo sale dal valore precedentemente privo di significato, circa 0,11)",
+  "uscite": [
+   "punzonamento_palo.u_mm",
+   "punzonamento_palo.a_mm",
+   "punzonamento_palo.utilizzo"
+  ]
+ },
+ {
+  "id": "plinti-pali/nodi-puntone-tirante-coefficienti-non-standard",
+  "titolo": "I coefficienti di resistenza dei nodi puntone-tirante non erano quelli standard della norma",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-plinto-su-pali"
+  ],
+  "cella": "Footing check (puntoni e tiranti, coefficienti dei nodi)",
+  "foglio": "Il foglio usa coefficienti propri (K1_CCC=1,18/0,85; K2_CCT=1,0/0,88) applicati incondizionatamente.",
+  "corretto": "Si usano i valori di default della norma (k1=1,0 per nodi CCC, k2=0,85 per nodi CCT, k3=0,75 per nodi CTT), classificando il nodo inferiore secondo lo schema (CTT per lo schema 2x2 con due tiranti ancorati, CCT per lo schema con un solo tirante).",
+  "clausola": "EC2 §6.5.4(4)",
+  "impatto": "caso guida (schema 2x2): sigma_Rd,max passa da 13,915 a 11,859 MPa (-14,8%, non più non conservativo)",
+  "uscite": [
+   "puntoni_tiranti.puntone"
+  ]
+ },
+ {
+  "id": "plinti-pali/angolo-puntone-limitato-a-25-gradi",
+  "titolo": "L'angolo del puntone era limitato a un minimo di 25 gradi invece di usare la vera geometria",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-plinto-su-pali"
+  ],
+  "cella": "Footing check (puntoni e tiranti, angolo del puntone)",
+  "foglio": "L'angolo del puntone è calcolato come il massimo tra 25° e l'angolo geometrico reale, sostituendo una geometria più piatta del reale e sottostimando le forze nei tiranti.",
+  "corretto": "Si usa sempre il vero angolo geometrico; un errore viene segnalato se l'angolo esce da una fascia di sicurezza 20°-70° invece di limitarlo silenziosamente.",
+  "clausola": "",
+  "impatto": "esempio (lx=ly=4 m, H=1,2 m): angolo reale 21,43° contro il limite di 25°, la forza nel tirante Fus passa da 2120,3 a 2452,8 kN (+15,7%, non più non conservativa); il caso guida (angolo 38,13°, sopra il limite) non è interessato",
+  "uscite": [
+   "puntoni_tiranti.tirante_xy"
+  ]
+ },
+ {
+  "id": "plinti-pali/tiranti-2x2-senza-proiezione-coseno",
+  "titolo": "Le forze nei tiranti ortogonali (schema 4 pali) non proiettano la spinta inclinata del puntone",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-plinto-su-pali"
+  ],
+  "cella": "Footing check (schema 2x2, tiranti ortogonali)",
+  "foglio": "Le forze nei tiranti ortogonali usano l'intera forza inclinata del puntone, senza la proiezione cos(theta) sul piano orizzontale che invece il tirante diagonale già ha.",
+  "corretto": "Le forze nei tiranti ortogonali includono anche loro la proiezione cos(theta), per l'equilibrio del nodo.",
+  "clausola": "EC2 §6.5.3",
+  "impatto": "caso guida: le forze passano da 615,73 a 484,36 kN (il valore del foglio era conservativo di circa 1,27 volte)",
+  "uscite": [
+   "puntoni_tiranti.tirante_x",
+   "puntoni_tiranti.tirante_y"
+  ]
+ },
+ {
+  "id": "plinti-pali/coefficiente-vrd-max-scelta-da-confermare",
+  "titolo": "La scelta del coefficiente di resistenza massima a taglio/punzonamento va confermata dall'ingegnere",
+  "tipo": "scelta_ingegneristica",
+  "strumenti": [
+   "fond-plinto-su-pali"
+  ],
+  "cella": "",
+  "foglio": "Il foglio usa incondizionatamente il coefficiente 0,5 con alpha_cc=1,0.",
+  "corretto": "Due possibili valori normativi restano disponibili: 0,4 (EN1992-1-1:2004/A1:2014, default) oppure 0,5 (EN1992-1-1:2004 con Appendice Nazionale italiana 2013, anche il valore storico di questo foglio con alpha_cc=1,0); i fogli dell'utente stesso non sono coerenti fra loro su questo punto.",
+  "clausola": "EC2 §6.4.5(3)",
+  "impatto": "",
+  "uscite": []
+ },
+ {
+  "id": "plinti-pali/armatura-superiore-diametro-unico-semplificazione",
+  "titolo": "L'armatura superiore del plinto è un dimensionamento semplificato con un unico diametro, non riportato nella relazione",
+  "tipo": "da_verificare",
+  "strumenti": [
+   "fond-plinto-su-pali"
+  ],
+  "cella": "Footing check!AV33:BA51, AV42, AV50",
+  "foglio": "Il foglio usa due diametri diversi non collegati fra loro per la stessa armatura superiore: uno per l'altezza utile, uno per l'armatura reale.",
+  "corretto": "Un solo diametro scelto dall'utente è usato sia per l'altezza utile che per l'armatura reale; questo blocco non è comunque incluso nella relazione, come nel foglio originale.",
+  "clausola": "",
+  "impatto": "as_req_flexural_mm2 (superiore) passa da 483,25 a 485,85 mm² (+0,5%) usando un diametro invece di due",
+  "uscite": [
+   "flessione.sup_x",
+   "flessione.sup_y"
+  ]
+ },
+ {
+  "id": "plinti-pali/schema-non-2x2-generalizzazione-da-verificare",
+  "titolo": "Gli schemi puntone-tirante per griglie diverse da 2x2 sono una generalizzazione senza caso cablato",
+  "tipo": "da_verificare",
+  "strumenti": [
+   "fond-plinto-su-pali"
+  ],
+  "cella": "Footing check!BF9, BL13, BL14, BG19",
+  "foglio": "Il foglio prevede altri schemi (fila singola, appoggio diretto) ma nessun esempio cablato con un numero di pali diverso da 4 esiste per verificarli.",
+  "corretto": "Gli schemi sono implementati seguendo le formule tracciate nel foglio, con test unitari dedicati, ma restano da confermare contro un caso reale.",
+  "clausola": "",
+  "impatto": "",
+  "uscite": []
+ },
+ {
+  "id": "plinti-pali/angolo-puntone-fascia-sicurezza-20-70-non-normativa",
+  "titolo": "La fascia di sicurezza 20°-70° sull'angolo del puntone è una cautela ingegneristica, non una clausola della norma",
+  "tipo": "da_verificare",
+  "strumenti": [
+   "fond-plinto-su-pali"
+  ],
+  "cella": "",
+  "foglio": "Il foglio non ha alcuna fascia di sicurezza sull'angolo del puntone.",
+  "corretto": "L'errore per angolo fuori dalla fascia 20°-70° resta come cautela contro un meccanismo geometricamente privo di senso (puntone quasi orizzontale o quasi verticale); va confermato contro un riferimento di progettazione puntoni-tiranti prima di considerarlo normativo.",
+  "clausola": "",
+  "impatto": "",
+  "uscite": []
+ }
+]

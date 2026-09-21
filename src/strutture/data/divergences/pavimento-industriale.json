@@ -1,0 +1,77 @@
+[
+ {
+  "id": "pavimento-industriale/verifica-tensionale-superiore-usa-resistenza-caratteristica",
+  "titolo": "La verifica tensionale in fibra superiore confronta con la resistenza caratteristica, non di progetto",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-pavimento-industriale"
+  ],
+  "cella": "carichi_distribuiti_concentrati!G22, H22",
+  "foglio": "La stessa coppia di verifiche divide la fibra superiore per la resistenza caratteristica fcfk e quella inferiore per la resistenza di progetto fcfd, mentre tutte le altre verifiche del foglio usano la resistenza di progetto.",
+  "corretto": "In modalità standard entrambe le fibre sono verificate contro fcfd; in modalità legacy la fibra superiore resta verificata contro fcfk.",
+  "clausola": "CNR-DT211/2014",
+  "impatto": "nessuno sul caso guida (σc,max,sup=1,1638 MPa supera sia fcfk=2,18973 sia fcfd=1,45982); la differenza è visibile solo quando la tensione ricade tra i due valori",
+  "uscite": [
+   "distribuiti.verifiche.sigma_c_max_sup_MPa",
+   "distribuiti.verifiche.verifica_tensionale_sup"
+  ]
+ },
+ {
+  "id": "pavimento-industriale/perimetro-punzonamento-bordo-spigolo-usa-spessore-non-altezza-utile",
+  "titolo": "Il perimetro a punzonamento in bordo/spigolo usa lo spessore totale invece dell'altezza utile",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-pavimento-industriale"
+  ],
+  "cella": "carichi_distribuiti_concentrati!M33, N33",
+  "foglio": "Il perimetro di controllo a 2 volte l'altezza utile per le posizioni bordo e spigolo usa lo spessore totale h invece dell'altezza utile d (la posizione centro usa già correttamente d).",
+  "corretto": "Tutte le posizioni usano l'altezza utile d in modalità standard; in modalità legacy bordo/spigolo restano calcolati con h.",
+  "clausola": "EC2 §6.4.2",
+  "impatto": "caso guida (bordo, bx=500 mm, by=100 mm): il perimetro passa da 1956,64 mm (con h) a 1768,14 mm (con d), la tensione di verifica sale da 0,097857 a 0,108238 MPa; entrambe restano ben sotto VRd,c=0,494975 MPa, quindi l'esito non cambia su questo caso",
+  "uscite": [
+   "concentrati.governante.u1_mm"
+  ]
+ },
+ {
+  "id": "pavimento-industriale/coefficiente-vrd-max-punzonamento-scelta-utente",
+  "titolo": "Il coefficiente della resistenza massima a punzonamento è un parametro normativo da scegliere",
+  "tipo": "scelta_ingegneristica",
+  "strumenti": [
+   "fond-pavimento-industriale"
+  ],
+  "cella": "carichi_distribuiti_concentrati!L30:N30, R30:T30",
+  "foglio": "Il foglio usa sempre e incondizionatamente il coefficiente 0,5 (VRd,max=0,5·ν1·fcd), etichettandolo come EC2 §6.4.5, mentre 0,5 è in realtà il valore NTC2018 §4.1.2.3.5.2; il coefficiente EC2 è un parametro determinato a livello nazionale su cui due revisori ingegneristici e i fogli stessi dell'utente non concordano.",
+  "corretto": "In modalità standard il coefficiente è un input esplicito (0,4 o 0,5, di default 0,4 = EN1992-1-1:2004/A1:2014) etichettato 'EC2 §6.4.5(3)'; in modalità legacy resta 0,5, etichettato 'NTC2018 §4.1.2.3.5.2' (numericamente identico al foglio in ogni caso).",
+  "clausola": "EC2 §6.4.5(3) / NTC2018 §4.1.2.3.5.2",
+  "impatto": "sul caso guida (ramo standard, default 0,4): VRd,max passa da 3,825 MPa (0,5) a 3,060 MPa (-20%); entrambe restano sopra le tensioni di verifica del caso guida (max 0,170956 MPa), quindi l'esito non cambia qui, ma un carico più vicino al limite potrebbe cambiare esito",
+  "uscite": []
+ },
+ {
+  "id": "pavimento-industriale/etichetta-soglia-giunto-1-2-vs-formula-1-5",
+  "titolo": "L'etichetta della verifica dei giunti indica una soglia diversa da quella realmente usata nella formula",
+  "tipo": "da_verificare",
+  "strumenti": [
+   "fond-pavimento-industriale"
+  ],
+  "cella": "carichi_distribuiti_concentrati!F39, I39",
+  "foglio": "L'etichetta del rapporto a/b dice 'a/b<1,2' ma la formula confronta con 1,5, identica alla riga 47 che usa correttamente la stessa soglia e la stessa etichetta corretta.",
+  "corretto": "Mantenuto 1,5 in entrambe le modalità: sembra un'etichetta obsoleta (la formula coincide con quella della riga 47), ma non c'è una clausola che giustifichi la soglia 1,2, quindi non è trattato come un bug di formula confermato.",
+  "clausola": "",
+  "impatto": "",
+  "uscite": []
+ },
+ {
+  "id": "pavimento-industriale/carico-slu-bordo-spigolo-riferimento-gamma-centro",
+  "titolo": "Il carico ULS bordo/spigolo leggeva il coefficiente di sicurezza della colonna centro",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-pavimento-industriale"
+  ],
+  "cella": "carichi_distribuiti_concentrati!M8, N8",
+  "foglio": "La formula del carico ULS per le colonne bordo e spigolo legge il coefficiente γ della colonna centro tramite un riferimento assoluto, invece del proprio; innocuo solo perché nell'esempio cablato γ (e ψ1) sono uguali in tutte e tre le colonne.",
+  "corretto": "Ogni riga della tabella dei carichi ha ora la propria colonna gamma/psi1: non esiste più alcun riferimento a un'altra colonna da sbagliare, in entrambe le modalità (non c'è nulla da riprodurre, il bug è eliminato dalla forma stessa dell'input).",
+  "clausola": "",
+  "impatto": "nessuno sul caso guida (i coefficienti coincidono in tutte le colonne)",
+  "uscite": []
+ }
+]

@@ -1,0 +1,14 @@
+[
+ {
+  "id": "vento-cpe/etichetta-classificazione-edificio-snello-mista",
+  "titolo": "L'etichetta di classificazione per il caso misto per direzione non e' scritta nella specifica originale",
+  "tipo": "da_verificare",
+  "strumenti": ["vento-cpe-rettangolare"],
+  "cella": "B10",
+  "foglio": "La cella genera le stringhe 'EDIFICIO SNELLO DIR 1' / 'EDIFICIO SNELLO DIR 2' per il caso misto per direzione, lette direttamente dalla formula del foglio",
+  "corretto": "Le stesse stringhe sono riprodotte identiche, confermate contro i casi oracle",
+  "clausola": "",
+  "impatto": "nessuno, comportamento identico in entrambe le modalita'; solo il testo non era presente letteralmente nella specifica",
+  "uscite": ["classification"]
+ }
+]

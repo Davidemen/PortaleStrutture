@@ -1,0 +1,207 @@
+[
+ {
+  "id": "plinti-isolati/ribaltamento-mrib-zero-valore-fittizio",
+  "titolo": "Il coefficiente al ribaltamento mostra sempre '>100' quando non c'è momento ribaltante",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-plinto-isolato"
+  ],
+  "cella": "CHECKS!AE, AH",
+  "foglio": "Quando il momento ribaltante è zero il foglio scrive sempre '>100', rendendo indistinguibile una combinazione senza domanda di ribaltamento da una realmente molto sicura.",
+  "corretto": "mu_ribaltamento restituisce nessun valore (verifica senza domanda) quando il momento ribaltante è zero; in modalità legacy resta il valore fittizio 100,0 del foglio.",
+  "clausola": "NTC2018 §6.4.3.1",
+  "impatto": "nessuno sul caso guida (nessuna delle 537 combinazioni ha momento ribaltante nullo)",
+  "uscite": [
+   "mu_ribaltamento_minimo"
+  ]
+ },
+ {
+  "id": "plinti-isolati/scorrimento-taglio-zero-valore-fittizio",
+  "titolo": "Il coefficiente di sicurezza allo scorrimento tratta allo stesso modo l'assenza di taglio e una verifica molto sicura",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-plinto-isolato"
+  ],
+  "cella": "CHECKS!AM",
+  "foglio": "Quando il taglio orizzontale è zero e quando il rapporto è maggiore di 100 il foglio restituisce lo stesso valore convenzionale, quindi un rapporto realmente insicuro (minore di 1) non è mai trattato in modo speciale rispetto a questi casi.",
+  "corretto": "mu_scorrimento restituisce nessun valore quando il taglio è zero (verifica senza domanda); il rapporto reale è sempre restituito senza essere riscritto quando è definito.",
+  "clausola": "NTC2018 §6.4.3.1",
+  "impatto": "nessuno sul caso guida (il taglio è sempre diverso da zero in tutte le combinazioni usate)",
+  "uscite": [
+   "mu_scorrimento_minimo"
+  ]
+ },
+ {
+  "id": "plinti-isolati/scorrimento-senza-fattore-parziale-gammar",
+  "titolo": "La verifica di scorrimento non applicava il fattore parziale di resistenza richiesto dalla normativa",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-plinto-isolato"
+  ],
+  "cella": "CHECKS!AM",
+  "foglio": "Il rapporto N·tan(φ')/S è confrontato direttamente con 1,0, senza dividere per il coefficiente parziale di resistenza.",
+  "corretto": "mu_scorrimento divide per GAMMA_R_SCORRIMENTO=1,1 (Approccio 2, A1+M1+R3) in modalità standard.",
+  "clausola": "NTC2018 §6.4.2.1, Tab. 6.4.I",
+  "impatto": "nessuno sui casi guida/oracolo (asseriti in modalità legacy); un rapporto grezzo esattamente 1,0 passa da PASS a FAIL (0,909) in modalità standard, così come ogni rapporto tra 1,0 e 1,1",
+  "uscite": []
+ },
+ {
+  "id": "plinti-isolati/ribaltamento-autopeso-famiglia-sbagliata",
+  "titolo": "La verifica al ribaltamento usa il fattore di sicurezza del peso proprio della famiglia sbagliata",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-plinto-isolato"
+  ],
+  "cella": "CHECKS!AC:AH",
+  "foglio": "La verifica al ribaltamento è emessa per ogni famiglia di combinazioni, usando il coefficiente di sicurezza del peso proprio di quella famiglia (1,35 per SLU_STR) come momento stabilizzante, anche se solo le famiglie EQU hanno il coefficiente corretto per quel tipo di verifica.",
+  "corretto": "checks_inviluppo limita la verifica al ribaltamento alle sole famiglie SLU_EQU/SLV_EQU in modalità standard; in modalità legacy la verifica resta emessa per ogni famiglia.",
+  "clausola": "NTC2018 Tab. 2.6.I (EQU, γG1=0,9 stabilizzante)",
+  "impatto": "nessuno sui casi guida/oracolo",
+  "uscite": []
+ },
+ {
+  "id": "plinti-isolati/inviluppo-momento-slu-include-famiglia-sle",
+  "titolo": "L'inviluppo del momento a flessione include una famiglia di esercizio ed esclude una famiglia sismica ULS",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-plinto-isolato"
+  ],
+  "cella": "INPUT!T13, T14",
+  "foglio": "L'inviluppo dei momenti Mx,SLU/My,SLU prende il massimo tra ULS_STR, SLE_QP (esercizio), SLV_EQU, dimenticando SLV_STR e includendo scorrettamente la combinazione di esercizio quasi-permanente.",
+  "corretto": "mead_families usa esclusivamente le famiglie ULS/SLV (SLU_STR, SLU_EQU, SLV_STR, SLV_EQU), mai le famiglie di esercizio.",
+  "clausola": "NTC2018 §2.5.3",
+  "impatto": "nessuno sul caso guida (la famiglia SLU_STR domina comunque, 1533,25 kNm invariato); l'esito cambia per altri casi (vedi test dedicato)",
+  "uscite": [
+   "flessione.mx_slu_kNm",
+   "flessione.my_slu_kNm"
+  ]
+ },
+ {
+  "id": "plinti-isolati/momento-mensola-misurato-dal-centro-non-dal-filo-pilastro",
+  "titolo": "Il momento a sbalzo della soletta è misurato dal centro del plinto, ignorando il pilastro/plinto rialzato",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-plinto-isolato"
+  ],
+  "cella": "INPUT!W3, X3",
+  "foglio": "La lunghezza a sbalzo per il momento è sempre metà larghezza del plinto (più l'eccentricità), come se non ci fosse alcun pilastro o plinto rialzato.",
+  "corretto": "momento_cantilever_kNm sottrae la semilarghezza del pilastro/plinto rialzato, misurando lo sbalzo dal filo del pilastro come richiesto dalla verifica a flessione della sezione critica.",
+  "clausola": "NTC2018 §4.1.6.1.1",
+  "impatto": "nessuno sul caso guida (nessun plinto rialzato); diverge quando è presente un plinto rialzato",
+  "uscite": [
+   "flessione.mx_slu_kNm",
+   "flessione.my_slu_kNm"
+  ]
+ },
+ {
+  "id": "plinti-isolati/eccentricita-cantilever-x-y-scambiate",
+  "titolo": "Il momento a sbalzo lungo X usa l'eccentricità di Y e viceversa, invertendo la convenzione degli assi",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-plinto-isolato"
+  ],
+  "cella": "INPUT!W3, X3, T13, T14",
+  "foglio": "Il momento a sbalzo per l'armatura lungo X viene allungato dall'eccentricità eY, e quello lungo Y dall'eccentricità eX — l'opposto della convenzione usata dal resto del calcolo (ex/ey associati a MYY/MXX).",
+  "corretto": "L'eccentricità del cantilever accoppia ex con lo sbalzo X e ey con lo sbalzo Y, in modo coerente con il resto del modello; la stessa correzione è usata anche per i momenti di esercizio.",
+  "clausola": "NTC2018 §4.1.6.1.1",
+  "impatto": "nessuno sul caso guida (ex=ey=0); diverge quando ex≠ey",
+  "uscite": [
+   "flessione.mx_slu_kNm",
+   "flessione.my_slu_kNm"
+  ]
+ },
+ {
+  "id": "plinti-isolati/phi-min-divisore-500-invece-di-fyk",
+  "titolo": "Il diametro minimo di armatura divide sempre per l'acciaio da 500 N/mm², anche con una classe di armatura diversa",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-plinto-isolato"
+  ],
+  "cella": "INPUT!T25",
+  "foglio": "Il rapporto 0,26·fctm/fyk usa il valore letterale 500 al posto del reale fyk dell'acciaio scelto.",
+  "corretto": "_phi_min_mm usa il vero fyk in modalità standard; in modalità legacy resta il valore 500 letterale.",
+  "clausola": "NTC2018 §4.1.6.1.1",
+  "impatto": "nessuno sul caso guida (fyk=500 coincide con il letterale); diverge con classi di acciaio diverse (es. fyk=450)",
+  "uscite": [
+   "flessione.phi_min_mm"
+  ]
+ },
+ {
+  "id": "plinti-isolati/diametro-armatura-arrotondato-a-pari-non-commerciale",
+  "titolo": "Il diametro dell'armatura è arrotondato al millimetro pari superiore, non al diametro realmente commerciale",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-plinto-isolato"
+  ],
+  "cella": "INPUT!T21, T23, T25",
+  "foglio": "Il diametro calcolato è arrotondato per eccesso al millimetro pari più vicino, un diametro non necessariamente in vendita.",
+  "corretto": "Il diametro è arrotondato per eccesso al valore commerciale più vicino della serie UNI EN 10080.",
+  "clausola": "UNI EN 10080 (serie diametri commerciali)",
+  "impatto": "nessuno sul caso guida (20 mm è già un diametro commerciale in entrambe le serie)",
+  "uscite": [
+   "flessione.phi_x_mm",
+   "flessione.phi_y_mm"
+  ]
+ },
+ {
+  "id": "plinti-isolati/sezione-parzializzata-altezza-lorda-non-effettiva",
+  "titolo": "Le tensioni di esercizio in sezione parzializzata usano l'altezza lorda del plinto invece dell'altezza utile effettiva",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-plinto-isolato"
+  ],
+  "cella": "INPUT!X7, X8",
+  "foglio": "Le formule della sezione parzializzata usano l'altezza lorda H del plinto sia come profondità dell'asse neutro che come braccio interno, mentre il dimensionamento a flessione poco sopra usa già correttamente l'altezza utile d.",
+  "corretto": "sle.py passa l'altezza utile effettiva d = H − copriferro − margine in modalità standard; in modalità legacy resta H.",
+  "clausola": "EC2 §7.2/§7.3",
+  "impatto": "su un caso realistico (b=4000, H=800, copriferro=80, As=6000 mm², M=500 kNm) la modalità legacy sottostima σs del 16,5% e σc del 26,6%",
+  "uscite": [
+   "sle.sigma_c_qp_MPa",
+   "sle.sigma_s_qp_MPa"
+  ]
+ },
+ {
+  "id": "plinti-isolati/sle-famiglia-assente-passa-a-zero",
+  "titolo": "Le verifiche di esercizio davano un esito positivo fittizio quando la famiglia non era presente",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-plinto-isolato"
+  ],
+  "cella": "INPUT!X16:X30",
+  "foglio": "Quando una famiglia di combinazioni non è presente nella tabella, la pressione massima corrispondente diventa 0,0 e la verifica di esercizio riporta un esito positivo su una verifica che in realtà non è mai stata effettuata.",
+  "corretto": "Quando la famiglia non è presente non viene emessa alcuna verifica per quella grandezza, invece di un esito positivo fittizio.",
+  "clausola": "EC2 §7.2/§7.3",
+  "impatto": "nessuno sui casi guida/oracolo (tutte e tre le famiglie di esercizio sono presenti)",
+  "uscite": [
+   "sle"
+  ]
+ },
+ {
+  "id": "plinti-isolati/clausola-portanza-etichettata-come-verifica-ntc-completa",
+  "titolo": "La clausola di portanza era etichettata come verifica NTC2018 completa, che in realtà non esegue",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-plinto-isolato"
+  ],
+  "cella": "CHECKS!P16",
+  "foglio": "La verifica di portanza è etichettata 'NTC2018 §6.4.2.1', ma confronta solo la pressione massima con una resistenza ammissibile inserita dall'utente, senza alcun calcolo di capacità portante (qlim, area efficace, γR=2,3).",
+  "corretto": "La clausola è sostituita da un'etichetta esplicita che dichiara il confronto con la resistenza ammissibile, non una verifica NTC2018 §6.4.2.1 completa, in entrambe le modalità (solo testo, nessun valore numerico cambia).",
+  "clausola": "",
+  "impatto": "nessuno (solo etichetta/metadato)",
+  "uscite": []
+ },
+ {
+  "id": "plinti-isolati/fattore-mpa-kgcm2-approssimato",
+  "titolo": "Le pressioni riportate in kg/cm² usano un fattore di conversione approssimato invece di quello esatto",
+  "tipo": "da_verificare",
+  "strumenti": [
+   "fond-plinto-isolato"
+  ],
+  "cella": "CHECKS!Q, R, W, Y, AA",
+  "foglio": "Ogni pressione riportata in kg/cm² moltiplica per il letterale 10 invece del fattore esatto (1 MPa = 1000/98,0665 ≈ 10,1972 kg/cm²).",
+  "corretto": "In modalità legacy resta il fattore 10 del foglio; in modalità standard si usa il fattore esatto.",
+  "clausola": "",
+  "impatto": "≈1,97% su ogni pressione riportata in kg/cm² (es. σt,total 1,66283 kg/cm² legacy contro ≈1,6957 kg/cm² esatto)",
+  "uscite": []
+ }
+]

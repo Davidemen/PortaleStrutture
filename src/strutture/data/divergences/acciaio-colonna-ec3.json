@@ -1,0 +1,330 @@
+[
+ {
+  "id": "acciaio-colonna-ec3/gamma-m-hardcoded-a-1",
+  "titolo": "I coefficienti gammaM0/gammaM1 sono input liberi scollegati dai valori di norma",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "acciaio-colonna-h-ec3"
+  ],
+  "cella": "H12/H13",
+  "foglio": "gammaM0 e gammaM1 sono celle di input libero, scollegate da Materiali!E4:E5 (1.05/1.05): se l'utente le lascia a 1 ottiene resistenze non conservative di circa il 5%.",
+  "corretto": "Se il campo e' lasciato vuoto, il default e' gammaM0=gammaM1=1.05 (valori di norma); resta possibile sovrascriverlo, con un avviso se il valore differisce da quello standard.",
+  "clausola": "EN1993-1-1 §6.1",
+  "impatto": "nessuno sul caso golden (gammaM0=gammaM1=1 passato esplicitamente)",
+  "uscite": [
+   "materiali.gamma_m0",
+   "materiali.gamma_m1"
+  ]
+ },
+ {
+  "id": "acciaio-colonna-ec3/fud-diviso-gamma-m0",
+  "titolo": "fud e' calcolato dividendo fuk per gammaM0 invece che per gammaM2",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "acciaio-colonna-h-ec3"
+  ],
+  "cella": "H15",
+  "foglio": "fud = fuk / gammaM0 (cella non usata da nessun'altra formula del foglio, output cosmetico).",
+  "corretto": "fud = fuk / gammaM2 (gammaM2=1.25), come richiesto dalla resistenza a rottura delle sezioni tese.",
+  "clausola": "EN1993-1-1 §6.2.3(1)",
+  "impatto": "nessuno sulle verifiche (fud non e' usato a valle); a gammaM0=1.05: fud=428.571 MPa (foglio) vs 360.0 MPa (corretto)",
+  "uscite": [
+   "materiali.fud_MPa"
+  ]
+ },
+ {
+  "id": "acciaio-colonna-ec3/alpha-instabilita-flessionale-non-da-curva",
+  "titolo": "Il coefficiente alpha di instabilita flessionale non deriva dalla curva di stabilita",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "acciaio-colonna-h-ec3"
+  ],
+  "cella": "Y25/Y26",
+  "foglio": "alpha_yy/alpha_zz sono scelti con un IF sul tipo di lavorazione (laminato a caldo/formato a freddo), duplicando la logica della curva invece di derivare dalla curva stessa.",
+  "corretto": "La curva di instabilita (Tab. 6.2) e' derivata per ciascun asse dal rapporto h/b e dallo spessore ala, poi alpha e' letto dalla tabella unica ALPHA_PER_CURVA, la stessa gia' usata per la curva d'instabilita flesso-torsionale.",
+  "clausola": "EN1993-1-1 Tab. 6.1/6.2",
+  "impatto": "sul caso golden (h/b=1.79>1.2, tf=12<=40mm): chi_yy 0.588066 -> 0.655700, chi_zz 0.886636 -> 0.918017, utilizzo_yy 0.230307 -> 0.222495",
+  "uscite": [
+   "instabilita_flessionale.phi_yy",
+   "instabilita_flessionale.phi_zz",
+   "instabilita_flessionale.chi_yy",
+   "instabilita_flessionale.chi_zz"
+  ]
+ },
+ {
+  "id": "acciaio-colonna-ec3/tipo-lavorazione-curva-lt-da-verificare",
+  "titolo": "La voce 'formato a freddo' potrebbe non essere la curva EC3 corretta per profili H aperti",
+  "tipo": "da_verificare",
+  "strumenti": [
+   "acciaio-colonna-h-ec3"
+  ],
+  "cella": "BC17/BC25",
+  "foglio": "Il menu 'lavorazione' (laminato a caldo/formato a freddo) usa la terminologia della Tab. 6.2 per sezioni cave, ma la soglia h/b della curva d'instabilita flesso-torsionale segue invece la regola della Tab. 6.3 per profili I laminati/saldati.",
+  "corretto": "Mantenuto identico in entrambe le modalita': non e' certo se 'formato a freddo' debba mappare sulla riga profili saldati della Tab. 6.2 per una sezione H aperta; non inventata una clausola.",
+  "clausola": "EN1993-1-1 Tab. 6.2/6.3",
+  "impatto": "",
+  "uscite": []
+ },
+ {
+  "id": "acciaio-colonna-ec3/mrd-y-doppia-divisione-gamma-m0",
+  "titolo": "Il momento resistente MRd,y e' diviso due volte per gammaM0",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "acciaio-colonna-h-ec3"
+  ],
+  "cella": "D33",
+  "foglio": "D33 = G31*W/1e6/H12, dove G31 (fy') e' gia' fyk/gammaM0: la divisione per H12 (gammaM0) e' quindi applicata due volte, a differenza di MRd,z e delle altre formule che usano fyd una sola volta.",
+  "corretto": "mrd_y_kNm non applica la seconda divisione, in linea con mrd_z_kNm.",
+  "clausola": "EN1993-1-1 §6.2.5",
+  "impatto": "nessuno a gammaM0=1 (caso golden); a gammaM0=1.05: MRd,y=590.881 kNm (foglio) vs 620.425 kNm (corretto)",
+  "uscite": [
+   "flessione.mrd_y_kNm"
+  ]
+ },
+ {
+  "id": "acciaio-colonna-ec3/verifica-taglio-assi-scambiati",
+  "titolo": "Le verifiche a taglio anima/ali confrontano la domanda dell'asse sbagliato",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "acciaio-colonna-h-ec3"
+  ],
+  "cella": "J26/J36",
+  "foglio": "La verifica 'anima' confronta il taglio delle ali (Vz,sd) invece del taglio proprio dell'anima (Vy,sd), e viceversa per la verifica 'ali'.",
+  "corretto": "Ogni verifica confronta la capacita' con la domanda del proprio asse.",
+  "clausola": "EN1993-1-1 §6.2.6(2)",
+  "impatto": "nessuno sul caso golden (entrambi i tagli molto al di sotto di entrambe le capacita')",
+  "uscite": [
+   "taglio.verifica_anima",
+   "taglio.verifica_ali"
+  ]
+ },
+ {
+  "id": "acciaio-colonna-ec3/cmz-usa-iyy-invece-di-izz",
+  "titolo": "Il coefficiente Cmz per diagrammi di tipo 2 usa il momento d'inerzia dell'asse sbagliato",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "acciaio-colonna-h-ec3"
+  ],
+  "cella": "AN53",
+  "foglio": "Cmz (ramo diagramma di tipo 2) riusa Iyy invece di Izz, un copia-incolla non aggiornato rispetto a Cmy.",
+  "corretto": "Il ramo di tipo 2 usa Izz per Cmz.",
+  "clausola": "EN1993-1-1 Annex A / Tab. B.3",
+  "impatto": "non esercitato dal caso golden (diagramma tipo 1); nel caso oracolo con diagramma tipo 2: Cmz = 4.6957 (foglio) vs 1.3363 (corretto)",
+  "uscite": [
+   "interazione.cmz"
+  ]
+ },
+ {
+  "id": "acciaio-colonna-ec3/chi-lt-radicando-incompleto",
+  "titolo": "Il fattore chi_LT omette un termine dalla radice quadrata",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "acciaio-colonna-h-ec3"
+  ],
+  "cella": "U37",
+  "foglio": "Il radicando della formula di chi_LT manca del termine phi_LT^2 richiesto dalla norma.",
+  "corretto": "chi_LT usa la formula standard EN1993-1-1 §6.3.2.2 con il radicando completo.",
+  "clausola": "EN1993-1-1 §6.3.2.2",
+  "impatto": "nessuno sul caso golden (chi_LT saturato a 1); su un caso con lt=8000mm: chi_LT = 0.537235 (foglio) vs 0.527587 (corretto)",
+  "uscite": [
+   "instabilita_torso_flessionale.chi_lt"
+  ]
+ },
+ {
+  "id": "acciaio-colonna-ec3/eq-6-61-terzo-termine-gamma-m1-extra",
+  "titolo": "Il terzo termine dell'equazione 6.61 ha una divisione per gammaM1 di troppo",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "acciaio-colonna-h-ec3"
+  ],
+  "cella": "Y47",
+  "foglio": "Il terzo termine dell'eq. 6.61 manca delle parentesi attorno a Q40/H13 presenti nel corrispondente termine dell'eq. 6.62, alterando il raggruppamento della divisione per gammaM1.",
+  "corretto": "L'eq. 6.61 raggruppa il termine come l'eq. 6.62.",
+  "clausola": "EN1993-1-1 §6.3.3 eq. 6.61",
+  "impatto": "nessuno a gammaM1=1 (caso golden); a gammaM1=1.05 l'utilizzo_yy cambia in modo significativo",
+  "uscite": [
+   "interazione.utilizzo_yy"
+  ]
+ },
+ {
+  "id": "acciaio-colonna-ec3/v54-termine-assiale-mille-volte-piccolo",
+  "titolo": "Nel controllo lineare semplificato il termine assiale e' scalato in modo errato di circa 1000 volte",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "acciaio-colonna-h-ec3"
+  ],
+  "cella": "V54",
+  "foglio": "Il termine assiale usa Nsd/(A*fyd) con A*fyd in Newton anziche' in kN, rendendolo circa 1000 volte piu' piccolo del rapporto n = Nsd/Npl,Rd inteso, annullando di fatto il contributo assiale.",
+  "corretto": "Il termine assiale usa n gia' calcolato correttamente altrove (H46), coerente con le altre verifiche.",
+  "clausola": "EN1993-1-1 §6.2.9.1",
+  "impatto": "sul caso golden: V54 = 0.185370 (foglio) vs 0.232381 (corretto), verifica comunque soddisfatta",
+  "uscite": [
+   "interazione_semplificata.v54"
+  ]
+ },
+ {
+  "id": "acciaio-colonna-ec3/trigger-taglio-elevato-asse-scambiato",
+  "titolo": "Il criterio di taglio elevato per la riduzione del momento resistente legge l'asse sbagliato",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "acciaio-colonna-h-ec3"
+  ],
+  "cella": "G31/G41",
+  "foglio": "Il trigger di riduzione di MRd,y legge il taglio delle ali (Vz,sd) confrontato con la capacita' dell'anima, mentre il fattore di riduzione usa invece Vy,sd/Vpl,Rd,anima: trigger e fattore non usano lo stesso taglio e la stessa capacita' (stesso schema del punto su J26/J36), specularmente per MRd,z.",
+  "corretto": "Si usa un solo taglio per asse, coerente sia nel trigger sia nel fattore di riduzione.",
+  "clausola": "EN1993-1-1 §6.2.8(3)",
+  "impatto": "nessuno sul caso golden (nessuna riduzione innescata in nessuna modalita')",
+  "uscite": [
+   "flessione.mrd_y_kNm",
+   "flessione.mrd_z_kNm"
+  ]
+ },
+ {
+  "id": "acciaio-colonna-ec3/snellezze-adimensionali-usano-fyd",
+  "titolo": "Le snellezze adimensionali di instabilita usano fyd invece della resistenza caratteristica fyk",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "acciaio-colonna-h-ec3"
+  ],
+  "cella": "W23/W24/S34/AI35",
+  "foglio": "lambda_bar e lambda_bar_LT sono calcolati con fyd = fyk/gammaM0, mentre le formule di norma sono definite sulla resistenza caratteristica fyk (senza gammaM0).",
+  "corretto": "Il calcolo di lambda_bar/lambda_bar_LT usa fyk.",
+  "clausola": "EN1993-1-1 §6.3.1.2 eq. 6.50, §6.3.2.2 eq. 6.56",
+  "impatto": "nessuno a gammaM0=1 (caso golden); a gammaM0=1.05 lambda_yy aumenta di sqrt(1.05), riducendo chi_yy (piu' conservativo)",
+  "uscite": [
+   "instabilita_flessionale.lambda_yy",
+   "instabilita_flessionale.lambda_zz",
+   "instabilita_torso_flessionale.lambda_lt"
+  ]
+ },
+ {
+  "id": "acciaio-colonna-ec3/interazione-doppia-divisione-gamma-m0-m1",
+  "titolo": "Le equazioni di interazione 6.61/6.62 applicano gammaM0 e gammaM1 in serie invece che solo gammaM1",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "acciaio-colonna-h-ec3"
+  ],
+  "cella": "Y47/Y50",
+  "foglio": "I denominatori delle equazioni di interazione sono costruiti da fyd = fyk/gammaM0 e poi divisi ancora per gammaM1, risultando divisi per gammaM0*gammaM1 invece che per il solo gammaM1 richiesto dalla norma.",
+  "corretto": "I denominatori sono costruiti dalla resistenza caratteristica fyk e divisi una sola volta per gammaM1.",
+  "clausola": "EN1993-1-1 §6.3.3 eq. 6.61/6.62",
+  "impatto": "nessuno a gammaM0=gammaM1=1 (caso golden); a gammaM0=gammaM1=1.05 i denominatori corretti sono 1.05 volte maggiori, riducendo l'utilizzo riportato",
+  "uscite": [
+   "interazione.utilizzo_yy",
+   "interazione.utilizzo_zz",
+   "sezione.npl_rk_kN",
+   "sezione.mpl_y_rk_kNm",
+   "sezione.mpl_z_rk_kNm"
+  ]
+ },
+ {
+  "id": "acciaio-colonna-ec3/czy-usa-wz-invece-di-wy",
+  "titolo": "Il coefficiente Czy usa l'esponente della snellezza dell'asse sbagliato",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "acciaio-colonna-h-ec3"
+  ],
+  "cella": "AL72",
+  "foglio": "Czy usa wz^5 invece di wy^5 (copia-incolla dal termine analogo Cyz), sovrastimando Czy e quindi kzy.",
+  "corretto": "Czy usa wy^5, coerente con il prefattore (wy-1) gia' usato.",
+  "clausola": "EN1993-1-1 Annex A, Tab. A.1",
+  "impatto": "non esercitato dal caso golden (Mz,sd quasi nullo)",
+  "uscite": [
+   "interazione.kzy"
+  ]
+ },
+ {
+  "id": "acciaio-colonna-ec3/i56-usa-mpl-invece-di-mn-rd",
+  "titolo": "Il controllo dell'eq. 6.41 usa il momento plastico non ridotto invece di quello ridotto dall'assiale",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "acciaio-colonna-h-ec3"
+  ],
+  "cella": "I56",
+  "foglio": "I56 divide per Mpl,Rd (non ridotto) invece che per MN,Rd (ridotto dallo sforzo assiale), gia' calcolato altrove per il controllo lineare, sottostimando l'utilizzo senza limite.",
+  "corretto": "I56 usa MN,y,Rd/MN,z,Rd (ridotti dall'assiale) al denominatore.",
+  "clausola": "EN1993-1-1 §6.2.9.1(6) eq. 6.41",
+  "impatto": "piccolo sul caso golden (n=0.047 basso); l'effetto cresce con n",
+  "uscite": [
+   "interazione_semplificata.i56"
+  ]
+ },
+ {
+  "id": "acciaio-colonna-ec3/mn-rd-z-formula-sbagliata",
+  "titolo": "Il momento resistente ridotto sull'asse debole usa una formula impropria dell'asse forte",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "acciaio-colonna-h-ec3"
+  ],
+  "cella": "H50",
+  "foglio": "Il fattore 'a' per l'asse debole e' calcolato come rapporto legato all'area dell'anima (non il rapporto unico di norma basato sulle ali) e viene applicata l'interpolazione dell'asse forte anche all'asse debole, invece della formula propria di norma per l'asse debole.",
+  "corretto": "Si usa il fattore 'a' unico (gia' calcolato correttamente per l'asse forte) per entrambi gli assi e la formula propria di norma per l'asse debole (due rami: n<=a e n>a).",
+  "clausola": "EN1993-1-1 §6.2.9.1(5)",
+  "impatto": "non rilevante sul caso golden (n=0.047, ricade nel ramo n<=a in entrambe le formule); cresce con n",
+  "uscite": [
+   "interazione_semplificata.mn_rd_y_kNm",
+   "interazione_semplificata.mn_rd_z_kNm"
+  ]
+ },
+ {
+  "id": "acciaio-colonna-ec3/epsilon-eta-limite-taglio-instabilita",
+  "titolo": "Epsilon/eta per l'instabilita a taglio usano fyd invece di fyk e il limite anima ha formula e verso invertiti",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "acciaio-colonna-h-ec3"
+  ],
+  "cella": "L30/L31/AD27/K32",
+  "foglio": "epsilon e eta sono calcolati sulla resistenza di progetto fyd invece che su quella caratteristica fyk; il limite hw/t moltiplica per eta invece di dividere, e la verifica confronta hw/t <= limite invece che hw/t > limite come richiesto per stabilire se serve la verifica a instabilita' a taglio.",
+  "corretto": "epsilon/eta usano fyk; il limite e' 72*eps/eta; la verifica scatta per hw/t > limite.",
+  "clausola": "EN1993-1-1 Tab. 5.2, EN1993-1-5 §5.1(2)",
+  "impatto": "sul caso golden l'esito 'richiede_verifica' cambia tra le due modalita' per la geometria della sezione",
+  "uscite": [
+   "taglio_instabilita.limite_72_eps_eta",
+   "taglio_instabilita.richiede_verifica"
+  ]
+ },
+ {
+  "id": "acciaio-colonna-ec3/cw-formula-taglio-instabilita-da-verificare",
+  "titolo": "La formula del coefficiente cw per l'instabilita a taglio usa sempre il ramo intermedio",
+  "tipo": "da_verificare",
+  "strumenti": [
+   "acciaio-colonna-h-ec3"
+  ],
+  "cella": "C67",
+  "foglio": "cw = 0.83/lambda_w e' applicata sempre, senza distinguere i rami della Tab. 5.1 per lambda_w sotto 0.83/eta o sopra 1.08.",
+  "corretto": "Riprodotto identico in entrambe le modalita': i rami mancanti non sono implementati, non inventata la clausola.",
+  "clausola": "EN1993-1-5 Tab. 5.1",
+  "impatto": "",
+  "uscite": [
+   "taglio_instabilita.cw"
+  ]
+ },
+ {
+  "id": "acciaio-colonna-ec3/cij-denominatore-lambda-zz-da-verificare",
+  "titolo": "I termini correttivi Cij dell'Annex A usano la snellezza invece del fattore chi",
+  "tipo": "da_verificare",
+  "strumenti": [
+   "acciaio-colonna-h-ec3"
+  ],
+  "cella": "AI30-AI83",
+  "foglio": "I termini correttivi Cij dividono per lambda_zz invece che per chi_zz.",
+  "corretto": "Riprodotto identico in entrambe le modalita': non confermato come bug distinto dal punto Czy, non c'e' un riferimento normativo certo per ri-derivare i termini dell'Annex A.",
+  "clausola": "EN1993-1-1 Annex A",
+  "impatto": "",
+  "uscite": []
+ },
+ {
+  "id": "acciaio-colonna-ec3/classe-4-non-implementata",
+  "titolo": "La classe di sezione 4 e' accettata ma trattata come classe 3 senza larghezze efficaci",
+  "tipo": "da_verificare",
+  "strumenti": [
+   "acciaio-colonna-h-ec3"
+  ],
+  "cella": "Y16",
+  "foglio": "Il menu accetta 'class 4' ma tutte le formule (Npl, Mpl, snellezze) usano la sezione lorda come per la classe 3: non esiste ne' nel foglio ne' nel modulo alcun calcolo delle larghezze/moduli efficaci EN1993-1-5 §4.4.",
+  "corretto": "In modalita' standard la classe 4 solleva un errore esplicito invece di calcolare silenziosamente con la sezione lorda non conservativa; la modalita' foglio riproduce il comportamento implicito di classe 3.",
+  "clausola": "EN1993-1-5 §4.4 (non implementata)",
+  "impatto": "nessuno sul caso golden (classe 3); qualunque uso con classe 4 in modalita' standard ora solleva un errore",
+  "uscite": []
+ }
+]

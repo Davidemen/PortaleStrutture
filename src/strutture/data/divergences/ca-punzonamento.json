@@ -1,0 +1,98 @@
+[
+ {
+  "id": "ca-punzonamento/diametro-staffa-28-probabile-refuso",
+  "titolo": "Il diametro staffa 28mm nel menu a tendina è probabilmente un refuso per 18mm",
+  "tipo": "da_verificare",
+  "strumenti": ["ca-punzonamento"],
+  "cella": "Shotblast_225N!D55",
+  "foglio": "menu a tendina \"8,10,12,14,16,28,20,22\", 28 fuori sequenza rispetto ai diametri commerciali standard",
+  "corretto": "28mm accettato solo in modalità 'riproduci il foglio'; in modalità standard viene rifiutato (18mm è il diametro commerciale valido)",
+  "clausola": "",
+  "impatto": "nessuno per il caso golden (Ø=12mm)",
+  "uscite": []
+ },
+ {
+  "id": "ca-punzonamento/fywd-ef-senza-limite",
+  "titolo": "La tensione efficace di snervamento delle staffe non è mai limitata a fyd",
+  "tipo": "errore_foglio",
+  "strumenti": ["ca-punzonamento"],
+  "cella": "Shotblast_225N!H56",
+  "foglio": "fywd,ef = 250+0,25·d, senza limite superiore",
+  "corretto": "fywd,ef = min(250+0,25·d; fyd), come richiesto da EC2 eq. 6.52",
+  "clausola": "EC2 eq. 6.52",
+  "impatto": "nessuno a d=430mm (357,5 MPa < fyd=391,3 MPa per B450C); diventa rilevante per d≳560mm",
+  "uscite": []
+ },
+ {
+  "id": "ca-punzonamento/armatura-calcolata-anche-se-non-necessaria",
+  "titolo": "L'armatura a punzonamento è sempre calcolata anche quando la verifica passa già senza armatura",
+  "tipo": "errore_foglio",
+  "strumenti": ["ca-punzonamento"],
+  "cella": "Shotblast_225N!D41:D62",
+  "foglio": "il blocco armatura viene sempre calcolato, con valori intermedi che diventano negativi e privi di significato quando l'armatura non serve",
+  "corretto": "l'armatura risulta assente (nessun valore) quando la verifica del perimetro critico passa già senza armatura",
+  "clausola": "",
+  "impatto": "il caso golden non necessita armatura: presente (con valori negativi del foglio) in modalità 'riproduci il foglio', assente in modalità standard",
+  "uscite": ["armatura"]
+ },
+ {
+  "id": "ca-punzonamento/area-perimetro-colonna-circolare-errata",
+  "titolo": "L'area del perimetro di controllo usa sempre la formula rettangolare, sbagliata per colonne circolari",
+  "tipo": "errore_foglio",
+  "strumenti": ["ca-punzonamento"],
+  "cella": "Shotblast_225N (passi 5/7, colonna AS)",
+  "foglio": "A_a = A·B + 4·MIN(A,B)·a + π·a², usata anche per colonne circolari (A=0), che elimina il termine incrociato e l'area di base corretti",
+  "corretto": "formula dell'area del perimetro rettangolare arrotondato/circolare in base alla forma reale della colonna",
+  "clausola": "EC2 §6.4.2",
+  "impatto": "nessuno per il caso golden (colonna quadrata A=B=400, terreno assente); colonna circolare Ø500mm, pterreno=0,02MPa: A_a 1,506e6 mm² (foglio) -> 2,235e6 mm² (corretto, +48%)",
+  "uscite": ["geometria.u0_mm"]
+ },
+ {
+  "id": "ca-punzonamento/rho-l-punzonamento-senza-limite-2pc",
+  "titolo": "Il rapporto di armatura longitudinale ρl usato nella resistenza a punzonamento non è mai limitato al 2%",
+  "tipo": "errore_foglio",
+  "strumenti": ["ca-punzonamento"],
+  "cella": "Shotblast_225N!D35/D37",
+  "foglio": "ρl mai limitato prima del termine a radice cubica, solo un messaggio informativo lo segnala",
+  "corretto": "ρl sempre limitato al 2% prima del termine a radice cubica, in entrambe le modalità (il modulo condiviso usato da questo strumento è conforme alla norma anche in modalità 'riproduci il foglio')",
+  "clausola": "EC2 §6.4.4(1)",
+  "impatto": "nessuno per il caso golden (ρl=0,00365); caso di verifica ρl=0,0231, px=py=50mm, φ=25mm: termine calcestruzzo 0,8728 MPa (non limitato) -> 0,8318 MPa (limitato, -4,9%)",
+  "uscite": ["perimetro_critico.rho"]
+ },
+ {
+  "id": "ca-punzonamento/altezza-utile-non-positiva-crash",
+  "titolo": "Un'altezza utile non positiva causava un errore generico invece di un messaggio chiaro",
+  "tipo": "aggiornamento_normativo",
+  "strumenti": ["ca-punzonamento"],
+  "cella": "",
+  "foglio": "n/a, riguarda solo il codice: combinazioni di H, copriferro e diametri barre che rendono d<=0 causavano un errore Python generico",
+  "corretto": "controllo esplicito con messaggio in italiano prima di procedere al calcolo, in entrambe le modalità",
+  "clausola": "",
+  "impatto": "nessuno per i casi golden/oracolo (d comodamente positivo)",
+  "uscite": ["geometria.d_mm"]
+ },
+ {
+  "id": "ca-punzonamento/verifica-asw-min-mancante",
+  "titolo": "L'area minima delle staffe (eq. 9.11) era calcolata ma mai confrontata con l'armatura effettiva in una verifica",
+  "tipo": "aggiornamento_normativo",
+  "strumenti": ["ca-punzonamento"],
+  "cella": "",
+  "foglio": "n/a, riguarda solo il codice: asw,min calcolata ma non confrontata con l'area staffa effettiva",
+  "corretto": "aggiunta la verifica 'asw_min' che confronta l'area staffa effettiva con il minimo richiesto, in entrambe le modalità (il foglio non ha una verifica equivalente)",
+  "clausola": "EN 1992-1-1 §9.4.3(2) eq. (9.11)",
+  "impatto": "nessun impatto sui valori golden/oracolo, solo una nuova verifica",
+  "uscite": []
+ },
+ {
+  "id": "ca-punzonamento/perimetro-troncato-bordo-angolo-non-implementato",
+  "titolo": "Per colonne di bordo/angolo, il perimetro critico non è troncato al bordo libero",
+  "tipo": "da_verificare",
+  "strumenti": ["ca-punzonamento"],
+  "cella": "",
+  "foglio": "il foglio applica il metodo semplificato del fattore β tabellato (interno 1,15/bordo 1,4/angolo 1,5) sul perimetro pieno non troncato, come previsto da EC2 §6.4.3(3)-(4) come alternativa esplicita al metodo con perimetro troncato ed eccentricità nota (Fig. 6.15)",
+  "corretto": "mantenuto come il foglio, in attesa di conferma dall'ingegnere prima di aggiungere un'eventuale modalità con eccentricità esatta e perimetro troncato (richiederebbe un nuovo input)",
+  "clausola": "EC2 §6.4.3(3)-(4)",
+  "impatto": "",
+  "uscite": []
+ }
+]

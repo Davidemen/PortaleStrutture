@@ -1,0 +1,26 @@
+[
+ {
+  "id": "ntc-site-seismic/ss-categoria-b-limite-inferiore-basso",
+  "titolo": "Il coefficiente di amplificazione stratigrafica Ss per il suolo B ha un limite inferiore troppo basso",
+  "tipo": "errore_foglio",
+  "strumenti": ["sisma-parametri-sito", "sisma-completo", "muro-sostegno"],
+  "cella": "Tabelle!E8",
+  "foglio": "Ss e' limitato all'intervallo [0.40, 1.20]",
+  "corretto": "Ss e' limitato all'intervallo [1.00, 1.20], come richiesto dalla Tab. 3.2.IV",
+  "clausola": "NTC2018 Tab. 3.2.IV",
+  "impatto": "nessuno sul caso golden (valore grezzo 1.3045, limitato a 1.20 in entrambi i modi); la divergenza compare solo per F0*ag alti, es. F0=2.5, ag=1.1g: foglio da' Ss=0.40, corretto da' Ss=1.00",
+  "uscite": ["amplificazione.ss", "parametri_sito.amplificazione.ss", "parametri_sismici.ss"]
+ },
+ {
+  "id": "ntc-site-seismic/vita-riferimento-senza-minimo-35-anni",
+  "titolo": "La vita di riferimento VR non ha il minimo di 35 anni",
+  "tipo": "errore_foglio",
+  "strumenti": ["sisma-vita-riferimento", "sisma-completo"],
+  "cella": "Sisma!I10",
+  "foglio": "VR = VN*Cu senza limite inferiore, puo' scendere sotto 35 anni",
+  "corretto": "VR = max(VN*Cu, 35) come richiesto",
+  "clausola": "NTC2018 §2.4.3",
+  "impatto": "nessuno sul caso golden (VN=50, Cu=1, VR=50); per VN=10, classe I (Cu=0.7): foglio da' VR=7, corretto da' VR=35",
+  "uscite": ["vita.vr", "vita_riferimento.vita.vr"]
+ }
+]

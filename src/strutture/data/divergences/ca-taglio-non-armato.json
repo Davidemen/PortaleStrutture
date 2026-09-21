@@ -1,0 +1,38 @@
+[
+ {
+  "id": "ca-taglio-non-armato/rho-l-senza-limite",
+  "titolo": "Il rapporto di armatura longitudinale ρl non è mai limitato al 2%",
+  "tipo": "errore_foglio",
+  "strumenti": ["ca-taglio-non-armato"],
+  "cella": "Foglio1!B17",
+  "foglio": "ρl = Asl/(bw·d), mai limitato",
+  "corretto": "ρl limitato a 0,02 come richiesto da NTC2018 §4.1.2.3.5.1",
+  "clausola": "NTC2018 §4.1.2.3.5.1",
+  "impatto": "nessuno per il caso golden (ρl=0,00223); caso di verifica Asl=25000/bw=1500/d=560: ρl 0,02976 (foglio, non limitato) -> 0,02 (corretto), riduce VRd,1",
+  "uscite": ["taglio.rho_l"]
+ },
+ {
+  "id": "ca-taglio-non-armato/verifica-rho-l-su-valore-gia-limitato",
+  "titolo": "La verifica del limite di armatura longitudinale confrontava il valore già limitato, mascherando i superamenti reali",
+  "tipo": "aggiornamento_normativo",
+  "strumenti": ["ca-taglio-non-armato"],
+  "cella": "",
+  "foglio": "n/a, riguarda solo la modalità standard: la verifica 'rapporto di armatura longitudinale entro il limite' confrontava il limite con il valore già limitato a 0,02, quindi non poteva mai fallire",
+  "corretto": "la verifica confronta ora il valore grezzo (non limitato) con il limite di 0,02; se il limite interviene, viene aggiunto un avviso esplicito; il valore usato nella formula di VRd,1 resta quello limitato",
+  "clausola": "NTC2018 §4.1.2.3.5.1",
+  "impatto": "nessuno per il caso golden e i casi oracolo (ρl ben sotto il limite in entrambi)",
+  "uscite": ["taglio.rho_l"]
+ },
+ {
+  "id": "ca-taglio-non-armato/incoerenza-fck-rck-non-segnalata",
+  "titolo": "Nessun controllo di coerenza tra fck digitato liberamente e Rck nel foglio a striscia (v2)",
+  "tipo": "aggiornamento_normativo",
+  "strumenti": ["ca-taglio-non-armato"],
+  "cella": "",
+  "foglio": "il foglio v2 (a striscia da 1m) accetta fck come input libero, scollegato da Rck, senza alcun controllo incrociato",
+  "corretto": "aggiunto un avviso in entrambe le modalità quando |fck - 0,83·Rck|/(0,83·Rck) > 5%; il calcolo di VRd resta invariato",
+  "clausola": "",
+  "impatto": "nessuno per il caso golden (fck=32 vs Rck-derivato 33,2, entro tolleranza, nessun avviso)",
+  "uscite": []
+ }
+]

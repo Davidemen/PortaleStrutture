@@ -30,12 +30,17 @@ def _static_dir(raw: str) -> Path:
     return path
 
 
+def _data_dir(raw: str) -> Path:
+    return Path(raw).expanduser().resolve()
+
+
 def apply_cli(settings: config.Settings, argv: list[str]) -> config.Settings:
     """Settings with command-line overrides applied (a new object; the input is not modified)."""
     parser = argparse.ArgumentParser(prog="python -m strutture.web", description="StruttureMenni web UI")
     parser.add_argument("--host", help="bind address(es), comma-separated")
     parser.add_argument("--port", type=_port)
     parser.add_argument("--static-dir", type=_static_dir, dest="static_dir", help="serve a different UI directory")
+    parser.add_argument("--data-dir", type=_data_dir, dest="data_dir", help="directory for the SQLite database (default: var/)")
     given = {key: value for key, value in vars(parser.parse_args(argv)).items() if value is not None}
     return dataclasses.replace(settings, **given)
 

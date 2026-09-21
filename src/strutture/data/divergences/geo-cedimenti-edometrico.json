@@ -1,0 +1,62 @@
+[
+ {
+  "id": "geo-cedimenti-edometrico/z-crit-manuale-non-derivata",
+  "titolo": "La profondità critica Z,crit del metodo edometrico è un valore manuale, non calcolato",
+  "tipo": "errore_foglio",
+  "strumenti": ["geo-cedimento-edometrico"],
+  "cella": "Edometrico!B18, B24:B28",
+  "foglio": "Z,crit è una cella con un numero scritto a mano (10000 cm); le celle B24:B25/B27:B28 preparano la formula di Cardano per calcolarla ma nessuna cella assembla mai la radice, quindi il calcolo automatico non è mai usato.",
+  "corretto": "profondita_critica.py risolve per bisezione la profondità dove Δσv,q scende sotto lo 0,1 di Δσ'v, usando la stessa tensione integrata dal metodo scelto; un input opzionale z_crit_input permette comunque di forzare un valore, riproducendo in modalità legacy il comportamento del foglio.",
+  "clausola": "criterio classico della profondità significativa (nessuna clausola NTC diretta)",
+  "impatto": "wed(f) invariato sul caso guida (2,9958 cm) perché lo stesso z_crit=10000 cm è passato esplicitamente; con z_crit calcolato automaticamente (≈7,73 m) invece del limite disattivato del foglio, wed(f) scende a 2,9792 cm (circa -0,6%)",
+  "uscite": ["profondita_critica", "cedimento.w_ed_cm", "cedimento.w_ed_mm"]
+ },
+ {
+  "id": "geo-cedimenti-edometrico/modulo-edometrico-zero-fuori-stratigrafia",
+  "titolo": "Il modulo edometrico oltre l'ultimo strato diventa 0 e genera un contributo di cedimento nullo silenzioso",
+  "tipo": "errore_foglio",
+  "strumenti": ["geo-cedimento-edometrico"],
+  "cella": "Edometrico!J",
+  "foglio": "La ricerca del modulo edometrico per una profondità oltre l'ultimo strato restituisce 0 invece di segnalare un errore, azzerando silenziosamente il contributo di cedimento di quella fetta.",
+  "corretto": "In modalità standard la ricerca degli strati solleva un errore che indica la profondità non coperta; in modalità legacy il contributo di quella fetta resta 0 come nel foglio.",
+  "clausola": "",
+  "impatto": "nessuno sul caso guida (la stratigrafia arriva a 118,9 m, ben oltre i 50 m integrati)",
+  "uscite": []
+ },
+ {
+  "id": "geo-cedimenti-edometrico/tensione-verticale-sempre-sommersa",
+  "titolo": "La tensione verticale efficace assume sempre falda alla base della fondazione, ignorando l'affondamento reale",
+  "tipo": "errore_foglio",
+  "strumenti": ["geo-cedimento-edometrico"],
+  "cella": "Edometrico!I, B24:B28",
+  "foglio": "La tensione verticale efficace usa sempre il peso di volume immerso a partire dal piano di posa, come se la falda fosse esattamente lì, indipendentemente dall'affondamento D del piano di posa.",
+  "corretto": "Un nuovo input opzionale falda (profondità della falda dal piano campagna) permette di calcolare la tensione totale efficace da piano campagna in modo coerente; in modalità legacy il comportamento resta identico (affondamento nullo, falda alla base).",
+  "clausola": "definizione classica di tensione efficace (nessuna clausola NTC diretta)",
+  "impatto": "nessuno sul caso guida (D=0); per un sito asciutto con affondamento, la tensione σ'v0 cambia sensibilmente (esempio: 40,97 kPa contro il reale 90 kPa a z=5 m)",
+  "uscite": ["righe"]
+ },
+ {
+  "id": "geo-cedimenti-edometrico/pressione-netta-senza-controllo-segno",
+  "titolo": "La pressione netta di progetto non controlla il segno e può diventare negativa senza un messaggio chiaro",
+  "tipo": "errore_foglio",
+  "strumenti": ["geo-cedimento-edometrico"],
+  "cella": "Edometrico!B12",
+  "foglio": "La pressione netta q'=q−γ·D non ha alcun controllo di segno; con un affondamento D elevato q' può diventare negativa e propagarsi come cedimento negativo o come errore poco chiaro più a valle.",
+  "corretto": "carico.pressione_netta genera subito un errore in italiano che indica q, γ e D non appena q' risulta non positiva, in entrambe le modalità.",
+  "clausola": "",
+  "impatto": "nessuno sul caso guida (D=0, q' sempre positiva)",
+  "uscite": ["carico.q_prime_kPa"]
+ },
+ {
+  "id": "geo-cedimenti-edometrico/unita-affondamento-non-confermata",
+  "titolo": "L'unità di misura dell'affondamento usato nella pressione netta non è confermata contro il foglio sorgente",
+  "tipo": "da_verificare",
+  "strumenti": ["geo-cedimento-edometrico"],
+  "cella": "Edometrico!B8",
+  "foglio": "Cella senza etichetta, usata solo dentro la formula q'=q−γ·D·0,0001; l'unità (metri) è dedotta dal fattore di conversione, non confermata contro il foglio Elastico_centrale_Newmark.",
+  "corretto": "Mantenuto come affondamento D in metri in entrambe le modalità, con l'incertezza segnalata nella descrizione del campo.",
+  "clausola": "",
+  "impatto": "",
+  "uscite": []
+ }
+]
