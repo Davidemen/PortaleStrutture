@@ -116,6 +116,14 @@ def test_mobile_flow(mobile_page: tuple[Page, PageCollectors], base_url: str) ->
     # `<summary>`) is moved inside the picker at this breakpoint (layout.js), so an unscoped
     # "summary" locator is ambiguous.
     picker.locator("> summary").click()
+    # WORKBENCH_SPEC finding G: rail categories are collapsed by default except the one holding
+    # the active tool -- on a fresh Home load nothing is active yet, so "Carichi" (the category
+    # "Pressione del vento" lives in) must be opened before its tool button is reachable. The
+    # category list itself only exists once the rail's own `fetchTools()` (a real network
+    # round-trip) resolves, so wait for it explicitly rather than chaining straight into a second
+    # click -- the two together could otherwise outlast the default per-action timeout.
+    picker.locator(".rail-group").first.wait_for(state="visible", timeout=10_000)
+    picker.locator(".rail-group summary", has_text="Carichi").click()
     picker.get_by_role("button", name="Vento", exact=False).first.click()
 
     load_example(page)
@@ -168,25 +176,44 @@ def test_chart_present(page: Page, base_url: str) -> None:
     goto_tool(page, base_url, "vento-cpe-rettangolare")
     load_example(page)
     submit(page)
-    expect(page.locator("svg")).to_have_count(0)
+    # Scoped to the chart container specifically (`.c-chart-wrap`, chart.js): an unscoped `svg`
+    # locator also matches the rail's own pictograms (js/icons.js, WORKBENCH_SPEC #12) and any
+    # sketch views the tool may have (js/sketch.js) -- neither is a "line chart for this tool".
+    expect(page.locator(".c-chart-wrap svg")).to_have_count(0)
 
 
 def test_print_media(page: Page, base_url: str) -> None:
     goto_tool(page, base_url, "vento-pressione")
     load_example(page)
     submit(page)
-    # "Stampa relazione" builds the print-only cartiglio (print.js only inserts it on demand,
-    # per DESIGN_SPEC §3) before the print stylesheet reshapes the sheet for @media print.
+    # WORKBENCH_SPEC §10/§11: "Stampa relazione" opens the report personalisation overlay first
+    # (js/relazione-overlay.js); its OWN "Stampa / Salva PDF" then builds the printed document FROM
+    # THE DATA into its own print-only container (js/relazione.js via js/relazione-overlay.js),
+    # never by reshaping this interactive sheet -- so the cartiglio only ever shows up inside
+    # #relazione-print-root. Wrapped in a zero-arg function: `page.evaluate` auto-invokes an
+    # expression whose completion value is itself a function, which a bare
+    # "a; window.print = () => {...};" string's last statement would be (flipping `__printed`
+    # immediately, before the real click).
+    page.evaluate("() => { window.__printed = false; window.print = () => { window.__printed = true; }; }")
     page.get_by_role("button", name="Stampa relazione").click()
-    page.emulate_media(media="print")
+    page.locator("#relazione-overlay").wait_for(state="visible")
+    page.get_by_role("button", name="Stampa / Salva PDF").click()
+    page.locator("#relazione-print-root .print-cartiglio").wait_for(state="attached")
+    assert page.evaluate("window.__printed") is True, "the overlay's own print action must still call window.print() when results are fresh"
+    page.keyboard.press("Escape")
+    page.locator("#relazione-overlay").wait_for(state="hidden")
 
-    cartiglio = page.locator(".print-cartiglio")
-    expect(cartiglio.first).to_be_visible()
-    cartiglio_text = cartiglio.first.inner_text()
-    assert "Pressione" in cartiglio_text, f"expected the tool title in the cartiglio, got: {cartiglio_text!r}"
-    assert "standard" in cartiglio_text or "foglio Excel" in cartiglio_text, "mode line must always print"
-    expect(page.locator("#tool-index")).to_be_hidden()
-    expect(page.get_by_role("button", name=CALCOLA)).to_be_hidden()
+    try:
+        page.emulate_media(media="print")
+        cartiglio = page.locator("#relazione-print-root .print-cartiglio")
+        expect(cartiglio).to_be_visible()
+        cartiglio_text = cartiglio.inner_text()
+        assert "Pressione" in cartiglio_text, f"expected the tool title in the cartiglio, got: {cartiglio_text!r}"
+        assert "standard" in cartiglio_text or "foglio Excel" in cartiglio_text, "mode line must always print"
+        expect(page.locator("#app")).to_be_hidden()
+        expect(page.get_by_role("button", name=CALCOLA)).to_be_hidden()
+    finally:
+        page.emulate_media(media=None)
 
 
 def test_copy_csv(page: Page, base_url: str) -> None:

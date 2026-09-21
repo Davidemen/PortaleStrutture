@@ -15,7 +15,9 @@ from .models import DirectionResult, VentoCpeInput
 
 _FRAZIONE_ETICHETTA = 0.22  # posizione dell'etichetta lungo il lato (non al centro: libera il centro
 # per la freccia del vento e per il testo, centrato, della quota sullo stesso lato — regola 5)
-_SCOSTAMENTO_ETICHETTA = 0.09  # frazione di max(b,d): distanza delle etichette c_pe fuori dal rettangolo
+_FRAZIONE_ETICHETTA_ORIZZONTALE = 0.06  # inizio del testo lungo una faccia orizzontale (ancora "start")
+_STACCO_SOTTO_FACCIA_ALTA = 2.4  # il testo cresce verso l'alto: sotto la faccia y=d serve ~1 riga in più
+_SCOSTAMENTO_ETICHETTA = 0.09  # frazione di max(b,d): distanza delle etichette c_pe dalla propria faccia, verso l'interno
 _MARGINE_QUOTA = 0.22  # frazione di max(b,d): distanza delle linee di quota dal rettangolo
 _FRAZIONE_FRECCIA = 0.4  # frazione della dimensione lungo cui soffia il vento: coda della freccia fuori dal rettangolo
 _TICK_ZONA_FRAZIONE = 0.05  # lunghezza dei trattini di confine zona, frazione di max(b,d)
@@ -70,13 +72,15 @@ def _vista_direzione1(b: float, d: float, b_vero: float, d_vero: float, direzion
     """Vento in +y: sopravento il lato y=0 (lungo b), laterali x=0/x=b, sottovento y=d.
     `b`/`d` sono le dimensioni disegnate (eventualmente compresse); `b_vero`/`d_vero` i valori
     reali, riportati nelle quote. Le pareti laterali corrono lungo y (profondità = d)."""
-    fb = _FRAZIONE_ETICHETTA * b
+    fb = _FRAZIONE_ETICHETTA_ORIZZONTALE * b
     bordi: _Bordi = (
         ((fb, 0.0), (0.0, -1.0)),
-        ((fb, d), (0.0, 1.0)),
+        ((b - fb, d), (0.0, 1.0)),
     )
     freccia = Freccia(coda=(b / 2.0, -_FRAZIONE_FRECCIA * d), punta=(b / 2.0, 0.0), stile="carico", testo="vento")
-    quota_b = Quota(p1=(0.0, 0.0), p2=(b, 0.0), distanza=-_MARGINE_QUOTA * max(b, d), testo=etichetta_quota("b", b_vero, "m"))
+    # Quota di b sul lato SOTTOVENTO (y=d): sul lato sopravento la freccia del vento e il suo testo
+    # (sotto la coda) occupano la stessa fascia centrale della quota. Verso +x la sinistra è +y = fuori.
+    quota_b = Quota(p1=(0.0, d), p2=(b, d), distanza=_MARGINE_QUOTA * max(b, d), testo=etichetta_quota("b", b_vero, "m"))
     quota_d = Quota(p1=(0.0, 0.0), p2=(0.0, d), distanza=_MARGINE_QUOTA * max(b, d), testo=etichetta_quota("d", d_vero, "m"))
     zone_forme = _zone_laterali_verticali(0.0, b, d, zone, max(b, d))
     return _vista("Pianta — direzione 1", b, d, direzione, bordi, freccia, quota_b, quota_d, zone_forme)
@@ -88,7 +92,7 @@ def _vista_direzione2(b: float, d: float, b_vero: float, d_vero: float, direzion
     Le pareti laterali corrono lungo x (profondità = b)."""
     fd = _FRAZIONE_ETICHETTA * d
     bordi: _Bordi = (
-        ((0.0, fd), (-1.0, 0.0)),
+        ((0.0, d - fd), (-1.0, 0.0)),
         ((b, fd), (1.0, 0.0)),
     )
     freccia = Freccia(coda=(-_FRAZIONE_FRECCIA * b, d / 2.0), punta=(0.0, d / 2.0), stile="carico", testo="vento")
@@ -181,8 +185,8 @@ def _vista(titolo: str, b: float, d: float, direzione: DirectionResult, bordi: _
     sopravento, sottovento = bordi
     scostamento = _SCOSTAMENTO_ETICHETTA * max(b, d)
     etichette = (
-        _etichetta_faccia(sopravento, scostamento, "c_pe,w", direzione.cpe_windward),
-        _etichetta_faccia(sottovento, scostamento, "c_pe,s", direzione.cpe_leeward),
+        _etichetta_faccia(sopravento, scostamento, "c_pe,w", direzione.cpe_windward, b),
+        _etichetta_faccia(sottovento, scostamento, "c_pe,s", direzione.cpe_leeward, b),
     )
     linee_zona, etichette_zona = zone_forme
     valore_laterale = _valore_con_segno(direzione.cpe_side) if direzione.cpe_side is not None else None
@@ -202,11 +206,18 @@ def _vista(titolo: str, b: float, d: float, direzione: DirectionResult, bordi: _
     return Vista(titolo=titolo, forme=forme)
 
 
-def _etichetta_faccia(bordo: _Bordo, scostamento: float, simbolo: str, valore: float | None) -> Etichetta | None:
-    """Etichetta del cpe ancorata sul lato (non al centro, per liberarlo per la freccia/la quota),
-    spostata verso l'esterno lungo la normale; None se il coefficiente non è definito (h/d > 5)."""
+def _etichetta_faccia(bordo: _Bordo, scostamento: float, simbolo: str, valore: float | None,
+                      larghezza: float) -> Etichetta | None:
+    """Etichetta del cpe DENTRO la pianta (un rettangolo vuoto), accanto alla propria faccia; None
+    se il coefficiente non è definito (h/d > 5). Fuori dal rettangolo il testo (largo quanto mezza
+    pianta) finiva a cavallo del bordo, sulla freccia del vento o sulle linee di quota.
+    Il testo cresce verso l'alto e verso destra dal proprio punto: sotto una faccia superiore serve
+    quindi più stacco (`_STACCO_SOTTO_FACCIA_ALTA`), e contro una faccia destra l'ancora è "end"."""
     if valore is None:
         return None
-    ancora, normale = bordo
-    punto = (ancora[0] + normale[0] * scostamento, ancora[1] + normale[1] * scostamento)
-    return Etichetta(punto=punto, testo=_valore_con_segno(valore), simbolo=simbolo, ancora="middle")
+    ancora_punto, normale = bordo
+    verso_dentro = _STACCO_SOTTO_FACCIA_ALTA if normale[1] > 0 else 1.0
+    punto = (ancora_punto[0] - normale[0] * scostamento, ancora_punto[1] - normale[1] * scostamento * verso_dentro)
+    # Faccia destra, o faccia orizzontale ancorata nella metà destra: il testo finisce sul punto.
+    ancora = "end" if normale[0] > 0 or (normale[0] == 0 and ancora_punto[0] > larghezza / 2.0) else "start"
+    return Etichetta(punto=punto, testo=_valore_con_segno(valore), simbolo=simbolo, ancora=ancora)

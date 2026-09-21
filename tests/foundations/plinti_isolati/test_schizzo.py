@@ -198,3 +198,23 @@ def test_composizione_su_input_realistici(nome: str) -> None:
     sketch = disegna(inputs, governante)
     problemi = layout_problems(sketch) + readability_problems(sketch) + overlap_problems(sketch)
     assert problemi == [], f"{nome}: {problemi}"
+
+
+@pytest.mark.unit
+def test_sezione_quota_altezza_a_destra_e_nessuna_quota_sotto_il_diagramma() -> None:
+    """La larghezza A_X è già quotata in Pianta: nella Sezione la quota sotto la base finiva sulla
+    stessa riga delle etichette σmin/σmax del diagramma delle pressioni (testi sovrapposti). La
+    Sezione quota invece l'altezza H del plinto, a destra (lato libero: V entra da sinistra)."""
+    from strutture.foundations.plinti_isolati.input import PlintoIsolatoInput
+
+    inputs = PlintoIsolatoInput.model_validate(TOOL.example)
+    sezione = disegna(inputs, _governante(TOOL.example)).viste[1]
+    quote = [f for f in sezione.forme if f.kind == "dimension"]
+
+    assert [q.testo.split(" = ")[0] for q in quote] == ["H"]
+    quota_h = quote[0]
+    assert quota_h.p1[0] == quota_h.p2[0] == pytest.approx(inputs.ax_m / 2)
+    assert abs(quota_h.p2[1] - quota_h.p1[1]) == pytest.approx(inputs.h_plinto_m)
+    # SIDE CONVENTION: + = a sinistra di p1->p2; verso l'alto la sinistra è -x (dentro il plinto).
+    verso_alto = quota_h.p2[1] > quota_h.p1[1]
+    assert (quota_h.distanza < 0) if verso_alto else (quota_h.distanza > 0)

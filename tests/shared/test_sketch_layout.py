@@ -160,15 +160,39 @@ def _text_boxes(vista: Vista) -> list[tuple[str, float, float, float, float]]:
             text = f"{forma.simbolo or ''} {forma.testo}".strip()
             anchor_x, (px, py) = {"start": 0.0, "middle": 0.5, "end": 1.0}[forma.ancora], forma.punto
         elif forma.kind == "dimension":
-            text, anchor_x = forma.testo, 0.5
+            text = forma.testo
             px, py = _mid(*linea_quota(forma))
+            anchor_x, rise = _dimension_text_placement(forma)
         elif forma.kind == "arrow" and forma.testo:
-            text, anchor_x, (px, py) = forma.testo, 0.0, forma.coda
+            text, (px, py) = forma.testo, forma.coda
+            anchor_x, rise = _arrow_text_placement(forma)
         else:
             continue
         w, h = CHAR_W * FONT_PX * len(text) / scale, 1.3 * FONT_PX / scale
-        boxes.append((text, px - anchor_x * w, py, px - anchor_x * w + w, py + h))
+        y0 = py + (rise if forma.kind in ("arrow", "dimension") else 0.0) * h
+        boxes.append((text, px - anchor_x * w, y0, px - anchor_x * w + w, y0 + h))
     return boxes
+
+
+def _dimension_text_placement(quota) -> tuple[float, float]:
+    """(anchor_x, rise) of a dimension's text, as the UI draws it (sketch-shapes.js buildDimension):
+    centred above a horizontal line; for a near-vertical line, OUTWARD of it (continuing the way
+    the offset pushed it) and centred on its mid height -- never across the line."""
+    (x1, y1), (x2, y2) = linea_quota(quota)
+    if abs(y2 - y1) <= abs(x2 - x1):
+        return 0.5, 0.0
+    verso_fuori = x1 - quota.p1[0]
+    return (1.0 if verso_fuori < 0 else 0.0), -0.5
+
+
+def _arrow_text_placement(freccia) -> tuple[float, float]:
+    """(anchor_x, rise) of an arrow's text, as the UI draws it (sketch-shapes.js
+    arrowLabelPlacement): at the TAIL, away from the shaft. `rise` is the text box's bottom edge
+    in text heights relative to the tail: 0 = sits on it, -1 = hangs under it, -0.5 = centred."""
+    dx, dy = freccia.punta[0] - freccia.coda[0], freccia.punta[1] - freccia.coda[1]
+    if abs(dx) >= abs(dy):
+        return (1.0 if dx > 0 else 0.0), -0.5
+    return 0.5, (0.0 if dy < 0 else -1.0)  # model space, y up: dy < 0 is a downward arrow
 
 
 def overlap_problems(sketch: Sketch) -> list[str]:

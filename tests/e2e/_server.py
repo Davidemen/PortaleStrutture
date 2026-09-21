@@ -15,7 +15,7 @@ from strutture.shared.tool import discover
 from strutture.web import config as web_config
 from strutture.web.app import create_app
 
-from ._demo_tool import DEMO_TABELLA, DEMO_TABELLA_MIDAS
+from ._demo_tool import DEMO_RELAZIONE, DEMO_TABELLA, DEMO_TABELLA_MIDAS
 
 _READY_TIMEOUT_S = 15.0
 _READY_POLL_S = 0.05
@@ -56,7 +56,12 @@ def _wait_until_ready(url: str) -> None:
 def start_live_server(static_dir) -> LiveServer:
     """Serve `static_dir` with the real tool registry plus the e2e demo table tool."""
     port = _free_port()
-    tools = {**discover(), DEMO_TABELLA.name: DEMO_TABELLA, DEMO_TABELLA_MIDAS.name: DEMO_TABELLA_MIDAS}
+    tools = {
+        **discover(),
+        DEMO_TABELLA.name: DEMO_TABELLA,
+        DEMO_TABELLA_MIDAS.name: DEMO_TABELLA_MIDAS,
+        DEMO_RELAZIONE.name: DEMO_RELAZIONE,
+    }
     settings = web_config.Settings(
         rate_limit_per_minute=100_000,
         max_body_bytes=8_000_000,

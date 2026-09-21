@@ -28,6 +28,7 @@ from .riga_verifica import RigaVerifica
 _MARGINE_QUOTA = 0.07  # frazione del lato maggiore, per lo scostamento delle linee di quota (6-8 %)
 _ASPETTO_BERSAGLIO = 3.0  # aspetto target della Sezione (< 3.5 di soglia, con margine)
 _ALTEZZA_RELATIVA_DIAGRAMMA = 0.35
+_STACCO_ETICHETTA_M = 0.03  # distanza orizzontale dell'etichetta M dal fusto di N, frazione di A_X
 _ESTENSIONE_ASSI = 1.15  # gli assi sporgono oltre il plinto di questa frazione del semilato
 
 
@@ -105,11 +106,14 @@ def _sezione(inputs: PlintoIsolatoInput, governante: RigaVerifica) -> Vista:
         Rettangolo(x=-col_w / 2, y=h, w=col_w, h=col_h, stile="calcestruzzo"),
         Freccia(coda=(0.0, y_sommo + lunghezza_freccia_n), punta=(0.0, y_sommo), stile="carico",
                  testo=etichetta_quota("N", governante.n_kN, "kN", 0)),
-        Etichetta(punto=(0.0, y_sommo + lunghezza_freccia_n + 0.3 * altezza_totale), simbolo="M",
-                   testo=_valore_kNm(governante.myy_kNm), ancora="middle", stile="carico"),
-        # sotto il diagramma delle pressioni (altezza resa ~ altezza_relativa * lato minore).
-        Quota(p1=(-ax / 2, 0.0), p2=(ax / 2, 0.0), distanza=-(2 * scostamento + _ALTEZZA_RELATIVA_DIAGRAMMA * altezza_totale),
-              testo=etichetta_quota("A_X", ax, "m")),
+        # M a fianco del fusto di N (a metà altezza), non impilata sopra: il testo di N sta sopra
+        # la coda, e una seconda riga più in alto sbilanciava la vista verso l'alto.
+        Etichetta(punto=(_STACCO_ETICHETTA_M * ax, y_sommo + 0.5 * lunghezza_freccia_n), simbolo="M",
+                   testo=_valore_kNm(governante.myy_kNm), ancora="start", stile="carico"),
+        # A_X è già quotata in Pianta; sotto la base la quota finiva sulla riga delle etichette
+        # σmin/σmax del diagramma. Qui si quota l'altezza H, a destra (V entra da sinistra):
+        # verso l'alto la sinistra di p1->p2 è -x, quindi distanza negativa = fuori dal plinto.
+        Quota(p1=(ax / 2, 0.0), p2=(ax / 2, h), distanza=-scostamento, testo=etichetta_quota("H", h, "m")),
         _diagramma_pressioni(governante, ax),
     ]
     if abs(governante.mu_scorrimento or 0.0) > 1e-9:

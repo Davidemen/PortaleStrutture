@@ -48,8 +48,8 @@ def disegna_newmark(inputs: NewmarkInput) -> Sketch:
     larghezza_plinto = _larghezza_plinto_newmark(inputs, sistema)
     sezione, ritagliato = _sezione(d_m, larghezza_plinto, inputs.strati, d_m + z_max_m, "z_max")
     if inputs.modalita != "PUNTO":
-        return Sketch(viste=(sezione,), nota=_nota(ritagliato))
-    return Sketch(viste=(sezione, _pianta_punto(inputs, sistema)), nota=_nota(ritagliato))
+        return Sketch(viste=(sezione,), nota=_nota(ritagliato, d_m))
+    return Sketch(viste=(sezione, _pianta_punto(inputs, sistema)), nota=_nota(ritagliato, d_m))
 
 
 def disegna_timoshenko_goodier(inputs: TimoshenkoGoodierInput) -> Sketch:
@@ -59,11 +59,19 @@ def disegna_timoshenko_goodier(inputs: TimoshenkoGoodierInput) -> Sketch:
     b_m = to_m(inputs.b, sistema)
     h_m = to_m(inputs.h_significativo, sistema) if inputs.h_significativo is not None else H_SIGNIFICATIVO_DEFAULT_FACTOR * b_m
     sezione, ritagliato = _sezione(d_m, b_m, inputs.strati, d_m + h_m, "H")
-    return Sketch(viste=(sezione,), nota=_nota(ritagliato))
+    return Sketch(viste=(sezione,), nota=_nota(ritagliato, d_m))
 
 
-def _nota(ritagliato: bool) -> str:
-    return "Schema non in scala" + (", stratigrafia interrotta oltre la quota indicata" if ritagliato else "")
+def _nota(ritagliato: bool, d_m: float) -> str:
+    """D (piano di posa) sta nella nota e non in una quota: i due fianchi del blocco di terreno sono
+    già occupati (spessori di strato a sinistra, moduli a destra) e una quota di D o si sovrapponeva
+    a quei testi o finiva staccata dal disegno, lontano a destra."""
+    parti = ["Schema non in scala"]
+    if d_m > 0:
+        parti.append(f"piano di posa a D = {d_m:.2f} m dal piano campagna".replace(".", ","))
+    if ritagliato:
+        parti.append("stratigrafia interrotta oltre la quota indicata")
+    return ", ".join(parti)
 
 
 def _larghezza_plinto_newmark(inputs: NewmarkInput, sistema: SistemaUnita) -> float:
@@ -98,12 +106,6 @@ def _sezione(d_m: float, larghezza_plinto: float, strati: tuple[SoilLayer, ...],
         Quota(p1=(-larghezza_plinto / 2, y_sommo_plinto), p2=(larghezza_plinto / 2, y_sommo_plinto),
               distanza=margine, testo=etichetta_quota("B", larghezza_plinto, "m")),
     ]
-    if d_m > 0:
-        # ben a destra (una `Quota` non conta per l'estensione/aspetto della vista): il testo
-        # centrato non torna mai indietro fino a B o alle etichette del modulo, anche se enorme
-        # alla scala ridotta di una vista molto profonda.
-        x_d = 2.6 * larghezza_terreno
-        forme.append(Quota(p1=(x_d, 0.0), p2=(x_d, -d_m), distanza=margine, testo=etichetta_quota("D", d_m, "m")))
     if ritagliato:
         forme.append(_fantasma_profondita(profondita_visibile))
     return Vista(titolo="Sezione", forme=tuple(forme)), ritagliato

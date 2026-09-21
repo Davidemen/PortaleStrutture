@@ -1,6 +1,11 @@
-import json, sys
-S = json.load(open("build/ui-audit/tool_schemas.json"))
-H = json.load(open("docs/ui/hints_loads.json"))
+import json
+import sys
+from pathlib import Path
+
+S = json.loads(Path("build/ui-audit/tool_schemas.json").read_text(encoding="utf-8"))
+H = json.loads(Path("docs/ui/hints_loads.json").read_text(encoding="utf-8"))
+
+
 def names(sch, pre=""):
     defs, out = sch.get("$defs", {}), {}
     for f, s in sch.get("properties", {}).items():

@@ -73,6 +73,6 @@ def _etichette_esterne(carichi: tuple[CaricoRow, ...], a: float, b: float) -> tu
     y_iniziale = (b / 2) - passo / 2
     forme: list[Etichetta] = []
     for indice, riga in enumerate(carichi[:_MAX_ETICHETTE_CARICHI]):
-        testo = f"{riga.caso}, P {riga.p_kN:.0f} kN"
+        testo = f"{riga.caso}, P = {riga.p_kN:.0f} kN"
         forme.append(Etichetta(punto=(x, y_iniziale - indice * passo), testo=testo, ancora="end", stile="carico"))
     return tuple(forme)

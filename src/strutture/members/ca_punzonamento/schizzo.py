@@ -17,6 +17,7 @@ from .effective_depth import column_shape
 from .models import ArmaturaOutput, GeometriaOutput, PerimetroCriticoOutput, PunzonamentoInput
 
 _N_PER_CORNER = 4  # punti per arco di raccordo d'angolo (rettangolo con smusso arrotondato)
+_PASSO_QUOTE_FATTORE = 0.22  # passo tra le linee di quota impilate sotto la pianta, frazione della semilarghezza disegnata
 _MARGINE_BORDO_FATTORE = 1.3  # il bordo di solaio va disegnato oltre il perimetro più esterno
 
 
@@ -83,24 +84,28 @@ def _bordo_solaio(inputs: PunzonamentoInput, margine_mm: float) -> tuple[Forma, 
     return (verticale, orizzontale)
 
 
+def _raggio_colonna_y_mm(inputs: PunzonamentoInput) -> float:
+    """Semiestensione della colonna in direzione y (raggio per il cerchio, lato_b/2 per il rettangolo)."""
+    return inputs.diametro_mm / 2.0 if column_shape(inputs.lato_a_mm) == "circ" else inputs.lato_b_mm / 2.0
+
+
 def _quote_a_2d(inputs: PunzonamentoInput, geometria: GeometriaOutput, a_governante_mm: float, estensione_mm: float) -> tuple[Quota, Quota]:
-    """Le distanze a e 2d sono impilate come due colonnine verticali fuori dal disegno, sul lato
-    destro (oltre il perimetro più esterno): una quota orizzontale, passando per il centro,
-    attraverserebbe sempre i perimetri chiusi qualunque fosse lo scostamento."""
-    raggio_x_mm = _raggio_colonna_x_mm(inputs)
-    x_esterno_mm = raggio_x_mm + estensione_mm  # oltre il perimetro più esterno disegnato
-    passo_mm = 1.2 * x_esterno_mm  # scostamento fisso tra le due quote impilate (regola 3)
-    x_a_mm = x_esterno_mm + passo_mm
-    x_2d_mm = x_a_mm + passo_mm
+    """`a` e `2d` sono misurate dove stanno: dal filo della colonna lungo l'asse x fino alla
+    distanza quotata. Le linee di quota sono portate SOTTO il perimetro più esterno (le linee di
+    riferimento attraversano i perimetri, com'è normale in un disegno quotato; la linea di quota e
+    il suo testo no) e impilate: `a` più vicina alla pianta, `2d` un passo più in basso."""
+    filo_x_mm = _raggio_colonna_x_mm(inputs)
+    fuori_y_mm = _raggio_colonna_y_mm(inputs) + estensione_mm  # semialtezza del perimetro più esterno
+    passo_mm = _PASSO_QUOTE_FATTORE * (filo_x_mm + estensione_mm)
     due_d_mm = 2.0 * geometria.d_mm
-    scostamento_m = -mm_to_m(0.5 * passo_mm)  # negativo = più a destra (regola dei lati, verso p1->p2 = +y)
+    # verso +x la sinistra di p1->p2 è +y: distanza negativa = sotto la pianta (regola dei lati)
     quota_a = Quota(
-        p1=(mm_to_m(x_a_mm), 0.0), p2=(mm_to_m(x_a_mm), mm_to_m(a_governante_mm)),
-        distanza=scostamento_m, testo=etichetta_quota("a", a_governante_mm, "mm", 0),
+        p1=(mm_to_m(filo_x_mm), 0.0), p2=(mm_to_m(filo_x_mm + a_governante_mm), 0.0),
+        distanza=-mm_to_m(fuori_y_mm + passo_mm), testo=etichetta_quota("a", a_governante_mm, "mm", 0),
     )
     quota_2d = Quota(
-        p1=(mm_to_m(x_2d_mm), 0.0), p2=(mm_to_m(x_2d_mm), mm_to_m(due_d_mm)),
-        distanza=scostamento_m, testo=etichetta_quota("2d", due_d_mm, "mm", 0),
+        p1=(mm_to_m(filo_x_mm), 0.0), p2=(mm_to_m(filo_x_mm + due_d_mm), 0.0),
+        distanza=-mm_to_m(fuori_y_mm + 2.0 * passo_mm), testo=etichetta_quota("2d", due_d_mm, "mm", 0),
     )
     return quota_a, quota_2d
 

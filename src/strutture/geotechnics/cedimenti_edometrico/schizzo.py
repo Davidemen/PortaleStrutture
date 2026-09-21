@@ -62,7 +62,11 @@ def disegna(inputs: EdometricoInput, si: IngressoSI, profondita: ProfonditaCriti
     ]
     if ritagliato:
         forme.append(_fantasma_profondita(profondita_visibile))
-    nota = "Schema non in scala" + (", stratigrafia interrotta oltre la quota indicata" if ritagliato else "")
+    nota = (
+        "Schema non in scala"
+        + _nota_piano_di_posa(si.d_m)
+        + (", stratigrafia interrotta oltre la quota indicata" if ritagliato else "")
+    )
     return Sketch(viste=(Vista(titolo="Sezione", forme=tuple(forme)),), nota=nota)
 
 
@@ -184,21 +188,21 @@ def _fantasma_laterale(larghezza_terreno: float, profondita_visibile: float) -> 
 
 def _quote(si: IngressoSI, spessore_plinto: float, larghezza_terreno: float, profondita_visibile: float) -> tuple[Quota, ...]:
     """La quota B corre sopra il plinto (non sotto): resta cosi' sempre distinta dal diagramma /
-    dalle quote di spessore strato, che stanno sotto e a sinistra. Gli scostamenti sono
-    proporzionati al lato maggiore dell'INTERA vista (non solo a B): con una stratigrafia profonda
-    la vista è molto più alta che larga e un testo, alla scala ridotta, occupa più spazio "modello"
-    — usare solo B come riferimento lascerebbe B e D a toccarsi. D sta molto più a destra (una
-    `Quota` non conta per l'estensione/aspetto della vista, quindi non ha alcun costo) cosi' il suo
-    testo centrato non torna mai indietro fino a B."""
-    lato_maggiore = max(larghezza_terreno, profondita_visibile)
-    margine = _MARGINE_QUOTA * lato_maggiore
+    dalle quote di spessore strato, che stanno sotto e a sinistra. Lo scostamento è proporzionato
+    al lato maggiore dell'INTERA vista (non solo a B): con una stratigrafia profonda la vista è
+    molto più alta che larga e un testo, alla scala ridotta, occupa più spazio "modello".
+    D (piano di posa) non è una quota ma sta nella nota (`_nota_piano_di_posa`): i due fianchi del
+    blocco di terreno sono già occupati (spessori a sinistra, moduli a destra) e una quota di D o
+    si sovrapponeva a quei testi o finiva staccata dal disegno, lontano a destra."""
+    margine = _MARGINE_QUOTA * max(larghezza_terreno, profondita_visibile)
     y_sommo_plinto = -si.d_m + spessore_plinto
-    quota_b = Quota(
-        p1=(-si.b_m / 2, y_sommo_plinto), p2=(si.b_m / 2, y_sommo_plinto), distanza=margine,
-        testo=etichetta_quota("B", si.b_m, "m"),
+    return (
+        Quota(
+            p1=(-si.b_m / 2, y_sommo_plinto), p2=(si.b_m / 2, y_sommo_plinto), distanza=margine,
+            testo=etichetta_quota("B", si.b_m, "m"),
+        ),
     )
-    if si.d_m <= 0:
-        return (quota_b,)
-    x_d = larghezza_terreno
-    quota_d = Quota(p1=(x_d, 0.0), p2=(x_d, -si.d_m), distanza=margine, testo=etichetta_quota("D", si.d_m, "m"))
-    return quota_b, quota_d
+
+
+def _nota_piano_di_posa(d_m: float) -> str:
+    return f", piano di posa a D = {d_m:.2f} m dal piano campagna".replace(".", ",") if d_m > 0 else ""

@@ -82,12 +82,17 @@ def test_quota_b_testo_con_virgola_italiana() -> None:
 
 
 @pytest.mark.unit
-def test_quota_d_compare_solo_con_infissione_positiva() -> None:
+def test_piano_di_posa_d_sta_nella_nota_solo_con_infissione_positiva() -> None:
+    """D non è una quota (i fianchi del terreno sono occupati da spessori e moduli: o si sovrapponeva
+    o finiva staccata dal disegno) ma una frase della nota, presente solo con D > 0."""
     modificato = {**TOOL.example, "d": 1.5}  # `d` non è mai convertito: sempre metri (vedi ingresso.py)
     inputs, si, profondita = _si_e_profondita(modificato)
     sketch = disegna(inputs, si, profondita)
-    quota_d = next(f for f in sketch.viste[0].forme if f.kind == "dimension" and f.testo.startswith("D ="))
-    assert quota_d.testo == "D = 1,50 m"
+    assert "D = 1,50 m" in sketch.nota
+    assert not any(f.kind == "dimension" and f.testo.startswith("D =") for f in sketch.viste[0].forme)
+
+    inputs0, si0, profondita0 = _si_e_profondita(TOOL.example)  # D = 0 nell'esempio
+    assert "D =" not in disegna(inputs0, si0, profondita0).nota
 
 
 @pytest.mark.unit

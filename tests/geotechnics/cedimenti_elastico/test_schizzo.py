@@ -45,7 +45,7 @@ def test_newmark_centro_vista_titolo_e_forme() -> None:
     assert kinds.count("rect") == 1 + 4  # plinto + 4 strati visibili
     assert kinds.count("label") <= 2 + 1  # <=2 E (limite/scostamento minimo) + 1 z_max
     assert kinds.count("line") == 1 + 2 + 1  # z_max + 2 fantasma laterali + 1 fantasma di profondità
-    assert kinds.count("dimension") == 2 + 2  # B, D + <=2 quote di spessore strato (Δz)
+    assert kinds.count("dimension") == 1 + 2  # B + <=2 quote di spessore strato (Δz); D sta nella nota
     assert "interrotta" in sketch.nota
 
 
@@ -94,9 +94,10 @@ def test_newmark_centro_plinto_e_quote_seguono_gli_input() -> None:
     assert plinto.y == pytest.approx(-1.10)
     assert plinto.w == pytest.approx(3.5)
     quota_b = next(f for f in forme if f.kind == "dimension" and f.testo.startswith("B ="))
-    quota_d = next(f for f in forme if f.kind == "dimension" and f.testo.startswith("D ="))
     assert quota_b.testo == "B = 3,50 m"
-    assert quota_d.testo == "D = 1,10 m"
+    # D (piano di posa) sta nella nota, non in una quota: i fianchi del terreno sono già occupati.
+    assert "D = 1,10 m" in sketch.nota
+    assert not any(f.kind == "dimension" and f.testo.startswith("D =") for f in forme)
 
 
 @pytest.mark.unit
@@ -188,7 +189,7 @@ def test_tg_vista_titolo_e_forme() -> None:
     assert kinds.count("rect") == 1 + 2
     assert kinds.count("label") == 2 + 1
     assert kinds.count("line") == 1 + 2 + 1  # H + 2 fantasma laterali + 1 fantasma di profondità
-    assert kinds.count("dimension") == 2 + 2  # B, D + 2 quote di spessore strato (Δz)
+    assert kinds.count("dimension") == 1 + 2  # B + 2 quote di spessore strato (Δz); D sta nella nota
     assert "interrotta" in sketch.nota
 
 

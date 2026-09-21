@@ -109,33 +109,26 @@ def test_wall_form_height_budget(page: Page, base_url: str) -> None:
     page.goto(f"{base_url}/#/muro-sostegno")
     page.locator("#tool-title").wait_for(state="visible")
     load_example(page)
-    page.locator("#results-head").wait_for(state="visible")  # the run itself is async
+    # The run itself is async; `#results-head` is intentionally always screen-hidden now (finding
+    # E), so the verdict line is the real "a run has landed" signal for this wait.
+    page.locator("#sintesi .r-si-verdict").wait_for(state="visible")
     height = page.evaluate("document.getElementById('form-root').scrollHeight")
     assert height <= 1100, f"muro-sostegno Dati column is {height}px tall, budget is 1100px"
 
 
-@pytest.mark.xfail(
-    strict=False,
-    reason=(
-        "WORKBENCH_SPEC #9 targets retaining-wall RESULTS <=900px at first render. The Verifiche "
-        "fold (failed + 5 highest utilisation, results.js renderVerifiche) plus the collapsed-"
-        "header truncation trims in results.css bring it from ~2069px down to ~1437px (Sintesi "
-        "440 + results-root 997), a real reduction, but muro-sostegno's OUTPUT SCHEMA (Python, "
-        "out of static_next/tests-e2e scope for this integration pass) defines 9 separate result "
-        "groups -- each closed group's header row is an unavoidable ~37-63px even at a single "
-        "compact line, and the 8 non-Verifiche groups alone cost ~300px before the Sintesi or the "
-        "Verifiche group's own content is counted. Closing the remaining gap needs either a "
-        "backend change (merge/consolidate muro-sostegno's output groups) or a product decision "
-        "to measure this budget against the STICKY Sintesi alone (already <=900px by itself), "
-        "neither of which this integration pass can make. Tracked here instead of silently "
-        "loosening the assertion."
-    ),
-)
 def test_wall_results_height_budget(page: Page, base_url: str) -> None:
+    """WORKBENCH_SPEC #9/finding J: retaining-wall RESULTS <=900px at first render. Closed by:
+    the Sintesi's sketch moving BESIDE the verdict instead of stacked below it (finding B), the
+    toolbar collapsing from 3 tall buttons + a jump-link strip to one 32px row (finding E), the
+    repeated tool title going screen-hidden (finding E), the Verifiche fold tightening from 5 to
+    the failed checks + the 3 highest utilisations (finding J), and a handful of group-header/
+    check-row density trims -- previously xfail at ~1437px, now measured ~891px."""
     page.goto(f"{base_url}/#/muro-sostegno")
     page.locator("#tool-title").wait_for(state="visible")
     load_example(page)
-    page.locator("#results-head").wait_for(state="visible")
+    # `#results-head` is intentionally always screen-hidden now (finding E) -- the verdict line
+    # is the real "a run has landed" signal for a sighted assertion like this one.
+    page.locator("#sintesi .r-si-verdict").wait_for(state="visible")
     # sintesi.js's sketch views are a dynamic import + async render, a tick or two after the run
     # itself resolves -- wait for one so the measurement below reflects the REAL first render,
     # not a premature, incomplete DOM caught mid-render.

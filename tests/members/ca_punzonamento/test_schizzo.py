@@ -218,3 +218,28 @@ def test_errore_nel_disegno_non_fa_fallire_il_calcolo(monkeypatch: pytest.Monkey
 @pytest.mark.unit
 def test_modulo_schizzo_importabile_e_puro() -> None:
     assert hasattr(schizzo_module, "disegna")
+
+
+@pytest.mark.unit
+def test_quote_a_e_2d_misurano_dal_filo_della_colonna() -> None:
+    """Una quota sta accanto a ciò che misura: `a` e `2d` partono dal filo della colonna lungo
+    l'asse x (p1) e arrivano alla distanza quotata (p2), con la linea di quota portata SOTTO il
+    perimetro più esterno. Prima erano due colonnine staccate, a destra del disegno, che non
+    misuravano nulla di riconoscibile."""
+    report = execute(TOOL, TOOL.example)
+    assert report.ok, report.errors
+    inputs = PunzonamentoInput.model_validate(TOOL.example)
+    forme = report.data.schizzo.viste[0].forme
+    quota_a, quota_2d = [f for f in forme if f.kind == "dimension"]
+    filo_m = (inputs.lato_a_mm / 2.0 if inputs.lato_a_mm > 0 else inputs.diametro_mm / 2.0) / 1000.0
+    a_m = report.data.perimetro_critico.a_governante_mm / 1000.0
+
+    for quota in (quota_a, quota_2d):
+        assert quota.p1 == pytest.approx((filo_m, 0.0))
+        assert quota.p2[1] == pytest.approx(0.0)
+        assert quota.distanza < 0  # verso +x la sinistra è +y: negativo = sotto la pianta
+    assert quota_a.p2[0] == pytest.approx(filo_m + a_m)
+    assert quota_2d.p2[0] == pytest.approx(filo_m + 2.0 * report.data.geometria.d_mm / 1000.0)
+    y_min_perimetri = min(y for f in forme if f.kind == "polygon" for _, y in f.punti)
+    assert -abs(quota_a.distanza) < y_min_perimetri  # la linea di quota passa sotto tutti i perimetri
+    assert abs(quota_2d.distanza) > abs(quota_a.distanza)  # impilate, mai sovrapposte

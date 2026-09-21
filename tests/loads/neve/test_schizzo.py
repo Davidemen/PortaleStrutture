@@ -275,3 +275,21 @@ def test_modulo_schizzo_importabile_e_puro() -> None:
     """Il modulo non tocca I/O: verifica solo che sia importabile senza effetti collaterali."""
     assert hasattr(schizzo_module, "disegna_carico_falda")
     assert hasattr(schizzo_module, "disegna_accumulo")
+
+
+@pytest.mark.unit
+def test_accumulo_etichette_staccate_dal_profilo_di_carico() -> None:
+    """q_s2 e q_s1 non poggiano sul contorno del profilo di carico: la base del testo sta SOPRA il
+    proprio vertice (il testo cresce verso l'alto dal suo punto), e q_s2 parte scostato dalla parete
+    — sul vertice stesso il testo veniva tagliato dal lato inclinato del triangolo di accumulo."""
+    inputs, output = _output_accumulo({})
+    forme = disegna_accumulo(inputs, output).viste[0].forme
+    profilo = next(f for f in forme if f.kind == "polygon")
+    picco = max(y for _, y in profilo.punti)
+    uniforme = profilo.punti[3][1]
+    q_s2 = next(f for f in forme if f.kind == "label" and f.simbolo == "q_s2")
+    q_s1 = next(f for f in forme if f.kind == "label" and f.simbolo == "q_s1")
+
+    assert q_s2.punto[0] > 0.0 and q_s2.punto[1] > picco
+    assert q_s1.punto[1] > uniforme
+    assert q_s2.ancora == "start" and q_s1.ancora == "end"

@@ -220,3 +220,21 @@ def test_valore_con_segno_copre_i_tre_rami() -> None:
 @pytest.mark.unit
 def test_confini_zona_frazione_con_profondita_nulla() -> None:
     assert schizzo_module._confini_zona_frazione(10.0, 0.0, 5.0) == (0.0, 0.0)
+
+
+@pytest.mark.unit
+def test_etichette_delle_facce_stanno_dentro_la_pianta_e_non_si_allineano() -> None:
+    """I c_pe sopravento/sottovento stanno DENTRO il rettangolo (vuoto), accanto alla loro faccia:
+    fuori finivano a cavallo del bordo, sulla freccia del vento o sulle linee di quota. Le due
+    etichette di una vista non condividono mai la stessa riga (a metà larghezza si toccherebbero)."""
+    inputs = VentoCpeInput.model_validate(TOOL.example)
+    sketch = disegna(inputs, *_dirs(TOOL.example))
+    for vista in sketch.viste:
+        pianta = next(f for f in vista.forme if f.kind == "rect")
+        facce = [f for f in vista.forme if f.kind == "label" and (f.simbolo or "").startswith("c_pe")]
+        assert len(facce) == 2
+        for etichetta in facce:
+            x, y = etichetta.punto
+            assert pianta.x < x < pianta.x + pianta.w, f"{vista.titolo}: {etichetta.simbolo} fuori in x"
+            assert pianta.y < y < pianta.y + pianta.h, f"{vista.titolo}: {etichetta.simbolo} fuori in y"
+        assert abs(facce[0].punto[1] - facce[1].punto[1]) > 0.2 * pianta.h

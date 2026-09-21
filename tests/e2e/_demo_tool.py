@@ -7,7 +7,7 @@ production code.
 from pydantic import BaseModel, Field
 
 from strutture.shared.load_table import ReactionRow
-from strutture.shared.report import Report, success
+from strutture.shared.report import Check, Report, success
 from strutture.shared.tabular import table_field
 from strutture.shared.tool import Tool
 
@@ -125,4 +125,59 @@ DEMO_TABELLA_MIDAS = Tool(
             {"nodo": 1, "combo": "SLU1", "famiglia": "SLU_STR", "fx_kN": 1.0, "fy_kN": 2.0, "fz_kN": 100.0, "mx_kNm": 0.5, "my_kNm": 0.6, "mz_kNm": 0.0},
         ]
     },
+)
+
+
+class DemoRelazioneInput(BaseModel):
+    """A tiny input schema with a checks list, a nested scalar group and a paginated row table --
+    everything WORKBENCH_SPEC §10's "exported report is always complete" test needs (checks
+    folded, groups collapsed, a table with a real page 2), deterministic and independent of any
+    real tool's example data size."""
+
+    fattore: float = Field(gt=0, description="Fattore di carico applicato", json_schema_extra={"unit": "-", "symbol": "k", "group": "Azioni"})
+    nota: str = Field(default="", description="Nota libera", json_schema_extra={"group": "Azioni", "advanced": True})
+
+
+class DemoRelazioneRiga(BaseModel):
+    indice: int = Field(description="Indice della riga", json_schema_extra={"unit": "-"})
+    valore_kN: float = Field(description="Valore della riga", json_schema_extra={"unit": "kN", "symbol": "V"})
+
+
+class DemoRelazioneDettagli(BaseModel):
+    somma_kN: float = Field(description="Somma dei valori", json_schema_extra={"unit": "kN", "symbol": "ΣV"})
+    media_kN: float = Field(description="Valore medio", json_schema_extra={"unit": "kN", "symbol": "V_m"})
+
+
+class DemoRelazioneOutput(BaseModel):
+    esito: str = Field(description="Esito sintetico", json_schema_extra={"unit": "-"})
+    dettagli: DemoRelazioneDettagli = Field(description="Dettagli di calcolo")
+    righe: tuple[DemoRelazioneRiga, ...] = Field(description="Righe di dettaglio", json_schema_extra={"rows_page": 2})
+
+
+def _run_relazione(inputs: DemoRelazioneInput) -> Report[DemoRelazioneOutput]:
+    valori = [inputs.fattore * i for i in range(1, 6)]  # 5 rows -> 3 pages at rows_page=2
+    checks = tuple(
+        Check(
+            name=f"Verifica {i}", passed=(i != 2), detail=f"{valori[i - 1]:.2f} <= {10 * inputs.fattore:.2f}",
+            clause=f"Demo §{i}", value=valori[i - 1], limit=10 * inputs.fattore,
+        )
+        for i in range(1, 6)
+    )
+    data = DemoRelazioneOutput(
+        esito="Verifiche non soddisfatte" if any(not c.passed for c in checks) else "Verifiche soddisfatte",
+        dettagli=DemoRelazioneDettagli(somma_kN=sum(valori), media_kN=sum(valori) / len(valori)),
+        righe=tuple(DemoRelazioneRiga(indice=i, valore_kN=v) for i, v in enumerate(valori, start=1)),
+    )
+    return success(data, inputs, checks=checks, warnings=("Avviso di prova per il controllo di stampa.",))
+
+
+DEMO_RELAZIONE = Tool(
+    name="demo-relazione",
+    title="Demo relazione (e2e)",
+    group="Demo",
+    norm="—",
+    input_model=DemoRelazioneInput,
+    output_model=DemoRelazioneOutput,
+    run=_run_relazione,
+    example={"fattore": 2.0, "nota": "Esempio"},
 )

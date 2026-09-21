@@ -80,7 +80,7 @@ def _sovraccarico(inputs: MuroSostegnoInput, geometria: GeometriaResult) -> tupl
     return (Diagramma(
         base=((x_sinistra, y_top), (x_destra, y_top)),  # sinistra->destra: la banda sporge verso l'alto
         valori=(inputs.q_kN_m2, inputs.q_kN_m2),
-        etichette=(etichetta_quota("q", inputs.q_kN_m2, "kN/m2", 0), ""),
+        etichette=(etichetta_quota("q", inputs.q_kN_m2, "kN/m²", 0), ""),
         stile="carico",
         altezza_relativa=_ALTEZZA_RELATIVA_SOVRACCARICO,
     ),)

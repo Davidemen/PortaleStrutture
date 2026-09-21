@@ -101,6 +101,7 @@ _CROP_SU_LS = 1.4  # falda inferiore ritagliata a ~1.4·ls, poi tratto "fantasma
 _FANTASMA_SU_CROP = 0.15  # lunghezza del tratto fantasma, frazione del tratto ritagliato
 _ASPETTO_MAX = 3.0  # margine sotto il limite 3.5:1 del lint, per l'altezza minima disegnata dell'edificio
 _CARICO_SU_ALTEZZA = 0.35  # altezza massima del profilo di carico, frazione dell'altezza disegnata
+_STACCO_ETICHETTA_FRAZIONE = 0.05  # stacco delle etichette q_s dal profilo di carico, frazione dell'altezza disegnata
 _OFFSET_QUOTA_FRAZIONE = 0.07  # scostamento delle quote, frazione del lato maggiore della vista (regola 3)
 
 
@@ -137,12 +138,15 @@ def disegna_accumulo(inputs: AccumuloInput, output: AccumuloOutput) -> Sketch:
     quota_ls = Quota(
         p1=(0.0, 0.0), p2=(ls_m, 0.0), distanza=-scostamento_m, testo=etichetta_quota("l_s", ls_m, "m"),
     )
+    # Le etichette stanno SOPRA il proprio vertice, staccate dal contorno (il testo cresce verso
+    # l'alto dal suo punto): sul vertice stesso il lato inclinato del triangolo tagliava il testo.
+    stacco_m = _STACCO_ETICHETTA_FRAZIONE * altezza_m
     etichetta_picco = Etichetta(
-        punto=(0.0, picco_m), simbolo="q_s2", testo=f"{output.qs2_final:.2f}".replace(".", ",") + " kN/m²",
+        punto=(stacco_m, picco_m + stacco_m), simbolo="q_s2", testo=f"{output.qs2_final:.2f}".replace(".", ",") + " kN/m²",
         ancora="start", stile="asse",
     )
     etichetta_uniforme = Etichetta(
-        punto=(crop_m, uniforme_m), simbolo="q_s1", testo=f"{output.qs1_final:.2f}".replace(".", ",") + " kN/m²",
+        punto=(crop_m, uniforme_m + stacco_m), simbolo="q_s1", testo=f"{output.qs1_final:.2f}".replace(".", ",") + " kN/m²",
         ancora="end", stile="asse",
     )
     forme = (edificio, falda, fantasma, profilo_carico, quota_h, quota_ls, etichetta_picco, etichetta_uniforme)
