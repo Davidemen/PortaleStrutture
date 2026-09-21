@@ -7,9 +7,10 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 
 from strutture.shared.divergences import Divergence, load_register
+from strutture.shared.divergences.marker import traccia
 from strutture.shared.tool import Tool, execute
 
-from ..confronto import confronta
+from ..confronto import NESSUNA_ATTRIBUZIONE, Attribuzione, attribuisci_per_singola_correzione, confronta
 from ..envelope import error_envelope, internal_error_envelope, report_envelope
 from ..presentation import sigla_for
 
@@ -83,12 +84,15 @@ def build_tools_router(tools: dict[str, Tool], register: tuple[Divergence, ...] 
         inputs = {key: value for key, value in raw_body.items() if key != MODE_FIELD}
         try:
             standard = await run_in_threadpool(_run_mode, tool, inputs, False if has_excel_mode else None)
-            excel = await run_in_threadpool(_run_mode, tool, inputs, True) if has_excel_mode else None
+            excel, attribuzione = (
+                await run_in_threadpool(_run_excel_and_attribute, tool, inputs, standard) if has_excel_mode
+                else (None, NESSUNA_ATTRIBUZIONE)
+            )
         except Exception:
             logger.exception("unexpected error comparing tool %s", name)
             return internal_error_envelope()
 
-        confronto = confronta(standard, excel, tool.name, _register()) if excel is not None else None
+        confronto = confronta(standard, excel, tool.name, _register(), attribuzione) if excel is not None else None
         return JSONResponse({
             "ok": bool(standard["ok"] and (excel is None or excel["ok"])),
             "disponibile": has_excel_mode,
@@ -103,6 +107,19 @@ def build_tools_router(tools: dict[str, Tool], register: tuple[Divergence, ...] 
 def _run_mode(tool: Tool, inputs: dict[str, Any], legacy_compat: bool | None) -> dict[str, Any]:
     body = inputs if legacy_compat is None else {**inputs, MODE_FIELD: legacy_compat}
     return execute(tool, body).model_dump(mode="json")
+
+
+def _run_excel_and_attribute(tool: Tool, inputs: dict[str, Any], standard: dict[str, Any]) -> tuple[dict[str, Any], Attribuzione]:
+    """The Excel-mode run, recording which corrections it consulted; then — only when both runs have
+    data — the tool once more per consulted correction with that one alone in Excel behaviour, to
+    attribute each difference exactly for THESE inputs. Runs in ONE worker thread: the marker's
+    analysis contexts are per-thread and must never reach another request."""
+    with traccia() as consultate:
+        excel = _run_mode(tool, inputs, True)
+    if not (standard.get("ok") and excel.get("ok")) or standard.get("data") == excel.get("data"):
+        return excel, NESSUNA_ATTRIBUZIONE
+    attribuzione = attribuisci_per_singola_correzione(lambda: _run_mode(tool, inputs, False), standard, consultate())
+    return excel, attribuzione
 
 
 def _summary(tool: Tool) -> dict[str, Any]:

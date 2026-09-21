@@ -97,3 +97,44 @@ def test_unknown_tool_is_404_and_bad_json_is_400(client: TestClient) -> None:
     assert client.post("/api/tools/nope/compare", json={}).status_code == 404
     assert client.post("/api/tools/fake-mode/compare", content=b"{", headers={"Content-Type": "application/json"}).status_code == 400
     assert client.post("/api/tools/fake-mode/compare", json=[1, 2]).status_code == 400
+
+
+# --- exact attribution: the Excel run records the corrections it used, each is then tried alone ---
+
+class DueInputs(BaseModel):
+    model_config = ConfigDict(frozen=True)
+    a: float
+    legacy_compat: bool = False
+
+
+class DueOutputs(BaseModel):
+    model_config = ConfigDict(frozen=True)
+    x: float
+    y: float
+    somma: float
+
+
+def _run_due(inputs: DueInputs) -> Report[DueOutputs]:
+    from strutture.shared.divergences import legacy
+
+    x = inputs.a + (1.0 if legacy("demo/x-piu-uno", inputs.legacy_compat) else 0.0)
+    y = inputs.a * (2.0 if legacy("demo/y-doppio", inputs.legacy_compat) else 1.0)
+    return success(DueOutputs(x=x, y=y, somma=x + y), inputs)
+
+
+DUE_TOOL = Tool("fake-due", "Due correzioni", "Prova", "TEST", DueInputs, DueOutputs, _run_due)
+
+
+def test_differences_are_attributed_by_trying_each_correction_alone() -> None:
+    app = FastAPI()
+    app.include_router(build_tools_router({DUE_TOOL.name: DUE_TOOL}, register=()))  # no `uscite` to lean on
+    body = TestClient(app).post("/api/tools/fake-due/compare", json={"a": 3.0}).json()
+    by_path = {d["percorso"]: d["divergenze"] for d in body["confronto"]["differenze"]}
+    assert by_path == {"x": ["demo/x-piu-uno"], "y": ["demo/y-doppio"], "somma": ["demo/x-piu-uno", "demo/y-doppio"]}
+    assert body["confronto"]["attribuzione"] == {"correzioni_valutate": 2, "completa": True, "non_valutabili": []}
+    assert body["standard"]["data"] == {"x": 3.0, "y": 3.0, "somma": 6.0}  # the analysis runs never leak into the results
+
+
+def test_no_attribution_runs_when_the_two_modes_agree(client: TestClient) -> None:
+    body = client.post("/api/tools/fake-plain/compare", json={"a": 2.0}).json()
+    assert body["confronto"] is None

@@ -1,39 +1,99 @@
 """Comparison of one tool run in its two modes: code-standard (default) vs Excel (`legacy_compat`).
 
-Pure functions over two already-serialised `Report` dicts: which output leaves differ, by how much,
-which checks change outcome, and which register entries are responsible — an entry is responsible
-for a path when one of its `uscite` equals the path or is a prefix of it (row indices stripped:
-`righe[3].eta` is covered by `righe.eta` and by `righe`)."""
+Functions over already-serialised `Report` dicts: which output leaves differ, by how much, which
+checks change outcome, and which register entries are responsible. Two sources of responsibility,
+merged: the register's own `uscite` (an entry covers a path when one of its `uscite` equals it or
+is a prefix of it, row indices stripped: `righe[3].eta` is covered by `righe.eta` and by `righe`),
+and — exact for the CURRENT inputs — `attribuisci_per_singola_correzione`: the tool is re-run in
+standard mode with ONE correction at a time switched to the spreadsheet's behaviour
+(`shared.divergences.marker.solo`); every output that moves is that correction's doing."""
 import math
 import re
-from collections.abc import Iterator
+import time
+from collections.abc import Callable, Iterable, Iterator
+from dataclasses import dataclass
 from typing import Any
 
+from strutture.shared.divergences.marker import solo
 from strutture.shared.divergences.models import Divergence
 
 MAX_DIFFERENZE = 200  # a many-rows table can differ in thousands of cells: the list is capped, the total is not
 REL_TOL = 1e-9
 ABS_TOL = 1e-12
-_IGNORED_KEYS = frozenset({"schizzo"})  # sketch geometry follows the numbers; it is not a result
+# not results: sketch geometry follows the numbers, and `legacy_compat` is the mode flag echoed back
+_IGNORED_KEYS = frozenset({"schizzo", "legacy_compat"})
 _ROW_INDEX = re.compile(r"\[\d+\]")
 _MISSING = object()
+BUDGET_ATTRIBUZIONE_S = 3.0  # total time allowed for the one-correction-at-a-time runs of one request
 
 
-def confronta(standard: dict[str, Any], excel: dict[str, Any], tool_name: str,
-              register: tuple[Divergence, ...]) -> dict[str, Any]:
+@dataclass(frozen=True)
+class Attribuzione:
+    """Outcome of the one-correction-at-a-time runs: exact paths (row indices kept) -> ids."""
+
+    per_percorso: dict[str, tuple[str, ...]]
+    valutate: int
+    completa: bool  # False when the time budget ran out before every correction was tried
+    non_valutabili: tuple[str, ...]  # corrections that cannot run on their own (the run failed)
+
+
+NESSUNA_ATTRIBUZIONE = Attribuzione(per_percorso={}, valutate=0, completa=True, non_valutabili=())
+
+
+def attribuisci_per_singola_correzione(
+    esegui: Callable[[], dict[str, Any]], standard: dict[str, Any], ids: Iterable[str], *,
+    budget_s: float = BUDGET_ATTRIBUZIONE_S, orologio: Callable[[], float] = time.monotonic,
+) -> Attribuzione:
+    """Re-run `esegui` (the tool in STANDARD mode, returning a serialised Report) once per id with
+    only that correction switched to the spreadsheet's behaviour; every output leaf that moves away
+    from `standard` is attributed to it. A run that fails is reported, never raised: some
+    corrections only make sense together (a unit conversion and its inverse)."""
+    per_percorso: dict[str, tuple[str, ...]] = {}
+    non_valutabili: list[str] = []
+    valutate = 0
+    inizio = orologio()
+    ordinati = sorted(ids)
+    for divergence_id in ordinati:
+        if orologio() - inizio > budget_s:
+            break
+        valutate += 1
+        try:
+            with solo((divergence_id,)):
+                esito = esegui()
+        except Exception:  # noqa: BLE001 - an inconsistent single-correction state is expected, not a bug
+            non_valutabili.append(divergence_id)
+            continue
+        if not isinstance(esito.get("data"), dict):
+            non_valutabili.append(divergence_id)
+            continue
+        for differenza in _differenze(standard.get("data"), esito["data"], ""):
+            percorso = differenza["percorso"]
+            per_percorso = {**per_percorso, percorso: (*per_percorso.get(percorso, ()), divergence_id)}
+    return Attribuzione(per_percorso, valutate, valutate == len(ordinati), tuple(non_valutabili))
+
+
+def confronta(standard: dict[str, Any], excel: dict[str, Any], tool_name: str, register: tuple[Divergence, ...],
+              attribuzione: Attribuzione = NESSUNA_ATTRIBUZIONE) -> dict[str, Any]:
     """Differences between the two runs. `confrontabile` is False when either run has no data."""
     data_standard, data_excel = standard.get("data"), excel.get("data")
     confrontabile = isinstance(data_standard, dict) and isinstance(data_excel, dict)
     uscite = _uscite_per_divergenza(tool_name, register)
+
+    def responsabili(percorso: str) -> list[str]:
+        return sorted({*_responsabili(percorso, uscite), *attribuzione.per_percorso.get(percorso, ())})
+
     tutte = list(_differenze(data_standard, data_excel, "")) if confrontabile else []
-    differenze = [{**d, "divergenze": _responsabili(d["percorso"], uscite)} for d in tutte[:MAX_DIFFERENZE]]
-    coinvolte = sorted({i for d in tutte for i in _responsabili(d["percorso"], uscite)})
     return {
         "confrontabile": confrontabile,
-        "differenze": differenze,
+        "differenze": [{**d, "divergenze": responsabili(d["percorso"])} for d in tutte[:MAX_DIFFERENZE]],
         "totale_differenze": len(tutte),
         "verifiche": _verifiche(standard.get("checks") or [], excel.get("checks") or []),
-        "divergenze_coinvolte": coinvolte,
+        "divergenze_coinvolte": sorted({i for d in tutte for i in responsabili(d["percorso"])}),
+        "attribuzione": {
+            "correzioni_valutate": attribuzione.valutate,
+            "completa": attribuzione.completa,
+            "non_valutabili": list(attribuzione.non_valutabili),
+        },
     }
 
 

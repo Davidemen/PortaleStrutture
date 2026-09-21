@@ -275,7 +275,11 @@ register fields (`id, titolo, tipo, strumenti, cella, foglio, corretto, clausola
 the Italian message); `POST /api/divergences/signoff-multiplo {ids,stato,sigla,nota}`;
 `POST /api/tools/{name}/compare <inputs>` -> `{ok, disponibile, standard:Report, excel:Report|null, confronto:
 {confrontabile, differenze:[{percorso,standard,excel,delta,delta_rel,divergenze:[id]}], totale_differenze,
-verifiche:[{nome,standard:{passed,value}|null,excel:{…}|null}], divergenze_coinvolte:[id]}|null}`.
+verifiche:[{nome,standard:{passed,value}|null,excel:{…}|null}], divergenze_coinvolte:[id],
+attribuzione:{correzioni_valutate, completa, non_valutabili:[id]}}|null}`. Attribution is exact for the current
+inputs: the server re-runs the tool with ONE correction at a time in Excel behaviour (3 s budget). When
+`attribuzione.completa` is false the panel adds "Attribuzione parziale: non tutte le correzioni sono state provate.";
+`non_valutabili` are listed as "Correzioni che non si possono isolare: …" (links).
 
 ### 13.1 Page `#/registro` (optional query: `strumento`, `stato`, `tipo`, `q`, `id`)
 - Rail: one fixed entry "Registro correzioni" below Recenti, own pictogram (a ruled ledger page with a tick — distinct
