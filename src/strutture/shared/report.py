@@ -3,6 +3,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
+from .relazione.modelli import Traccia
+
 
 class Check(BaseModel):
     """One pass/fail verification against a code clause."""
@@ -37,6 +39,7 @@ class Report[T](BaseModel):
     errors: tuple[str, ...] = ()
     error_details: tuple[ErrorDetail, ...] = ()  # same errors, machine-locatable (form fields, table cells)
     inputs_echo: dict[str, Any] = {}
+    relazione: tuple[Traccia, ...] = ()  # "Sviluppo dei calcoli", built only when asked (execute(..., con_relazione=True))
 
 
 class CalcError(ValueError):

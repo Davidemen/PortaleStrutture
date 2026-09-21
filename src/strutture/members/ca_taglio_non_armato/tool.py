@@ -7,6 +7,7 @@ from strutture.shared.tool import Tool
 
 from .compose import run
 from .models import TaglioNonArmatoInput, TaglioNonArmatoOutput
+from .relazione import relazione
 
 ESEMPIO_AUREO = {
     "rck_MPa": 35, "h_mm": 500, "c_mm": 50, "bw_mm": 1000, "asl_mm2": 1005, "ned_kN": 0,
@@ -23,5 +24,6 @@ TOOLS = (
         run=run,
         example=ESEMPIO_AUREO,
         summary="Verifica la resistenza a taglio di una sezione in c.a. priva di armatura trasversale.",
+        relazione=relazione,
     ),
 )

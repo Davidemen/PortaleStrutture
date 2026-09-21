@@ -79,7 +79,9 @@ No assignment, no strings, no attribute access, no calls other than the list abo
 Browser (`js/relazione-formule.js`, DOM only — `document.createElementNS`, never `innerHTML`): AST -> MathML Core
 (`mi`, `mn`, `mo`, `msub`, `msup`, `mfrac` for `/`, `msqrt`, `mrow`, fences for `par`/`abs`). The SUBSTITUTION line
 is the same AST with every `id` replaced by its formatted value (format.js, Italian decimals, 4 significant digits;
-negative values parenthesised). Font: self-hosted STIX Two Math (woff2) for `math`; fallback: `testo.py`'s string in
+negative values parenthesised). A `scala` other than 1 is PRINTED on both the symbolic and the substituted line
+(`…·10⁻³`, same rule as `testo.py::fattore_a_testo`/`_con_fattore`: parenthesise a sum first; on a comparison only the
+left operand carries it) — the equation must stay true as written. The dimensionless unit "-" is never printed. Font: self-hosted STIX Two Math (woff2) for `math`; fallback: `testo.py`'s string in
 a `title` and as the accessible name. No CDN, CSP unchanged.
 
 ## 4. The harness (the reason this design is safe)

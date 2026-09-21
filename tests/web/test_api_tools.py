@@ -17,6 +17,7 @@ def test_list_tools_returns_summaries(client: TestClient) -> None:
         "summary": "",
         "live": True,
         "sigla": "SO",  # fallback: first letters of the title
+        "relazione": False,
     }
 
 

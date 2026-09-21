@@ -36,7 +36,9 @@ def client() -> TestClient:
 
 def test_schema_endpoint_carries_identity_example_and_hints(client: TestClient) -> None:
     body = client.get("/api/tools/span/schema").json()
-    assert set(body) == {"name", "title", "group", "norm", "summary", "live", "sigla", "example", "input", "output"}
+    assert set(body) == {
+        "name", "title", "group", "norm", "summary", "live", "sigla", "relazione", "example", "input", "output",
+    }
     assert (body["name"], body["title"], body["norm"], body["example"]) == ("span", "Freccia", "NTC2018 §4", {"luce_m": 5.0})
     assert body["input"]["properties"]["luce_m"]["group"] == "Geometria"
     assert body["output"]["properties"]["freccia_mm"]["highlight"] is True

@@ -8,6 +8,8 @@ from fastapi.responses import JSONResponse
 
 from strutture.shared.divergences import Divergence, load_register
 from strutture.shared.divergences.marker import traccia
+from strutture.shared.relazione.ast_json import ast_a_json
+from strutture.shared.relazione.notazione import analizza
 from strutture.shared.tool import Tool, execute
 
 from ..confronto import NESSUNA_ATTRIBUZIONE, Attribuzione, attribuisci_per_singola_correzione, confronta
@@ -44,7 +46,7 @@ def build_tools_router(tools: dict[str, Tool], register: tuple[Divergence, ...] 
         )
 
     @router.post("/{name}/run")
-    async def run_tool(name: str, request: Request) -> JSONResponse:
+    async def run_tool(name: str, request: Request, relazione: int = 0) -> JSONResponse:
         tool = tools.get(name)
         if tool is None:
             return _unknown_tool(name)
@@ -57,13 +59,14 @@ def build_tools_router(tools: dict[str, Tool], register: tuple[Divergence, ...] 
             return error_envelope("Il corpo della richiesta deve essere un oggetto JSON.", 400)
 
         try:
-            report = execute(tool, raw_body)
+            report = execute(tool, raw_body, con_relazione=bool(relazione))
+            body = _con_formula_ast(report.model_dump(mode="json"))
         except Exception:
             logger.exception("unexpected error running tool %s", name)
             return internal_error_envelope()
 
         # Validation/domain errors are still a successful HTTP exchange: ok=false carries the detail.
-        return report_envelope(report.model_dump(mode="json"), 200)
+        return report_envelope(body, 200)
 
     @router.post("/{name}/compare")
     async def compare_tool(name: str, request: Request) -> JSONResponse:
@@ -126,7 +129,25 @@ def _summary(tool: Tool) -> dict[str, Any]:
     return {
         "name": tool.name, "title": tool.title, "group": tool.group, "norm": tool.norm,
         "summary": tool.summary, "live": tool.live, "sigla": sigla_for(tool.name, tool.title),
+        "relazione": tool.relazione is not None,
     }
+
+
+def _con_formula_ast(report_json: dict[str, Any]) -> dict[str, Any]:
+    """Attach `formula_ast` (docs/architecture-phase2.md §3) next to every `Passo.formula`: the
+    AST is the ONLY form the browser renders, `formula` stays for `title`/debugging/testo.py."""
+    tracce = report_json.get("relazione") or ()
+    if not tracce:
+        return report_json
+    return {**report_json, "relazione": [_traccia_con_formula_ast(t) for t in tracce]}
+
+
+def _traccia_con_formula_ast(traccia: dict[str, Any]) -> dict[str, Any]:
+    return {**traccia, "passi": [_passo_con_formula_ast(p) for p in traccia["passi"]]}
+
+
+def _passo_con_formula_ast(passo: dict[str, Any]) -> dict[str, Any]:
+    return {**passo, "formula_ast": ast_a_json(analizza(passo["formula"]))}
 
 
 MODE_FIELD = "legacy_compat"
