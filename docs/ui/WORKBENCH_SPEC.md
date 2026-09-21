@@ -146,6 +146,13 @@ violations; keyboard-only run of a whole tool; all existing e2e tests still pass
 print command (Ctrl/Cmd+P) and any future export all produce the SAME complete document:
 - it is built FROM THE DATA (report + input/output schema) into a print-only container at print time
   (`beforeprint` and the button), not by printing the interactive results tree; the interactive UI is hidden in print;
+- **document order (user rule):** cartiglio -> **Schizzo** (every sketch view, large: full text width, one view per
+  row when there are more than two; the sketch carries the main input dimensions as quotas) -> **Dati di ingresso**
+  -> Sintesi (verdict, η max, governing results) -> Verifiche -> result groups -> tables -> charts -> avvisi;
+- **Dati di ingresso are printed in full, as a table per input section: simbolo | descrizione | valore | unità** —
+  every dimension and every other input the engineer typed, every default actually used, the advanced options and
+  the calculation mode; table inputs (soil layers, reactions, load cases, plates) are listed row by row with their
+  column units (same 2 000-row rule as result tables); a value is never printed without its unit;
 - everything expanded: every input section with every value actually used (defaults and advanced options
   included, the calculation mode stated), every result group including "Passaggi di calcolo", EVERY check (no
   "failed + top 5" fold, no "Solo non soddisfatte" filter), all sketch views, all charts, warnings in full;
@@ -159,4 +166,5 @@ print command (Ctrl/Cmd+P) and any future export all produce the SAME complete d
 - the screen state (open groups, filters, scroll) is untouched by printing.
 Acceptance (e2e, print media emulation): with every group collapsed, the checks folded, the "Solo non soddisfatte"
 filter on and a table on page 2, the printed document still contains every group title, every check, every table
-row (count equals the data), every input section and the sketch; stale results refuse to print.
+row (count equals the data), the sketch views BEFORE the inputs, and a Dati di ingresso table whose row count equals
+the number of input fields of the tool with every numeric value followed by its unit; stale results refuse to print.
