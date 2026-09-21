@@ -2,9 +2,12 @@
 strut-and-tie against a table of column reactions per load combination (docs/architecture-batch2.md
 §1 `foundations/plinti_pali`). `run()` composes, in order: inviluppo -> flessione ->
 puntoni/tiranti -> taglio/punzonamento (docs/specs/fond-plinti-pali.md Tools 1-4)."""
+import logging
+
 from strutture.shared.load_table import governing
 from strutture.shared.pile_group import pile_coordinates
 from strutture.shared.report import CalcError, Check, Report, success
+from strutture.shared.sketch import Sketch
 from strutture.shared.tool import Tool
 
 from .capacita_pali import capacita_compressione, capacita_trazione
@@ -17,7 +20,10 @@ from .pesi_propri import peso_proprio_kN as calcola_peso_proprio
 from .puntoni_tiranti import puntoni_tiranti
 from .rows import RigaCarico, riga_carico
 from .schema import grid_counts, numero_pali
+from .schizzo import disegna as disegna_schizzo
 from .taglio_punzonamento import punzonamento_colonna, punzonamento_palo, taglio
+
+logger = logging.getLogger(__name__)
 
 ESEMPIO = {
     "schema_pali": "2x2", "lx_m": 2.0, "ly_m": 2.0,
@@ -116,12 +122,20 @@ def run(inputs: PlintoSuPaliInput) -> Report[PlintoSuPaliOutput]:
     )
     utilizzo_v = max(taglio_result.utilizzo, punzonamento_result.utilizzo, punzonamento_palo_result.utilizzo)
 
+    schizzo: Sketch | None
+    try:
+        schizzo = disegna_schizzo(inputs, piles, puntoni_tiranti_result, env.n_max_env_kN)
+    except Exception:
+        logger.exception("errore nel disegno dello schizzo per fond-plinto-su-pali")
+        schizzo = None
+
     data = PlintoSuPaliOutput(
         materiali=materiali_result, righe=righe, inviluppo=inviluppo_result, governante=governante,
         flessione=flessione_result, puntoni_tiranti=puntoni_tiranti_result, taglio=taglio_result,
         punzonamento=punzonamento_result, punzonamento_palo=punzonamento_palo_result,
         capacita_compressione=capacita_compressione_result, capacita_trazione=capacita_trazione_result,
         n_max_pila_kN=env.n_max_env_kN, utilizzo_puntoni_tiranti=utilizzo_st, utilizzo_taglio_punzonamento=utilizzo_v,
+        schizzo=schizzo,
     )
     return success(data, inputs, checks=checks, warnings=warnings)
 
@@ -194,5 +208,7 @@ TOOLS = (
         output_model=PlintoSuPaliOutput,
         run=run,
         example=ESEMPIO,
+        summary="Verifica il plinto su pali a puntoni e tiranti, con taglio, punzonamento e capacità portante dei pali.",
+        live=False,
     ),
 )

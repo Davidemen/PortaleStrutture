@@ -2,6 +2,8 @@
 sottofondo, distribuiti, concentrati, giunti)."""
 from pydantic import BaseModel, ConfigDict, Field
 
+from strutture.shared.sketch import Sketch, campo_schizzo
+
 from .armatura import ArmaturaResult
 from .concentrati import ConcentratiResult
 from .distribuiti_carico import CaricoDistribuitoResult
@@ -34,3 +36,4 @@ class PavimentoIndustrialeOutput(BaseModel):
     distribuiti: DistribuitiResult = Field(description="Verifica per carico uniformemente distribuito")
     concentrati: ConcentratiResult = Field(description="Verifica per carichi concentrati (righe + inviluppo)")
     giunti: GiuntiResult = Field(description="Prescrizioni geometriche sui giunti")
+    schizzo: Sketch | None = campo_schizzo()

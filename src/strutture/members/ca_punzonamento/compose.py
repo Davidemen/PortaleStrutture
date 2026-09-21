@@ -1,5 +1,7 @@
 """Composes the ca-punzonamento steps into a Report. `run` only composes the step modules
 (docs/BUILD_CONTRACT.md "Modularity"); each formula lives in its own step module."""
+import logging
+
 from strutture.shared.ec2_shear import k_size
 from strutture.shared.report import CalcError, Check, Report, success
 from strutture.shared.tables import exact_lookup
@@ -18,7 +20,10 @@ from .models import (
 )
 from .perimeter_scan import scan_perimetro
 from .reinforcement_ratio import RHO_MAX_WARNING, rho_l
+from .schizzo import disegna as disegna_schizzo
 from .tables import POSIZIONE_BETA
+
+logger = logging.getLogger(__name__)
 
 RHO_L_CLAUSE = "EN 1992-1-1 §6.4.4(1)"
 FACCIA_CLAUSE = "EN 1992-1-1 §6.4.5(3)"
@@ -109,11 +114,19 @@ def run(inputs: PunzonamentoInput) -> Report[PunzonamentoOutput]:
         armatura, armatura_checks = _armatura(inputs, capacity, d_mm, k, rho)
         checks = (*checks, *armatura_checks)
 
+    geometria = GeometriaOutput(dx_mm=dx_mm, dy_mm=dy_mm, d_mm=d_mm, u0_mm=u0)
+    try:
+        schizzo = disegna_schizzo(inputs, geometria, perimetro_critico, armatura)
+    except Exception:
+        logger.exception("errore nel disegno dello schizzo per ca-punzonamento")
+        schizzo = None
+
     data = PunzonamentoOutput(
-        geometria=GeometriaOutput(dx_mm=dx_mm, dy_mm=dy_mm, d_mm=d_mm, u0_mm=u0),
+        geometria=geometria,
         faccia_pilastro=faccia,
         perimetro_critico=perimetro_critico,
         messaggio=gov.messaggio_esito(capacity.armatura_necessaria),
         armatura=armatura,
+        schizzo=schizzo,
     )
     return success(data, inputs, checks=checks)

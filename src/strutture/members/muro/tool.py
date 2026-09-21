@@ -6,11 +6,13 @@ ribaltamento_scorrimento, pressioni_terreno, armatura_paramento, armatura_fondaz
 armatura_fondazione_monte) for all 8 combinations (STR_1, STR_2, GEO_1, GEO_2, EQU_1, EQU_2,
 SISMA_1, SISMA_2) and returns every intermediate group.
 """
+import logging
 import math
 
 from strutture.shared.materials.rebar import rebar_properties
 from strutture.shared.ntc_combos import fattori_resistenza
 from strutture.shared.report import CalcError, Check, Report, success
+from strutture.shared.sketch import Sketch
 from strutture.shared.tool import Tool
 
 from . import armatura_fondazione_monte as fond_monte
@@ -51,6 +53,9 @@ from .ribaltamento_scorrimento import (
     soglia_verifica,
     spinte_orizzontali_verticali,
 )
+from .schizzo import disegna as disegna_schizzo
+
+logger = logging.getLogger(__name__)
 
 # docs/specs/muro-sostegno.md §"Golden test case" (Tratto A, cached against the original sheet).
 ESEMPIO_TRATTO_A = {
@@ -402,6 +407,13 @@ def run_muro_sostegno(inputs: MuroSostegnoInput) -> Report[MuroSostegnoOutput]:
         spinte, ribaltamento_scorrimento, pressioni_terreno, inputs=inputs, geometria=geometria, fyd_MPa=fyd_MPa
     )
 
+    schizzo: Sketch | None
+    try:
+        schizzo = disegna_schizzo(inputs, geometria, spinte, ribaltamento_scorrimento, pressioni_terreno)
+    except Exception:
+        logger.exception("errore nel disegno dello schizzo per muro-sostegno")
+        schizzo = None
+
     data = MuroSostegnoOutput(
         geometria=geometria,
         parametri_sismici=sismici,
@@ -411,6 +423,7 @@ def run_muro_sostegno(inputs: MuroSostegnoInput) -> Report[MuroSostegnoOutput]:
         armatura_paramento=armatura_paramento,
         armatura_fondazione_valle=armatura_fondazione_valle,
         armatura_fondazione_monte=armatura_fondazione_monte,
+        schizzo=schizzo,
     )
     checks = tuple(c for v in ribaltamento_scorrimento for c in (v.verifica_ribaltamento, v.verifica_scorrimento))
     return success(data, inputs, checks=checks, warnings=(AVVISO_CAPACITA_PORTANTE,))
@@ -426,5 +439,6 @@ TOOLS = (
         output_model=MuroSostegnoOutput,
         run=run_muro_sostegno,
         example=ESEMPIO_TRATTO_A,
+        summary="Verifica un muro di sostegno a mensola a ribaltamento, scorrimento, pressione sul terreno e armatura, per le 8 combinazioni di carico statiche e sismiche.",
     ),
 )

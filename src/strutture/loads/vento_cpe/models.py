@@ -1,6 +1,8 @@
 """Pydantic I/O models for the vento-cpe-rettangolare tool (Circ. NTC2019 §C3.3.8.1)."""
 from pydantic import BaseModel, ConfigDict, Field
 
+from strutture.shared.sketch import Sketch, campo_schizzo
+
 
 class VentoCpeInput(BaseModel):
     """Plan geometry of a rectangular-plan building."""
@@ -60,3 +62,4 @@ class VentoCpeOutput(BaseModel):
     )
     dir1: DirectionResult = Field(description="Direzione 1 — vento perpendicolare al lato b")
     dir2: DirectionResult = Field(description="Direzione 2 — vento perpendicolare al lato d")
+    schizzo: Sketch | None = campo_schizzo()

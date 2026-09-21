@@ -318,6 +318,7 @@ TOOLS = (
         output_model=LimitazioneTensioniOutput,
         run=run_limitazione_tensioni,
         example=ESEMPIO_LIMITAZIONE_TENSIONI,
+        summary="Verifica, per tre sezioni, che le tensioni di esercizio nel calcestruzzo e nell'acciaio nelle combinazioni rara e quasi permanente rispettino i limiti di normativa in funzione delle resistenze caratteristiche dei materiali.",
     ),
     Tool(
         name="ca-apertura-fessure",
@@ -328,6 +329,7 @@ TOOLS = (
         output_model=AperturaFessureOutput,
         run=run_apertura_fessure,
         example=ESEMPIO_APERTURA_FESSURE,
+        summary="Calcola l'ampiezza caratteristica delle fessure di una sezione in cemento armato a partire da geometria, armatura e tensione nell'acciaio, verificandola rispetto al limite della classe di esposizione scelta.",
     ),
     Tool(
         name="ca-apertura-fessure-semplificata",
@@ -338,5 +340,6 @@ TOOLS = (
         output_model=AperturaFessureSempOutput,
         run=run_apertura_fessure_semplificata,
         example=ESEMPIO_APERTURA_FESSURE_SEMP,
+        summary="Verifica in forma semplificata, per tre sezioni e in funzione del diametro delle barre, che le tensioni nell'acciaio nelle combinazioni frequente e quasi permanente rispettino i limiti tabellari di apertura delle fessure.",
     ),
 )

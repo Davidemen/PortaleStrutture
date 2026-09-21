@@ -1,5 +1,8 @@
 """Composes the EN1998 branch of `fond-trave-collegamento` (sheet `Travi colleg. EN 1998-1 e 5`)."""
+import logging
+
 from strutture.shared.report import Report, success
+from strutture.shared.sketch import Sketch
 
 from .armatura_minima_en import armatura_minima_en
 from .azione import azione
@@ -8,12 +11,15 @@ from .geometria_minima_en import geometria_minima_en
 from .materiali import materiali
 from .models import TraviCollegamentoInput
 from .output import MinimiEnResult, TraviCollegamentoOutput
+from .schizzo import disegna as disegna_schizzo
 from .sismica_en import sismica_en
 from .snellezza_en import snellezza_en
 from .staffe_minime_en import staffe_minime_en
 from .trazione import trazione
 
 ALPHA_STAFFA_DEG_DEFAULT_EN = 90.0  # sheet C58 default — staffe verticali.
+
+logger = logging.getLogger(__name__)
 
 
 def run_en(inputs: TraviCollegamentoInput) -> Report[TraviCollegamentoOutput]:
@@ -34,9 +40,16 @@ def run_en(inputs: TraviCollegamentoInput) -> Report[TraviCollegamentoOutput]:
         inputs.b_mm, inputs.h_mm, inputs.cf_mm, inputs.phi_staffa_mm, inputs.n_bracci, inputs.p_mm,
         alpha_staffa_deg, mat.fck_MPa, mat.fyk_MPa,
     )
+    schizzo: Sketch | None
+    try:
+        schizzo = disegna_schizzo(inputs)
+    except Exception:
+        logger.exception("errore nel disegno dello schizzo per fond-trave-collegamento (EN1998)")
+        schizzo = None
     data = TraviCollegamentoOutput(
         sismica_en=sismica, azione=az, materiali=mat, compressione=comp, trazione=traz, snellezza_en=snel,
         minimi_en=MinimiEnResult(armatura_longitudinale=armatura_min, geometria=geom_min, staffe=staffe_min),
+        schizzo=schizzo,
     )
     checks = (
         comp.verifica, traz.verifica, snel.verifica, armatura_min.verifica,

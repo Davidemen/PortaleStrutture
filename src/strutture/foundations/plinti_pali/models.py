@@ -2,6 +2,8 @@
 per governing quantity, `governante` expanded, checks on the envelope only)."""
 from pydantic import BaseModel, ConfigDict, Field
 
+from strutture.shared.sketch import Sketch, campo_schizzo
+
 from .inviluppo import InviluppoRiga
 from .materiali import Materiali
 from .models_flessione import Flessione
@@ -45,3 +47,4 @@ class PlintoSuPaliOutput(BaseModel):
         description="Utilizzo governante tra taglio e punzonamento", ge=0,
         json_schema_extra={"unit": "-", "symbol": "η_v", "highlight": True},
     )
+    schizzo: Sketch | None = campo_schizzo()

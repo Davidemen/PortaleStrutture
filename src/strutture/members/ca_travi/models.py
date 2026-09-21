@@ -15,6 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from strutture.shared.materials.concrete import ConcreteClass, ConcreteProperties
 from strutture.shared.materials.rebar import RebarGrade, RebarProperties
+from strutture.shared.sketch import Sketch, campo_schizzo
 
 ClasseDuttilita = Literal["CDA", "CDB"]
 
@@ -250,3 +251,4 @@ class TraveRettangolareOutput(BaseModel):
     sle_tensioni: SleTensioniOutput
     fessurazione: FessurazioneOutput
     dettagli_costruttivi: CapacityDesignOutput
+    schizzo: Sketch | None = campo_schizzo()

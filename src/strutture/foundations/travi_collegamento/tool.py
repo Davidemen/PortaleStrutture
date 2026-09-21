@@ -30,5 +30,6 @@ TOOLS = (
         output_model=TraviCollegamentoOutput,
         run=run,
         example=ESEMPIO_NTC2018,
+        summary="Verifica la trave di collegamento tra due plinti a compressione, trazione, snellezza e staffe minime.",
     ),
 )

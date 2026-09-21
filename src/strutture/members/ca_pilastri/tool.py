@@ -34,6 +34,7 @@ TOOLS = (
         output_model=PilastroOutput,
         run=run_pilastro_rettangolare,
         example=ESEMPIO_RETTANGOLARE,
+        summary="Verifica un pilastro in c.a. a sezione rettangolare a pressoflessione, taglio, snellezza e dettagli sismici.",
     ),
     Tool(
         name="ca-pilastro-circolare",
@@ -44,5 +45,6 @@ TOOLS = (
         output_model=PilastroOutput,
         run=run_pilastro_circolare,
         example=ESEMPIO_CIRCOLARE,
+        summary="Verifica un pilastro in c.a. a sezione circolare a pressoflessione, taglio, snellezza e dettagli sismici.",
     ),
 )

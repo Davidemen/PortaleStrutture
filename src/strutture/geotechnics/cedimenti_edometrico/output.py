@@ -3,6 +3,8 @@
 [highlight])."""
 from pydantic import BaseModel, ConfigDict, Field
 
+from strutture.shared.sketch import Sketch, campo_schizzo
+
 from .carico import CaricoResult
 from .cedimento import CedimentoResult
 from .profondita_critica import ProfonditaCriticaResult
@@ -30,3 +32,4 @@ class EdometricoOutput(BaseModel):
         json_schema_extra={"chart": _CHART_RIGHE},
     )
     cedimento: CedimentoResult = Field(description="Cedimento edometrico totale")
+    schizzo: Sketch | None = campo_schizzo()

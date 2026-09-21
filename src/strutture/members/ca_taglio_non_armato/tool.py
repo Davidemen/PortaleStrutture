@@ -22,5 +22,6 @@ TOOLS = (
         output_model=TaglioNonArmatoOutput,
         run=run,
         example=ESEMPIO_AUREO,
+        summary="Verifica la resistenza a taglio di una sezione in c.a. priva di armatura trasversale.",
     ),
 )

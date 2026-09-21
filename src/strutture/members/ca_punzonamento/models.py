@@ -5,6 +5,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from strutture.shared.ec2_shear.v_rd_max import V_RD_MAX_COEFF_A1_2014
+from strutture.shared.sketch import Sketch, campo_schizzo
 
 from .tables import PHI_STAFFA_LEGACY_TYPO_MM, PHI_STAFFA_OPTIONS_MM, PosizionePilastro
 
@@ -157,3 +158,4 @@ class PunzonamentoOutput(BaseModel):
     perimetro_critico: PerimetroCriticoOutput
     messaggio: str = Field(description="Esito sintetico (cella C40 del foglio)")
     armatura: ArmaturaOutput | None = Field(default=None, description="Progetto armature a taglio, presente solo se necessario")
+    schizzo: Sketch | None = campo_schizzo()

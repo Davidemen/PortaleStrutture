@@ -1,6 +1,7 @@
 """Frozen output models for `acciaio-sezione-h-rimpiattata`."""
 from pydantic import BaseModel, ConfigDict, Field
 
+from strutture.shared.sketch import Sketch, campo_schizzo
 from strutture.shared.units import MM_PER_CM
 
 MM3_PER_CM3 = MM_PER_CM**3
@@ -75,3 +76,4 @@ class SezioneHRimpiattataOutput(BaseModel):
 
     elementi: tuple[ElementoRisultato, ...] = Field(description="Elementi della sezione (ali, anima, piatti)")
     sezione: Sezione = Field(description="Proprietà della sezione composta")
+    schizzo: Sketch | None = campo_schizzo()

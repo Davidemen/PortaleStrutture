@@ -6,6 +6,8 @@ directly instead of derived from Rck, Asl given as N°/Ø instead of a scalar ar
 """
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from strutture.shared.sketch import Sketch, campo_schizzo
+
 
 class TaglioNonArmatoInput(BaseModel):
     """Flat inputs, ordered as in sheet `Foglio1` (v1) / `1m` (v2) of Taglio non armato NTC2018.xlsx."""
@@ -95,3 +97,4 @@ class TaglioNonArmatoOutput(BaseModel):
     materiali: MaterialiOutput
     geometria: GeometriaOutput
     taglio: TaglioOutput
+    schizzo: Sketch | None = campo_schizzo()

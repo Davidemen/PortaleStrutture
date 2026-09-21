@@ -2,16 +2,22 @@
 Tool 2), based on the only complete draft, `Elastico_Timoshenko_Goodier_3` (μ=0.35); the earlier
 `Elastico_Timoshenko_Goodier` (μ=0.2) and `_2` (μ=0.25) sheets are dead drafts (their per-layer IF
 column is never filled in) and are not ported."""
+import logging
+
 from strutture.shared.report import CalcError, Report, success
+from strutture.shared.sketch import Sketch
 from strutture.shared.tables import KeyNotFound
 from strutture.shared.tool import Tool
 
 from .boundary import to_kpa, to_m
 from .ground_to_base import shift_to_base
 from .models_tg import CedimentoTG, FattoriTG, GeometriaTG, ModuloTG, TimoshenkoGoodierInput, TimoshenkoGoodierOutput
+from .schizzo import disegna_timoshenko_goodier
 from .settlement_tg import deltah_bordo_mm, deltah_centro_mm
 from .steinbrenner_factors import aspect_ratio, depth_ratio_bordo, depth_ratio_centro, influence_factors
 from .weighted_es import es_weighted_modulus
+
+logger = logging.getLogger(__name__)
 
 H_SIGNIFICATIVO_DEFAULT_FACTOR = 5.0  # "C7={=+C4*5}": significant depth defaults to 5·B
 
@@ -38,6 +44,13 @@ def run_timoshenko_goodier(inputs: TimoshenkoGoodierInput) -> Report[TimoshenkoG
     b_centro, b_bordo = depth_ratio_centro(h_m, b_m), depth_ratio_bordo(h_m, b_m)
     is_centro, is_bordo = influence_factors(a, b_centro, b_bordo, inputs.mu, legacy_compat=inputs.legacy_compat)
 
+    schizzo: Sketch | None
+    try:
+        schizzo = disegna_timoshenko_goodier(inputs)
+    except Exception:
+        logger.exception("errore nel disegno dello schizzo per geo-cedimento-elastico-timoshenko-goodier")
+        schizzo = None
+
     data = TimoshenkoGoodierOutput(
         geometria=GeometriaTG(a=a, b_centro=b_centro, b_bordo=b_bordo),
         modulo=ModuloTG(es_MPa=es_MPa),
@@ -46,6 +59,7 @@ def run_timoshenko_goodier(inputs: TimoshenkoGoodierInput) -> Report[TimoshenkoG
             delta_h_centro_mm=deltah_centro_mm(q_kPa, b_m, inputs.mu, es_MPa, is_centro, inputs.if_centro, legacy_compat=inputs.legacy_compat),
             delta_h_bordo_mm=deltah_bordo_mm(q_kPa, b_m, inputs.mu, es_MPa, is_bordo, inputs.if_bordo, legacy_compat=inputs.legacy_compat),
         ),
+        schizzo=schizzo,
     )
     return success(data, inputs)
 
@@ -60,5 +74,6 @@ TOOLS: tuple[Tool, ...] = (
         output_model=TimoshenkoGoodierOutput,
         run=run_timoshenko_goodier,
         example=ESEMPIO,
+        summary="Calcola il cedimento elastico immediato di una fondazione flessibile con il metodo di Timoshenko e Goodier, al centro e al bordo.",
     ),
 )

@@ -6,6 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from strutture.shared.sketch import Sketch, campo_schizzo
 from strutture.shared.soil_layers import SoilLayer, strati_table_field
 
 from .boundary import SistemaUnita
@@ -99,3 +100,4 @@ class NewmarkOutput(BaseModel):
     righe_o_prime: tuple[RigaNewmark, ...] | None = Field(default=None, description="Fette del percorso O' (solo modalità PUNTO)")
     centro: CentroCedimento | None = Field(default=None, description="Risultati (solo modalità CENTRO)")
     punto: PuntoCedimento | None = Field(default=None, description="Risultati (solo modalità PUNTO)")
+    schizzo: Sketch | None = campo_schizzo()

@@ -1,7 +1,10 @@
 """Tool registration: `geo-cedimento-edometrico` (docs/specs/geo-cedimenti-edometrico.md,
 docs/architecture-batch2.md §1 `geotechnics/cedimenti_edometrico`). `run` only composes the step
 modules; no calculation lives here."""
+import logging
+
 from strutture.shared.report import CalcError, Report, success
+from strutture.shared.sketch import Sketch
 from strutture.shared.tables import KeyNotFound
 from strutture.shared.tool import Tool
 
@@ -12,6 +15,9 @@ from .models import EdometricoInput, MetodoTensioni
 from .output import EdometricoOutput
 from .profondita_critica import profondita_critica
 from .righe import genera_righe
+from .schizzo import disegna as disegna_schizzo
+
+logger = logging.getLogger(__name__)
 
 # docs/specs/geo-cedimenti-edometrico.md "Golden test case" (sheet Edometrico, cached run):
 # B=350 cm, L=500 cm, γ=1800 kg/mc, q=0.5 kg/cmq, D=0, Z,crit=10000 cm (disabled), 5 layers.
@@ -56,7 +62,14 @@ def run(inputs: EdometricoInput) -> Report[EdometricoOutput]:
         d_m=d_m_sigma, water_table_m=water_table_m_sigma,
     )
     cedimento = cedimento_totale(righe, profondita.z_crit_utilizzato_m)
-    data = EdometricoOutput(carico=carico, profondita_critica=profondita, righe=righe, cedimento=cedimento)
+    schizzo: Sketch | None
+    try:
+        schizzo = disegna_schizzo(inputs, si, profondita)
+    except Exception:
+        logger.exception("errore nel disegno dello schizzo per geo-cedimento-edometrico")
+        schizzo = None
+    data = EdometricoOutput(carico=carico, profondita_critica=profondita, righe=righe, cedimento=cedimento,
+                             schizzo=schizzo)
     return success(data, inputs)
 
 
@@ -70,5 +83,6 @@ TOOLS = (
         output_model=EdometricoOutput,
         run=run,
         example=ESEMPIO,
+        summary="Calcola il cedimento edometrico di una fondazione rettangolare su terreno stratificato, sommando le deformazioni fino alla profondità significativa.",
     ),
 )

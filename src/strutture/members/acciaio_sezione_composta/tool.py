@@ -5,6 +5,8 @@ raggi) stay small pure functions over the plain `Elemento` geometry built by `el
 only wires them together (rows 16-50 of the sheet, an unrelated EC3 member check, are not ported —
 architecture-batch2.md §1).
 """
+import logging
+
 from strutture.shared.report import Report, success
 from strutture.shared.tool import Tool
 
@@ -16,6 +18,9 @@ from .moduli_elastici import wel_mm3
 from .plastico import wpl_x_legacy_mm3, wpl_x_mm3, wpl_y_legacy_mm3, wpl_y_mm3
 from .raggi import raggio_giro_mm
 from .risultati import MM3_PER_CM3, MM4_PER_CM4, ElementoRisultato, Sezione, SezioneHRimpiattataOutput
+from .schizzo import disegna as disegna_schizzo
+
+logger = logging.getLogger(__name__)
 
 ESEMPIO_AUREO = {
     "h_profilo_mm": 114, "b_profilo_mm": 120, "tf_mm": 8, "tw_mm": 5,
@@ -65,9 +70,16 @@ def run(inputs: SezioneHRimpiattataInput) -> Report[SezioneHRimpiattataOutput]:
         wpl_x_cm3=wpl_x / MM3_PER_CM3, wpl_y_cm3=wpl_y / MM3_PER_CM3,
         raggio_x_mm=raggio_giro_mm(ix_mm4, area_mm2), raggio_y_mm=raggio_giro_mm(iy_mm4, area_mm2),
     )
+    try:
+        schizzo = disegna_schizzo(elementi, x_n_mm, y_n_mm, inputs.h_profilo_mm, inputs.b_profilo_mm)
+    except Exception:
+        logger.exception("errore nel disegno dello schizzo per acciaio-sezione-h-rimpiattata")
+        schizzo = None
+
     data = SezioneHRimpiattataOutput(
         elementi=tuple(_riga_elemento(e, x_n_mm, y_n_mm) for e in elementi),
         sezione=sezione,
+        schizzo=schizzo,
     )
     return success(data, inputs)
 
@@ -82,5 +94,6 @@ TOOLS: tuple[Tool, ...] = (
         output_model=SezioneHRimpiattataOutput,
         run=run,
         example=ESEMPIO_AUREO,
+        summary="Proprietà geometriche di un profilo H saldato con piatti di rinforzo alle ali.",
     ),
 )

@@ -122,6 +122,7 @@ TOOLS = (
         output_model=SismaVitaRiferimentoOutput,
         run=run_vita_riferimento,
         example={"comune": "Brembate", "vn_anni": 50, "classe_uso": "II"},
+        summary="Calcola la vita di riferimento e i periodi di ritorno dell'azione sismica a partire da vita nominale e classe d'uso, individuando opzionalmente comune e zona sismica.",
     ),
     Tool(
         name="sisma-parametri-sito",
@@ -138,6 +139,7 @@ TOOLS = (
             "f0": 2.436,
             "ag_g": 0.098,
         },
+        summary="Determina i coefficienti di amplificazione stratigrafica e topografica del sito e i periodi caratteristici dello spettro di risposta a partire dalla categoria di sottosuolo, dalla categoria topografica e dai parametri di pericolosità sismica di base.",
     ),
     Tool(
         name="sisma-fattori-struttura",
@@ -148,6 +150,7 @@ TOOLS = (
         output_model=SismaFattoriStrutturaOutput,
         run=run_fattori_struttura,
         example={"xi_pct": 5, "q0": 1.5, "regolare_altezza": "SI", "stato_limite": "SLV", "qv": 1.5},
+        summary="Calcola il fattore di smorzamento e i fattori di struttura orizzontale e verticale dell'edificio a partire da smorzamento viscoso, regolarità in altezza e fattori di struttura di base.",
     ),
     Tool(
         name="sisma-spettro",
@@ -168,6 +171,7 @@ TOOLS = (
             "td_s": 1.992,
             "stato_limite": "SLV",
         },
+        summary="Genera lo spettro di risposta elastico e di progetto, in termini di accelerazioni campionate su un intervallo di periodi, a partire dai parametri di sito e dai fattori di struttura già determinati.",
     ),
     Tool(
         name="sisma-completo",
@@ -192,5 +196,6 @@ TOOLS = (
             "regolare_altezza": "SI",
             "qv": 1.5,
         },
+        summary="Esegue in un unico calcolo l'intera catena sismica, dalla vita di riferimento ai parametri di sito e ai fattori di struttura, fino allo spettro di risposta di progetto.",
     ),
 )

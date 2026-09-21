@@ -11,6 +11,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from strutture.shared.report import Check
+from strutture.shared.sketch import Sketch, campo_schizzo
 
 AcciaioGrado = Literal["B450C", "FeB22k", "FeB32k", "FeB38k", "FeB44k"]  # Tabelle!$DA$7:$DA$11
 ClsClasse = Literal["C20/25", "C25/30", "C28/35", "C32/40", "C35/45", "C40/50", "C45/55", "C50/60"]  # Tabelle!$CX$7:$CX$14
@@ -239,6 +240,7 @@ class PilastroOutput(BaseModel):
     snellezza: SnellezzaResult
     dettagli: DettagliResult
     regole: RegoleResult
+    schizzo: Sketch | None = campo_schizzo()
 
 
 __all__ = [

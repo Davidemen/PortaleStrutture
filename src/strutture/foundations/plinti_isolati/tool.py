@@ -1,7 +1,10 @@
 """Tool registration: `fond-plinto-isolato` — one composed tool verifying one isolated-footing type
 against a table of support reactions (docs/architecture-batch2.md §1 `foundations/plinti_isolati`)."""
+import logging
+
 from strutture.shared.load_table import governing
 from strutture.shared.report import Report, success
+from strutture.shared.sketch import Sketch
 from strutture.shared.tool import Tool
 
 from .checks_inviluppo import checks_inviluppo
@@ -11,7 +14,10 @@ from .inviluppo import eccentricita_globale, inviluppo
 from .materiali import materiali
 from .models import PlintoIsolatoOutput
 from .riga_verifica import RigaVerifica, riga_verifica
+from .schizzo import disegna as disegna_schizzo
 from .sle import sle, sle_checks
+
+logger = logging.getLogger(__name__)
 
 ESEMPIO = {
     "ax_m": 4.0, "by_m": 4.0, "h_plinto_m": 0.8, "h_interro_m": 4.5,
@@ -73,12 +79,19 @@ def run(inputs: PlintoIsolatoInput) -> Report[PlintoIsolatoOutput]:
         v for v in (_minimo(inviluppo_righe, "ribaltamento_x_min"), _minimo(inviluppo_righe, "ribaltamento_y_min"))
         if v is not None
     ]
+    schizzo: Sketch | None
+    try:
+        schizzo = disegna_schizzo(inputs, riga_governante)
+    except Exception:
+        logger.exception("errore nel disegno dello schizzo per fond-plinto-isolato")
+        schizzo = None
     data = PlintoIsolatoOutput(
         materiali=materiali_result, righe=righe, inviluppo=inviluppo_righe, eccentricita=eccentricita,
         governante=riga_governante, flessione=flessione_result, sle=sle_result,
         sigma_max_governante_kpa=riga_governante.sigma_max_kpa,
         mu_scorrimento_minimo=_minimo(inviluppo_righe, "scorrimento_min"),
         mu_ribaltamento_minimo=min(mu_ribaltamento_candidati) if mu_ribaltamento_candidati else None,
+        schizzo=schizzo,
     )
     return success(data, inputs, checks=checks)
 
@@ -98,5 +111,7 @@ TOOLS = (
         output_model=PlintoIsolatoOutput,
         run=run,
         example=ESEMPIO,
+        summary="Verifica portanza, scorrimento, ribaltamento e armatura di un plinto isolato su tutte le combinazioni di carico.",
+        live=False,
     ),
 )

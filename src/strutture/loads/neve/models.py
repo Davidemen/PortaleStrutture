@@ -3,6 +3,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from strutture.shared.sketch import Sketch, campo_schizzo
+
 Topografia = Literal["Battuta dai venti", "Normale", "Riparata"]
 SiNo = Literal["SI", "NO"]
 Zona = Literal["I (alpina)", "I (mediterranea)", "II", "III"]
@@ -170,6 +172,7 @@ class CaricoFaldaOutput(BaseModel):
         default=None, description="Carico neve di progetto sulla falda 2",
         json_schema_extra={"unit": "kN/m²", "symbol": "q_s2", "highlight": True},
     )
+    schizzo: Sketch | None = campo_schizzo()
 
 
 class AccumuloInput(_LocationInput):
@@ -251,3 +254,4 @@ class AccumuloOutput(BaseModel):
         description="Carico neve di progetto, al muro (qsk·CE·Ct·m2_final)",
         json_schema_extra={"unit": "kN/m²", "highlight": True},
     )
+    schizzo: Sketch | None = campo_schizzo()

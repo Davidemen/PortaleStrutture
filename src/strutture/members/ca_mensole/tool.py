@@ -1,5 +1,7 @@
 """Tool registration: ca-mensola-tozza (NTC2018 §4.1.6.1.3, Circ. C4.1.2.1.5 — mensole tozze e
 denti Gerber, verifica a bielle e tiranti)."""
+import logging
+
 from strutture.shared.report import Report, success
 from strutture.shared.tool import Tool
 
@@ -8,7 +10,10 @@ from .capacita import capacita, coefficiente_c
 from .geometria import geometria
 from .materiali import materiali
 from .models import MensolaTozzaInput, MensolaTozzaOutput
+from .schizzo import disegna as disegna_schizzo
 from .verifica import verifica_gerarchia, verifica_staffe, verifica_uls
+
+logger = logging.getLogger(__name__)
 
 ESEMPIO_AUREO = {
     "a_mm": 177, "h_mm": 450, "b_mm": 800, "c_mm": 50, "ped_kN": 136, "hed_kN": 0,
@@ -35,7 +40,12 @@ def run(inputs: MensolaTozzaInput) -> Report[MensolaTozzaOutput]:
         verifica_uls(cap.pr_kN, inputs.ped_kN),
         verifica_staffe(inputs.n_staffe, inputs.phi_staffe_mm, arm.as_lnk_min_mm2),
     )
-    data = MensolaTozzaOutput(materiali=mat, geometria=geo, armature=arm, capacita=cap)
+    try:
+        schizzo = disegna_schizzo(inputs, geo)
+    except Exception:
+        logger.exception("errore nel disegno dello schizzo per ca-mensola-tozza")
+        schizzo = None
+    data = MensolaTozzaOutput(materiali=mat, geometria=geo, armature=arm, capacita=cap, schizzo=schizzo)
     return success(data, inputs, checks=checks)
 
 
@@ -49,5 +59,6 @@ TOOLS = (
         output_model=MensolaTozzaOutput,
         run=run,
         example=ESEMPIO_AUREO,
+        summary="Verifica una mensola tozza in calcestruzzo armato con il modello a bielle e tiranti.",
     ),
 )

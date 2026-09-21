@@ -16,6 +16,8 @@ exactly this recipe: see `sle_tensioni.py` / `fessurazione.py`. `_checks()` comp
 `Check`(s) into one tuple so `run()` itself stays pure composition (see `ca_pilastri/tool_*.py`
 for the same run()-stays-small pattern).
 """
+import logging
+
 from strutture.shared.report import Check, Report, success
 from strutture.shared.tool import Tool
 
@@ -35,8 +37,11 @@ from .models import (
     TraveRettangolareInput,
     TraveRettangolareOutput,
 )
+from .schizzo import disegna as disegna_schizzo
 from .sle_tensioni import verifica_sle_tensioni
 from .taglio_slu import verifica_taglio_slu
+
+logger = logging.getLogger(__name__)
 
 ESEMPIO_AUREO = {
     "b_mm": 600, "h_mm": 400, "tipo_acciaio": "RB500W", "tipo_cls": "C35/45", "copriferro_mm": 70,
@@ -246,9 +251,16 @@ def run(inputs: TraveRettangolareInput) -> Report[TraveRettangolareOutput]:
     sle_tensioni, fessurazione = _sle(inputs, d_mm, armatura.as_o_mm2, cls.fck_MPa, acciaio.fyk_MPa)
     dettagli = _dettagli(inputs, d_mm, flessione.mrd_kNm)
 
+    try:
+        schizzo = disegna_schizzo(inputs, flessione)
+    except Exception:
+        logger.exception("errore nel disegno dello schizzo per ca-trave-rettangolare")
+        schizzo = None
+
     data = TraveRettangolareOutput(
         materiali=materiali, armatura=armatura, flessione=flessione, taglio=taglio,
         sle_tensioni=sle_tensioni, fessurazione=fessurazione, dettagli_costruttivi=dettagli,
+        schizzo=schizzo,
     )
     checks = _checks(inputs, armatura, flessione, taglio, sle_tensioni, fessurazione, dettagli)
     return success(data, inputs, checks=checks)
@@ -264,5 +276,6 @@ TOOLS = (
         output_model=TraveRettangolareOutput,
         run=run,
         example=ESEMPIO_AUREO,
+        summary="Progetta e verifica una trave in c.a. a sezione rettangolare a flessione, taglio e stato limite di esercizio.",
     ),
 )

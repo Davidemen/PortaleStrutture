@@ -1,4 +1,6 @@
 """Tool registration: neve-carico-falda (NTC2018 §3.4) and neve-accumulo (Circ. §C3.4.5.6)."""
+import logging
+
 from strutture.shared.comuni import AmbiguousComuneError, KeyNotFound
 from strutture.shared.report import CalcError, Report, success
 from strutture.shared.tool import Tool
@@ -12,6 +14,10 @@ from .forma_falda import coefficiente_forma
 from .location import resolve_comune, zona_from_provincia_bug
 from .models import AccumuloInput, AccumuloOutput, CaricoFaldaInput, CaricoFaldaOutput
 from .qsk import qsk_accumulo, qsk_falda
+from .schizzo import disegna_accumulo as disegna_schizzo_accumulo
+from .schizzo import disegna_carico_falda as disegna_schizzo_falda
+
+logger = logging.getLogger(__name__)
 
 
 def _location_error(comune: str, error: Exception) -> CalcError:
@@ -47,19 +53,25 @@ def run_carico_falda(inputs: CaricoFaldaInput) -> Report[CaricoFaldaOutput]:
     show_una_falda = inputs.legacy_compat or inputs.tipo_copertura == "Copertura ad una falda"
     show_due_falde = inputs.legacy_compat or inputs.tipo_copertura == "Copertura a due falde"
 
-    data = CaricoFaldaOutput(
-        provincia=provincia,
-        regione=regione,
-        zona=zona,
-        qsk=qsk,
-        ce=ce,
-        mu=mu if show_una_falda else None,
-        qs=qs if show_una_falda else None,
-        mu1=mu1 if show_due_falde else None,
-        qs1=qs1 if show_due_falde else None,
-        mu2=mu2 if show_due_falde else None,
-        qs2=qs2 if show_due_falde else None,
-    )
+    campi = {
+        "provincia": provincia,
+        "regione": regione,
+        "zona": zona,
+        "qsk": qsk,
+        "ce": ce,
+        "mu": mu if show_una_falda else None,
+        "qs": qs if show_una_falda else None,
+        "mu1": mu1 if show_due_falde else None,
+        "qs1": qs1 if show_due_falde else None,
+        "mu2": mu2 if show_due_falde else None,
+        "qs2": qs2 if show_due_falde else None,
+    }
+    try:
+        schizzo = disegna_schizzo_falda(inputs, CaricoFaldaOutput(**campi))
+    except Exception:
+        logger.exception("errore nel disegno dello schizzo per neve-carico-falda")
+        schizzo = None
+    data = CaricoFaldaOutput(**campi, schizzo=schizzo)
     return success(data, inputs)
 
 
@@ -94,20 +106,26 @@ def run_accumulo(inputs: AccumuloInput) -> Report[AccumuloOutput]:
     m2 = ms + mw
     m1_final = m1_finale(inputs.b2, ls, mw, inputs.m1_input, legacy_compat=inputs.legacy_compat)
 
-    data = AccumuloOutput(
-        zona=zona,
-        qsk=qsk,
-        ce=ce,
-        ls=ls,
-        mw=mw,
-        ms=ms,
-        m2=m2,
-        m1_final=m1_final,
-        m2_final=m2,
-        ls_final=ls,
-        qs1_final=qsk * ce * inputs.ct * m1_final,
-        qs2_final=qsk * ce * inputs.ct * m2,
-    )
+    campi = {
+        "zona": zona,
+        "qsk": qsk,
+        "ce": ce,
+        "ls": ls,
+        "mw": mw,
+        "ms": ms,
+        "m2": m2,
+        "m1_final": m1_final,
+        "m2_final": m2,
+        "ls_final": ls,
+        "qs1_final": qsk * ce * inputs.ct * m1_final,
+        "qs2_final": qsk * ce * inputs.ct * m2,
+    }
+    try:
+        schizzo = disegna_schizzo_accumulo(inputs, AccumuloOutput(**campi))
+    except Exception:
+        logger.exception("errore nel disegno dello schizzo per neve-accumulo")
+        schizzo = None
+    data = AccumuloOutput(**campi, schizzo=schizzo)
     return success(data, inputs)
 
 
@@ -120,6 +138,7 @@ TOOLS = (
         input_model=CaricoFaldaInput,
         output_model=CaricoFaldaOutput,
         run=run_carico_falda,
+        summary="Calcola il carico neve di progetto su una copertura a una o due falde.",
         example={
             "comune": "Mapello",
             "as_m": 250,
@@ -142,6 +161,7 @@ TOOLS = (
         input_model=AccumuloInput,
         output_model=AccumuloOutput,
         run=run_accumulo,
+        summary="Calcola l'accumulo di neve sulla copertura più bassa addossata a un edificio più alto.",
         example={
             "comune": "Bergamo",
             "as_m": 249,

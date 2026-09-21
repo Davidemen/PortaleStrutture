@@ -26,5 +26,6 @@ TOOLS: tuple[Tool, ...] = (
         output_model=ProprietaTemperaturaOutput,
         run=run,
         example=ESEMPIO,
+        summary="Calcola le proprietà meccaniche ridotte dell'acciaio, resistenza e modulo elastico, a una determinata temperatura di esposizione.",
     ),
 )

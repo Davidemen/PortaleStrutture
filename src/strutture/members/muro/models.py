@@ -16,6 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from strutture.shared.materials.rebar import RebarGrade
 from strutture.shared.ntc_site_seismic import CategoriaSottosuolo, CategoriaTopografica
 from strutture.shared.report import Check
+from strutture.shared.sketch import Sketch, campo_schizzo
 
 NomeCombo = Literal["STR_1", "STR_2", "GEO_1", "GEO_2", "EQU_1", "EQU_2", "SISMA_1", "SISMA_2"]
 
@@ -286,3 +287,4 @@ class MuroSostegnoOutput(BaseModel):
     armatura_paramento: ArmaturaParamentoResult = Field(description="Armatura verticale del paramento (Tool 4)")
     armatura_fondazione_valle: ArmaturaFondazioneValleResult = Field(description="Armatura della fondazione di valle/mancia (Tool 5)")
     armatura_fondazione_monte: ArmaturaFondazioneMonteResult = Field(description="Armatura della fondazione di monte/tacco (Tool 6)")
+    schizzo: Sketch | None = campo_schizzo()

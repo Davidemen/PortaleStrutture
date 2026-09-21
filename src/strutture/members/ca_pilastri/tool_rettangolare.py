@@ -1,6 +1,8 @@
 """Composed tool: pilastro-rettangolare — verifica di pilastro in c.a. rettangolare/quadrato in
 CD "B" (NTC2018 + Circolare 7/2019, EC2 or NTC2008 per `inputs.norma`). `run` only composes the
 step modules; norm-specific parameters come from `regole.resolve` (architecture-batch2.md §3)."""
+import logging
+
 from strutture.shared.report import Check, Report, success
 from strutture.shared.section_geometry import rect
 
@@ -33,6 +35,7 @@ from .models import (
     TaglioResult,
 )
 from .regole import RuleSet, resolve
+from .schizzo import disegna_rettangolare as disegna_schizzo
 from .snellezza import (
     L0_HARDCODED_LEGACY_MM,
     coefficiente_c,
@@ -45,6 +48,8 @@ from .snellezza import (
 from .taglio_puntoni import coefficiente_ac, sigma_cp
 from .taglio_resistenza import vrdc, vrds
 from .taglio_theta import NU1_NTC_FISSO, cot_theta
+
+logger = logging.getLogger(__name__)
 
 AREA_MASSIMA_RATIO = 0.04  # EC2 §9.5.2(3) — riga "Area massima barre long." dedicata
 
@@ -196,10 +201,16 @@ def run_pilastro_rettangolare(inputs: PilastroRettangolareInput) -> Report[Pilas
         omega_meccanico=omega, nu1=nu1,
     )
 
+    try:
+        schizzo = disegna_schizzo(inputs)
+    except Exception:
+        logger.exception("errore nel disegno dello schizzo per pilastro-rettangolare")
+        schizzo = None
+
     output = PilastroOutput(
         materiali=materiali, geometria=geometria, armatura_minima=armatura_min_result, taglio=taglio_result,
         flessione=flessione, compressione=compressione, confinamento=confinamento, snellezza=snellezza_result,
-        dettagli=dettagli_result, regole=regole_result,
+        dettagli=dettagli_result, regole=regole_result, schizzo=schizzo,
     )
     checks = (
         check_taglio, check_gerarchia, check_percentuale, check_flessione, check_compressione,

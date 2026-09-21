@@ -2,6 +2,7 @@
 `Elastico_Timoshenko_Goodier_3` top to bottom (`docs/specs/geo-cedimenti-elastico.md` Tool 2)."""
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from strutture.shared.sketch import Sketch, campo_schizzo
 from strutture.shared.soil_layers import SoilLayer, strati_table_field
 
 from .boundary import SistemaUnita
@@ -72,3 +73,4 @@ class TimoshenkoGoodierOutput(BaseModel):
     modulo: ModuloTG
     fattori: FattoriTG
     cedimento: CedimentoTG
+    schizzo: Sketch | None = campo_schizzo()

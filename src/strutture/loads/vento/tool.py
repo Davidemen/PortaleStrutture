@@ -85,5 +85,6 @@ TOOLS = (
             "altezza_edificio_m": 60,
             "n_sezioni": 1000,
         },
+        summary="Calcola la velocità e la pressione cinetica di riferimento del vento e il coefficiente di esposizione, restituendo il profilo di pressione lungo l'altezza dell'edificio.",
     ),
 )

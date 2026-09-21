@@ -2,6 +2,8 @@
 per quantity x famiglia, `governante` expanded, checks on the envelope only)."""
 from pydantic import BaseModel, ConfigDict, Field
 
+from strutture.shared.sketch import Sketch, campo_schizzo
+
 from .inviluppo import Eccentricita, InviluppoRiga
 from .materiali import Materiali
 from .models_flessione import Flessione
@@ -38,3 +40,4 @@ class PlintoIsolatoOutput(BaseModel):
         description="Coefficiente di sicurezza al ribaltamento minimo, su tutte le famiglie e direzioni",
         json_schema_extra={"unit": "-", "symbol": "μ_rib", "highlight": True},
     )
+    schizzo: Sketch | None = campo_schizzo()

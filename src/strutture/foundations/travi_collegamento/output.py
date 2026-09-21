@@ -2,6 +2,8 @@
 (architecture-batch2.md §1: sismica, azione, materiali, compressione, trazione, snellezza, minimi)."""
 from pydantic import BaseModel, ConfigDict, Field
 
+from strutture.shared.sketch import Sketch, campo_schizzo
+
 from .armatura_minima_en import ArmaturaMinimaEnResult
 from .azione import AzioneResult
 from .compressione import CompressioneResult
@@ -41,3 +43,4 @@ class TraviCollegamentoOutput(BaseModel):
     snellezza_en: SnellezzaEnResult | None = Field(default=None, description="Controllo della snellezza (EN1998)")
     minimi_ntc: MinimiNtcResult | None = Field(default=None, description="Staffe minime (NTC2018)")
     minimi_en: MinimiEnResult | None = Field(default=None, description="Limiti minimi di normativa (EN1998)")
+    schizzo: Sketch | None = campo_schizzo()

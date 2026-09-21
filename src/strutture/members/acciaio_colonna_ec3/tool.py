@@ -3,6 +3,8 @@
 One composed `Tool` for the whole sheet (acciaio-colonne-ec3!Column check): every step module is a
 small pure function; `run` composes a few private helpers, each wiring a handful of step modules.
 """
+import logging
+
 from strutture.shared.report import Report, success
 from strutture.shared.tool import Tool
 
@@ -25,6 +27,9 @@ from .results import (
     Taglio,
     TaglioInstabilita,
 )
+from .schizzo import disegna as disegna_schizzo
+
+logger = logging.getLogger(__name__)
 
 ESEMPIO_AUREO = {
     "sezione_nome": "550x450x8x16 + plate 100x16", "b_mm": 280, "h_mm": 500, "tw_mm": 8, "tf_mm": 12,
@@ -131,9 +136,15 @@ def run(inputs: ColonnaEc3Input) -> Report[ColonnaEc3Output]:
     interaz, interaz_semp = _costruisci_interazioni(
         inputs, materiali, sez, classe_num, ncr_y, ncr_z, ncr_t, instab_fless, ltb
     )
+    try:
+        schizzo = disegna_schizzo(inputs)
+    except Exception:
+        logger.exception("errore nel disegno dello schizzo per acciaio-colonna-h-ec3")
+        schizzo = None
     data = ColonnaEc3Output(
         materiali=materiali, sezione=sez, instabilita_flessionale=instab_fless, instabilita_torso_flessionale=ltb,
         flessione=fless, taglio=tgl, taglio_instabilita=tgl_instab, interazione=interaz, interazione_semplificata=interaz_semp,
+        schizzo=schizzo,
     )
     checks = (
         tgl.verifica_anima, tgl.verifica_ali, fless.verifica_y, fless.verifica_z, tgl_instab.verifica,
@@ -153,5 +164,6 @@ TOOLS = (
         output_model=ColonnaEc3Output,
         run=run,
         example={k: v for k, v in ESEMPIO_AUREO.items() if k != "legacy_compat"},
+        summary="Verifica la resistenza e la stabilità di una colonna in acciaio a sezione H/I soggetta a sforzo normale e flessione biassiale.",
     ),
 )

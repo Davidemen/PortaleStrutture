@@ -43,5 +43,6 @@ TOOLS: tuple[Tool, ...] = (
         output_model=ResistenzaIncendioOutput,
         run=run,
         example=ESEMPIO,
+        summary="Calcola la riduzione di resistenza e rigidezza dell'acciaio non protetto esposto all'incendio secondo la curva standard, per una serie di tempi di esposizione.",
     ),
 )

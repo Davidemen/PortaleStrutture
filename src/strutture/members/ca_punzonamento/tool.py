@@ -21,5 +21,6 @@ TOOLS = (
         output_model=PunzonamentoOutput,
         run=run,
         example=EXAMPLE,
+        summary="Verifica a punzonamento di un solaio o platea su pilastro o palo e progetta le armature verticali se necessarie.",
     ),
 )

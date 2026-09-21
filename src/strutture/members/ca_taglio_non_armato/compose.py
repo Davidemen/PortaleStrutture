@@ -1,6 +1,8 @@
 """Composes the taglio-non-armato steps into a Report, registered as the `ca-taglio-non-armato`
 Tool (see `tool.py`). Handles both workbook sheets: `Foglio1` (v1: fck from Rck, Asl direct) and
 `1m` (v2: fck direct, Asl from N°/Ø) through the same flat input model."""
+import logging
+
 from strutture.shared.report import Check, Report, success
 
 from .asl_from_bars import asl_from_barre_mm2
@@ -10,10 +12,13 @@ from .effective_depth import effective_depth_mm
 from .fck_consistency import avviso_incoerenza_fck_rck
 from .longitudinal_ratio import rho_l, rho_l_raw
 from .models import GeometriaOutput, MaterialiOutput, TaglioNonArmatoInput, TaglioNonArmatoOutput, TaglioOutput
+from .schizzo import disegna as disegna_schizzo
 from .shear_resistance import vrd1_kN, vrd2_kN, vrd_kN
 from .size_factor import size_factor_k
 from .tables import RHO_L_MAX
 from .vmin import vmin_MPa
+
+logger = logging.getLogger(__name__)
 
 
 def _fck_MPa(inputs: TaglioNonArmatoInput) -> float:
@@ -64,10 +69,17 @@ def run(inputs: TaglioNonArmatoInput) -> Report[TaglioNonArmatoOutput]:
     vrd1 = vrd1_kN(k, rl, fck, sigma_cp, inputs.bw_mm, d, gamma_c=inputs.gamma_c)
     vrd2 = vrd2_kN(vmin, sigma_cp, inputs.bw_mm, d)
     vrd = vrd_kN(vrd1, vrd2)
+    geometria_output = GeometriaOutput(d_mm=d, asl_mm2=asl)
+
+    try:
+        schizzo = disegna_schizzo(inputs, geometria_output)
+    except Exception:
+        logger.exception("errore nel disegno dello schizzo per ca-taglio-non-armato")
+        schizzo = None
 
     data = TaglioNonArmatoOutput(
         materiali=MaterialiOutput(fck_MPa=fck, fcd_MPa=fcd),
-        geometria=GeometriaOutput(d_mm=d, asl_mm2=asl),
+        geometria=geometria_output,
         taglio=TaglioOutput(
             sigma_cp_MPa=sigma_cp,
             k=k,
@@ -77,6 +89,7 @@ def run(inputs: TaglioNonArmatoInput) -> Report[TaglioNonArmatoOutput]:
             vrd2_kN=vrd2,
             vrd_kN=vrd,
         ),
+        schizzo=schizzo,
     )
     checks = (
         Check(

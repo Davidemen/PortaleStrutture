@@ -2,6 +2,7 @@
 from pydantic import BaseModel, ConfigDict, Field
 
 from strutture.shared.report import Check
+from strutture.shared.sketch import Sketch, campo_schizzo
 
 
 class Materiali(BaseModel):
@@ -160,3 +161,4 @@ class ColonnaEc3Output(BaseModel):
     taglio_instabilita: TaglioInstabilita
     interazione: Interazione
     interazione_semplificata: InterazioneSemplificata
+    schizzo: Sketch | None = campo_schizzo()

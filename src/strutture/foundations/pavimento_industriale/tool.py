@@ -1,7 +1,10 @@
 """Tool registration: `fond-pavimento-industriale` — one composed tool covering the whole
 `carichi_distribuiti_concentrati` sheet (materiali + sottofondo + carico distribuito + carichi
 concentrati + giunti), per architecture-batch2.md §1 `foundations/pavimento_industriale`."""
+import logging
+
 from strutture.shared.report import Report, success
+from strutture.shared.sketch import Sketch
 from strutture.shared.tool import Tool
 
 from .armatura import armatura
@@ -13,7 +16,10 @@ from .giunti import giunti
 from .materiali import materiali
 from .models import PavimentoIndustrialeInput
 from .output import DistribuitiResult, PavimentoIndustrialeOutput
+from .schizzo import disegna as disegna_schizzo
 from .sottofondo import sottofondo
+
+logger = logging.getLogger(__name__)
 
 ESEMPIO = {
     "classe_calcestruzzo": "C25/30", "gamma_c": 1.5, "gamma_s": 1.15, "nu_poisson": 0.2,
@@ -58,9 +64,16 @@ def run(inputs: PavimentoIndustrialeInput) -> Report[PavimentoIndustrialeOutput]
         inputs.alpha_termico, inputs.delta_t_C, inputs.h_mm,
     )
 
+    schizzo: Sketch | None
+    try:
+        schizzo = disegna_schizzo(inputs, sott.l_mm)
+    except Exception:
+        logger.exception("errore nel disegno dello schizzo per fond-pavimento-industriale")
+        schizzo = None
     data = PavimentoIndustrialeOutput(
         materiali=mat, sottofondo=sott, armatura=arm,
         distribuiti=distribuiti_result, concentrati=concentrati_result, giunti=giunti_result,
+        schizzo=schizzo,
     )
     checks = (
         verifiche.verifica_tensionale_sup, verifiche.verifica_tensionale_inf,
@@ -82,5 +95,6 @@ TOOLS = (
         output_model=PavimentoIndustrialeOutput,
         run=run,
         example=ESEMPIO,
+        summary="Verifica la piastra industriale su sottofondo elastico per carico distribuito e carichi concentrati, con prescrizioni sui giunti.",
     ),
 )

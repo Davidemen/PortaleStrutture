@@ -1,7 +1,10 @@
 """Composed tool: `geo-cedimento-elastico-newmark` (`docs/specs/geo-cedimenti-elastico.md` Tool 1).
 `run` only wires the boundary conversion, the ground->base layer shift and the CENTRO/PUNTO step
 modules; the physics stays in `centro.py` / `punto.py` / `integrate.py`."""
+import logging
+
 from strutture.shared.report import Report, success
+from strutture.shared.sketch import Sketch
 from strutture.shared.tool import Tool
 from strutture.shared.units import CM_PER_M, MM_PER_M
 
@@ -11,6 +14,9 @@ from .ground_to_base import shift_to_base
 from .integrate import Slice, total_settlement_m
 from .models_newmark import CaricoNewmark, CentroCedimento, NewmarkInput, NewmarkOutput, PuntoCedimento, RigaNewmark
 from .punto import punto_settlement
+from .schizzo import disegna_newmark
+
+logger = logging.getLogger(__name__)
 
 ESEMPIO_CENTRO = {
     "modalita": "CENTRO", "sistema_unita": "tecnico", "q": 0.5, "d": 110, "b": 350, "l": 500, "z_max": 910, "dz": 10,
@@ -30,6 +36,15 @@ def _scarto_pct(principale_m: float, qa_m: float) -> float:
     return 100.0 * (principale_m - qa_m) / principale_m if principale_m != 0 else 0.0
 
 
+def _disegna_sicuro(inputs: NewmarkInput) -> Sketch | None:
+    """Drawing must never fail the calculation: catch, log, return `None`."""
+    try:
+        return disegna_newmark(inputs)
+    except Exception:
+        logger.exception("errore nel disegno dello schizzo per geo-cedimento-elastico-newmark")
+        return None
+
+
 def run_newmark(inputs: NewmarkInput) -> Report[NewmarkOutput]:
     sistema = inputs.sistema_unita
     q_kPa = to_kpa(inputs.q, sistema)
@@ -42,12 +57,14 @@ def run_newmark(inputs: NewmarkInput) -> Report[NewmarkOutput]:
         b_m, l_m = to_m(inputs.b, sistema), to_m(inputs.l, sistema)
         main_slices, qa_slices = centro_settlement(q_kPa, b_m, l_m, layers, z_max_m=z_max_m, dz_m=dz_m, legacy_compat=inputs.legacy_compat)
         w_centro_m, w_qa_m = total_settlement_m(main_slices), total_settlement_m(qa_slices)
+        schizzo = _disegna_sicuro(inputs)
         data = NewmarkOutput(
             carico=carico, righe=_righe(main_slices), righe_qa=_righe(qa_slices),
             centro=CentroCedimento(
                 w_centro_cm=w_centro_m * CM_PER_M, w_centro_mm=w_centro_m * MM_PER_M,
                 w_qa_cm=w_qa_m * CM_PER_M, scarto_qa_pct=_scarto_pct(w_centro_m, w_qa_m),
             ),
+            schizzo=schizzo,
         )
         return success(data, inputs)
 
@@ -57,12 +74,14 @@ def run_newmark(inputs: NewmarkInput) -> Report[NewmarkOutput]:
         q_kPa, side_p_m, side_q_m, e1_m, e2_m, layers, z_max_m=z_max_m, dz_m=dz_m, legacy_compat=inputs.legacy_compat
     )
     w_o_m, w_o_prime_m = total_settlement_m(o_slices), total_settlement_m(o_prime_slices)
+    schizzo = _disegna_sicuro(inputs)
     data = NewmarkOutput(
         carico=carico, righe=_righe(o_slices), righe_o_prime=_righe(o_prime_slices),
         punto=PuntoCedimento(
             w_o_cm=w_o_m * CM_PER_M, w_o_mm=w_o_m * MM_PER_M,
             w_o_prime_cm=w_o_prime_m * CM_PER_M, w_o_prime_mm=w_o_prime_m * MM_PER_M,
         ),
+        schizzo=schizzo,
     )
     return success(data, inputs)
 
@@ -77,5 +96,6 @@ TOOLS: tuple[Tool, ...] = (
         output_model=NewmarkOutput,
         run=run_newmark,
         example=ESEMPIO_CENTRO,
+        summary="Calcola il cedimento elastico immediato di una fondazione per integrazione numerica di Newmark, al centro o in un punto arbitrario.",
     ),
 )

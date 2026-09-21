@@ -9,6 +9,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from strutture.shared.sketch import Sketch, campo_schizzo
+
 # Mensola tozza!BU5:BU12 — local dropdown source for H15 (8 entries, mirrors Tabelle!M34:M41).
 ClasseCalcestruzzoMensola = Literal[
     "C20/25", "C25/30", "C28/35", "C32/40", "C35/45", "C40/50", "C45/55", "C50/60",
@@ -114,3 +116,4 @@ class MensolaTozzaOutput(BaseModel):
     geometria: GeometriaResult
     armature: ArmatureResult
     capacita: CapacitaResult
+    schizzo: Sketch | None = campo_schizzo()
