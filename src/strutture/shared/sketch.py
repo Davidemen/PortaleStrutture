@@ -8,6 +8,21 @@ data feeds the printed relazione.
 Conventions: model coordinates in metres, x to the right, y UP (the renderer flips). Styles are
 semantic (the UI owns colours and line weights).
 
+COMPOSITION RULES (user feedback: sketches were "messy and cramped"; enforced by
+`tests/shared/test_sketch_layout.py` — layout, readability and text-overlap lints over every tool):
+1. A sketch is a SCHEMA, not a scale drawing. When true proportions are unreadable, draw schematically and
+   say so in `Sketch.nota` ("Schema non in scala"). Keep each view between 1:3.5 and 3.5:1: crop a long
+   element to ~1.4x the region of interest and end it with a short `fantasma` dashed continuation.
+2. No slivers: a solid thinner than 2 % of the view's larger side gets a schematic minimum thickness (~3 %).
+3. Offsets scale with the view: dimension `distanza` = 6-8 % of the view's larger side (never a fixed
+   0.3 m); chained dimensions step outward by the same amount.
+4. Labels: with `simbolo` set, `testo` is the VALUE ONLY ("6,16 kN/m²", never "q_s2 = 6,16 kN/m²").
+   One label per fact, outside the solids, on the side with free space, anchored so the text grows away
+   from the element. At most 8 text items per view: secondary values belong in the results, not here.
+5. No two texts may overlap at the size the UI draws them (11.5 px in a ~340x220 px cell).
+6. Loads and pressures as filled shapes (Diagramma / Poligono `pressione`) with the peak labelled AT the
+   peak; zero ends stay unlabelled.
+
 SIDE CONVENTION (easy to get backwards — `tests/shared/test_sketch_layout.py` checks every tool):
 the "left" of a segment p1 -> p2 is its left-hand normal `normale_sinistra(p1, p2)` = (-dy, dx)/len.
 - `Quota.distanza` > 0 puts the dimension line on the LEFT of p1 -> p2, < 0 on the right. Dimension
