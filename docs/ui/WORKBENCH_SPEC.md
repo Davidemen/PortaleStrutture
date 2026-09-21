@@ -140,3 +140,23 @@ routes); retaining wall: form ≤ 1100 px and results ≤ 900 px at first render
 grows; `Ctrl+K` -> type "punz" -> Enter opens the punching tool; favourites persist across reload; the bottom
 bar on mobile shows the verdict; live is off for a 300-row table and "Calcola" appears; zero console errors / CSP
 violations; keyboard-only run of a whole tool; all existing e2e tests still pass.
+
+## 10. Report export — always complete (user rule, 2026-09-21)
+**An exported report never depends on what happens to be open on screen.** "Stampa relazione", the browser's own
+print command (Ctrl/Cmd+P) and any future export all produce the SAME complete document:
+- it is built FROM THE DATA (report + input/output schema) into a print-only container at print time
+  (`beforeprint` and the button), not by printing the interactive results tree; the interactive UI is hidden in print;
+- everything expanded: every input section with every value actually used (defaults and advanced options
+  included, the calculation mode stated), every result group including "Passaggi di calcolo", EVERY check (no
+  "failed + top 5" fold, no "Solo non soddisfatte" filter), all sketch views, all charts, warnings in full;
+- tables unpaged: all rows up to 2 000; beyond that the envelope and the governing rows plus the note "Tabella
+  completa di N righe disponibile in CSV" (a 20 000-row table is ~400 pages);
+- nothing interactive or transient: no buttons, chips, flash highlights, dimming, toasts, tooltips-only content
+  (full descriptions are printed, not left in `title` attributes);
+- **stale results are never exported**: if the inputs were changed or are invalid since the last successful run,
+  the export first recalculates; if that fails it refuses with "I risultati non corrispondono ai dati correnti —
+  correggi i dati o ricalcola prima di stampare";
+- the screen state (open groups, filters, scroll) is untouched by printing.
+Acceptance (e2e, print media emulation): with every group collapsed, the checks folded, the "Solo non soddisfatte"
+filter on and a table on page 2, the printed document still contains every group title, every check, every table
+row (count equals the data), every input section and the sketch; stale results refuse to print.
