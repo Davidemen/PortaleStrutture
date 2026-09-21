@@ -7,6 +7,8 @@ from strutture.shared.report import Report, success
 from strutture.shared.sketch import Sketch
 from strutture.shared.tool import Tool
 
+from .capacita_portante import capacita_portante
+from .capacita_portante_checks import checks_capacita_portante
 from .checks_inviluppo import checks_inviluppo
 from .flessione import flessione
 from .input import PlintoIsolatoInput
@@ -63,6 +65,7 @@ def run(inputs: PlintoIsolatoInput) -> Report[PlintoIsolatoOutput]:
     sle_result = sle(inviluppo_righe, flessione_result, inputs.ax_m, inputs.by_m, inputs.h_plinto_m,
                       inputs.a_pedestal_m, inputs.b_pedestal_m, inputs.ex_m, inputs.ey_m,
                       copriferro_cm=inputs.copriferro_cm, legacy_compat=inputs.legacy_compat)
+    capacita_portante_result, avvisi_capacita_portante = capacita_portante(righe, inputs)
 
     governante = governing(righe, lambda r: r.sigma_max_kpa, "max")  # type: ignore[arg-type]
     if governante is None:
@@ -73,6 +76,7 @@ def run(inputs: PlintoIsolatoInput) -> Report[PlintoIsolatoOutput]:
         *checks_inviluppo(inviluppo_righe, inputs.resistenze, sistema_unita=inputs.sistema_unita,
                            legacy_compat=inputs.legacy_compat),
         *sle_checks(sle_result, materiali_result.calcestruzzo.fck_MPa, materiali_result.acciaio.fyk_MPa),
+        *checks_capacita_portante(capacita_portante_result),
     )
 
     mu_ribaltamento_candidati = [
@@ -88,12 +92,13 @@ def run(inputs: PlintoIsolatoInput) -> Report[PlintoIsolatoOutput]:
     data = PlintoIsolatoOutput(
         materiali=materiali_result, righe=righe, inviluppo=inviluppo_righe, eccentricita=eccentricita,
         governante=riga_governante, flessione=flessione_result, sle=sle_result,
+        capacita_portante=capacita_portante_result,
         sigma_max_governante_kpa=riga_governante.sigma_max_kpa,
         mu_scorrimento_minimo=_minimo(inviluppo_righe, "scorrimento_min"),
         mu_ribaltamento_minimo=min(mu_ribaltamento_candidati) if mu_ribaltamento_candidati else None,
         schizzo=schizzo,
     )
-    return success(data, inputs, checks=checks)
+    return success(data, inputs, checks=checks, warnings=avvisi_capacita_portante)
 
 
 def _minimo(inviluppo_righe: tuple, grandezza: str) -> float | None:

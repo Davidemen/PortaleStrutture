@@ -2,9 +2,9 @@
 
 One composed Tool per docs/BUILD_CONTRACT.md "Member tools": `run_muro_sostegno` composes the
 small step modules (geometria, parametri_sismici, angoli_progetto, coulomb/mononobe_okabe,
-ribaltamento_scorrimento, pressioni_terreno, armatura_paramento, armatura_fondazione_valle,
-armatura_fondazione_monte) for all 8 combinations (STR_1, STR_2, GEO_1, GEO_2, EQU_1, EQU_2,
-SISMA_1, SISMA_2) and returns every intermediate group.
+ribaltamento_scorrimento, pressioni_terreno, capacita_portante_fondazione (facoltativo),
+armatura_paramento, armatura_fondazione_valle, armatura_fondazione_monte) for all 8 combinations
+(STR_1, STR_2, GEO_1, GEO_2, EQU_1, EQU_2, SISMA_1, SISMA_2) and returns every intermediate group.
 """
 import logging
 import math
@@ -21,6 +21,7 @@ from . import armatura_fondazione_valle as fond_valle
 from . import armatura_paramento as paramento
 from . import rebar_selection
 from .angoli_progetto import delta_d_rad, phi_d_rad
+from .capacita_portante_fondazione import capacita_portante_combo
 from .combinazioni import ALL_COMBOS, SEISMIC_COMBOS, fattori_combo
 from .coulomb import ka_coulomb
 from .geometria import geometria_muro
@@ -31,6 +32,8 @@ from .models import (
     ArmaturaFondazioneValleResult,
     ArmaturaParamentoCombo,
     ArmaturaParamentoResult,
+    CapacitaPortanteCombo,
+    CapacitaPortanteFondazioneResult,
     GeometriaResult,
     MuroSostegnoInput,
     MuroSostegnoOutput,
@@ -71,11 +74,28 @@ ESEMPIO_TRATTO_A = {
 
 CLAUSE_RIBALTAMENTO = "NTC2018 §6.5.3.1.2"
 CLAUSE_SCORRIMENTO = "NTC2018 §6.5.3.1.1 / EC7 §6.5.4"
+CLAUSE_CAPACITA_PORTANTE = "NTC2018 §6.5.3.1.1, Tab. 6.5.I, §6.4.2.1 / EN1997-1 Annex D"
+# NTC2018 Tab. 6.5.I γR per le opere di sostegno (capacità portante): R3 = 1.4 statico (identico a
+# `ntc_combos.fattori_resistenza("capacita_portante").r3`, la stessa tabella già usata da
+# ribaltamento/scorrimento in questo modulo); 1.2 sismico (§7.11.6.2.1) era già citato
+# nell'avviso sotto prima che questo controllo esistesse, quindi è il valore confermato per questo
+# pacchetto piuttosto che un nuovo numero da inventare (docs/BUILD_CONTRACT.md).
+GAMMA_R_CAPACITA_PORTANTE_STATICO = fattori_resistenza("capacita_portante").r3
+GAMMA_R_CAPACITA_PORTANTE_SISMA = 1.2
 AVVISO_CAPACITA_PORTANTE = (
     "La verifica a collasso per capacità portante del terreno (NTC2018 §6.5.3.1.1, γR=1.4 statico / "
     "1.2 sismico, Tab. 6.5.I) non è calcolata da questo strumento: usare uno strumento geotecnico "
-    "dedicato per confrontare la pressione di contatto con qlim. L'eccentricità è qui verificata solo "
-    "contro |e| > B/2 (risultante fuori dalla fondazione), non contro i limiti di normativa dell'§6.4.2.1."
+    "dedicato per confrontare la pressione di contatto con qlim, oppure compilare il blocco facoltativo "
+    "'Terreno di fondazione'. L'eccentricità è qui verificata solo contro |e| > B/2 (risultante fuori "
+    "dalla fondazione), non contro i limiti di normativa dell'§6.4.2.1."
+)
+AVVISO_TERRENO_IGNORATO_LEGACY = (
+    "Modalità legacy_compat: il blocco 'Terreno di fondazione' è stato compilato ma viene ignorato "
+    "(il foglio Excel originale non include una verifica di capacità portante)."
+)
+AVVISO_CAPACITA_PORTANTE_SISMICA = (
+    "Capacità portante in condizioni sismiche: inerzia del terreno di fondazione non considerata, "
+    "da confermare."
 )
 
 
@@ -240,6 +260,54 @@ def _pressioni_combo(spinta: SpintaCombo, verifica: RibaltamentoScorrimentoCombo
     )
 
 
+def _capacita_portante_riga(
+    spinta: SpintaCombo, verifica: RibaltamentoScorrimentoCombo, pressioni: PressioniCombo, *, inputs: MuroSostegnoInput, geometria: GeometriaResult
+) -> CapacitaPortanteCombo:
+    gamma_r = GAMMA_R_CAPACITA_PORTANTE_SISMA if spinta.sismica else GAMMA_R_CAPACITA_PORTANTE_STATICO
+    return capacita_portante_combo(
+        spinta.nome,
+        condizione=inputs.terreno_condizione,
+        b_fond_m=geometria.b_fond_m,
+        eccentricita_m=pressioni.eccentricita_m,
+        n_ed_kn=verifica.n_tot_kN,
+        h_kn=verifica.r_tot_kN,
+        profondita_posa_m=inputs.terreno_profondita_posa_m,
+        gamma_kn_m3=inputs.terreno_gamma_kn_m3,
+        profondita_falda_m=inputs.terreno_profondita_falda_m,
+        phi_k_deg=inputs.terreno_phi_k_deg,
+        c_k_kpa=inputs.terreno_c_k_kpa,
+        cu_k_kpa=inputs.terreno_cu_k_kpa,
+        gamma_r=gamma_r,
+    )
+
+
+def _run_capacita_portante_fondazione(
+    spinte: tuple[SpintaCombo, ...],
+    ribaltamento_scorrimento: tuple[RibaltamentoScorrimentoCombo, ...],
+    pressioni_terreno: tuple[PressioniCombo, ...],
+    *,
+    inputs: MuroSostegnoInput,
+    geometria: GeometriaResult,
+) -> CapacitaPortanteFondazioneResult:
+    combinazioni = tuple(
+        _capacita_portante_riga(spinta, verifica, pressioni, inputs=inputs, geometria=geometria)
+        for spinta, verifica, pressioni in zip(spinte, ribaltamento_scorrimento, pressioni_terreno, strict=True)
+    )
+    governante = max(combinazioni, key=lambda c: c.rapporto)
+    verifica = Check(
+        name="Capacità portante del terreno di fondazione",
+        passed=governante.rapporto <= 1.0,
+        detail=f"N_Ed/R_d={governante.rapporto:.3f} sulla combinazione governante {governante.nome}",
+        clause=CLAUSE_CAPACITA_PORTANTE,
+        value=governante.rapporto,
+        limit=1.0,
+        unit="-",
+    )
+    return CapacitaPortanteFondazioneResult(
+        combinazioni=combinazioni, combo_governante=governante.nome, rapporto_governante=governante.rapporto, verifica=verifica,
+    )
+
+
 def _armatura_paramento_combo(
     spinta: SpintaCombo, verifica: RibaltamentoScorrimentoCombo, *, inputs: MuroSostegnoInput, geometria: GeometriaResult, fyd_MPa: float
 ) -> ArmaturaParamentoCombo:
@@ -400,6 +468,26 @@ def _run_armatura_fondazione_monte(
     )
 
 
+def _esito_capacita_portante(
+    spinte: tuple[SpintaCombo, ...],
+    ribaltamento_scorrimento: tuple[RibaltamentoScorrimentoCombo, ...],
+    pressioni_terreno: tuple[PressioniCombo, ...],
+    *,
+    inputs: MuroSostegnoInput,
+    geometria: GeometriaResult,
+) -> tuple[CapacitaPortanteFondazioneResult | None, tuple[Check, ...], tuple[str, ...]]:
+    """Wires the optional 'Terreno di fondazione' block into the report (docs/architecture-phase4.md
+    §C "Integration"): block empty -> today's behaviour unchanged (AVVISO_CAPACITA_PORTANTE, no
+    check); block filled + legacy_compat -> ignored, with a dedicated warning on top; block filled
+    in standard mode -> the check replaces the "non calcolata" warning."""
+    if inputs.terreno_condizione is None:
+        return None, (), (AVVISO_CAPACITA_PORTANTE,)
+    if legacy("muro-sostegno/verifica-portanza-non-segnalata", inputs.legacy_compat):
+        return None, (), (AVVISO_CAPACITA_PORTANTE, AVVISO_TERRENO_IGNORATO_LEGACY)
+    risultato = _run_capacita_portante_fondazione(spinte, ribaltamento_scorrimento, pressioni_terreno, inputs=inputs, geometria=geometria)
+    return risultato, (risultato.verifica,), (AVVISO_CAPACITA_PORTANTE_SISMICA,)
+
+
 def run_muro_sostegno(inputs: MuroSostegnoInput) -> Report[MuroSostegnoOutput]:
     geometria = geometria_muro(
         h_muro_m=inputs.h_muro_m, s_fond_m=inputs.s_fond_m, s_base_m=inputs.s_base_m, s_top_m=inputs.s_top_m, b_valle_m=inputs.b_valle_m, b_monte_m=inputs.b_monte_m
@@ -419,6 +507,10 @@ def run_muro_sostegno(inputs: MuroSostegnoInput) -> Report[MuroSostegnoOutput]:
         spinte, ribaltamento_scorrimento, pressioni_terreno, inputs=inputs, geometria=geometria, fyd_MPa=fyd_MPa
     )
 
+    capacita_portante_fondazione, capacita_portante_checks, warnings = _esito_capacita_portante(
+        spinte, ribaltamento_scorrimento, pressioni_terreno, inputs=inputs, geometria=geometria
+    )
+
     schizzo: Sketch | None
     try:
         schizzo = disegna_schizzo(inputs, geometria, spinte, ribaltamento_scorrimento, pressioni_terreno)
@@ -432,13 +524,14 @@ def run_muro_sostegno(inputs: MuroSostegnoInput) -> Report[MuroSostegnoOutput]:
         spinte=spinte,
         ribaltamento_scorrimento=ribaltamento_scorrimento,
         pressioni_terreno=pressioni_terreno,
+        capacita_portante_fondazione=capacita_portante_fondazione,
         armatura_paramento=armatura_paramento,
         armatura_fondazione_valle=armatura_fondazione_valle,
         armatura_fondazione_monte=armatura_fondazione_monte,
         schizzo=schizzo,
     )
-    checks = tuple(c for v in ribaltamento_scorrimento for c in (v.verifica_ribaltamento, v.verifica_scorrimento))
-    return success(data, inputs, checks=checks, warnings=(AVVISO_CAPACITA_PORTANTE,))
+    checks = tuple(c for v in ribaltamento_scorrimento for c in (v.verifica_ribaltamento, v.verifica_scorrimento)) + capacita_portante_checks
+    return success(data, inputs, checks=checks, warnings=warnings)
 
 
 TOOLS = (
@@ -451,6 +544,6 @@ TOOLS = (
         output_model=MuroSostegnoOutput,
         run=run_muro_sostegno,
         example=ESEMPIO_TRATTO_A,
-        summary="Verifica un muro di sostegno a mensola a ribaltamento, scorrimento, pressione sul terreno e armatura, per le 8 combinazioni di carico statiche e sismiche.",
+        summary="Verifica un muro di sostegno a mensola a ribaltamento, scorrimento, pressione sul terreno, capacità portante (facoltativa) e armatura, per le 8 combinazioni di carico statiche e sismiche.",
     ),
 )

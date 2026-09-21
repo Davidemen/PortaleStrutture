@@ -11,8 +11,9 @@ Extension point for the reinforcement-design agent: append new nested result mod
 """
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from strutture.shared.capacita_portante import Condizione
 from strutture.shared.materials.rebar import RebarGrade
 from strutture.shared.ntc_site_seismic import CategoriaSottosuolo, CategoriaTopografica
 from strutture.shared.report import Check
@@ -67,8 +68,67 @@ class MuroSostegnoInput(BaseModel):
     copertura_fondazione_m: float = Field(description="Copriferro asse barre trasversali della fondazione (comune a valle e monte)", gt=0, json_schema_extra={"unit": "m", "symbol": "c_fond", "group": "Armatura"})
     passo_arm_fondazione_m: float = Field(description="Passo delle armature della fondazione (comune a valle e monte)", gt=0, json_schema_extra={"unit": "m", "symbol": "s_fond", "group": "Armatura"})
 
+    # --- Terreno di fondazione (facoltativo, docs/architecture-phase4.md §C "Integration") -----
+    terreno_condizione: Condizione | None = Field(
+        default=None,
+        description="Condizione del terreno di fondazione per la verifica di capacità portante: se non selezionata, la verifica non viene calcolata (compilare l'intero blocco per attivarla)",
+        json_schema_extra={"group": "Terreno di fondazione"},
+    )
+    terreno_phi_k_deg: float | None = Field(
+        default=None, gt=0, lt=45,
+        description="Angolo di attrito interno caratteristico del terreno di fondazione φ'k (condizione drenata)",
+        json_schema_extra={"unit": "°", "symbol": "φ'_k", "group": "Terreno di fondazione", "condition": {"field": "terreno_condizione", "equals": ["drenata"]}},
+    )
+    terreno_c_k_kpa: float | None = Field(
+        default=None, ge=0,
+        description="Coesione efficace caratteristica del terreno di fondazione c'k (condizione drenata)",
+        json_schema_extra={"unit": "kPa", "symbol": "c'_k", "group": "Terreno di fondazione", "condition": {"field": "terreno_condizione", "equals": ["drenata"]}},
+    )
+    terreno_cu_k_kpa: float | None = Field(
+        default=None, gt=0,
+        description="Resistenza al taglio non drenata caratteristica del terreno di fondazione cu,k (condizione non drenata)",
+        json_schema_extra={"unit": "kPa", "symbol": "c_u,k", "group": "Terreno di fondazione", "condition": {"field": "terreno_condizione", "equals": ["non_drenata"]}},
+    )
+    terreno_gamma_kn_m3: float | None = Field(
+        default=None, gt=0,
+        description="Peso di volume del terreno di fondazione γ",
+        json_schema_extra={"unit": "kN/m3", "symbol": "γ_fond", "group": "Terreno di fondazione", "condition": {"field": "terreno_condizione", "equals": ["drenata", "non_drenata"]}},
+    )
+    terreno_profondita_posa_m: float | None = Field(
+        default=None, ge=0,
+        description="Approfondimento del piano di posa della fondazione rispetto al piano di campagna D",
+        json_schema_extra={"unit": "m", "symbol": "D", "group": "Terreno di fondazione", "condition": {"field": "terreno_condizione", "equals": ["drenata", "non_drenata"]}},
+    )
+    terreno_profondita_falda_m: float | None = Field(
+        default=None, ge=0,
+        description="Profondità della falda dal piano di campagna, stesso riferimento di D (facoltativa: se assente si assume falda assente)",
+        json_schema_extra={"unit": "m", "symbol": "z_w", "group": "Terreno di fondazione", "condition": {"field": "terreno_condizione", "equals": ["drenata", "non_drenata"]}},
+    )
+
     # --- Avanzate ---------------------------------------------------------------------------------
     legacy_compat: bool = Field(default=False, description="Riproduci il foglio Excel originale (errori inclusi)", json_schema_extra={"group": "Avanzate", "advanced": True})
+
+    @model_validator(mode="after")
+    def _terreno_fondazione_coerente(self) -> "MuroSostegnoInput":
+        """Cross-field validation of the optional 'Terreno di fondazione' block: when a
+        `terreno_condizione` is selected, the fields the chosen condition needs must be present."""
+        if self.terreno_condizione is None:
+            return self
+        mancanti = [
+            nome for nome, valore in (
+                ("terreno_gamma_kn_m3", self.terreno_gamma_kn_m3),
+                ("terreno_profondita_posa_m", self.terreno_profondita_posa_m),
+            ) if valore is None
+        ]
+        if self.terreno_condizione == "drenata":
+            mancanti += [n for n, v in (("terreno_phi_k_deg", self.terreno_phi_k_deg), ("terreno_c_k_kpa", self.terreno_c_k_kpa)) if v is None]
+        else:
+            mancanti += [n for n, v in (("terreno_cu_k_kpa", self.terreno_cu_k_kpa),) if v is None]
+        if mancanti:
+            raise ValueError(
+                f"blocco 'Terreno di fondazione': con condizione='{self.terreno_condizione}' sono obbligatori i campi {', '.join(mancanti)}"
+            )
+        return self
 
 
 # --- geometria / parametri sismici (comuni a tutte le combinazioni) ----------------------------
@@ -172,6 +232,38 @@ class PressioniCombo(BaseModel):
     b_star_m: float = Field(description="Larghezza efficace (0 se |e| ≤ B/6)", ge=0, json_schema_extra={"unit": "m", "symbol": "B*"})
     p_valle_kPa: float = Field(description="Pressione sul terreno lato valle", ge=0, json_schema_extra={"unit": "kPa", "symbol": "p_valle"})
     p_monte_kPa: float = Field(description="Pressione sul terreno lato monte", ge=0, json_schema_extra={"unit": "kPa", "symbol": "p_monte"})
+
+
+# --- Capacità portante del terreno di fondazione (facoltativa) ----------------------------------
+
+
+class CapacitaPortanteCombo(BaseModel):
+    """One row of the bearing-capacity check on the strip footing (docs/architecture-phase4.md §C
+    "Integration"): q_lim/R_d computed by `strutture.shared.capacita_portante` on the base nastriforme
+    (per metro, L'->infinito, fattori di forma=1), with B'=B-2e from this combination's
+    `pressioni_terreno.eccentricita_m` and H/V from its `ribaltamento_scorrimento` resultants.
+    Present only when the optional 'Terreno di fondazione' block is filled (legacy_compat=False)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    nome: NomeCombo = Field(description="Identificativo della combinazione")
+    q_lim_kPa: float = Field(description="Pressione limite di capacità portante", ge=0, json_schema_extra={"unit": "kPa", "symbol": "q_lim"})
+    r_d_kN: float = Field(description="Resistenza di progetto, per metro di sviluppo del muro", ge=0, json_schema_extra={"unit": "kN", "symbol": "R_d"})
+    rapporto: float = Field(description="Grado di sfruttamento del terreno di fondazione", ge=0, json_schema_extra={"unit": "-", "symbol": "N_Ed/R_d"})
+
+
+class CapacitaPortanteFondazioneResult(BaseModel):
+    """Composed result: q_lim/R_d/rapporto per combinazione + la combinazione governante."""
+
+    model_config = ConfigDict(frozen=True)
+
+    combinazioni: tuple[CapacitaPortanteCombo, ...] = Field(description="q_lim, R_d e grado di sfruttamento per combinazione (8 righe, ordine ALL_COMBOS)")
+    combo_governante: NomeCombo = Field(description="Combinazione con il grado di sfruttamento N_Ed/R_d maggiore")
+    rapporto_governante: float = Field(
+        description="Grado di sfruttamento governante N_Ed/R_d", ge=0,
+        json_schema_extra={"unit": "-", "symbol": "N_Ed/R_d", "highlight": True},
+    )
+    verifica: Check = Field(description="Esito della verifica di capacità portante sulla combinazione governante (N_Ed ≤ R_d)")
 
 
 # --- Tool 4: armatura-paramento ------------------------------------------------------------------
@@ -283,6 +375,10 @@ class MuroSostegnoOutput(BaseModel):
                 "x_label": "Combinazione", "y_label": "Pressione sul terreno [kPa]",
             },
         },
+    )
+    capacita_portante_fondazione: CapacitaPortanteFondazioneResult | None = Field(
+        default=None,
+        description="Verifica di capacità portante del terreno di fondazione (calcolata solo se il blocco 'Terreno di fondazione' è compilato in modalità standard)",
     )
     armatura_paramento: ArmaturaParamentoResult = Field(description="Armatura verticale del paramento")
     armatura_fondazione_valle: ArmaturaFondazioneValleResult = Field(description="Armatura della fondazione di valle/mancia")

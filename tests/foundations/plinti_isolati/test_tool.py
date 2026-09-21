@@ -78,3 +78,52 @@ def test_tool_metodo_esatto_non_legacy(golden_inputs: dict) -> None:
     report = execute(TOOL, inputs)
     assert report.ok, report.errors
     assert report.data.righe[0].sigma_max_kpa > 0
+
+
+@pytest.mark.golden
+def test_tool_blocco_terreno_vuoto_esito_invariato(golden_inputs: dict) -> None:
+    """docs/architecture-phase4.md §C: a blocco 'Terreno' vuoto lo strumento si comporta
+    esattamente come prima (nessuna riga/inviluppo/governante/avviso di capacità portante,
+    nessun check aggiuntivo); ogni assert di `test_tool_golden`/`test_tool_golden_checks` resta
+    valida (non ripetuta qui)."""
+    report = execute(TOOL, golden_inputs)
+    assert report.ok, report.errors
+    assert report.data.capacita_portante.righe == ()
+    assert report.data.capacita_portante.governante is None
+    assert report.warnings == ()
+    assert "Capacità portante (NTC2018 §6.4.2.1, EN 1997-1 Annesso D)" not in [c.name for c in report.checks]
+
+
+@pytest.mark.unit
+def test_tool_blocco_terreno_compilato_aggiunge_verifica(golden_inputs: dict) -> None:
+    """A blocco compilato (modalità standard) lo strumento aggiunge la verifica NTC2018 §6.4.2.1,
+    senza rimuovere la verifica esistente (resistenza ammissibile tipizzata, che resta come
+    fallback)."""
+    inputs = {
+        **golden_inputs, "legacy_compat": False, "reazioni": golden_inputs["reazioni"][:3],
+        "terreno_condizione": "drenata", "terreno_phi_k_deg": 30.0, "terreno_c_k_kpa": 5.0,
+        "terreno_gamma_kn_m3": 18.0,
+    }
+    report = execute(TOOL, inputs)
+    assert report.ok, report.errors
+    assert len(report.data.capacita_portante.righe) == 3
+    assert report.data.capacita_portante.governante is not None
+    checks_by_name = {c.name: c for c in report.checks}
+    assert "Capacità portante (NTC2018 §6.4.2.1, EN 1997-1 Annesso D)" in checks_by_name
+    assert "Portanza (SLU_STR)" in checks_by_name  # fallback: la verifica esistente resta emessa
+
+
+@pytest.mark.unit
+def test_tool_blocco_terreno_ignorato_in_legacy(golden_inputs: dict) -> None:
+    """`legacy_compat=True` ignora il blocco 'Terreno' con un avviso (il foglio non esegue questo
+    calcolo): nessuna riga/verifica di capacità portante NTC2018 §6.4.2.1."""
+    inputs = {
+        **golden_inputs, "reazioni": golden_inputs["reazioni"][:2],
+        "terreno_condizione": "drenata", "terreno_phi_k_deg": 30.0, "terreno_c_k_kpa": 5.0,
+        "terreno_gamma_kn_m3": 18.0,
+    }
+    report = execute(TOOL, inputs)
+    assert report.ok, report.errors
+    assert report.data.capacita_portante.righe == ()
+    assert any("legacy" in w.lower() for w in report.warnings)
+    assert "Capacità portante (NTC2018 §6.4.2.1, EN 1997-1 Annesso D)" not in [c.name for c in report.checks]

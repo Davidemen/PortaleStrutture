@@ -229,5 +229,21 @@
   "riprodotta_da": [
    "plinti-isolati/momento-mensola-misurato-dal-centro-non-dal-filo-pilastro"
   ]
+ },
+ {
+  "id": "plinti-isolati/capacita-portante-terreno-assente-nel-foglio",
+  "titolo": "La verifica di capacità portante NTC2018 §6.4.2.1 è una funzionalità nuova, assente dal foglio originale",
+  "tipo": "scelta_ingegneristica",
+  "strumenti": [
+   "fond-plinto-isolato"
+  ],
+  "cella": "",
+  "foglio": "Il foglio Excel non esegue alcun calcolo di capacità portante (qlim, area efficace, γR=2,3): confronta solo la pressione massima con una resistenza ammissibile digitata dall'utente (vedi plinti-isolati/clausola-portanza-etichettata-come-verifica-ntc-completa).",
+  "corretto": "Quando il blocco opzionale di input 'Terreno' è compilato, la modalità standard calcola per ogni riga della tabella reazioni la resistenza di progetto R_d = qlim·A'/γR (EN 1997-1 Annesso D, NTC2018 §6.4.2.1 approccio 2 A1+M1+R3), con area efficace B'/L' e inclinazione del carico proprie di quella riga; in modalità legacy il blocco viene ignorato con un avviso, perché il foglio non esegue questo calcolo.",
+  "clausola": "NTC2018 §6.4.2.1, EN 1997-1 Annesso D",
+  "impatto": "nessuno sui casi guida/oracolo esistenti (il blocco 'Terreno' è vuoto di default: a blocco vuoto lo strumento si comporta esattamente come prima)",
+  "uscite": [
+   "capacita_portante"
+  ]
  }
 ]

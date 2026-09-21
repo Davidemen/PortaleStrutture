@@ -5,6 +5,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from strutture.shared.capacita_portante import Condizione
 from strutture.shared.footing_pressure import Metodo
 from strutture.shared.load_table import ReactionRow, reazioni_table_field, validate_unique_nodo_combo
 from strutture.shared.materials.concrete import ConcreteClass
@@ -13,6 +14,9 @@ from strutture.shared.materials.rebar import RebarGrade
 from .rows import ResistenzaRow, resistenze_table_field, validate_unique_famiglia
 
 SistemaUnita = Literal["SI", "tecnico"]
+_CONDIZIONE_TERRENO_IMPOSTATA = {"field": "terreno_condizione", "equals": ["drenata", "non_drenata"]}
+_COND_DRENATA = {"field": "terreno_condizione", "equals": ["drenata"]}
+_COND_NON_DRENATA = {"field": "terreno_condizione", "equals": ["non_drenata"]}
 
 
 class PlintoIsolatoInput(BaseModel):
@@ -58,6 +62,35 @@ class PlintoIsolatoInput(BaseModel):
                                     json_schema_extra={"unit": "°", "symbol": "φ", "group": "Terreno"})
     resistenze: tuple[ResistenzaRow, ...] = resistenze_table_field()
 
+    terreno_condizione: Condizione | None = Field(
+        default=None,
+        description="Condizione di drenaggio del terreno; se compilata, la capacità portante NTC2018 "
+                    "§6.4.2.1 è calcolata riga per riga al posto della sola resistenza ammissibile tipizzata",
+        json_schema_extra={"unit": "-", "group": "Terreno"},
+    )
+    terreno_phi_k_deg: float | None = Field(
+        default=None, description="Angolo di attrito caratteristico φ'k del terreno (condizione drenata)",
+        gt=0, lt=90, json_schema_extra={"unit": "°", "symbol": "φ'_k", "group": "Terreno", "condition": _COND_DRENATA},
+    )
+    terreno_c_k_kpa: float | None = Field(
+        default=None, description="Coesione efficace caratteristica c'k del terreno (condizione drenata)",
+        ge=0, json_schema_extra={"unit": "kPa", "symbol": "c'_k", "group": "Terreno", "condition": _COND_DRENATA},
+    )
+    terreno_cu_k_kpa: float | None = Field(
+        default=None, description="Coesione non drenata caratteristica cu,k del terreno (condizione non drenata)",
+        gt=0, json_schema_extra={"unit": "kPa", "symbol": "c_u,k", "group": "Terreno", "condition": _COND_NON_DRENATA},
+    )
+    terreno_gamma_kn_m3: float | None = Field(
+        default=None, description="Peso di volume caratteristico del terreno di fondazione, per il calcolo di q_lim",
+        gt=0, le=30, json_schema_extra={"unit": "kN/m3", "symbol": "γ", "group": "Terreno",
+                                         "condition": _CONDIZIONE_TERRENO_IMPOSTATA},
+    )
+    terreno_profondita_falda_m: float | None = Field(
+        default=None, description="Profondità della falda dal piano campagna (vuoto = falda assente)",
+        ge=0, json_schema_extra={"unit": "m", "symbol": "z_w", "group": "Terreno",
+                                  "condition": _CONDIZIONE_TERRENO_IMPOSTATA},
+    )
+
     classe_calcestruzzo: ConcreteClass = Field(default="C25/30", description="Classe di resistenza del calcestruzzo",
                                                 json_schema_extra={"group": "Materiali"})
     grado_acciaio: RebarGrade = Field(default="B450C", description="Classe di resistenza dell'armatura",
@@ -89,7 +122,20 @@ class PlintoIsolatoInput(BaseModel):
         mancanti = famiglie_reazioni - famiglie_resistenze
         if mancanti:
             raise ValueError(f"manca la resistenza di progetto del terreno per le famiglie: {sorted(mancanti)}")
+        self._valida_blocco_terreno()
         return self
+
+    def _valida_blocco_terreno(self) -> None:
+        """Il blocco 'Terreno' è opzionale (`terreno_condizione` assente = non compilato); quando è
+        compilato, i parametri richiesti dalla condizione di drenaggio scelta sono obbligatori."""
+        if self.terreno_condizione is None:
+            return
+        if self.terreno_gamma_kn_m3 is None:
+            raise ValueError("terreno_gamma_kn_m3 è obbligatorio quando il blocco Terreno è compilato")
+        if self.terreno_condizione == "drenata" and (self.terreno_phi_k_deg is None or self.terreno_c_k_kpa is None):
+            raise ValueError("terreno_phi_k_deg e terreno_c_k_kpa sono obbligatori in condizione drenata")
+        if self.terreno_condizione == "non_drenata" and self.terreno_cu_k_kpa is None:
+            raise ValueError("terreno_cu_k_kpa è obbligatorio in condizione non drenata")
 
 
 # `table_field()` (shared.tabular) carries no `group` hint; every input needs one

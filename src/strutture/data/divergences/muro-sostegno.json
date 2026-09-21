@@ -49,17 +49,15 @@
  },
  {
   "id": "muro-sostegno/verifica-portanza-non-segnalata",
-  "titolo": "Il tool non segnala che la verifica di capacita' portante non e' inclusa",
+  "titolo": "La capacita' portante del terreno di fondazione non era mai calcolata, solo segnalata come esclusa",
   "tipo": "errore_foglio",
   "strumenti": ["muro-sostegno"],
   "cella": "tool.py report",
-  "foglio": "L'elenco delle verifiche contiene solo ribaltamento e scorrimento: un elenco tutto verde puo' essere letto per errore come una verifica completa del §6.5.3, mentre la capacita' portante non e' controllata.",
-  "corretto": "Il report include sempre un avviso che ricorda che la verifica di capacita' portante e' fuori dall'ambito di questo strumento e che il controllo di eccentricita' respinge solo |e|>B/2.",
-  "clausola": "NTC2018 §6.5.3.1.1, §6.4.2.1",
-  "impatto": "nessuno sui valori numerici, solo un avviso aggiuntivo",
-  "uscite": [],
-  "ramo": "nessuno",
-  "motivo_senza_ramo": "L'avviso e' incondizionato in entrambe le modalita' (nessun flag legacy_compat ne seleziona la presenza)."
+  "foglio": "L'elenco delle verifiche contiene solo ribaltamento e scorrimento: un elenco tutto verde puo' essere letto per errore come una verifica completa del §6.5.3, mentre la capacita' portante non e' mai controllata, in nessuna modalita'.",
+  "corretto": "Con il blocco facoltativo 'Terreno di fondazione' compilato (condizione, phi'k/c'k o cu,k, gamma, profondita' del piano di posa D, falda opzionale) e legacy_compat=False, la capacita' portante e' calcolata per ogni combinazione sulla base nastriforme del muro (per metro, L'->infinito, fattori di forma=1: strutture.shared.capacita_portante, B'=B-2e dall'eccentricita' della combinazione, inclinazione del carico da H/V, gammaR da NTC2018 Tab. 6.5.I per i muri di sostegno: 1.4 statico, 1.2 sismico) e l'avviso di verifica mancante e' sostituito dall'esito del controllo 'Capacita' portante del terreno di fondazione'. Se il blocco non e' compilato, o legacy_compat=True (che lo ignora con un avviso dedicato), il report mantiene l'avviso invariato.",
+  "clausola": "NTC2018 §6.5.3.1.1, §6.4.2.1, Tab. 6.5.I",
+  "impatto": "nessuno sul caso golden (il blocco 'Terreno di fondazione' e' vuoto in ESEMPIO_TRATTO_A: l'avviso resta invariato in entrambe le modalita'); quando il blocco e' compilato in modalita' standard, il report aggiunge capacita_portante_fondazione con l'esito per combinazione al posto del solo avviso",
+  "uscite": ["capacita_portante_fondazione.verifica", "capacita_portante_fondazione.combinazioni.rapporto", "capacita_portante_fondazione.combo_governante"]
  },
  {
   "id": "muro-sostegno/ss-sempre-calcolato-dal-vivo",

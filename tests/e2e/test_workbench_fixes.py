@@ -334,12 +334,12 @@ def test_live_status_text_shown_when_live_on(page: Page, base_url: str) -> None:
     """WORKBENCH_SPEC finding F: with live on (Calcola hidden) the free space shows "Calcolo
     automatico attivo" instead of sitting empty."""
     goto_tool(page, base_url, "muro-sostegno")
-    expect(page.get_by_role("button", name="Calcola")).to_have_count(0)
+    expect(page.get_by_role("button", name="Calcola", exact=True)).to_have_count(0)
     expect(page.locator(".f-live-status")).to_have_text("Calcolo automatico attivo")
 
     page.locator("#live-toggle").uncheck()
     expect(page.locator(".f-live-status")).to_have_text("")
-    expect(page.get_by_role("button", name="Calcola")).to_be_visible()
+    expect(page.get_by_role("button", name="Calcola", exact=True)).to_be_visible()
 
 
 # -- G: rail collapsed by default except the active tool's category ----------------------------

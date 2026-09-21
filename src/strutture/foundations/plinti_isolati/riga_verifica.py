@@ -1,6 +1,10 @@
 """Composes one `reazioni` row into its full per-combination check (docs/specs/fond-plinti-isolati.md
 Tool-1): self-weight -> base actions -> contact pressure -> sliding/overturning. Pure composition of
-the step modules; no formulas of its own."""
+the step modules; no formulas of its own.
+
+`vx_kN`/`vy_kN` (the base shears already computed by `azioni_base`) are echoed here so
+`capacita_portante_riga` can derive each row's own horizontal load and direction for the optional
+NTC2018 §6.4.2.1 bearing-capacity check (docs/architecture-phase4.md §C)."""
 from pydantic import BaseModel, ConfigDict, Field
 
 from strutture.shared.footing_pressure import Metodo
@@ -24,6 +28,8 @@ class RigaVerifica(BaseModel):
     combo: str = Field(description="Nome della combinazione di carico", json_schema_extra={"unit": "-"})
     famiglia: Famiglia = Field(description="Famiglia della combinazione", json_schema_extra={"unit": "-"})
     n_kN: float = Field(description="Carico verticale totale alla base N", json_schema_extra={"unit": "kN"})
+    vx_kN: float = Field(description="Taglio alla base in direzione X", ge=0, json_schema_extra={"unit": "kN"})
+    vy_kN: float = Field(description="Taglio alla base in direzione Y", ge=0, json_schema_extra={"unit": "kN"})
     myy_kNm: float = Field(description="Momento alla base Myy", json_schema_extra={"unit": "kNm"})
     mxx_kNm: float = Field(description="Momento alla base Mxx", json_schema_extra={"unit": "kNm"})
     ex_m: float = Field(description="Eccentricità lungo X, ex = Myy/N", json_schema_extra={"unit": "m"})
@@ -65,7 +71,7 @@ def riga_verifica(
     scorrimento = mu_scorrimento(azioni.n_kN, azioni.vx_kN, azioni.vy_kN, phi_terreno_deg, legacy_compat=legacy_compat)
     return RigaVerifica(
         nodo=row.nodo, combo=row.combo, famiglia=row.famiglia,
-        n_kN=azioni.n_kN, myy_kNm=azioni.myy_kNm, mxx_kNm=azioni.mxx_kNm,
+        n_kN=azioni.n_kN, vx_kN=azioni.vx_kN, vy_kN=azioni.vy_kN, myy_kNm=azioni.myy_kNm, mxx_kNm=azioni.mxx_kNm,
         ex_m=pressione.ex_m, ey_m=pressione.ey_m,
         sigma_max_kpa=pressione.sigma_max_kpa, sigma_min_kpa=pressione.sigma_min_kpa,
         compressed_ratio=pressione.compressed_ratio,

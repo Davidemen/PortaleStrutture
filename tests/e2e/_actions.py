@@ -42,7 +42,9 @@ def submit(page: Page) -> None:
     is off (a big table, a slow tool, or the header switch); when it is on (the default) the
     equivalent explicit-run gesture is Ctrl+Enter, which WORKBENCH_SPEC §2 guarantees works from
     anywhere, live on or off."""
-    button = page.get_by_role("button", name=CALCOLA)
+    # exact: a field's help button is named after its whole description, and a description that
+    # happens to contain the word ("… la verifica non viene calcolata") matched a substring lookup
+    button = page.get_by_role("button", name=CALCOLA, exact=True)
     if button.count() > 0 and button.first.is_visible():
         button.first.click()
     else:

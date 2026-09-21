@@ -4,6 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from strutture.shared.sketch import Sketch, campo_schizzo
 
+from .capacita_portante import CapacitaPortanteOutput
 from .inviluppo import Eccentricita, InviluppoRiga
 from .materiali import Materiali
 from .models_flessione import Flessione
@@ -27,6 +28,9 @@ class PlintoIsolatoOutput(BaseModel):
     governante: RigaVerifica = Field(description="Combinazione governante per la pressione di contatto massima")
     flessione: Flessione = Field(description="Progetto a flessione del plinto al filo pilastro")
     sle: Sle = Field(description="Verifiche di esercizio (tensioni in calcestruzzo e acciaio)")
+    capacita_portante: CapacitaPortanteOutput = Field(
+        description="Capacità portante NTC2018 §6.4.2.1 (EN 1997-1 Annesso D), quando il blocco "
+                    "'Terreno' è compilato; vuota altrimenti")
 
     sigma_max_governante_kpa: float = Field(
         description="Pressione di contatto massima governante, su tutte le famiglie", ge=0,

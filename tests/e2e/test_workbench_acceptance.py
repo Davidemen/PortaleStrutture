@@ -222,11 +222,11 @@ def test_live_off_for_large_table(page: Page, base_url: str) -> None:
     in ANY table input, per live.js `MAX_LIVE_TABLE_ROWS`), against the e2e `demo-tabella` tool
     (DESIGN_SPEC §4b) rather than a real >200-row production tool."""
     goto_tool(page, base_url, "demo-tabella")
-    expect(page.get_by_role("button", name="Calcola")).to_have_count(0)  # live is on for a small table
+    expect(page.get_by_role("button", name="Calcola", exact=True)).to_have_count(0)  # live is on for a small table
 
     page.get_by_text("Incolla da Excel", exact=True).click()
     rows = "\n".join(f"{i}\t{10 + i}" for i in range(300))
     page.locator("textarea").fill(f"z\tE\n{rows}\n")
     page.get_by_role("button", name="Applica").click()
 
-    expect(page.get_by_role("button", name="Calcola")).to_be_visible()
+    expect(page.get_by_role("button", name="Calcola", exact=True)).to_be_visible()
