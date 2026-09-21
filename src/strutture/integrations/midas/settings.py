@@ -56,8 +56,11 @@ def validate_base_url(base_url: str, allowed_hosts: tuple[str, ...] = ()) -> str
     parts = urlsplit(base_url)
     if parts.username or parts.password:
         raise ValueError("URL non valido: non sono ammesse credenziali nell'URL.")
-    host = parts.hostname or ""
-    port = parts.port
+    try:
+        port = parts.port  # raises its own (English) ValueError for a port outside 0-65535
+    except ValueError:
+        raise ValueError("URL non valido: porta non consentita.") from None
+    host = parts.hostname or ""  # urlsplit() already lower-cases this
     host_port = f"{host}:{port if port is not None else 443}"
     if host_port not in allowed_hosts:
         if parts.scheme != "https":
@@ -68,4 +71,5 @@ def validate_base_url(base_url: str, allowed_hosts: tuple[str, ...] = ()) -> str
             raise ValueError("URL non valido: host non consentito.")
     if parts.path not in _ALLOWED_PATHS:
         raise ValueError("URL non valido: il percorso deve essere /gen o /civil.")
-    return f"{parts.scheme}://{parts.netloc}{parts.path}"
+    netloc = host if port is None else f"{host}:{port}"
+    return f"{parts.scheme}://{netloc}{parts.path}"

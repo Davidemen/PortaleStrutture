@@ -39,7 +39,10 @@ NOT verified against a live MIDAS instance — none is available on the developm
 2. **The key is a secret.** Sources, in order: request header `X-Midas-Key` (per engineer, kept by the browser in
    `sessionStorage` only) > server environment `MIDAS_MAPI_KEY`. Never stored server-side, never logged, never
    echoed in any response or error, redacted in exception messages. `GET /api/midas/status` only says whether a
-   server-side key exists.
+   server-side key exists. Every unsafe `/api/*` request (not just MIDAS) is also guarded against CSRF by
+   `SameOriginMiddleware` (`src/strutture/web/middleware/same_origin.py`): it requires `Content-Type:
+   application/json` and, when present, a same-origin `Sec-Fetch-Site`/`Origin`, so a cross-origin page cannot
+   drive a MIDAS read through the engineer's browser via a CORS "simple" request.
 3. **No SSRF.** A caller-supplied base URL must be `https`, port 443 (or none), host matching
    `^moa-engineers(-[a-z]{2})?\.midasit\.(com|cn)$`, path `/gen` or `/civil`. Anything else -> 400. The only escape
    hatch is the server env `MIDAS_ALLOWED_HOSTS` (comma-separated `host:port`, used by tests for a fake server).

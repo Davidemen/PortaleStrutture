@@ -11,9 +11,13 @@ from .units import moment_factor, to_kn
 from .version import read_units
 
 CHUNK_SIZE = 50  # combos per POST /post/table call, to stay under MIDAS's ~20 000-row table limit
+MAX_CHUNKS = 10  # a sane per-request budget: MAX_CHUNKS * CHUNK_SIZE round trips, not "minutes"
 _TABLE_NAME = "SS_Table"
 _REQUIRED_HEADERS = ("Node", "Load", "FX", "FY", "FZ", "MX", "MY", "MZ")
 _SUFFIX_RE = re.compile(r"\([A-Z]+\)$")
+_TOO_MANY_COMBINATIONS_IT = (
+    f"Troppe combinazioni richieste in una sola chiamata (massimo {CHUNK_SIZE * MAX_CHUNKS})."
+)
 
 
 def read_reactions(
@@ -26,6 +30,8 @@ def read_reactions(
     """`combinazioni` is `(table_name, famiglia)` pairs, e.g. `("SLU1(CB)", "SLU_STR")`."""
     famiglia_by_combo = {_strip_suffix(name): famiglia for name, famiglia in combinazioni}
     combo_names = tuple(name for name, _ in combinazioni)
+    if len(combo_names) > CHUNK_SIZE * MAX_CHUNKS:
+        raise MidasError("forbidden_url", _TOO_MANY_COMBINATIONS_IT)
     rows: tuple[ReactionRow, ...] = ()
     for chunk in _chunks(combo_names, CHUNK_SIZE):
         body = client.post_table(_argument(chunk, nodi, gruppo))

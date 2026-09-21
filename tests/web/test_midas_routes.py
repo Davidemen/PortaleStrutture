@@ -235,3 +235,88 @@ def test_reactions_reports_group_and_node_filters() -> None:
     response = client.post("/api/midas/reactions", json=body, headers={"X-Midas-Key": FAKE_KEY})
     assert response.status_code == 200
     assert response.json()["n_righe"] == 0
+
+
+# ---- HIGH 2: request bounds (no unbounded lists/strings reach the MIDAS client) -----------------
+
+
+def test_reactions_rejects_more_than_500_combinazioni() -> None:
+    client = _client({})
+    combinazioni = [{"table_name": f"C{i}(CB)"} for i in range(501)]
+    body = {"base_url": BASE_URL, "combinazioni": combinazioni}
+    response = client.post("/api/midas/reactions", json=body, headers={"X-Midas-Key": FAKE_KEY})
+    assert response.status_code == 400
+    assert response.json()["kind"] == "forbidden_url"
+
+
+def test_reactions_accepts_exactly_500_combinazioni() -> None:
+    combinazioni = [{"table_name": f"C{i}(CB)"} for i in range(500)]
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"SS_Table": {"HEAD": _STANDARD_HEAD, "DATA": [], "FORCE": "KN", "DIST": "M"}})
+
+    client = _client({"/post/table": handler})
+    body = {"base_url": BASE_URL, "combinazioni": combinazioni}
+    response = client.post("/api/midas/reactions", json=body, headers={"X-Midas-Key": FAKE_KEY})
+    assert response.status_code == 200
+
+
+def test_reactions_rejects_more_than_5000_nodi() -> None:
+    client = _client({})
+    body = {"base_url": BASE_URL, "nodi": list(range(1, 5002)), "combinazioni": [{"table_name": "C1(CB)"}]}
+    response = client.post("/api/midas/reactions", json=body, headers={"X-Midas-Key": FAKE_KEY})
+    assert response.status_code == 400
+
+
+def test_reactions_rejects_a_non_positive_node_id() -> None:
+    client = _client({})
+    body = {"base_url": BASE_URL, "nodi": [0], "combinazioni": [{"table_name": "C1(CB)"}]}
+    response = client.post("/api/midas/reactions", json=body, headers={"X-Midas-Key": FAKE_KEY})
+    assert response.status_code == 400
+
+
+def test_reactions_rejects_an_oversized_table_name() -> None:
+    client = _client({})
+    body = {"base_url": BASE_URL, "combinazioni": [{"table_name": "C" * 300}]}
+    response = client.post("/api/midas/reactions", json=body, headers={"X-Midas-Key": FAKE_KEY})
+    assert response.status_code == 400
+
+
+def test_reactions_rejects_an_oversized_gruppo() -> None:
+    client = _client({})
+    body = {"base_url": BASE_URL, "gruppo": "x" * 300, "combinazioni": [{"table_name": "C1(CB)"}]}
+    response = client.post("/api/midas/reactions", json=body, headers={"X-Midas-Key": FAKE_KEY})
+    assert response.status_code == 400
+
+
+def test_reactions_rejects_an_oversized_base_url() -> None:
+    client = _client({})
+    body = {"base_url": "https://moa-engineers.midasit.com/" + "g" * 300, "combinazioni": [{"table_name": "C1(CB)"}]}
+    response = client.post("/api/midas/reactions", json=body, headers={"X-Midas-Key": FAKE_KEY})
+    assert response.status_code == 400
+
+
+def test_reactions_rejects_an_invalid_famiglia() -> None:
+    client = _client({})
+    body = {"base_url": BASE_URL, "combinazioni": [{"table_name": "C1(CB)", "famiglia": "NOT_A_FAMIGLIA"}]}
+    response = client.post("/api/midas/reactions", json=body, headers={"X-Midas-Key": FAKE_KEY})
+    assert response.status_code == 400
+
+
+def test_verify_rejects_an_oversized_base_url() -> None:
+    client = _client({})
+    body = {"base_url": "https://moa-engineers.midasit.com/" + "g" * 300}
+    response = client.post("/api/midas/verify", json=body, headers={"X-Midas-Key": FAKE_KEY})
+    assert response.status_code == 400
+
+
+def test_base_url_field_itself_is_bounded_to_200_chars() -> None:
+    """White-box check that the 200-char bound is the pydantic `Field`, independent of the fact
+    that an over-long MIDAS URL would also fail the host/path check downstream."""
+    from pydantic import ValidationError
+
+    from strutture.web.routes.midas import _BaseUrlBody
+
+    _BaseUrlBody.model_validate({"base_url": "x" * 200})  # exactly at the limit: fine
+    with pytest.raises(ValidationError):
+        _BaseUrlBody.model_validate({"base_url": "x" * 201})

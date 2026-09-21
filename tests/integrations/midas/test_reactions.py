@@ -6,6 +6,7 @@ import httpx
 import pytest
 
 from strutture.integrations.midas import MidasClient, MidasError, read_reactions
+from strutture.integrations.midas.reactions import CHUNK_SIZE, MAX_CHUNKS
 from strutture.shared.load_table import MAX_REAZIONI_ROWS
 
 from .conftest import load_fixture, make_transport
@@ -138,6 +139,34 @@ def test_chunks_requests_over_50_combinations() -> None:
     rows, warnings = read_reactions(client, combinazioni=combinazioni)
     assert call_sizes == [50, 50, 20]
     assert len(rows) == 120
+    assert warnings == ()
+
+
+@pytest.mark.unit
+def test_rejects_more_than_max_chunks_worth_of_combinations_before_any_request() -> None:
+    """HIGH 2 (security review): a request that would need more than `MAX_CHUNKS` round trips to
+    MIDAS must be rejected up front, not looped over for minutes."""
+
+    def never_called(request: httpx.Request) -> httpx.Response:
+        raise AssertionError("must reject before making any request")
+
+    client = MidasClient(BASE_URL, FAKE_KEY, transport=httpx.MockTransport(never_called))
+    combinazioni = tuple((f"C{i}(CB)", None) for i in range(CHUNK_SIZE * MAX_CHUNKS + 1))
+    with pytest.raises(MidasError) as exc_info:
+        read_reactions(client, combinazioni=combinazioni)
+    assert exc_info.value.kind == "forbidden_url"
+    assert exc_info.value.status_code == 400
+
+
+@pytest.mark.unit
+def test_accepts_exactly_max_chunks_worth_of_combinations() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"SS_Table": {"HEAD": _STANDARD_HEAD, "DATA": [], "FORCE": "KN", "DIST": "M"}})
+
+    client = MidasClient(BASE_URL, FAKE_KEY, transport=httpx.MockTransport(handler))
+    combinazioni = tuple((f"C{i}(CB)", None) for i in range(CHUNK_SIZE * MAX_CHUNKS))
+    rows, warnings = read_reactions(client, combinazioni=combinazioni)
+    assert rows == ()
     assert warnings == ()
 
 

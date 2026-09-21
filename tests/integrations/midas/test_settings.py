@@ -89,3 +89,21 @@ def test_settings_from_env_defaults_are_none_and_empty() -> None:
 def test_settings_from_env_ignores_invalid_product() -> None:
     settings = MidasSettings.from_env(env={"MIDAS_PRODUCT": "not-a-product"})
     assert settings.product is None
+
+
+@pytest.mark.unit
+def test_out_of_range_port_gives_an_italian_message_not_a_python_traceback() -> None:
+    """LOW 3: urlsplit().port raises its own English ValueError for an out-of-range port; that
+    must never reach the caller unfiltered."""
+    with pytest.raises(ValueError) as exc_info:
+        validate_base_url("https://moa-engineers.midasit.com:99999/gen")
+    message = str(exc_info.value)
+    assert "porta" in message.lower()
+    assert "out of range" not in message.lower()
+
+
+@pytest.mark.unit
+def test_canonical_base_url_lowercases_the_host() -> None:
+    """LOW 4: the canonical URL must not echo back the caller's original letter case."""
+    assert validate_base_url("https://MOA-ENGINEERS.MIDASIT.COM/gen") == "https://moa-engineers.midasit.com/gen"
+    assert validate_base_url("https://Moa-Engineers-Gb.MidasIT.com:443/civil") == "https://moa-engineers-gb.midasit.com:443/civil"

@@ -1,0 +1,270 @@
+/* MIDAS import dialog (js/midas-dialog.js, js/midas-dialog-steps.js). Tokens only from
+   css/tokens.css -- no new colours, quiet and consistent with forms.css. */
+
+.midas-dialog {
+  width: min(34rem, calc(100vw - var(--s5)));
+  max-height: min(38rem, calc(100dvh - var(--s6)));
+  padding: var(--s5);
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  box-shadow: none;
+}
+
+.midas-dialog::backdrop {
+  background: rgba(21, 32, 43, 0.55);
+}
+
+@media (prefers-color-scheme: dark) {
+  .midas-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.65);
+  }
+}
+
+.midas-dialog h2 {
+  font-family: var(--font-label);
+  font-size: var(--t-l);
+  line-height: var(--lh-tight);
+  margin: 0 0 var(--s4);
+}
+
+.midas-steps {
+  display: flex;
+  gap: var(--s3);
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--s4);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.midas-steps li {
+  padding-bottom: var(--s2);
+  font-family: var(--font-label);
+  font-size: var(--t-xs);
+  color: var(--graphite);
+  border-bottom: 2px solid transparent;
+}
+
+.midas-steps li[aria-current="step"] {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+
+.midas-alert {
+  padding: var(--s3);
+  margin-bottom: var(--s4);
+  color: var(--ko);
+  background: var(--ko-bg);
+  border-radius: var(--radius);
+  font-size: var(--t-s);
+}
+
+.midas-alert:empty {
+  display: none;
+}
+
+.midas-body {
+  overflow-y: auto;
+  max-height: 22rem;
+}
+
+.midas-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  margin-bottom: var(--s4);
+}
+
+.midas-field label {
+  font-family: var(--font-label);
+  font-size: var(--t-s);
+}
+
+.midas-field input[type="text"],
+.midas-field input[type="password"],
+.midas-field select {
+  height: var(--control-h);
+  padding: 0 var(--s3);
+  font-family: var(--font-ui);
+  font-size: var(--t-s);
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+
+.midas-help {
+  color: var(--graphite);
+  font-size: var(--t-xs);
+  margin: 0;
+}
+
+.midas-summary {
+  padding: var(--s3);
+  margin-bottom: var(--s4);
+  background: var(--film);
+  border-radius: var(--radius);
+  font-size: var(--t-s);
+}
+
+.midas-search {
+  width: 100%;
+  height: var(--control-h);
+  padding: 0 var(--s3);
+  margin-bottom: var(--s3);
+  font-size: var(--t-s);
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+
+.midas-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: var(--control-h);
+  margin-bottom: var(--s3);
+}
+
+.midas-toggle input[type="checkbox"] {
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: var(--ink);
+}
+
+.midas-group {
+  margin-bottom: var(--s4);
+}
+
+.midas-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  margin-bottom: var(--s2);
+}
+
+.midas-group-head h3 {
+  font-family: var(--font-label);
+  font-size: var(--t-s);
+  margin: 0;
+}
+
+.midas-combo-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2) var(--s3);
+  min-height: var(--control-h);
+  padding: var(--s1) 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.midas-combo-row input[type="checkbox"] {
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: var(--ink);
+  flex-shrink: 0;
+}
+
+.midas-combo-name {
+  flex: 1 1 12rem;
+  font-size: var(--t-s);
+}
+
+.midas-combo-row select {
+  height: var(--control-h);
+  min-width: 8rem;
+  font-size: var(--t-xs);
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+
+.midas-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  margin-bottom: var(--s4);
+}
+
+.midas-radio-option {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+  min-height: var(--control-h);
+}
+
+.midas-radio-option input[type="radio"] {
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: var(--ink);
+  flex-shrink: 0;
+}
+
+.midas-radio-option input[type="text"] {
+  height: var(--control-h);
+  flex: 1 1 8rem;
+  min-width: 0;
+  padding: 0 var(--s3);
+  font-size: var(--t-s);
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+
+.midas-warnings {
+  padding: var(--s3);
+  margin-bottom: var(--s4);
+  color: var(--warn);
+  background: var(--warn-bg);
+  border-radius: var(--radius);
+  font-size: var(--t-s);
+}
+
+.midas-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--s2);
+  padding-top: var(--s3);
+  border-top: 1px solid var(--hairline);
+}
+
+.midas-btn,
+.midas-btn-primary {
+  min-height: var(--control-h);
+  padding: 0 var(--s4);
+  font-family: var(--font-label);
+  font-size: var(--t-s);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.midas-btn {
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+}
+
+.midas-btn-primary {
+  color: var(--paper);
+  background: var(--ink);
+  border: 1px solid var(--ink);
+}
+
+.midas-btn[disabled],
+.midas-btn-primary[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+[aria-invalid="true"].midas-field-input {
+  border-color: var(--ko);
+  background: var(--ko-bg);
+}

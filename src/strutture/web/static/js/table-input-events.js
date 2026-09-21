@@ -3,6 +3,7 @@
 // against a built table-input `wrapper`. Split out of table-input.js (module-length guideline).
 import { el } from "./dom.js";
 import { parseTable, buildCsvTemplate } from "./table-paste.js";
+import { sourceFor } from "./table-sources.js";
 
 // `hooks` = {currentRows, setRows, applyParsed, message} bound by the caller (table-input.js) to
 // its own live row state, so this module holds no row data itself.
@@ -23,6 +24,22 @@ export function buildToolbar(field, id, columns, table, hooks) {
     },
   });
   const toolbar = el("div", { class: "f-table-toolbar" }, [addButton]);
+
+  // Generic import-source hook (table-sources.js): the widget only knows a name may resolve to
+  // a lazily-loaded module -- it carries no per-source (e.g. MIDAS) code of its own.
+  const source = sourceFor(table.source);
+  if (source) {
+    const importButton = el("button", {
+      type: "button",
+      class: "f-table-btn",
+      text: source.buttonLabel,
+      onclick: async () => {
+        const importModule = await source.load();
+        importModule.openImport({ field, columns, table, currentRows, setRows, message, trigger: importButton });
+      },
+    });
+    toolbar.append(importButton);
+  }
 
   if (table.paste !== false) {
     const textarea = el("textarea", { class: "f-table-paste-area", rows: 4, "aria-label": "Incolla dati da Excel" });

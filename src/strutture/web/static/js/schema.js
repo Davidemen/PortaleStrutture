@@ -55,6 +55,7 @@ function describeTable(schema, property) {
       key: table.key,
       fixed_rows: Boolean(table.fixed_rows),
       preview_rows: table.preview_rows ?? 50,
+      source: table.source || null,
     },
     minItems: property.minItems ?? 0,
     maxItems: property.maxItems,

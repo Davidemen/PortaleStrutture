@@ -3,11 +3,12 @@
 `MidasError` onto the `{ok: false, errors, kind}` envelope with the documented status codes."""
 import logging
 from collections.abc import Callable
-from typing import Literal
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from starlette.concurrency import run_in_threadpool
 
 from strutture.integrations.midas import (
     Combination,
@@ -31,30 +32,38 @@ logger = logging.getLogger(__name__)
 ClientFactory = Callable[[str, str], MidasClient]
 _INTERNAL_ERROR_IT = "Si è verificato un errore interno del server. Riprova più tardi."
 
+# HIGH 2 (security review): every list/string in a request body is bounded, so one request can
+# never force thousands of MIDAS round trips or gigabytes of JSON.
+_MAX_STRING_LENGTH = 200
+_MAX_COMBINAZIONI = 500
+_MAX_NODI = 5000
+_NodeId = Annotated[int, Field(ge=1)]
+_BoundedStr = Annotated[str, Field(max_length=_MAX_STRING_LENGTH)]
+
 
 class _VerifyBody(BaseModel):
     model_config = ConfigDict(frozen=True)
-    base_url: str | None = None
+    base_url: _BoundedStr | None = None
     product: Literal["gen", "civil"] | None = None
 
 
 class _BaseUrlBody(BaseModel):
     model_config = ConfigDict(frozen=True)
-    base_url: str | None = None
+    base_url: _BoundedStr | None = None
 
 
 class _ComboSelection(BaseModel):
     model_config = ConfigDict(frozen=True)
-    table_name: str = Field(min_length=1)
+    table_name: str = Field(min_length=1, max_length=_MAX_STRING_LENGTH)
     famiglia: Famiglia | None = None
 
 
 class _ReactionsBody(BaseModel):
     model_config = ConfigDict(frozen=True)
-    base_url: str | None = None
-    nodi: tuple[int, ...] = ()
-    gruppo: str | None = None
-    combinazioni: tuple[_ComboSelection, ...] = Field(min_length=1)
+    base_url: _BoundedStr | None = None
+    nodi: tuple[_NodeId, ...] = Field(default=(), max_length=_MAX_NODI)
+    gruppo: _BoundedStr | None = None
+    combinazioni: tuple[_ComboSelection, ...] = Field(min_length=1, max_length=_MAX_COMBINAZIONI)
 
 
 def build_midas_router(*, client_factory: ClientFactory | None = None) -> APIRouter:
@@ -101,7 +110,9 @@ async def _run(request: Request, model: type[BaseModel], handler: Callable[[Base
     if not key:
         return _error(MidasError("auth", "Nessuna chiave MAPI disponibile. Inserisci la chiave o imposta MIDAS_MAPI_KEY sul server."))
     try:
-        return handler(body, key)
+        # `handler` makes synchronous httpx calls to MIDAS; off-load it to FastAPI's threadpool so
+        # one slow/large request never blocks the event loop (and every other concurrent request).
+        return await run_in_threadpool(handler, body, key)
     except MidasError as error:
         return _error(error)
     except Exception:
