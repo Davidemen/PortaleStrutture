@@ -7,8 +7,27 @@ import { sourceFor } from "./table-sources.js";
 
 // `hooks` = {currentRows, setRows, applyParsed, message} bound by the caller (table-input.js) to
 // its own live row state, so this module holds no row data itself.
+// WORKBENCH_SPEC §8 "forms-live" hook: a structural table change (add row / paste / CSV / MIDAS
+// import -- all of them reach the row state through `hooks.setRows`/`hooks.applyParsed`) has no
+// native DOM event of its own (unlike typing into a cell, which already bubbles a plain "change"
+// up through the `<form>` that forms.js listens on). Firing one synthetic "change" on the table's
+// own wrapper element lets that same, unchanged forms.js listener pick up table edits too, with no
+// new import and no `strutture:*` event of its own needed here.
+function notifyChange(id) {
+  const wrapper = document.getElementById(id);
+  if (wrapper) wrapper.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
 export function buildToolbar(field, id, columns, table, hooks) {
-  const { currentRows, setRows, applyParsed, message } = hooks;
+  const { currentRows, message } = hooks;
+  const setRows = (rows) => {
+    hooks.setRows(rows);
+    notifyChange(id);
+  };
+  const applyParsed = (parsed, mode) => {
+    hooks.applyParsed(parsed, mode);
+    notifyChange(id);
+  };
   const minItems = field.minItems ?? 0;
   const maxItems = field.maxItems ?? Infinity;
 

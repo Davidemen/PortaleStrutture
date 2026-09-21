@@ -2,7 +2,9 @@
 // (when the `rows_page` hint is set) simple pager -- "Scarica CSV" always exports every row.
 import { el, clear } from "./dom.js";
 import { symbolNode, symbolText } from "./symbols.js";
-import { formatValue, toCsv, toTsv } from "./format.js";
+import { formatValue, toCsv, toTsv, formatCopyValue, formatUnit } from "./format.js";
+import { createCopyStatus, wireValueCopy } from "./results-toolbar.js";
+import { copyText, buildManualCopyField } from "./clipboard.js";
 
 const CSV_BOM = "﻿";
 const LABEL_SWAP_MS = 2000;
@@ -26,7 +28,7 @@ function headerRow(columns) {
       } else {
         th.append(el("span", { class: "r-th-label", text: column.label }));
       }
-      if (column.unit !== undefined) th.append(el("span", { class: "r-th-unit", text: `[${column.unit}]` }));
+      if (column.unit !== undefined) th.append(el("span", { class: "r-th-unit", text: `[${formatUnit(column.unit)}]` }));
       return th;
     })
   );
@@ -51,14 +53,16 @@ function buildLegendLine(columns) {
   return p;
 }
 
-function dataRow(columns, row) {
+function dataRow(columns, row, copyCtx) {
   return el(
     "tr",
     {},
     columns.map((column) => {
-      const { text, title } = formatValue(row[column.name], column);
+      const value = row[column.name];
+      const { text, title } = formatValue(value, column);
       const td = el("td", { class: "r-num", text });
       if (title) td.title = title;
+      if (copyCtx) wireValueCopy(td, formatCopyValue(value), copyCtx.announce);
       return td;
     })
   );
@@ -86,12 +90,11 @@ function buildActions(node, allRows) {
   const bar = el("div", { class: "r-table-actions" });
   const copyBtn = el("button", { type: "button", class: "r-action", text: "Copia tabella" });
   copyBtn.addEventListener("click", async () => {
-    try {
-      await navigator.clipboard.writeText(toTsv(allRows, csvColumns(node.columns)));
-      swapLabel(copyBtn, "Copiato");
-    } catch (error) {
-      swapLabel(copyBtn, "Copia non riuscita");
-    }
+    const existing = bar.querySelector(":scope > .sm-clip-fallback");
+    if (existing) existing.remove();
+    const tsv = toTsv(allRows, csvColumns(node.columns));
+    if (await copyText(tsv)) swapLabel(copyBtn, "Copiato");
+    else bar.append(buildManualCopyField(tsv, "Tabella", { multiline: true }));
   });
   const csvBtn = el("button", { type: "button", class: "r-action", text: "Scarica CSV" });
   csvBtn.addEventListener("click", () => {
@@ -102,7 +105,9 @@ function buildActions(node, allRows) {
   return bar;
 }
 
-function buildTable(node, pageRows) {
+// Exported so `relazione-table.js` (print, WORKBENCH_SPEC §10) can reuse the SAME header/caption/
+// row formatting for an unpaged print table instead of a second implementation.
+export function buildTable(node, pageRows, copyCtx) {
   const scroll = el("div", { class: "r-table-scroll", tabindex: "0", "aria-label": `Tabella: ${node.label}` });
   const table = el("table", { class: "r-table" });
   const caption = el("caption", {}, [document.createTextNode(node.label)]);
@@ -110,7 +115,7 @@ function buildTable(node, pageRows) {
   if (legendLine) caption.append(legendLine);
   table.append(caption);
   table.append(el("thead", {}, [headerRow(node.columns)]));
-  table.append(el("tbody", {}, pageRows.map((row) => dataRow(node.columns, row))));
+  table.append(el("tbody", {}, pageRows.map((row) => dataRow(node.columns, row, copyCtx))));
   scroll.append(table);
   return scroll;
 }
@@ -130,6 +135,7 @@ function buildPager(page, totalPages, onChange) {
 
 export function renderRows(root, node, rows) {
   clear(root);
+  const copyCtx = createCopyStatus(root);
   root.append(buildActions(node, rows));
 
   const pageSize = node.rowsPage;
@@ -141,7 +147,7 @@ export function renderRows(root, node, rows) {
   function renderPage() {
     clear(holder);
     const pageRows = pageSize ? rows.slice(page * pageSize, page * pageSize + pageSize) : rows;
-    holder.append(buildTable(node, pageRows));
+    holder.append(buildTable(node, pageRows, copyCtx));
     if (pageSize && totalPages > 1) {
       holder.append(
         buildPager(page, totalPages, (nextPage) => {

@@ -1,5 +1,7 @@
 // Client-side (Italian) validation + mapping of server errors onto fields/cells.
 // The form is `novalidate`: every range/required message rendered here, never a native tooltip.
+import { formatUnit } from "./format.js";
+import { parseListText, listBoundsMessage, listTokenErrorMessage } from "./list-input.js";
 
 export function isVisible(field, values) {
   if (!field.condition) return true;
@@ -9,7 +11,7 @@ export function isVisible(field, values) {
 
 function formatBound(value, unit) {
   const text = Number.isInteger(value) ? String(value) : String(value).replace(".", ",");
-  return unit ? `${text} ${unit}` : text;
+  return unit ? `${text} ${formatUnit(unit)}` : text;
 }
 
 function validateNumber(field, value) {
@@ -61,8 +63,25 @@ export function validateValues(fields, values) {
       continue;
     }
     if (value === null || value === undefined) continue;
+    if (field.kind === "number" && typeof value === "string") {
+      // fields.js's `readValue` keeps unparseable text (instead of null) precisely so it lands
+      // here as a real error, not a silently-accepted empty field.
+      errors[field.name] = "Valore non numerico (usa la virgola o il punto come separatore decimale).";
+      continue;
+    }
     if (field.kind === "number" && typeof value === "number") {
       const message = validateNumber(field, value);
+      if (message) errors[field.name] = message;
+    }
+    if (field.kind === "list" && typeof value === "string") {
+      // fields.js's `readListValue` keeps the raw text (instead of the parsed array) precisely
+      // when a token failed to parse, so it lands here as a real error the same way "number" does.
+      const { invalidTokens } = parseListText(value, field.itemKind);
+      errors[field.name] = listTokenErrorMessage(invalidTokens);
+      continue;
+    }
+    if (field.kind === "list" && Array.isArray(value)) {
+      const message = listBoundsMessage(field, value);
       if (message) errors[field.name] = message;
     }
   }

@@ -51,6 +51,12 @@ export function focusResults() {
   if (head) head.focus({ preventScroll: false });
 }
 
+export function focusDati() {
+  if (isNarrow()) setPane("dati");
+  const title = document.getElementById("tool-title");
+  if (title) title.focus({ preventScroll: false });
+}
+
 export function focusFirstError() {
   const invalid = document.querySelector('[aria-invalid="true"]');
   if (invalid) {
@@ -68,6 +74,29 @@ function wireTabs() {
   if (tabRisultati) tabRisultati.addEventListener("click", () => setPane("risultati"));
 }
 
+// Sticky bottom bar (<720px): shell owns the click-to-jump behaviour, the
+// results package fills its text content via the verdict events/DOM writes.
+function wireBottomBar() {
+  const bar = document.getElementById("bottom-bar");
+  if (bar) bar.addEventListener("click", () => setPane("risultati"));
+}
+
+// Header switch "Calcolo automatico" (WORKBENCH_SPEC #1/#2): persisted as
+// sm.ui.live (default on), announced to the forms package through
+// `strutture:live-setting {enabled}` on every change and once at boot.
+function wireLiveSwitch() {
+  const toggle = document.getElementById("live-toggle");
+  if (!toggle) return;
+  const enabled = readJSON("sm.ui.live", true);
+  toggle.checked = enabled;
+  const announce = (value) => document.dispatchEvent(new CustomEvent("strutture:live-setting", { detail: { enabled: value } }));
+  toggle.addEventListener("change", () => {
+    writeJSON("sm.ui.live", toggle.checked);
+    announce(toggle.checked);
+  });
+  announce(enabled);
+}
+
 // Re-applies the current pane's hidden/visible state for the new breakpoint: `setPane`'s
 // `formPane.hidden`/`resultsPane.hidden` depend on `isNarrow()`, so crossing 720px without a
 // full reload (a window resize, a tablet rotation) must recompute them, not just move the index.
@@ -80,6 +109,8 @@ function init() {
   relocateIndex();
   mediaQuery.addEventListener("change", handleBreakpointChange);
   wireTabs();
+  wireBottomBar();
+  wireLiveSwitch();
   setPane(readJSON("sm.ui.pane", "dati"));
 }
 

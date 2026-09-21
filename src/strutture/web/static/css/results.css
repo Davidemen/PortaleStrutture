@@ -1,7 +1,7 @@
 /* Results sheet -- typeset like a page of a relazione di calcolo. Package: results. */
 
 #results-root {
-  padding: var(--s5, 1.5rem);
+  padding: var(--s4, 1rem) var(--s5, 1.5rem);
   color: var(--ink, #15202b);
 }
 
@@ -14,18 +14,30 @@
 #results-head {
   font-size: var(--t-l, 1.3125rem);
   line-height: var(--lh-tight, 1.25);
-  margin: 0 0 var(--s4, 1rem);
+  margin: 0 0 var(--s3, 0.75rem);
 }
 
-/* Only #results-head is ever *programmatically* focused (layout.js, after "Calcola"), purely so
-   screen-reader users land on the new heading -- there is no pointer/keyboard interaction to ring.
-   The global `:focus-visible { outline }` (tokens.css) still applies to every real keyboard-focus
-   target; this narrower `:focus` selector (id beats the global element-less selector) replaces the
-   outline with a 2px left rule for this one heading instead of boxing the whole title. */
-#results-head:focus {
-  outline: none;
-  padding-left: var(--s3, 0.75rem);
-  border-left: 2px solid var(--focus, var(--ink));
+/* Finding E: the tool title already appears once, above the Dati column (#tool-title) -- this h2
+   stays in the DOM (it is the a11y focus target after "Calcola"/"Carica esempio"/example, and the
+   print title, print.css) but is visually hidden on screen ALWAYS, not just while unfocused: it
+   carries `tabindex="-1"` (results.js), so it is never a stop a sighted keyboard user's OWN Tab
+   navigation could land on -- only `layout.js`'s `focusResults()` ever focuses it, purely to move
+   the screen-reader cursor / trigger the heading announcement after every manual/example run
+   (WORKBENCH_SPEC #2's focus-after-run rule, never for a live/debounced one). A visual "reveal on
+   focus" would therefore re-show (and re-budget the height of) the very title finding E removes on
+   every one of those runs, defeating the point; screen/print media alone decide visibility instead. */
+@media screen {
+  #results-head {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    margin: 0;
+    border: 0;
+    padding: 0;
+  }
 }
 
 .print-relazione-head {
@@ -40,7 +52,6 @@
   background: var(--paper, #fff);
   color: var(--ink, #15202b);
   cursor: pointer;
-  margin-bottom: var(--s4, 1rem);
 }
 
 .r-print-trigger:hover {
@@ -72,19 +83,53 @@
   color: var(--warn, #8a5a00);
 }
 
-/* -- verdict ----------------------------------------------------------- */
+/* -- sheet-level states (results-diff.js) -------------------------------- */
 
-.r-verdict {
-  background: var(--paper, #fff);
-  margin-bottom: var(--s5, 1.5rem);
+#results-root.r-sheet--stale {
+  opacity: 0.6;
 }
 
-.r-verdict-head {
-  display: flex;
-  align-items: center;
-  gap: var(--s2, 0.5rem);
-  font-size: var(--t-l, 1.3125rem);
-  line-height: var(--lh-tight, 1.25);
+.r-copy-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.r-copy-status:not(:empty) {
+  position: static;
+  width: auto;
+  height: auto;
+  clip: auto;
+  white-space: normal;
+  margin: 0 0 var(--s2, 0.5rem);
+  color: var(--graphite, #5b6773);
+  font-size: var(--t-xs, 0.8125rem);
+}
+
+.r-cell-value--copy,
+.r-si-figure-value,
+.r-si-eta-value {
+  cursor: pointer;
+}
+
+/* Changed-cell flash (WORKBENCH_SPEC #2): marker-yellow fade for 1.2s, driven by JS adding/
+   removing `data-changed` (results-diff.js). Skipped entirely under reduced motion there, so this
+   transition never has anything to animate in that mode. */
+.r-cell-value,
+.r-si-figure-value,
+.r-si-eta-value,
+.r-check-name {
+  transition: background-color 0.6s ease;
+}
+[data-changed="true"] {
+  background: var(--marker, #ffe45c);
+}
+
+.r-icon {
+  flex: none;
+  color: currentColor;
 }
 
 .r-verdict-word--ok {
@@ -95,13 +140,306 @@
   color: var(--ko, #b42318);
 }
 
-.r-verdict-sintesi {
-  font-variant-numeric: tabular-nums lining-nums;
+/* -- Sintesi (js/sintesi.js) -------------------------------------------- */
+
+#sintesi {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--paper, #fff);
+  /* Finding J: the sketch side column runs up to its own 320px max-height (finding B) regardless,
+     so #sintesi's own top/bottom padding is pure overhead against the <=900px results budget. */
+  padding: var(--s3, 0.75rem) var(--s5, 1.5rem);
+  border-bottom: 1px solid var(--hairline, #c9d1d8);
+  overflow-anchor: none;
+  /* Finding B: "at results-column widths >=640px" is #sintesi's OWN width, not the viewport --
+     the results pane is a fluid column that can be anywhere from ~360px (mobile) to well over
+     1000px (a wide desktop with the rail collapsed), so a container query on this element (not a
+     @media breakpoint) is what actually answers "is there room for two columns here". */
+  container-type: inline-size;
+  container-name: sintesi;
 }
 
-.r-icon {
-  flex: none;
-  color: currentColor;
+/* Collapsing at 200px of scroll (js/sintesi.js initSintesiCollapse) shrinks #sintesi's own flow
+   height by ~350px; without this, Chromium's scroll anchoring "compensates" by adjusting
+   #results-pane's OWN scrollTop to keep the same content visually anchored, which crosses the
+   200px threshold again the other way and loops forever (measured: scrollTop oscillating between
+   two values every animation frame, never settling). `overflow-anchor:none` scoped to just
+   `#sintesi` above excludes it as an anchor CANDIDATE but does not disable the browser's
+   compensation for the scrollport as a whole -- only turning anchoring off on the scroll
+   container itself (id owned by shell/layout.css, which does not otherwise set this property)
+   removes the feedback loop at its source. */
+#results-pane {
+  overflow-anchor: none;
+}
+
+.r-si-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--ink, #15202b);
+  opacity: 0;
+  transform: scaleX(0);
+  transform-origin: left;
+}
+#sintesi[aria-busy="true"] .r-si-progress {
+  opacity: 1;
+  animation: r-si-progress-sweep 1.1s ease-in-out infinite;
+}
+@keyframes r-si-progress-sweep {
+  0% { transform: scaleX(0); transform-origin: left; }
+  50% { transform: scaleX(1); transform-origin: left; }
+  50.1% { transform-origin: right; }
+  100% { transform: scaleX(0); transform-origin: right; }
+}
+
+.r-si-chip {
+  margin: 0 0 var(--s3, 0.75rem);
+  padding: var(--s1, 0.25rem) var(--s3, 0.75rem);
+  display: inline-block;
+  background: var(--warn-bg, #fbf0da);
+  color: var(--warn, #8a5a00);
+  font-size: var(--t-s, 0.9375rem);
+  border-radius: var(--radius, 3px);
+}
+
+.r-si-verdict {
+  display: flex;
+  align-items: center;
+  gap: var(--s2, 0.5rem);
+  font-size: var(--t-l, 1.3125rem);
+  line-height: var(--lh-tight, 1.25);
+}
+
+.r-si-eta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s3, 0.75rem);
+  margin-top: var(--s2, 0.5rem);
+  flex-wrap: wrap;
+}
+.r-si-eta-value {
+  font-size: var(--t-xl, 1.75rem);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.r-si-eta-name {
+  color: var(--graphite, #5b6773);
+  font-size: var(--t-s, 0.9375rem);
+}
+.r-si-eta .r-bar {
+  flex: 1 1 8rem;
+  min-width: 6rem;
+  max-width: 14rem;
+}
+
+.r-si-figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s5, 1.5rem);
+  margin-top: var(--s4, 1rem);
+}
+.r-si-figure-symbol {
+  font-family: var(--font-sym, "STIX Two Text", serif);
+  font-style: italic;
+  color: var(--graphite, #5b6773);
+  font-size: var(--t-s, 0.9375rem);
+}
+/* Review finding 19: the plain-description fallback for a highlight with no `symbol` hint --
+   upright Barlow, never the mathematical-italic STIX treatment above, clamped to 2 lines so a
+   long description cannot grow the figure past its neighbours. */
+.r-si-figure-label {
+  font-family: var(--font-label, inherit);
+  font-style: normal;
+  color: var(--graphite, #5b6773);
+  font-size: var(--t-s, 0.9375rem);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.r-si-figure-value {
+  font-size: var(--t-xl, 1.75rem);
+  font-weight: 600;
+  line-height: var(--lh-tight, 1.25);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.r-si-figure-unit {
+  color: var(--graphite, #5b6773);
+  font-size: var(--t-s, 0.9375rem);
+}
+
+/* Orchestrator finding: the empty-Sintesi fallback (js/sintesi.js buildEmptyFallback) -- either a
+   quiet one-line stand-in for a tool with genuinely nothing to lead with, or (when the tool has a
+   chart) a compact preview of it, capped so it never grows past a normal verdict+eta block. */
+.r-si-empty {
+  margin: 0;
+  color: var(--graphite, #5b6773);
+  font-size: var(--t-m, 1.0625rem);
+}
+.r-si-main > .r-chart {
+  max-height: 220px;
+  /* `.c-svg{width:100%;height:auto}` (chart.css) sizes itself from the viewBox's own aspect ratio,
+     which can render taller than this cap -- `max-height` alone only constrains this box's
+     contribution to ITS OWN ancestor's layout height, never what a taller, `overflow:visible`
+     child paints past its edge (measured: the chart visibly bled into -- and started eating
+     clicks on -- the results toolbar sitting right below the sticky #sintesi on a narrow
+     viewport, despite #sintesi's own reported height already respecting the cap). */
+  overflow: hidden;
+  margin: 0;
+}
+
+.r-si-warnings {
+  display: block;
+  margin-top: var(--s3, 0.75rem);
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--warn, #8a5a00);
+  font-size: var(--t-s, 0.9375rem);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* Finding B: two columns at >=640px of #sintesi's OWN width -- left `.r-si-main` (~45%, verdict/
+   eta/highlights/warnings), right `.r-si-side` (~55%, the sketches). Below that: one column, the
+   SKETCH FIRST (order swaps -- WORKBENCH_SPEC finding B "narrow screens: sketch first, full
+   width" / finding K, mobile Risultati). `.r-si-side:empty` (a tool with no schizzo output) never
+   reserves the column. */
+.r-si-layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4, 1rem);
+}
+.r-si-main {
+  order: 2;
+  min-width: 0;
+}
+.r-si-side {
+  order: 1;
+  min-width: 0;
+}
+.r-si-side:empty {
+  display: none;
+}
+@container sintesi (min-width: 640px) {
+  .r-si-layout {
+    display: grid;
+    grid-template-columns: 45% 55%;
+    align-items: start;
+  }
+  .r-si-main {
+    order: 1;
+  }
+  .r-si-side {
+    order: 2;
+  }
+  /* Review finding 18, as specified: a TWO-view sketch does not fit the 55% side column (each view
+     got ~170px -- 11.5px labels and 22px dimension offsets cannot be laid out in that; measured:
+     clipped/overlapping text, sub-minimum offsets, element share 0.46). The layout turns into one
+     column instead: `.r-si-main` becomes a band (verdict + eta left, highlights right) and the two
+     views sit side by side underneath at the Sintesi's FULL width. */
+  .r-si-layout:has(.sk-figure:nth-child(2)) {
+    grid-template-columns: 1fr;
+  }
+  .r-si-layout:has(.sk-figure:nth-child(2)) .r-si-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: var(--s5, 1.5rem);
+    align-items: start;
+  }
+  .r-si-layout:has(.sk-figure:nth-child(2)) .r-si-main > * {
+    grid-column: 1;
+  }
+  .r-si-layout:has(.sk-figure:nth-child(2)) .r-si-main > .r-si-figures {
+    grid-column: 2;
+    grid-row: 1 / span 4;
+    margin-top: 0;
+  }
+  .r-si-layout:has(.sk-figure:nth-child(2)) .r-si-sketch {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.r-sintesi--collapsed .r-si-layout {
+  display: block;
+}
+.r-sintesi--collapsed .r-si-side {
+  display: none;
+}
+
+.r-si-sketches {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3, 0.75rem);
+}
+
+/* Each VIEW ("Pianta"/"Sezione") fills its cell: width 100%, height from the SVG's own viewBox
+   aspect ratio (sketch.css's `.sk-svg { width:100%; height:auto }` already does that), clamped to
+   a 180-260px band (review finding 18) via the FIGURE, not the svg itself, so a portrait view
+   still keeps its own proportions (preserveAspectRatio "meet") instead of being stretched/cropped
+   to a fixed box. */
+.r-si-sketch {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--s2, 0.5rem);
+}
+.r-si-sketch .sk-figure {
+  max-width: none;
+  min-height: 180px;
+  max-height: 260px;
+  display: flex;
+  flex-direction: column;
+  padding: var(--s2, 0.5rem);
+}
+.r-si-sketch .sk-svg {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Collapse to one line after 200px of scroll (js/sintesi.js initSintesiCollapse). The empty-
+   Sintesi fallback (`.r-si-empty`/a `.r-chart` preview, js/sintesi.js buildEmptyFallback) folds
+   away here too -- lacking that, a chart preview kept the STICKY #sintesi tall enough to cover
+   the content scrolling underneath it (measured: it swallowed the results toolbar's own clicks on
+   a narrow viewport), defeating the exact problem this collapse exists to solve. */
+.r-sintesi--collapsed .r-si-eta,
+.r-sintesi--collapsed .r-si-figures,
+.r-sintesi--collapsed .r-si-warnings,
+.r-sintesi--collapsed .r-si-sketches,
+.r-sintesi--collapsed .r-si-empty,
+.r-sintesi--collapsed .r-si-main > .r-chart {
+  display: none;
+}
+.r-sintesi--collapsed.r-si-verdict,
+.r-sintesi--collapsed .r-si-verdict {
+  font-size: var(--t-m, 1.0625rem);
+}
+
+/* -- mobile bottom bar content (js/sintesi.js renderBottomBar) ---------- */
+
+.r-bb-jump {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  border: none;
+  background: none;
+  padding: var(--s2, 0.5rem) var(--s4, 1rem);
+  cursor: pointer;
+  color: var(--ink, #15202b);
+  text-align: left;
+}
+.r-bb-word {
+  font-weight: 600;
+  font-size: var(--t-s, 0.9375rem);
+}
+.r-bb-eta {
+  color: var(--graphite, #5b6773);
+  font-size: var(--t-xs, 0.8125rem);
 }
 
 .r-checks {
@@ -111,12 +449,27 @@
   gap: var(--s2, 0.5rem);
 }
 
+/* Author `display:grid` below is equal specificity to the UA stylesheet's `[hidden]{display:none}`
+   and, being later in the cascade, would otherwise win -- same fix as `.f-section-body[hidden]` /
+   `.r-group-body[hidden]` elsewhere: restate it explicitly so the WORKBENCH_SPEC #3/#9 checks fold
+   (js/results.js `renderVerifiche`) actually removes the folded rows from layout, not just from
+   the accessibility tree. */
+.r-check[hidden] {
+  display: none;
+}
+
 .r-check {
   display: grid;
-  grid-template-columns: 1.25rem minmax(7rem, 1fr) minmax(4rem, 8rem) 2fr minmax(7rem, 10rem);
+  /* Review finding 21: a check name now regularly runs to "Ribaltamento SISMA 1 (−kv)" (the
+     verdict.js underscore fallback, finding 8, plus every combination's own qualifier) -- wider
+     than the old 7rem minimum gave it room for on one line. Name widened, clause's own upper
+     bound trimmed to compensate (still comfortably fits "NTC2018 §6.5.3.1.1 / EC7 §6.5.4"), detail
+     back to an even `1fr` (it now gets its own 2-line clamp below instead of relying on width
+     alone), bar column a flat 8rem. */
+  grid-template-columns: 1.25rem minmax(12rem, 1.4fr) minmax(9rem, 13rem) 1fr 8rem;
   align-items: center;
   gap: var(--s3, 0.75rem);
-  padding: var(--s2, 0.5rem) 0;
+  padding: var(--s1, 0.25rem) 0;
   border-bottom: 1px solid var(--hairline, #c9d1d8);
   font-size: var(--t-s, 0.9375rem);
 }
@@ -129,10 +482,70 @@
   color: var(--ko, #b42318);
 }
 
+/* Finding J: a two-word check name ("Scorrimento SISMA_2") wrapped to 2 lines inside the name
+   column's realistic rendered width, nearly doubling every row's height (measured: 53px -> 29px)
+   -- the main remaining cost in the muro-sostegno results height budget once the Sintesi/toolbar/
+   group-header trims above were in. Single line + ellipsis, `title` (verdict.js) carries the full
+   name; the clause/detail columns already repeat enough context that a rare very-long name
+   truncating here loses nothing critical. Desktop only -- the <720px 2-column layout below has no
+   equivalent height budget and gives the name the WHOLE second column already. */
+@media (min-width: 720px) {
+  .r-check-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
 .r-check-clause,
 .r-check-detail {
   color: var(--graphite, #5b6773);
   font-size: var(--t-xs, 0.8125rem);
+}
+
+/* Review finding 21: a long detail string ("As,o=1570,8 mm² ≥ As,min=330,5 mm²") wraps freely in
+   an auto-height grid row -- clamped to 2 lines so one unusually long check can never blow out
+   the row height budget (the full text stays in `title`, verdict.js). */
+.r-check-detail {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* <720px: the 5-column grid's `minmax()` lower bounds (7rem/9rem/7rem, WORKBENCH_SPEC #9 clause
+   fix above) add up to well over a 390px viewport on their own -- measured: 138px of real
+   horizontal document overflow on muro-sostegno, the only tool with checks any existing mobile
+   e2e test happened to cover. Icon + name keep the two-column row; clause/detail/bar each drop to
+   their own full-width row underneath, indented to align under the name. */
+@media (max-width: 719.98px) {
+  .r-check {
+    grid-template-columns: 1.25rem 1fr;
+    row-gap: var(--s1, 0.25rem);
+  }
+  .r-check-clause,
+  .r-check-detail,
+  .r-check-nobar,
+  .r-check > .r-bar {
+    grid-column: 1 / -1;
+    margin-left: calc(1.25rem + var(--s3, 0.75rem));
+  }
+}
+
+/* WORKBENCH_SPEC #3/#9: fold toggle for the checks beyond "failed + 5 highest utilisation"
+   (js/results.js `renderVerifiche`) -- full width so it reads as part of the list, not a stray
+   action button. */
+/* `.r-action.r-check-fold` (both classes, matching the element's own class list in results.js)
+   outranks the plain `.r-action { height: var(--control-h) }` rule further down regardless of
+   source order -- this button is part of the WORKBENCH_SPEC finding J height budget, not a
+   full-height primary action. */
+.r-action.r-check-fold {
+  display: block;
+  width: 100%;
+  height: var(--control-h-sm, 2rem);
+  margin-top: var(--s1, 0.25rem);
+  text-align: center;
 }
 
 /* -- utilisation bar ---------------------------------------------------- */
@@ -169,10 +582,41 @@
   background: var(--ko, #b42318);
 }
 
+/* -- toolbar (js/results-toolbar.js) ------------------------------------ */
+
+/* Finding E: "Solo non soddisfatte" / "Espandi tutto" / "Stampa relazione" merged into ONE
+   compact row (32px controls -- `--control-h-sm`, tokens.css) instead of three full-height
+   buttons stacked above a horizontally-scrolling jump-link strip; the jump links themselves are
+   gone outright (the collapsed group headers already are the navigation). */
+.r-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2, 0.5rem);
+  margin: 0 0 var(--s2, 0.5rem);
+  padding-bottom: var(--s2, 0.5rem);
+  border-bottom: 1px solid var(--hairline, #c9d1d8);
+}
+.r-toolbar .r-action,
+.r-toolbar .r-print-trigger {
+  height: var(--control-h-sm, 2rem);
+  padding: 0 var(--s3, 0.75rem);
+  font-size: var(--t-xs, 0.8125rem);
+}
+
+.r-toolbar-filter[aria-pressed="true"] {
+  background: var(--marker, #ffe45c);
+  border-color: var(--marker, #ffe45c);
+}
+
 /* -- output groups + rows ------------------------------------------------ */
 
+/* No margin-bottom: a closed group is a compact list row (its own border-bottom + the next
+   header's padding already separate it -- WORKBENCH_SPEC #9's muro-sostegno height target has ~12
+   groups, mostly closed by default, so a per-group margin here alone cost ~300px). Open groups get
+   breathing room from `.r-group-body`'s own padding-bottom instead. */
 .r-group {
-  margin-bottom: var(--s5, 1.5rem);
+  margin-bottom: 0;
 }
 
 .r-group h3,
@@ -184,17 +628,121 @@
   margin: 0 0 var(--s3, 0.75rem);
 }
 
-.r-group--marker {
-  padding: 0;
+/* Collapsible group header -- a real <button>, aria-expanded (results-toolbar.js mountGroup).
+   `flex-wrap: nowrap` + the preview's own truncation (below) keep every CLOSED group to one
+   compact row: muro-sostegno's 8 non-Verifiche groups wrapping their preview onto a second line
+   was worth ~26px x 3 groups of the WORKBENCH_SPEC #9 height budget on its own. */
+.r-group-toggle {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: baseline;
+  flex-wrap: nowrap;
+  gap: var(--s2, 0.5rem);
+  width: 100%;
+  min-height: 1.75rem; /* 28px: WCAG 2.2 §2.5.8 minimum is 24px, kept just above it */
+  border: none;
+  border-bottom: 1px solid var(--hairline, #c9d1d8);
+  background: none;
+  /* Finding J: muro-sostegno has ~8 closed non-Verifiche groups -- s2 (8px) top+bottom here alone
+     cost ~64px of the <=900px results budget across them; s1 (4px) still clears the WCAG minimum
+     above with the row's own line-height. */
+  padding: var(--s1, 0.25rem) 0;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-label, inherit);
+}
+.r-group-toggle:hover {
+  background: var(--film, #eef1f3);
+}
+.r-group-toggle::before {
+  content: "";
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  align-self: center;
+  border-right: 2px solid var(--graphite, #5b6773);
+  border-bottom: 2px solid var(--graphite, #5b6773);
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
+}
+.r-group-toggle[aria-expanded="true"]::before {
+  transform: rotate(45deg);
+}
+.r-group-title {
+  flex: none;
+  font-size: var(--t-m, 1.0625rem);
+  font-weight: 600;
+  color: var(--ink, #15202b);
+  /* Defensive, content-agnostic: a description with one long unbreakable "word" (measured: a
+     Python module path leaking into a group's title text, e.g. "(...cracked_neutral_axis)" --
+     dots are not break points) can still force this wider than a 390px viewport even with
+     `min-width: 0` below; this lets it break mid-token as a last resort rather than overflow. */
+  overflow-wrap: anywhere;
+}
+/* `min-width: 0` is required, not optional, for a flex item's truncation to engage (same fix as
+   `.f-section-summary` in forms.css) -- otherwise the preview's own min-content width keeps the
+   header on 2 lines whenever it doesn't fit the row. */
+.r-group-preview {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--graphite, #5b6773);
+  font-size: var(--t-s, 0.9375rem);
+  font-variant-numeric: tabular-nums lining-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* <720px: `flex: none` + `nowrap` above (the muro-sostegno DESKTOP height-budget fix) instead
+   forced a long group title to its full intrinsic width on a viewport with no room for it --
+   measured: 111px of real horizontal document overflow. Mobile has no equivalent 900px height
+   budget (one column, the user just scrolls further), so here the row is free to wrap: the title
+   gets its own shrinkable, wrapping box instead of a fixed one, and the preview keeps its
+   one-line truncation but on whatever width is left after wrapping. */
+@media (max-width: 719.98px) {
+  .r-group-toggle {
+    flex-wrap: wrap;
+  }
+  .r-group-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    white-space: normal;
+  }
+}
+.r-group-badge {
+  flex: none;
+  margin-left: auto;
+  padding: 0.0625rem var(--s2, 0.5rem);
+  border-radius: var(--radius, 3px);
+  background: var(--ko-bg, #fce9e7);
+  color: var(--ko, #b42318);
+  font-size: var(--t-xs, 0.8125rem);
+}
+.r-group-body {
+  padding: var(--s2, 0.5rem) 0 var(--s3, 0.75rem);
+}
+.r-group-body[hidden] {
+  padding: 0;
+}
+
+/* "Solo non soddisfatte" (js/results-toolbar.js buildToolbar -> results.js onFilterChange). */
+.r-group-body[data-filter="failed"] [data-passed="true"] {
+  display: none;
+}
+
+.r-warnings-details summary {
+  cursor: pointer;
+  color: var(--warn, #8a5a00);
+  font-size: var(--t-s, 0.9375rem);
+  padding: var(--s1, 0.25rem) 0;
+}
+.r-warnings-details[open] summary {
+  margin-bottom: var(--s2, 0.5rem);
 }
 
 .r-norm {
   color: var(--graphite, #5b6773);
   font-size: var(--t-xs, 0.8125rem);
-  margin: 0 0 var(--s4, 1rem);
+  margin: 0 0 var(--s2, 0.5rem);
 }
 
 .r-row {

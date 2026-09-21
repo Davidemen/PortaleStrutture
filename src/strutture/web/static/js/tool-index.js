@@ -1,121 +1,256 @@
-// Tool index with search + collapsible 2-level groups -- DESIGN_SPEC.md #3.
+// Rail navigation, redesigned (WORKBENCH_SPEC.md #12, user feedback: "icons are all the same;
+// collapsed it is almost impossible to navigate"). Collapsed (56px) = an activity bar of 9
+// distinct destinations -- Home, Cerca, Preferiti, Recenti, the five categories -- + the expand/
+// collapse toggle, NO individual tools; a category/Preferiti/Recenti button opens a 280px flyout
+// (js/rail-flyout.js) listing its tools. Expanded (240px, >=1100px only) shows the same
+// destinations with text; Preferiti/Recenti/categories become accordions instead of flyouts.
+// 720-1099px forces the collapsed activity bar (css/layout.css already pins the grid column
+// width there); <720px the mobile picker (layout.js relocates this whole <nav>) always gets the
+// expanded/accordion style at full width -- no space pressure inside a full-width dropdown.
+// Fetches its own tool list (cross-package contract: "rail/home read tools via api.fetchTools()").
 import { el, clear } from "./dom.js";
 import { readJSON, writeJSON } from "./storage.js";
+import { fetchTools } from "./api.js";
+import { buildIcon } from "./icons.js";
+import { createFlyout } from "./rail-flyout.js";
+import { groupByCategory, categoryOf, listFavourites, listRecents, toggleFavourite, buildRowSections } from "./nav-state.js";
 
-function normalize(text) {
-  return String(text || "")
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .toLowerCase();
+const CATEGORY_ICONS = {
+  Carichi: "carichi",
+  "Calcestruzzo armato": "calcestruzzo-armato",
+  Acciaio: "acciaio",
+  Geotecnica: "geotecnica",
+  Fondazioni: "fondazioni",
+};
+
+const wideQuery = window.matchMedia("(min-width: 1100px)");
+const narrowQuery = window.matchMedia("(max-width: 719.98px)");
+
+function setRailCollapsed(collapsed) {
+  const app = document.getElementById("app");
+  if (app) app.classList.toggle("rail-collapsed", collapsed);
 }
 
-function haystack(tool) {
-  return normalize(`${tool.title} ${tool.norm || ""} ${tool.group || ""}`);
+// >=1100px: the user's own 56/240px toggle (`sm.ui.rail`). 720-1099px: forced collapsed. <720px:
+// the mobile picker always gets the expanded/accordion style (there is no width pressure inside
+// a full-width dropdown, and it needs to "gain the sigla chips and the category pictograms").
+function isCollapsedMode() {
+  if (narrowQuery.matches) return false;
+  if (!wideQuery.matches) return true;
+  return readJSON("sm.ui.rail", "expanded") === "collapsed";
 }
 
-function groupTools(tools) {
-  const groups = [];
-  const byLevel1 = new Map();
-  for (const tool of tools) {
-    const [level1, level2] = (tool.group || "Strumenti").split(" / ");
-    if (!byLevel1.has(level1)) {
-      const entry = { level1, subgroups: new Map(), order: [] };
-      byLevel1.set(level1, entry);
-      groups.push(entry);
-    }
-    const entry = byLevel1.get(level1);
-    const key = level2 || "";
-    if (!entry.subgroups.has(key)) {
-      entry.subgroups.set(key, []);
-      entry.order.push(key);
-    }
-    entry.subgroups.get(key).push(tool);
+function loadOpenGroups() {
+  const raw = readJSON("sm.ui.openGroups", null);
+  return raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+}
+function saveOpenGroup(key, open) {
+  writeJSON("sm.ui.openGroups", { ...loadOpenGroups(), [key]: open });
+}
+
+export function renderIndex(root, { onSelect }) {
+  let allTools = [];
+  let currentName = null;
+  let loadError = false;
+  const flyout = createFlyout();
+
+  function onToggleFav(name) {
+    toggleFavourite(name);
+    document.dispatchEvent(new CustomEvent("strutture:nav-state-changed"));
   }
-  return groups;
-}
 
-export function renderIndex(root, tools, { onSelect }) {
-  clear(root);
-  const openGroups = new Set(readJSON("sm.ui.openGroups", []));
-  const buttons = new Map();
+  function toolsFor(kind) {
+    if (kind.type === "category") return allTools.filter((tool) => categoryOf(tool) === kind.title);
+    const names = kind.type === "preferiti" ? listFavourites() : listRecents(5);
+    return names.map((name) => allTools.find((tool) => tool.name === name)).filter(Boolean);
+  }
 
-  const searchInput = el("input", {
-    type: "search",
-    id: "tool-search",
-    placeholder: "Cerca strumento o norma",
-    "aria-label": "Cerca strumento o norma",
-  });
-  root.append(el("div", { class: "ti-search-wrap" }, [searchInput]));
+  function groupContainsActive(kind) {
+    return currentName != null && toolsFor(kind).some((tool) => tool.name === currentName);
+  }
 
-  const listRoot = el("div", { class: "ti-list" });
-  const emptyMessage = el("p", { class: "ti-empty", hidden: true });
+  function selectAndClose(name) {
+    onSelect(name);
+    flyout.close({ restoreFocus: false });
+  }
 
-  for (const group of groupTools(tools)) {
-    const isOpen = openGroups.size === 0 || openGroups.has(group.level1);
-    const details = el("details", { class: "ti-group", open: isOpen });
-    const summary = el("summary", { text: group.level1 });
-    details.append(summary);
-    details.addEventListener("toggle", () => {
-      const next = new Set(readJSON("sm.ui.openGroups", []));
-      if (details.open) next.add(group.level1);
-      else next.delete(group.level1);
-      writeJSON("sm.ui.openGroups", [...next]);
+  // Review finding 23 ("the active tool is yellow twice"): the active tool's OWN row is marker-
+  // highlighted only inside its category listing -- Preferiti/Recenti almost always contain that
+  // SAME tool too (it was just navigated to), which used to highlight it a second time there,
+  // reading as two unrelated "active" rows instead of one.
+  function rowsActiveName(kind) {
+    return kind.type === "category" ? currentName : null;
+  }
+
+  function buildFlyoutTrigger(kind) {
+    const iconWrap = el("span", { class: "rail-icon" }, [buildIcon(kind.icon)]);
+    let hoverTitle = kind.title;
+    if (kind.type === "category" && groupContainsActive(kind)) {
+      const activeTool = allTools.find((tool) => tool.name === currentName);
+      const sigla = (activeTool && activeTool.sigla) || "?";
+      iconWrap.append(el("span", { class: "rail-sigla-badge", text: sigla }));
+      hoverTitle = `${kind.title} — strumento attivo: ${sigla}`;
+    }
+    const button = el(
+      "button",
+      { type: "button", class: "rail-item", title: hoverTitle, "aria-haspopup": "dialog", "aria-expanded": "false" },
+      [iconWrap, el("span", { class: "rail-label", text: kind.title })]
+    );
+    if (kind.type === "category" && groupContainsActive(kind)) button.classList.add("rail-item--active-category");
+
+    function openThis() {
+      if (flyout.isOpen() && flyout.activeTrigger() === button) {
+        flyout.close({ restoreFocus: false });
+        return;
+      }
+      button.setAttribute("aria-expanded", "true");
+      flyout.open({
+        trigger: button,
+        title: kind.title,
+        buildBody: (bodyEl) => {
+          const { fragment, rowButtons } = buildRowSections(toolsFor(kind), {
+            ownTitle: kind.title,
+            onSelect: selectAndClose,
+            onToggleFav,
+            activeName: rowsActiveName(kind),
+          });
+          bodyEl.append(fragment);
+          return rowButtons;
+        },
+        onClose: () => button.setAttribute("aria-expanded", "false"),
+      });
+    }
+    button.addEventListener("click", openThis);
+    button.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        openThis();
+      }
+    });
+    return button;
+  }
+
+  function buildAccordion(kind) {
+    const state = loadOpenGroups();
+    // Review finding 23: Recenti almost always contains the tool that is CURRENTLY open (it was
+    // just navigated to) -- defaulting it open the same way a category does re-opened it on every
+    // single navigation, pushing the categories below it off-screen. Recenti only ever
+    // default-opens from an explicit user toggle now; Preferiti/categories are unaffected.
+    const defaultOpen = kind.type === "recenti" ? false : groupContainsActive(kind);
+    const isOpen = kind.title in state ? state[kind.title] : defaultOpen;
+    const details = el("details", { class: "rail-group", open: isOpen, "data-kind": kind.type });
+    details.append(
+      el("summary", {}, [el("span", { class: "rail-icon" }, [buildIcon(kind.icon)]), el("span", { class: "rail-label", text: kind.title })])
+    );
+    details.addEventListener("toggle", () => saveOpenGroup(kind.title, details.open));
+    const { fragment } = buildRowSections(toolsFor(kind), { ownTitle: kind.title, onSelect, onToggleFav, activeName: rowsActiveName(kind) });
+    const list = el("div", { class: "rail-group-list" });
+    list.append(fragment);
+    details.append(list);
+    return details;
+  }
+
+  function buildNavButton({ title, icon, hint, onClick, current }) {
+    return el(
+      "button",
+      {
+        type: "button",
+        class: "rail-item",
+        title: hint ? `${title} (${hint})` : title,
+        "aria-current": current ? "true" : undefined,
+        onclick: onClick,
+      },
+      [el("span", { class: "rail-icon" }, [buildIcon(icon)]), el("span", { class: "rail-label", text: title })]
+    );
+  }
+
+  function buildToggle(collapsedNow) {
+    const label = collapsedNow ? "Espandi la barra di navigazione" : "Comprimi la barra di navigazione";
+    return el(
+      "button",
+      {
+        type: "button",
+        class: "rail-toggle",
+        "aria-label": label,
+        title: label,
+        onclick: () => {
+          writeJSON("sm.ui.rail", collapsedNow ? "expanded" : "collapsed");
+          render();
+        },
+      },
+      [buildIcon(collapsedNow ? "espandi" : "comprimi")]
+    );
+  }
+
+  function render() {
+    const collapsed = isCollapsedMode();
+    flyout.close({ restoreFocus: false });
+    clear(root);
+    // `.rail-collapsed` drives the icon-only 56px look (css/nav.css, unscoped by width -- the
+    // GRID column width itself is pinned by css/layout.css's own media queries): it must track
+    // whichever markup is actually rendered, at every breakpoint, not just the >=1100px range
+    // the user's own toggle applies to.
+    setRailCollapsed(collapsed);
+
+    const list = el("div", { class: "rail-list" });
+    list.append(buildNavButton({ title: "Home", icon: "home", onClick: () => onSelect(""), current: !currentName }));
+    list.append(
+      buildNavButton({
+        title: "Cerca",
+        icon: "cerca",
+        hint: "Ctrl K",
+        onClick: () => document.dispatchEvent(new CustomEvent("strutture:open-palette")),
+      })
+    );
+
+    const groupKinds = [
+      { type: "preferiti", title: "Preferiti", icon: "preferiti" },
+      { type: "recenti", title: "Recenti", icon: "recenti" },
+    ];
+    for (const [level1] of groupByCategory(allTools)) groupKinds.push({ type: "category", title: level1, icon: CATEGORY_ICONS[level1] || "progetti" });
+
+    groupKinds.forEach((kind, index) => {
+      const node = collapsed ? buildFlyoutTrigger(kind) : buildAccordion(kind);
+      if (kind.type === "category" && groupKinds[index - 1]?.type !== "category") node.classList.add("rail-sep-before");
+      list.append(node);
     });
 
-    for (const key of group.order) {
-      const items = group.subgroups.get(key);
-      const container = key ? el("div", { class: "ti-subgroup" }, [el("h3", { text: key })]) : details;
-      for (const tool of items) {
-        const button = el("button", {
-          type: "button",
-          class: "ti-item",
-          "data-tool": tool.name,
-          text: tool.title,
-          onclick: () => onSelect(tool.name),
-        });
-        buttons.set(tool.name, { button, tool });
-        container.append(button);
-      }
-      if (key) details.append(container);
-    }
-    listRoot.append(details);
+    if (loadError) list.append(el("p", { class: "rail-empty", text: "Impossibile caricare l'elenco degli strumenti." }));
+
+    root.append(list, buildToggle(collapsed));
   }
 
-  root.append(listRoot, emptyMessage);
-
-  function applyFilter(query) {
-    const needle = normalize(query);
-    let visibleCount = 0;
-    for (const { button, tool } of buttons.values()) {
-      const matches = !needle || haystack(tool).includes(needle);
-      button.hidden = !matches;
-      if (matches) visibleCount += 1;
-    }
-    for (const details of listRoot.querySelectorAll(".ti-group")) {
-      const anyVisible = [...details.querySelectorAll(".ti-item")].some((btn) => !btn.hidden);
-      details.hidden = !anyVisible;
-    }
-    for (const subgroup of listRoot.querySelectorAll(".ti-subgroup")) {
-      const anyVisible = [...subgroup.querySelectorAll(".ti-item")].some((btn) => !btn.hidden);
-      subgroup.hidden = !anyVisible;
-    }
-    emptyMessage.hidden = visibleCount !== 0;
-    emptyMessage.textContent = visibleCount === 0 ? `Nessuno strumento per «${query}».` : "";
+  // Favourites/recents changed: refresh in place when a flyout is open (WORKBENCH_SPEC #12 --
+  // starring a tool from inside an open Preferiti/Recenti flyout must update the list, not slam
+  // the dialog shut); otherwise a full render is cheap and there is nothing open to disrupt.
+  function refreshDynamic() {
+    if (flyout.isOpen()) flyout.refresh();
+    else render();
   }
 
-  searchInput.addEventListener("input", () => applyFilter(searchInput.value));
+  fetchTools()
+    .then((tools) => {
+      allTools = tools;
+      render();
+    })
+    .catch(() => {
+      loadError = true;
+      render();
+    });
+
+  wideQuery.addEventListener("change", render);
+  narrowQuery.addEventListener("change", render);
+  document.addEventListener("strutture:nav-state-changed", refreshDynamic);
 
   return {
     setActive(name) {
-      for (const { button } of buttons.values()) {
-        button.removeAttribute("aria-current");
-      }
-      const entry = buttons.get(name);
-      if (entry) entry.button.setAttribute("aria-current", "true");
-    },
-    filter(query) {
-      searchInput.value = query;
-      applyFilter(query);
+      currentName = name || null;
+      // A real navigation (deep link, "g h", a palette pick, ...) makes whatever flyout is open
+      // stale -- close it rather than leaving it floating over the new page (it did not get the
+      // normal close-on-select treatment, since it was not the thing that triggered this route
+      // change).
+      flyout.close({ restoreFocus: false });
+      refreshDynamic();
     },
   };
 }

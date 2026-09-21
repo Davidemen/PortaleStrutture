@@ -1,26 +1,53 @@
-/* Shell layout -- DESIGN_SPEC.md #2. Regions: #tool-index, #form-pane,
-   #results-pane inside #app. Breakpoints: >=1100px three columns,
-   720-1099px two columns (results below the form), <720px one column. */
+/* Shell grid -- WORKBENCH_SPEC.md #1 + #8. Three zones: rail (#tool-index),
+   Dati (#form-pane), Sintesi+results (#results-pane), inside #app. Home
+   (#home-pane) spans the Dati+results columns when no tool is selected.
+   Breakpoints: >=1100px rail user-toggled 56/240px; 720-1099px rail forced
+   56px, Dati 360px, results still alongside (no stacking); <720px one
+   column, tabs + sticky #bottom-bar. Item-level rail/home/palette styling
+   lives in nav.css. */
+
+/* Review finding 20: form controls do not inherit a page's own font by default (the UA stylesheet
+   gives `button`/`input`/`select`/`textarea` a platform font, e.g. Arial) -- every one of this
+   app's own control classes (`.r-action`, `.home-card-open`, …) relies on inheriting Barlow from
+   `body` instead of repeating `font-family` on each one, so without this reset they rendered in
+   the browser's default UI font wherever a class happened not to set it explicitly. */
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.app-header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  border-bottom: 1px solid var(--hairline);
+}
 
 .app-h1 {
   font-size: var(--t-s);
   font-weight: 600;
   color: var(--graphite);
   margin: 0;
-  padding: var(--s3) var(--s4);
-  border-bottom: 1px solid var(--hairline);
-  grid-column: 1 / -1;
 }
 
 #app {
   display: grid;
   min-height: 100dvh;
   grid-template-rows: auto 1fr;
-  grid-template-columns: var(--index-w) 1fr;
+  /* `minmax(0, 1fr)`, never a bare `1fr`, on every fluid column below: a plain `1fr` track's
+     automatic minimum is `auto` (its content's min-content width), so one un-wrappable child
+     (measured: the header's live-toggle label at 390px) silently widens the whole grid -- and
+     with it #app, <body> and the horizontal scrollbar WORKBENCH_SPEC #9 requires zero of. */
+  grid-template-columns: minmax(0, 1fr);
   grid-template-areas:
-    "head head"
-    "index form";
+    "head"
+    "pane";
   background: var(--film);
+  position: relative;
 }
 
 #tool-index {
@@ -29,8 +56,17 @@
   border-right: 1px solid var(--hairline);
 }
 
+#home-pane {
+  grid-area: pane;
+  background: var(--film);
+  display: none;
+}
+#app[data-view="home"] #home-pane {
+  display: block;
+}
+
 #form-pane {
-  grid-area: form;
+  grid-area: pane;
   background: var(--film);
 }
 
@@ -43,27 +79,36 @@
 }
 
 #results-pane {
-  grid-area: form;
-  display: none;
+  grid-area: pane;
   background: var(--paper);
 }
 
-/* >=1100px: three columns, index and results pane visible side by side */
-@media (min-width: 1100px) {
+/* >=720px: three columns, rail + Dati + results all visible at once (no
+   stacking): rail forced to the collapsed width, Dati narrower than the
+   >=1100px case. */
+@media (min-width: 720px) {
   #app {
-    grid-template-columns: var(--index-w) var(--form-w) 1fr;
+    grid-template-columns: var(--rail-w-collapsed) 360px minmax(0, 1fr);
     grid-template-areas:
       "head head head"
       "index form results";
   }
+  #home-pane {
+    grid-area: unset;
+    grid-row: 2;
+    grid-column: 2 / -1;
+  }
+  #form-pane {
+    grid-area: form;
+  }
   #results-pane {
     grid-area: results;
-    display: block;
     border-left: 1px solid var(--hairline);
   }
   #tool-index,
   #form-pane,
-  #results-pane {
+  #results-pane,
+  #home-pane {
     height: calc(100dvh - var(--head-h, 2.9rem));
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -72,38 +117,38 @@
     position: sticky;
     top: 0;
   }
+  #sintesi {
+    position: sticky;
+    top: 0;
+    background: var(--paper);
+    border-bottom: 1px solid var(--hairline);
+    z-index: 1;
+  }
+  #app[data-view="home"] #form-pane,
+  #app[data-view="home"] #results-pane {
+    display: none;
+  }
 }
 
-/* 720-1099px: two columns, results below the form in the same column (own grid row, not
-   stacked in the same cell as the form -- a shared cell made the opaque results pane paint
-   over the form instead of sitting below it). */
-@media (min-width: 720px) and (max-width: 1099.98px) {
+/* >=1100px: rail widens to the user-toggled 56/240px (js/tool-index.js
+   toggles the .rail-collapsed class on #app), Dati column widens too. */
+@media (min-width: 1100px) {
   #app {
-    grid-template-rows: auto auto 1fr;
-    grid-template-areas:
-      "head head"
-      "index form"
-      "index results";
+    grid-template-columns: var(--index-w) var(--form-w) minmax(0, 1fr);
   }
-  #form-pane {
-    grid-area: form;
-    display: block;
-  }
-  #results-pane {
-    grid-area: results;
-    display: block;
-    border-left: none;
-    border-top: 1px solid var(--hairline);
+  #app.rail-collapsed {
+    grid-template-columns: var(--rail-w-collapsed) var(--form-w) minmax(0, 1fr);
   }
 }
 
-/* <720px: single column, mobile tool picker + Dati/Risultati switch */
+/* <720px: single column, mobile tool picker + Dati/Risultati switch + sticky bottom bar. */
 @media (max-width: 719.98px) {
   #app {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
       "head"
       "picker"
+      "tabs"
       "pane";
   }
   #tool-index {
@@ -117,21 +162,28 @@
   .app-picker[open] #tool-index {
     display: block;
   }
-  .app-pane-switch {
-    grid-area: pane;
-    display: block;
+  /* Own grid row ("tabs"), never the panes' "pane" row: sharing one area (a prior bug here)
+     stacked the tablist directly under whichever pane was visible, so the always-visible
+     results/form pane painted over the tabs and silently ate every click on them. */
+  .app-tablist {
+    grid-area: tabs;
   }
+  #home-pane,
   #form-pane,
   #results-pane {
     grid-area: pane;
   }
-  /* The base rule (line 39) hides #results-pane by default for the >=720px layouts, where JS
-     toggles it back on above 1100px only; re-enable it here so `hidden` (layout.js/setPane)
-     is what actually controls visibility at this breakpoint, not a stale `display: none`. */
-  #results-pane {
-    display: block;
-  }
+  #home-pane[hidden],
+  #form-pane[hidden],
   #results-pane[hidden] {
+    display: none;
+  }
+  #app[data-view="home"] #form-pane,
+  #app[data-view="home"] #results-pane,
+  #app[data-view="home"] .app-tablist {
+    display: none;
+  }
+  #app[data-view="tool"] #home-pane {
     display: none;
   }
 }
@@ -199,103 +251,52 @@
   background: var(--film);
 }
 
-/* Tool index -- ti-* [shell] */
-.ti-search-wrap {
-  padding: var(--s3) var(--s3) var(--s2);
-}
-#tool-search {
-  width: 100%;
-  height: var(--control-h);
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
-  background: var(--paper);
-  color: var(--ink);
-  font-family: var(--font-ui);
-  font-size: var(--t-s);
-  padding: 0 var(--s3);
-}
-#tool-search:hover {
-  background: var(--film);
-}
-
-.ti-empty {
-  color: var(--graphite);
-  padding: 0 var(--s4);
-  font-size: var(--t-s);
-}
-
-.ti-group {
-  border-top: 1px solid var(--hairline);
-}
-.ti-group > summary {
-  cursor: pointer;
-  min-height: var(--control-h);
-  display: flex;
-  align-items: center;
-  padding: 0 var(--s3);
-  font-family: var(--font-label);
-  font-weight: 600;
-  font-size: var(--t-s);
-  list-style: none;
-}
-.ti-group > summary::-webkit-details-marker {
-  display: none;
-}
-
-.ti-subgroup h3 {
-  font-family: var(--font-label);
-  font-size: var(--t-xs);
-  color: var(--graphite);
-  font-weight: 600;
-  margin: var(--s2) var(--s3);
-}
-
-.ti-item {
-  display: block;
-  width: 100%;
-  min-height: var(--control-h);
-  text-align: left;
-  border: none;
-  background: transparent;
-  color: var(--ink);
-  font-family: var(--font-ui);
-  font-size: var(--t-s);
-  padding: var(--s2) var(--s4);
-  cursor: pointer;
-}
-.ti-item:hover {
-  background: var(--film);
-}
-.ti-item[aria-current="true"] {
-  background: var(--marker);
-  color: var(--ink);
-}
-
-/* Results sheet sticky verdict -- only the one-line head sticks, not the whole check list
-   below it (a tall register like muro's 10 checks would otherwise cover most of the pane). */
-.r-verdict-head {
-  position: sticky;
-  top: 0;
-  background: var(--paper);
-  padding: var(--s3) 0;
-  border-bottom: 1px solid var(--hairline);
-  z-index: 1;
-}
-@media (max-width: 1099.98px) {
-  .r-verdict-head {
-    position: static;
-  }
-}
-
-/* Generic form-actions bar sticky at bottom, at >=1100px */
+/* Generic form-actions bar sticky at bottom, at >=720px (own scroll applies
+   from 720px up now that the three zones sit side by side at every width
+   from 720px). */
 #form-actions {
   border-top: 1px solid var(--hairline);
   background: var(--paper);
 }
-@media (min-width: 1100px) {
+@media (min-width: 720px) {
   #form-actions {
     position: sticky;
     bottom: 0;
+  }
+}
+
+/* Sticky bottom bar (WORKBENCH_SPEC #1): shell owns the element + layout, the
+   results package fills its text via the verdict events/DOM writes and
+   shell shows/hides it (home view, no tool loaded yet). */
+#bottom-bar {
+  display: none;
+}
+@media (max-width: 719.98px) {
+  /* Review finding 25: `--marker` is reserved for governing results and the selected tool
+     (UI_BRIEF tokens table, "never for text [or chrome]") -- a permanently yellow status bar
+     misused it as plain furniture. Paper + a firm ink top rule instead (an ink rule, not the
+     usual quiet hairline, since this bar is the one thing that must stay visible against the
+     content scrolling behind it); the bar's own CONTENT still uses the marker where it belongs,
+     e.g. a changed-value flash (results.css `[data-changed]`). */
+  #bottom-bar {
+    display: block;
+    position: sticky;
+    bottom: 0;
+    width: 100%;
+    min-height: var(--control-h);
+    background: var(--paper);
+    color: var(--ink);
+    border: none;
+    border-top: 2px solid var(--ink);
+    font-family: var(--font-ui);
+    font-size: var(--t-s);
+    text-align: left;
+    padding: 0 var(--s4);
+    z-index: var(--z-bottom-bar);
+    cursor: pointer;
+  }
+  #bottom-bar[hidden] {
+    display: none;
   }
 }
 
@@ -307,4 +308,48 @@
 
 body {
   overflow-x: hidden;
+}
+
+/* -- Clipboard fallback (js/clipboard.js) -- copyText() never claims success on plain http
+   (no navigator.clipboard, no secure context, e.g. the VPN's http://<ip>:<port>): a real copy
+   attempt via an off-screen <textarea> + execCommand("copy"), and -- only if THAT fails too -- a
+   small labelled read-only field the engineer can copy from by hand. */
+.sm-clip-offscreen {
+  position: fixed;
+  top: 0;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.sm-clip-fallback {
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--s1);
+  margin: var(--s2) 0 0;
+  max-width: 100%;
+}
+.sm-clip-fallback-label {
+  font-size: var(--t-xs);
+  color: var(--warn);
+}
+.sm-clip-fallback-input {
+  width: 100%;
+  min-width: 14rem;
+  min-height: var(--control-h-sm);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--t-xs);
+  padding: var(--s1) var(--s2);
+}
+.sm-clip-fallback-area {
+  resize: vertical;
+}
+.sm-clip-note {
+  font-size: var(--t-xs);
+  color: var(--graphite);
+  margin: var(--s2) 0 0;
 }

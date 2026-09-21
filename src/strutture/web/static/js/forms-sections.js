@@ -1,11 +1,14 @@
 // Pure form-building helpers used by forms.js: section grouping, conditional visibility,
 // the unit-selector wiring (§4b D1) and the error summary / share-link widgets. No event
 // self-wiring lives here -- these all take the `form`/`fields` they act on as arguments.
+// The accordion DOM itself (one-line summary + error badge + persisted open state) is built by
+// form-sections-summary.js from the `sections` Map `groupFields` returns below.
 import { el, clear } from "./dom.js";
-import { buildField, fieldInputId, readValue } from "./fields.js";
+import { fieldInputId, readValue } from "./fields.js";
 import { isVisible } from "./validate.js";
 import { toParams } from "./form-state.js";
 import { refreshUnitHeaders } from "./table-input.js";
+import { copyText, buildManualCopyField } from "./clipboard.js";
 
 export function groupFields(fields) {
   const sections = new Map();
@@ -22,13 +25,6 @@ export function groupFields(fields) {
   return { sections, advanced };
 }
 
-export function buildSection(name, sectionFields) {
-  const section = el("section", { class: "f-section" });
-  if (name) section.append(el("h3", { text: name }));
-  sectionFields.forEach((field) => section.append(buildField(field)));
-  return section;
-}
-
 export function rawValues(form, fields) {
   const values = {};
   fields.forEach((field) => {
@@ -37,11 +33,32 @@ export function rawValues(form, fields) {
   return values;
 }
 
+// A field hidden by an unmet `condition` almost always maps to an Optional server-side field
+// (default=None) for which omitting the key or sending its untouched empty value are the same
+// thing -- but the schema hint is a UI display rule, not a guarantee the field is optional on the
+// server (e.g. ca-punzonamento's `diametro_mm`: required, only USED when `lato_a_mm=0`, but still
+// a required key on every request). Excluding a still-required-but-hidden field's key from the
+// payload turned every rectangular-column request into a "campo obbligatorio mancante" server
+// error the engineer could never see (the field is hidden). So every field's value is sent
+// regardless of visibility; only an untouched, still-empty HIDDEN field falls back to its own
+// `default` (identical to what the server already assumes) or -- lacking one -- its declared
+// minimum/0, the most conservative value a `ge=0` numeric field can hold. A VISIBLE empty
+// required field is untouched here (stays null) so `validateValues` still flags it normally.
+function fallbackFor(field) {
+  if (field.default !== undefined) return field.default;
+  if (field.kind !== "number") return null;
+  if (typeof field.minimum === "number") return field.minimum;
+  if (typeof field.exclusiveMin === "number") return field.exclusiveMin + 1;
+  return 0;
+}
+
 export function visibleValues(form, fields) {
   const raw = rawValues(form, fields);
   const values = {};
   fields.forEach((field) => {
-    if (isVisible(field, raw)) values[field.name] = raw[field.name];
+    const value = raw[field.name];
+    const visible = isVisible(field, raw);
+    values[field.name] = visible || value !== null && value !== undefined ? value : fallbackFor(field);
   });
   return values;
 }
@@ -76,7 +93,7 @@ export function wireUnitSelector(form, fields) {
       } else {
         const unit = (field.unitOptions && field.unitOptions[key]) || field.unit;
         const span = wrapper.querySelector(".f-unit");
-        if (span) span.textContent = unit ? `[${unit}]` : "";
+        if (span) span.textContent = unit || "";
       }
     });
   };
@@ -104,19 +121,29 @@ export function renderSummary(fields, byField, general) {
   summary.append(list);
 }
 
-export function copyShareLink(form, fields, tool, button) {
+// Bug fix (2026-09-21): the app is reached over a VPN at http://<ip>:<port>, not a secure
+// context, so `navigator.clipboard` is undefined there -- this used to show "Copiato"
+// unconditionally in that case (and on a rejected write). `copyText()` never lies; a failed copy
+// shows the link in a manual-copy field instead. Tables never make it into the link at all
+// (`toParams` skips `field.kind === "table"`) -- say so next to the button when that applies.
+function clearFeedback(button) {
+  let node = button.nextElementSibling;
+  while (node && (node.classList.contains("sm-clip-fallback") || node.classList.contains("sm-clip-note"))) {
+    const next = node.nextElementSibling;
+    node.remove();
+    node = next;
+  }
+}
+
+export async function copyShareLink(form, fields, tool, button) {
   const query = new URLSearchParams(toParams(visibleValues(form, fields), fields)).toString();
   const url = `${location.origin}${location.pathname}#/${tool}${query ? `?${query}` : ""}`;
-  const restore = () => {
-    button.textContent = "Copia link";
-  };
-  const confirmCopy = () => {
-    button.textContent = "Copiato";
-    setTimeout(restore, 2000);
-  };
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(url).then(confirmCopy, confirmCopy);
-  } else {
-    confirmCopy();
+  clearFeedback(button);
+  const ok = await copyText(url);
+  button.textContent = ok ? "Copiato" : "Copia link";
+  if (ok) setTimeout(() => { button.textContent = "Copia link"; }, 2000);
+  else button.insertAdjacentElement("afterend", buildManualCopyField(url, "Link da condividere"));
+  if (fields.some((field) => field.kind === "table")) {
+    button.insertAdjacentElement("afterend", el("p", { class: "sm-clip-note", text: "La tabella non è inclusa nel link." }));
   }
 }

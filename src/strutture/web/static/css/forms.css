@@ -1,45 +1,170 @@
 /* Form sections, fields and the table-input widget. Tokens come from css/tokens.css (shell). */
 
+/* WORKBENCH_SPEC finding A: "compact rows... at column widths >=380px" is the DATI COLUMN's own
+   content width (`#form-root`, unpadded -- matches `--form-w` exactly), not the viewport: it can
+   be 400px, 380px, 360px or the full width of a narrow phone depending on the shell breakpoint
+   (layout.css), so a container query (not a @media breakpoint) is what actually answers "is
+   there room for one row per field here". Declared on `#form-root` rather than `.f-form` itself
+   so `.f-form`'s own horizontal padding below is never subtracted from the measured width first. */
+#form-root {
+  container-type: inline-size;
+  container-name: dati;
+}
+
 .f-form {
   display: flex;
   flex-direction: column;
   gap: var(--s5);
+  padding: 0 var(--s4) var(--s4);
 }
 
+/* "Espandi tutto / Comprimi tutto" (WORKBENCH_SPEC §3), above the accordion. Orchestrator
+   finding: these read as two full-height BORDERED buttons standing on their own row -- plain
+   underlined text links instead, on one line, sized like the results toolbar's own compact
+   controls (results.css `--control-h-sm`) rather than a primary/secondary action pair. */
+.f-section-tools {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--s4);
+  margin-bottom: var(--s1);
+}
+
+.f-section-tools-btn {
+  min-height: var(--control-h-sm);
+  padding: 0;
+  font-family: var(--font-ui);
+  font-size: var(--t-xs);
+  color: var(--graphite);
+  background: none;
+  border: none;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.f-section-tools-btn:hover {
+  color: var(--ink);
+}
+
+/* Accordion section (WORKBENCH_SPEC §3): a `<button aria-expanded aria-controls>` header with a
+   one-line collapsed-state value summary + error badge, and a body that hides/shows in place. */
+/* Review finding 22: the section's own top padding (var(--s4), 16px) stacked ON TOP of the
+   toggle's own vertical padding just below (var(--s2) top+bottom) -- together a collapsed row
+   measured ~85px, double-counting breathing room the toggle already provides on its own. The
+   hairline border above is separator enough; no extra padding needed before it. */
 .f-section {
-  padding-top: var(--s4);
+  padding-top: 0;
   border-top: 1px solid var(--hairline);
 }
 
-.f-section:first-child {
-  padding-top: 0;
+.f-section:first-of-type {
   border-top: none;
 }
 
 .f-section h3 {
-  font-family: var(--font-label);
-  font-size: var(--t-m);
-  line-height: var(--lh-tight);
-  margin: 0 0 var(--s3);
-  grid-column: 1 / -1;
+  margin: 0;
 }
 
-/* Pack short numeric fields two-up on roomy pointers so long forms (pilastro ~25 fields,
-   muro ~30) are not a one-field-per-screen scroll marathon; comune/select stay full-width. */
-@media (pointer: fine) {
-  .f-section {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
-    gap: var(--s3) var(--s4);
+.f-section-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  /* Review finding 22: 2.5rem (40px) still clears the WCAG 2.2 §2.5.8 minimum (24px) with room to
+     spare -- the full 44px control height (var(--control-h)) is sized for a primary action
+     button, not a compact list-style disclosure row. */
+  min-height: 2.5rem;
+  padding: var(--s2) 0;
+  font-family: var(--font-label);
+  color: var(--ink);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  /* Belt-and-braces alongside `.f-section-summary`'s `min-width:0`: clips this row's own
+     scrollable overflow region at its border box, so a sub-pixel flex/gap rounding remainder
+     (measured: `scrollWidth` 1-2px over `clientWidth` at 390px even once nothing visibly
+     overflows) can never bubble up into the Dati column's/document's `scrollWidth`. */
+  overflow: hidden;
+}
+
+.f-section-toggle::after {
+  content: "";
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-left: auto;
+  border-right: 2px solid var(--graphite);
+  border-bottom: 2px solid var(--graphite);
+  transform: rotate(45deg);
+}
+
+.f-section-toggle[aria-expanded="true"]::after {
+  transform: rotate(-135deg);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .f-section-toggle::after {
+    transition: transform 0.15s ease;
   }
-  .f-field {
-    margin-bottom: 0;
-  }
-  .f-field[data-kind="text"],
-  .f-field[data-kind="enum"],
-  .f-field[data-kind="table"] {
-    grid-column: 1 / -1;
-  }
+}
+
+.f-section-title {
+  flex: none;
+  font-size: var(--t-m);
+  line-height: var(--lh-tight);
+}
+
+.f-section-summary {
+  /* `min-width: 0` is required, not optional, for a flex item's `white-space:nowrap` overflow to
+     actually clip: a flex item's automatic minimum width is its content's full size unless
+     overridden, so without this the long value summary ("A_X 4 m · B_Y 4 m ...") instead pushed
+     the section header (and the whole Dati column) past the viewport (measured: a 2px horizontal
+     scrollbar at 390px on every tool). Finding I: the JS side (form-sections-summary.js) now drops
+     whole tokens to fit instead of relying on CSS `text-overflow: ellipsis` (which can cut a value
+     mid-character) -- `overflow: hidden` here is only a belt-and-braces backstop for the rare
+     single token still wider than the column. */
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--font-ui);
+  font-size: var(--t-xs);
+  color: var(--graphite);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+/* Review finding 22: a controlled 0.25em gap between the symbol (now ONE wrapped node, symbols.js)
+   and its value, instead of a literal space character baked into the value text -- form-sections-
+   summary.js no longer prefixes the value with one, so the two never add up to a double gap. */
+.f-section-summary-token {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.25em;
+}
+
+.f-section-badge {
+  flex: none;
+  padding: 0 var(--s2);
+  font-size: var(--t-xs);
+  color: var(--ko);
+  background: var(--ko-bg);
+  border-radius: var(--radius);
+}
+
+.f-section-body {
+  padding-top: var(--s3);
+}
+
+/* Same fix as `.f-field[hidden]` below: an author `display` rule at equal-or-higher specificity
+   wins over the UA stylesheet's `[hidden] { display: none }`, so a collapsed accordion body would
+   otherwise stay visible under the grid rule just below -- restate it explicitly. */
+.f-section-body[hidden] {
+  display: none;
+}
+
+/* A single-column LIST of compact rows (finding A), not a two-up card grid: each `.f-field` is
+   its own ~44-52px row with a hairline separator, like the results sheet's own check rows. */
+.f-section-body:not([hidden]) {
+  display: flex;
+  flex-direction: column;
 }
 
 .f-advanced > summary {
@@ -53,7 +178,11 @@
   display: flex;
   flex-direction: column;
   gap: var(--s1);
-  margin-bottom: var(--s4);
+  padding-bottom: var(--s1);
+  border-bottom: 1px solid var(--hairline);
+}
+.f-field:last-child {
+  border-bottom: none;
 }
 
 /* Author `display` rules win over the UA stylesheet's `[hidden] { display: none }` at equal
@@ -63,19 +192,94 @@
   display: none;
 }
 
-.f-field label {
+.f-field-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+}
+
+.f-field-labelcell {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s1);
+  min-width: 0;
+}
+
+.f-field-label {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s1);
+  min-width: 0;
   font-family: var(--font-label);
   font-size: var(--t-s);
   color: var(--ink);
 }
 
+.f-field-desc {
+  min-width: 0;
+}
+
+/* "?" disclosure for a description too long to fit the 2-line compact-row clamp (finding A). */
+.f-field-more {
+  /* 24x24 CSS px minimum -- WCAG 2.2 §2.5.8 Target Size (Minimum), AA. */
+  flex: none;
+  align-self: flex-start;
+  width: 1.5rem;
+  height: 1.5rem;
+  line-height: 1;
+  padding: 0;
+  font-family: var(--font-ui);
+  font-size: var(--t-xs);
+  color: var(--graphite);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.f-field-full {
+  margin: 0;
+  color: var(--graphite);
+  font-size: var(--t-xs);
+}
+
+.f-field-control {
+  min-width: 0;
+}
+
 .f-unit {
   color: var(--graphite);
-  margin-left: var(--s1);
+}
+
+/* Unit as a SUFFIX INSIDE the control (finding A), not in the label. `#form-root` (an id, always
+   outranks any number of classes) qualifies both selectors below purely for specificity: it must
+   outrank the plain `.f-field input.f-number` shorthand-`padding` rule further down (two classes,
+   same as an unqualified `.f-control-suffix input` here, which would then win on source order and
+   silently zero back out this right padding -- measured: the typed value overlapping the unit
+   text). */
+.f-control-suffix {
+  position: relative;
+  display: block;
+}
+/* `--unit-chars` (fields.js, the longest unit string this field can ever show) sizes the reserved
+   padding per field: a fixed guess sized for "m"/"°"/"-" left the value overlapping a longer
+   "kN/m3"/"kN/m2" (measured on muro-sostegno's soil unit weights). `1ch` is measured in the
+   INPUT's own (larger) font, a deliberate over-estimate of the unit's actual (smaller, `--t-xs`)
+   rendered width -- a little extra clearance costs nothing, running out of it does. */
+#form-root .f-control-suffix input,
+#form-root .f-control-suffix select {
+  padding-right: calc(1ch * var(--unit-chars, 2) + 1.25rem);
+}
+.f-control-suffix .f-unit {
+  position: absolute;
+  top: 50%;
+  right: var(--s3);
+  transform: translateY(-50%);
+  font-size: var(--t-xs);
+  pointer-events: none;
 }
 
 .f-field input[type="text"],
-.f-field input[type="number"],
+.f-field input.f-number,
 .f-field select {
   height: var(--control-h);
   max-width: var(--field-max);
@@ -95,17 +299,106 @@
   background: var(--film);
 }
 
-@media (pointer: fine) {
-  .f-field input[type="number"] {
-    max-width: 9rem;
-    text-align: right;
-  }
+/* Numeric fields: right-aligned always (WORKBENCH_SPEC §3). */
+.f-field input.f-number {
+  text-align: right;
 }
 
 .f-field input[disabled],
 .f-field select[disabled] {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+/* -- list-input widget (js/list-input.js): a JSON-schema array of SCALARS ------------------- */
+/* One text field ("5; 10; 15,5") + a live chip preview of the parsed values, and the field's own
+   unit shown once (not repeated per chip). The `<input>` itself already matches the shared
+   `.f-field input[type="text"]` rule above (height/padding/border/font) -- nothing repeated here. */
+.f-list-input {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  width: 100%;
+}
+.f-list-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1);
+}
+.f-list-chips:empty {
+  display: none;
+}
+.f-list-chip {
+  padding: 0 var(--s2);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  font-size: var(--t-xs);
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--graphite);
+  background: var(--paper);
+}
+.f-list-chip--invalid {
+  color: var(--ko);
+  background: var(--ko-bg);
+  border-color: var(--ko);
+}
+.f-list-unit {
+  color: var(--graphite);
+  font-size: var(--t-xs);
+}
+
+/* -- compact rows (finding A): >=380px of the Dati column's own width -------------------- */
+/* Two conditions, not one, deliberately: a bare `@container` width check cannot tell "a genuine
+   fixed-width Dati SIDE column" (>=720px, `--form-w` 360/380px, layout.css) apart from "the single
+   full-viewport column mobile uses instead" (<720px) -- a 390px PHONE can measure a WIDER
+   `#form-root` (no internal scrollbar there: `#form-pane`'s own `overflow-y:auto` is itself
+   `>=720px`-only, layout.css) than a 1440px DESKTOP's actual 380px column does once its vertical
+   scrollbar (present on any multi-section tool) has taken ~15-17px off the top -- measured: 365px
+   desktop vs 375px mobile, i.e. the raw width comparison alone points the WRONG way. The outer
+   `@media (min-width:720px)` -- the shell's own breakpoint for "Dati is a dedicated column" -- is
+   the real gate; the inner `@container` (356px, not 380px, for that same scrollbar reason) then
+   only has to separate the 360px `--form-w` breakpoint (measured ~344px effective, stays stacked)
+   from the 380px one (measured 365px, goes compact) -- both already inside >=720px, so mobile
+   (finding K: "compact rows fall back to stacked") never reaches it at all. */
+@media (min-width: 720px) {
+  @container dati (min-width: 356px) {
+    .f-field:not([data-kind="table"]):not([data-kind="boolean"]) > .f-field-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      column-gap: var(--s3);
+      min-height: var(--control-h);
+    }
+    .f-field:not([data-kind="table"]):not([data-kind="boolean"]) > .f-field-full {
+      margin-top: calc(-1 * var(--s1));
+    }
+    .f-field-desc {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .f-field[data-kind="number"] .f-field-control,
+    .f-field[data-kind="text"] .f-field-control {
+      width: 10rem; /* ~160px: within the 150-170px target */
+    }
+    .f-field[data-kind="enum"] .f-field-control {
+      width: 12.5rem; /* selects/comune may grow to 200px */
+    }
+    /* A list-input's chips row needs more room than a plain scalar control to stay legible --
+       wider than the number/text/enum columns above, still well short of the full row. */
+    .f-field[data-kind="list"] .f-field-control {
+      width: 16rem;
+    }
+    .f-field[data-kind="number"] input.f-number,
+    .f-field[data-kind="text"] input,
+    .f-field[data-kind="enum"] select,
+    .f-field[data-kind="text"] .comune-widget input,
+    .f-field[data-kind="list"] .f-list-input input {
+      width: 100%;
+      max-width: none;
+    }
+  }
 }
 
 .f-field input[aria-invalid="true"],
@@ -115,7 +408,9 @@
   background: var(--ko-bg);
 }
 
-.f-field-checkbox {
+/* The checkbox row itself (`.f-field-row`, built by fields.js as [checkbox, label]) is the flex
+   row -- the OUTER `.f-field` wrapper stays a plain single-child block like every other field. */
+.f-field-checkbox .f-field-row {
   flex-direction: row;
   align-items: center;
   gap: var(--s2);
@@ -152,7 +447,31 @@
   display: none;
 }
 
+/* Finding F: ONE row, always -- [Carica esempio] [Calcola, only while live is off] [⋯], with the
+   quiet "Calcolo automatico attivo" status filling the free space when live is on (Calcola
+   hidden). `flex-wrap: nowrap` is deliberate: the three controls are sized to fit the Dati
+   column's own minimum width, so wrapping would only ever hide the bug instead of fixing it. */
+#form-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+}
+
+.f-live-status {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--graphite);
+  font-size: var(--t-xs);
+  font-family: var(--font-ui);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .f-run-button {
+  flex: none;
   height: var(--control-h);
   padding: 0 var(--s5);
   font-family: var(--font-label);
@@ -169,8 +488,8 @@
   cursor: not-allowed;
 }
 
-.f-example-button,
-.f-copylink-button {
+.f-example-button {
+  flex: none;
   height: var(--control-h);
   padding: 0 var(--s4);
   font-family: var(--font-label);
@@ -180,6 +499,63 @@
   border: 1px solid var(--rule);
   border-radius: var(--radius);
   cursor: pointer;
+}
+
+/* "⋯" menu (Copia link / Azzera dati / Stampa relazione, WORKBENCH_SPEC §3 action bar). */
+.f-menu {
+  flex: none;
+  margin-left: auto;
+  position: relative;
+}
+
+.f-menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-h);
+  height: var(--control-h);
+  font-family: var(--font-label);
+  font-size: var(--t-l);
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  cursor: pointer;
+  list-style: none;
+}
+
+.f-menu-btn::-webkit-details-marker {
+  display: none;
+}
+
+.f-menu-list {
+  position: absolute;
+  z-index: 1;
+  bottom: calc(var(--control-h) + var(--s2));
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 11rem;
+  padding: var(--s2);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+
+.f-menu-item {
+  min-height: var(--control-h);
+  padding: 0 var(--s3);
+  font-family: var(--font-label);
+  font-size: var(--t-s);
+  color: var(--ink);
+  text-align: left;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.f-menu-item:hover {
+  background: var(--film);
 }
 
 /* Table-input widget (soil layers, support reactions, ...). */
@@ -298,7 +674,9 @@
   .f-field select,
   .f-run-button,
   .f-example-button,
-  .f-copylink-button,
+  .f-menu-btn,
+  .f-menu-item,
+  .f-section-tools-btn,
   .f-table-btn {
     transition: background-color 0.1s ease, border-color 0.1s ease;
   }

@@ -9,7 +9,7 @@ import {
   formatListText,
   listBoundsMessage,
   listTokenErrorMessage,
-} from "../../src/strutture/web/static_next/js/list-input.js";
+} from "../../src/strutture/web/static/js/list-input.js";
 
 test("parseListText splits on comma, semicolon, space and newline", () => {
   assert.deepEqual(parseListText("5; 10; 15,5").values, [5, 10, 15.5]);

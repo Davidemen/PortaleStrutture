@@ -1,0 +1,563 @@
+/* shell-nav: header live-toggle, rail, home, command palette, shortcuts
+   sheet -- WORKBENCH_SPEC.md #1, #6. Tokens only, classes/CSSOM only (CSP). */
+
+/* -- Header live switch -- */
+/* Review: the header search field is removed (it broke the 390px header) -- this is now the
+   only thing to the right of the title, so it carries its own `margin-left: auto`. */
+.app-live-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin-left: auto;
+  font-family: var(--font-label);
+  font-size: var(--t-xs);
+  color: var(--graphite);
+  cursor: pointer;
+  min-height: var(--control-h);
+  padding: 0 var(--s2);
+}
+.app-live-toggle input[type="checkbox"] {
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: var(--ink);
+  cursor: pointer;
+}
+
+/* -- Rail (#tool-index), redesigned -- WORKBENCH_SPEC.md #12 --------------------------------- */
+.rail {
+  display: flex;
+  flex-direction: column;
+}
+.rail-list {
+  flex: 1 1 auto;
+}
+
+.rail-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  width: 100%;
+  min-height: var(--control-h);
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--t-s);
+  text-align: left;
+  padding: var(--s2) var(--s3);
+  cursor: pointer;
+  position: relative;
+}
+.rail-item:hover {
+  background: var(--film);
+}
+.rail-item[aria-current="true"] {
+  background: var(--marker);
+}
+/* The active tool's category (WORKBENCH_SPEC #12): ink left rule + marker background, so the
+   collapsed rail always says where you are. */
+.rail-item--active-category {
+  background: var(--marker);
+  box-shadow: inset 3px 0 0 var(--ink);
+}
+.rail-sep-before {
+  border-top: 1px solid var(--hairline);
+  margin-top: var(--s1);
+  padding-top: var(--s1);
+}
+
+.rail-icon {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.sm-icon {
+  width: 22px;
+  height: 22px;
+}
+/* Orchestrator finding: at the old -6px/-4px offset the badge's own body sat halfway ON TOP of
+   the 22px pictogram (measured ~50% overlap of its area) rather than beside it in the corner --
+   smaller and pushed further outside the icon's own box, so only its innermost tip still touches
+   the icon's corner pixel, never its body. */
+.rail-sigla-badge {
+  position: absolute;
+  right: -11px;
+  bottom: -7px;
+  min-width: 0.9375rem;
+  padding: 0 1px;
+  font-family: var(--font-ui);
+  font-size: 0.5rem;
+  font-weight: 600;
+  line-height: 0.8125rem;
+  text-align: center;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  border-radius: var(--radius);
+}
+
+/* Tool names wrap to two lines instead of truncating mid-word -- the `title` attribute still
+   carries the full name/tooltip. */
+.rail-label {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: normal;
+}
+
+/* Collapsed rail: 56px, icons only (label kept in the DOM for the accessible name, visually
+   hidden; `title` supplies the hover tooltip). Applies whenever the collapsed activity-bar
+   MARKUP is rendered (js/tool-index.js `isCollapsedMode()`), at every breakpoint that uses it --
+   not just >=1100px (720-1099px is ALSO forced collapsed, and this rule is not itself scoped by
+   a media query; only the grid column width is, in css/layout.css). */
+#app.rail-collapsed .rail-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+#app.rail-collapsed .rail-item {
+  justify-content: center;
+}
+#app.rail-collapsed .rail-item--active-category {
+  box-shadow: inset 3px 0 0 var(--ink);
+}
+
+.rail-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  justify-content: center;
+  margin-top: auto;
+  min-height: var(--control-h);
+  border: none;
+  border-top: 1px solid var(--hairline);
+  background: transparent;
+  color: var(--graphite);
+  cursor: pointer;
+}
+.rail-toggle:hover {
+  background: var(--film);
+  color: var(--ink);
+}
+.rail-toggle .sm-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Accordions (expanded rail, WORKBENCH_SPEC #12): categories/Preferiti/Recenti -- only the one
+   holding the active tool open by default. */
+.rail-group {
+  border-top: 1px solid var(--hairline);
+}
+.rail-group > summary {
+  cursor: pointer;
+  min-height: var(--control-h);
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: 0 var(--s3);
+  font-family: var(--font-label);
+  font-weight: 600;
+  font-size: var(--t-s);
+  list-style: none;
+}
+.rail-group > summary::-webkit-details-marker {
+  display: none;
+}
+.rail-group-list {
+  padding-bottom: var(--s2);
+}
+
+/* Tool rows (WORKBENCH_SPEC #12): sigla chip + 2-line title + norm + a star toggle, shared by
+   the flyout body and an expanded accordion's body. */
+.rail-row-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.rail-row {
+  display: flex;
+  align-items: flex-start;
+}
+.rail-row-open {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  min-height: 44px;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-ui);
+  text-align: left;
+  cursor: pointer;
+  padding: var(--s2) var(--s2) var(--s2) var(--s4);
+}
+.rail-row-open:hover {
+  background: var(--film);
+}
+.rail-row-open[aria-current="true"] {
+  background: var(--marker);
+}
+.rail-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding-top: 2px;
+}
+.rail-row-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: var(--t-xs);
+  line-height: var(--lh-tight);
+}
+/* Review finding 23: a norm line under every title turned a 2-line title into a 4-line row --
+   with Recenti (up to 5 rows) open, that pushed the categories below it off-screen. The norm is
+   still shown elsewhere a tool row appears (Home cards, the palette) -- only the rail's own rows
+   drop it, `title` still carries it for a hover tooltip via `buildToolRow` (nav-state.js). */
+.rail-row-norm {
+  display: none;
+}
+.rail-row-fav {
+  flex: 0 0 auto;
+  width: 44px;
+  min-height: 44px;
+  border: none;
+  background: transparent;
+  color: var(--graphite);
+  font-size: var(--t-m);
+  cursor: pointer;
+}
+.rail-row-fav[aria-pressed="true"] {
+  color: var(--ink);
+}
+.rail-row-fav:hover {
+  background: var(--film);
+}
+
+.rail-flyout-heading {
+  font-family: var(--font-label);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  color: var(--graphite);
+  margin: var(--s3) var(--s4) var(--s1);
+}
+.rail-flyout-empty,
+.rail-empty {
+  color: var(--graphite);
+  font-size: var(--t-xs);
+  padding: 0 var(--s4) var(--s2);
+  margin: var(--s2) 0 0;
+}
+
+/* Flyout dialog (WORKBENCH_SPEC #12): 280px, `position: fixed` so it floats OVER the content and
+   never shifts the grid. Review finding 23: js/rail-flyout.js used to position it off the
+   TRIGGER's own on-screen position (top near the button, a JS-computed max-height down to the
+   viewport edge) -- a trigger low in the rail left it floating with a short, cramped panel mid-
+   screen instead of a full-height one. Anchored purely in CSS instead, spanning header-bottom to
+   window-bottom, flush against the (always 56px when a flyout can open at all -- it never shows
+   at the >=1100px EXPANDED rail width) collapsed rail: no per-open JS measurement needed. */
+.rail-flyout {
+  position: fixed;
+  top: var(--head-h, 2.9rem);
+  left: var(--rail-w-collapsed, 56px);
+  bottom: 0;
+  width: 280px;
+  max-width: calc(100vw - 16px);
+  overflow-y: auto;
+  background: var(--paper);
+  border: 0;
+  border-right: 1px solid var(--ink);
+  z-index: var(--z-palette);
+}
+.rail-flyout[hidden] {
+  display: none;
+}
+.rail-flyout-title {
+  font-family: var(--font-label);
+  font-size: var(--t-s);
+  font-weight: 600;
+  margin: 0;
+  padding: var(--s3) var(--s4);
+  border-bottom: 1px solid var(--hairline);
+}
+.rail-flyout-body {
+  padding-bottom: var(--s2);
+}
+
+/* Sigla chip (WORKBENCH_SPEC #12): 28x20px rounded outline in tabular capitals -- rail rows,
+   Home cards, palette rows and next to the tool title (js/main.js). */
+.sm-sigla-chip {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 20px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  font-family: var(--font-ui);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--graphite);
+  vertical-align: middle;
+  margin-right: var(--s2);
+}
+
+/* -- Home view (#home-pane) -- */
+.home-search-wrap {
+  padding: var(--s4);
+}
+#home-search {
+  width: 100%;
+  max-width: 28rem;
+  height: var(--control-h);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--t-s);
+  padding: 0 var(--s3);
+}
+#home-search:hover {
+  background: var(--film);
+}
+
+.home-section {
+  padding: 0 var(--s4) var(--s5);
+}
+.home-section > h2 {
+  font-family: var(--font-label);
+  font-size: var(--t-m);
+  margin: 0 0 var(--s3);
+}
+.home-empty {
+  color: var(--graphite);
+  font-size: var(--t-s);
+  max-width: 32rem;
+}
+
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--home-card-min), 1fr));
+  gap: var(--s3);
+}
+
+.home-card {
+  position: relative;
+  border: 1px solid var(--hairline);
+  background: var(--paper);
+}
+.home-card-open {
+  display: block;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  padding: var(--s3) var(--s3) var(--s3);
+  padding-right: calc(var(--control-h) + var(--s2));
+}
+.home-card-open:hover {
+  background: var(--film);
+}
+.home-card-titlerow {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin: 0 0 var(--s1);
+}
+.home-card-title {
+  display: block;
+  font-family: var(--font-label);
+  font-weight: 600;
+  font-size: var(--t-s);
+}
+.home-card-summary {
+  display: block;
+  font-size: var(--t-xs);
+  color: var(--graphite);
+  margin: 0 0 var(--s1);
+  line-height: var(--lh);
+}
+.home-card-norm {
+  display: block;
+  font-size: var(--t-xs);
+  color: var(--graphite);
+  margin: 0;
+}
+.home-card-fav {
+  position: absolute;
+  top: var(--s2);
+  right: var(--s2);
+  width: var(--control-h);
+  height: var(--control-h);
+  border: none;
+  background: transparent;
+  color: var(--graphite);
+  font-size: var(--t-l);
+  cursor: pointer;
+}
+.home-card-fav[aria-pressed="true"] {
+  color: var(--ink);
+}
+.home-card-fav:hover {
+  background: var(--film);
+}
+
+/* -- Command palette (Ctrl/Cmd+K, "/") -- */
+.palette-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 10vh;
+  background: color-mix(in srgb, var(--ink) 45%, transparent);
+  z-index: var(--z-palette);
+}
+.palette-overlay[hidden] {
+  display: none;
+}
+.palette {
+  width: min(34rem, 92vw);
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+}
+.palette-title {
+  font-family: var(--font-label);
+  font-size: var(--t-s);
+  margin: 0;
+  padding: var(--s3) var(--s3) 0;
+}
+#palette-input {
+  width: 100%;
+  height: var(--control-h);
+  border: none;
+  border-bottom: 1px solid var(--hairline);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--t-m);
+  padding: 0 var(--s3);
+}
+#palette-listbox {
+  list-style: none;
+  margin: 0;
+  padding: var(--s1) 0;
+  overflow-y: auto;
+}
+.palette-option {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  min-height: var(--control-h);
+  padding: var(--s2) var(--s3);
+  cursor: pointer;
+}
+.palette-option[aria-selected="true"] {
+  background: var(--marker);
+}
+.palette-option-titlerow {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+.palette-option-title {
+  font-size: var(--t-s);
+}
+.palette-option-meta {
+  font-size: var(--t-xs);
+  color: var(--graphite);
+}
+.palette-empty {
+  color: var(--graphite);
+  font-size: var(--t-s);
+  padding: var(--s3);
+  margin: 0;
+}
+.palette-hint {
+  border-top: 1px solid var(--hairline);
+  color: var(--graphite);
+  font-size: var(--t-xs);
+  margin: 0;
+  padding: var(--s2) var(--s3);
+}
+
+/* -- Shortcut sheet ("?") -- */
+.shortcuts-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--ink) 45%, transparent);
+  z-index: var(--z-palette);
+}
+.shortcuts-overlay[hidden] {
+  display: none;
+}
+.shortcuts-sheet {
+  width: min(28rem, 92vw);
+  max-height: 80vh;
+  overflow-y: auto;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  padding: var(--s4);
+}
+.shortcuts-sheet h2 {
+  font-family: var(--font-label);
+  font-size: var(--t-m);
+  margin: 0 0 var(--s3);
+}
+.shortcuts-list {
+  margin: 0;
+}
+.shortcuts-list > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: var(--s2) 0;
+  border-top: 1px solid var(--hairline);
+}
+.shortcuts-list kbd {
+  font-family: var(--font-ui);
+  font-size: var(--t-xs);
+  background: var(--film);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 0 var(--s1);
+}
+.shortcuts-close {
+  margin-top: var(--s3);
+  min-height: var(--control-h);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--t-s);
+  padding: 0 var(--s4);
+  cursor: pointer;
+}
+.shortcuts-close:hover {
+  background: var(--film);
+}

@@ -1,0 +1,296 @@
+/* Sketch renderer -- WORKBENCH_SPEC.md #5. Package: sketch. Classes sk-<stile> from tokens
+   only; dark mode and print (strokes in ink) fall out of tokens.css/print.css automatically
+   since every colour here is a custom property, never a literal hex. */
+
+.sk-figure {
+  margin: 0;
+  max-width: 30rem;
+  padding: var(--s3);
+  border: 1px solid var(--hairline);
+  background: var(--paper);
+  box-sizing: border-box;
+}
+
+.sk-figure figcaption {
+  font-family: var(--font-label);
+  font-size: var(--t-s);
+  color: var(--graphite);
+  margin-bottom: var(--s2);
+}
+
+.sk-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* M4: every sketch text gets a halo so it stays legible crossing a hatch/fill/another line --
+   painted BEHIND the fill (paint-order), in the figure's own background colour so it reads as a
+   clear gap rather than an outline. One generic rule (not per sk-<stile>text selector) since it
+   must apply to every text node regardless of which shape drew it. */
+/* M4 review finding 2: a text node inherits `fill-opacity` from whichever `stile` group drew it
+   (a `pressione` diagram label used to inherit that shape's own 12% tint and go near-invisible) --
+   every sketch text is always full ink, full opacity, regardless of its ancestor's own fill. */
+.sk-svg text {
+  paint-order: stroke;
+  stroke: var(--paper);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  fill: var(--ink);
+  fill-opacity: 1;
+}
+
+/* M5: leader line from a label nudged clear of its anchor by collision avoidance
+   (sketch-labels.js) -- a thin, unobtrusive line back to the point it names. */
+.sk-leader {
+  fill: none;
+  stroke: var(--graphite);
+  stroke-width: 0.75;
+}
+
+/* M6: Sketch.nota ("Schema non in scala") as a small caption under the views. */
+.sk-nota {
+  font-family: var(--font-label);
+  font-size: 0.75rem;
+  line-height: 1;
+  color: var(--graphite);
+  font-style: italic;
+  /* Review finding 17: the previous negative margin pulled the caption up far enough to strike
+     the figure's own frame/border above it. A small positive gap instead -- still tight (the
+     caption is a footnote, not a new section, finding J's <=900px results budget) but never
+     overlapping the last figure's border. */
+  margin: var(--s1) 0 0;
+}
+
+/* -- fills (calcestruzzo / terreno / acciaio-armatura-palo / acqua / pressione) ------------- */
+
+/* Review finding 25: `var(--film)` is the dark-mode APP BACKGROUND, not a step above the sheet's
+   own `--paper` -- a concrete fill in dark mode read as a hole in the page rather than a solid
+   material. A fixed 12% tint of `--ink` over `--paper` instead: always a shade darker than the
+   sheet in both themes, sized purely from tokens (no new literal colour). */
+.sk-calcestruzzo {
+  fill: color-mix(in srgb, var(--ink) 12%, var(--paper));
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
+/* No CSS `fill` here: sketch-shapes.js sets it as a presentation attribute (url(#pattern) --
+   CSS classes always outrank presentation attributes, so a fill declared here would win and
+   silently blank out the dotted pattern). */
+.sk-terreno {
+  stroke: var(--graphite);
+  stroke-width: 1.5;
+}
+
+.sk-terreno-dot {
+  fill: var(--graphite);
+}
+
+.sk-acciaio,
+.sk-armatura,
+.sk-palo {
+  fill: var(--ink);
+  stroke: none;
+}
+
+/* Review finding 1 (P0): a stirrup (`staffa`) is a CLOSED `armatura` shape (a rectangle/polygon
+   inset by the cover) meant to be drawn as an outline loop -- the rule above, at class-only
+   specificity, filled it solid ink and blacked out the whole core (TRV/PIR/PIC/TCO sections). Only
+   `bars` (rebar cross-sections, `sketch-shapes.js buildBars`) stay filled: those circles carry no
+   class of their own, only their `<g class="sk-armatura">` wrapper does, so they are untouched by
+   this element-qualified override (higher specificity than the class-only rule above) and keep
+   inheriting its solid fill. A directly-drawn rect/polygon/circle with `stile="armatura"` -- the
+   stirrup outline itself -- becomes a hairline loop instead. */
+rect.sk-armatura,
+polygon.sk-armatura,
+circle.sk-armatura {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.25;
+}
+
+.sk-acqua {
+  fill: var(--series-1);
+  fill-opacity: 0.15;
+  stroke: var(--series-1);
+  stroke-width: 1;
+}
+
+/* Generic dashed toggle (Linea.tratteggio / Cerchio.tratteggio): dashed outline, e.g. a hidden
+   edge or, on a circle, the radius of relative stiffness / a control perimeter. Left at single-
+   class specificity so a stile-defined dash pattern declared below (puntone/asse/fantasma)
+   still wins on a tie when both classes are set on the same line. */
+.sk-tratteggio {
+  stroke-dasharray: 6 3;
+}
+
+/* "No fill, whatever the stile" (sketch.py Cerchio.tratteggio) has to beat every single-class
+   sk-<stile> fill rule regardless of source order, hence the doubled selector (specificity 2
+   classes > 1) instead of relying on cascade position. */
+.sk-tratteggio.sk-tratteggio {
+  fill: none;
+}
+
+/* -- loads / reactions: two-series arrows with arrowheads ---------------------------------- */
+
+.sk-carico,
+.sk-reazione {
+  fill: none;
+}
+
+/* A SOLID shape in a load/reaction style (a wheel footprint on a slab, a loaded area) -- the
+   group rule above only ever styled arrows, so a `Rettangolo`/`Poligono`/`Cerchio` with
+   `stile="carico"` had neither fill nor stroke and rendered nothing at all (fond-pavimento-
+   industriale: an empty slab next to a legend of wheel loads). Tinted like every other overlay. */
+rect.sk-carico,
+polygon.sk-carico,
+circle.sk-carico {
+  fill: var(--series-2);
+  fill-opacity: 0.35;
+  stroke: var(--series-2);
+  stroke-width: 1.25;
+}
+rect.sk-reazione,
+polygon.sk-reazione,
+circle.sk-reazione {
+  fill: var(--series-1);
+  fill-opacity: 0.35;
+  stroke: var(--series-1);
+  stroke-width: 1.25;
+}
+
+.sk-carico .sk-arrow-shaft {
+  stroke: var(--series-2);
+  stroke-width: 1.25;
+}
+
+.sk-reazione .sk-arrow-shaft {
+  stroke: var(--series-1);
+  stroke-width: 1.25;
+}
+
+.sk-arrowhead-carico {
+  fill: var(--series-2);
+}
+
+.sk-arrowhead-reazione {
+  fill: var(--series-1);
+}
+
+.sk-arrow-text text {
+  fill: var(--ink);
+  font-family: var(--font-label);
+}
+
+/* -- pressure/stress envelope: 12% tinted fill + ink outline -------------------------------- */
+
+/* Direct rule (M1): a `pressione` shape is EVERY shape kind, not only `Diagramma` -- a plain
+   `Poligono`/`Rettangolo`/`Cerchio` with `stile="pressione"` (e.g. a snow-drift triangle) used to
+   inherit `fill:none` with no stroke of its own and render nothing at all. `fill`/`stroke` are
+   inheritable SVG properties, so this also reaches a `Diagramma`'s children UNLESS they set their
+   own (they do, immediately below, at higher selector specificity) -- so the diagram look stays
+   exactly as before. */
+.sk-pressione {
+  fill: var(--ink);
+  fill-opacity: 0.12;
+  stroke: var(--ink);
+  stroke-width: 1.25;
+}
+
+.sk-pressione .sk-diagram-fill {
+  fill: var(--ink);
+  fill-opacity: 0.12;
+  stroke: var(--ink);
+  stroke-width: 1.25;
+}
+
+/* Ordinate hatching (sketch-shapes.js buildHatch): hairlines, so the envelope outline still leads. */
+.sk-diagram-hatch {
+  stroke: var(--ink);
+  stroke-width: 0.6;
+  stroke-opacity: 0.55;
+  fill: none;
+}
+
+.sk-pressione .sk-diagram-base {
+  stroke: var(--ink);
+  stroke-width: 1.25;
+}
+
+.sk-diagram-text text {
+  fill: var(--ink);
+  font-family: var(--font-label);
+}
+
+/* -- strut / tie ----------------------------------------------------------------------------- */
+
+.sk-puntone {
+  stroke: var(--ink);
+  stroke-width: 2;
+  stroke-dasharray: 6 3;
+  fill: none;
+}
+
+.sk-tirante {
+  stroke: var(--ink);
+  stroke-width: 2;
+  fill: none;
+}
+
+/* -- dimension (quota): hairline extension/offset lines, 45deg ticks, upright centred text -- */
+/* M4 line-weight hierarchy: element outlines 1.5px, ghost/axis/dimension hairlines 0.75px,
+   arrows 1.25px (arrow rules above). */
+
+.sk-quota-ext,
+.sk-quota-line {
+  fill: none;
+  stroke: var(--hairline);
+  stroke-width: 0.75;
+}
+
+.sk-quota-tick {
+  stroke: var(--graphite);
+  stroke-width: 0.75;
+}
+
+.sk-quota-text text {
+  fill: var(--ink);
+  font-family: var(--font-label);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* -- axis / highlight / ghost ----------------------------------------------------------------- */
+
+.sk-asse {
+  stroke: var(--graphite);
+  stroke-width: 0.75;
+  stroke-dasharray: 10 3 2 3;
+  fill: none;
+}
+
+/* Review finding 4 (P0, PUN): a fully opaque marker fill on a closed `evidenza` perimeter (the
+   punching control perimeter) hid every shape drawn before it in the same view (the column, an
+   inner perimeter). Tinted like every other overlay fill (`.sk-pressione`) instead of solid, so
+   whatever it highlights stays visible through it -- the Python side also reorders the shapes so
+   evidenza draws last/on top, but the CSS must never assume a draw order it cannot enforce. */
+.sk-evidenza {
+  fill: var(--marker);
+  fill-opacity: 0.3;
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
+.sk-fantasma {
+  fill: none;
+  stroke: var(--graphite);
+  stroke-width: 0.75;
+  stroke-dasharray: 4 4;
+  opacity: 0.6;
+}
+
+/* -- labels / generic shapes ------------------------------------------------------------------ */
+
+.sk-label text {
+  fill: var(--ink);
+  font-family: var(--font-label);
+}

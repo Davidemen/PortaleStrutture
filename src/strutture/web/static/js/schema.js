@@ -3,7 +3,8 @@
 import { resolveProperty, hintsOf } from "./json-schema.js";
 
 // A tuple/array is the table-input widget only when its items resolve to an object (§4b);
-// a plain array of scalars (rare) falls back to the generic "text" rendering.
+// a plain array of scalars (`type: array`, `items` number/string) is the list-input widget
+// instead (design review 2026-09-21, list-input.js).
 function isTableProperty(schema, property) {
   if (property.type !== "array") return false;
   const items = resolveProperty(schema, property.items || {});
@@ -12,10 +13,24 @@ function isTableProperty(schema, property) {
 
 function fieldKind(schema, property) {
   if (isTableProperty(schema, property)) return "table";
+  if (property.type === "array") return "list";
   if (property.enum || property.const !== undefined) return "enum";
   if (property.type === "boolean") return "boolean";
   if (property.type === "integer" || property.type === "number") return "number";
   return "text";
+}
+
+// list-input.js's own descriptor fields: the item type (drives separator/parse rules and
+// `inputmode`) and, when the schema's `items` carried its own bounds, a per-value min/max.
+function describeListMeta(schema, property) {
+  const items = resolveProperty(schema, property.items || {});
+  return {
+    itemKind: items.type === "string" ? "string" : "number",
+    minItems: property.minItems ?? 0,
+    maxItems: property.maxItems,
+    itemMinimum: items.minimum,
+    itemMaximum: items.maximum,
+  };
 }
 
 function describeColumn(schema, name, rawProperty, required) {
@@ -97,6 +112,8 @@ export function describeFields(schema) {
       unitSelector: unitSelectorName === name,
       unitOptions: property.unit_options,
     };
-    return kind === "table" ? { ...base, ...describeTable(schema, property) } : base;
+    if (kind === "table") return { ...base, ...describeTable(schema, property) };
+    if (kind === "list") return { ...base, ...describeListMeta(schema, property) };
+    return base;
   });
 }

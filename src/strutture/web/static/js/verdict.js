@@ -1,9 +1,21 @@
-// The verdict block: pass/fail word (or, for load tools with no checks, a one-line "sintesi"
-// built from the highlighted outputs) + one row per Check, each with an optional utilisation bar.
-import { el, clear } from "./dom.js";
-import { formatValue } from "./format.js";
+// Check-row primitives shared by the Sintesi (js/sintesi.js, one bar for the governing check) and
+// the "Verifiche" results group (js/results-groups.js, the full sorted list). Owns: the pass/fail
+// icon, utilisation maths, the bar widget and the sort/governance rules -- no DOM mounting of a
+// full list here anymore (that moved into the collapsible group, WORKBENCH_SPEC #4).
+import { el } from "./dom.js";
+import { formatUtilisation, formatDetail } from "./format.js";
 
-function checkMark(ok) {
+// Review finding 8: some tools still name a check with a raw load-combination key ("Ribaltamento
+// STR_1", "Scorrimento SISMA_2 (−kv)") -- the backend is moving these to plain Italian text
+// combination by combination, but until every tool is migrated this fallback keeps the literal
+// underscore out of what the engineer reads. Only the separator is touched (a space reads as a
+// combination label the same way "STR 1"/"SISMA 2" already does elsewhere) -- the rest of the
+// string is already correctly capitalised by the backend, so it is never re-cased here.
+export function displayCheckName(name) {
+  return typeof name === "string" ? name.replace(/_/g, " ") : name;
+}
+
+export function checkMark(ok) {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("viewBox", "0 0 16 16");
   svg.setAttribute("width", "16");
@@ -34,12 +46,40 @@ export function utilisation(check) {
   return toNumber(match[1]) / limit;
 }
 
-// `ratio` here is always demand/capacity (<=1 = safe): some tools report the inverse (e.g.
-// `OR=4.061` where higher = safer, so `ratio>1` from `utilisation()` is the passing case) --
-// `buildBar` reciprocates those before plotting so colour always agrees with `check.passed`.
-function buildBar(ratio, passed) {
+// Some tools report the inverse (e.g. `OR=4.061` where higher = safer): normalise those to the
+// usual demand/capacity reading (<=1 safe, >1 fails) so sorting, "eta max" and the bar fill all
+// agree with `check.passed`, whichever way the raw ratio pointed.
+export function effectiveUtilisation(check) {
+  const ratio = utilisation(check);
+  if (ratio === null) return null;
+  return check.passed && ratio > 1 ? 1 / ratio : ratio;
+}
+
+// Failed checks first; within each group, highest utilisation (closest to -- or past -- the
+// limit) first. Checks with no parseable ratio sort last, in their original order.
+export function sortChecks(checks) {
+  return checks
+    .map((check, index) => ({ check, index, ratio: effectiveUtilisation(check) }))
+    .sort((a, b) => {
+      if (a.check.passed !== b.check.passed) return a.check.passed ? 1 : -1;
+      if (a.ratio === null && b.ratio === null) return a.index - b.index;
+      if (a.ratio === null) return 1;
+      if (b.ratio === null) return -1;
+      return b.ratio - a.ratio;
+    })
+    .map((entry) => entry.check);
+}
+
+// The check to feature in the Sintesi's "eta max" line: the first one after `sortChecks` --
+// a failed check outranks every passed one, otherwise the highest utilisation wins.
+export function governingCheck(checks) {
+  if (!checks || checks.length === 0) return null;
+  return sortChecks(checks)[0];
+}
+
+export function buildBar(ratio, passed) {
   const plotted = passed && ratio > 1 ? 1 / ratio : ratio;
-  const label = formatValue(plotted, { integer: false }).text;
+  const label = formatUtilisation(plotted);
   const wrap = el("div", { class: "r-bar", role: "img", "aria-label": `sfruttamento ${label}` });
   const track = el("div", { class: "r-bar-track" });
   const fill = el("div", { class: `r-bar-fill ${passed ? "" : "r-bar-fill--over"}` });
@@ -49,40 +89,15 @@ function buildBar(ratio, passed) {
   return wrap;
 }
 
-function buildCheckRow(check) {
-  const row = el("div", { class: `r-check ${check.passed ? "r-check--pass" : "r-check--fail"}` });
+export function buildCheckRow(check) {
+  const row = el("div", { class: `r-check ${check.passed ? "r-check--pass" : "r-check--fail"}`, "data-passed": String(check.passed) });
   row.append(el("span", { class: "r-check-icon" }, [checkMark(check.passed)]));
-  row.append(el("span", { class: "r-check-name", text: check.name }));
+  const displayName = displayCheckName(check.name);
+  row.append(el("span", { class: "r-check-name", text: displayName, title: displayName }));
   row.append(el("span", { class: "r-check-clause", text: check.clause || "" }));
-  row.append(el("span", { class: "r-check-detail", text: check.detail || "" }));
+  const detail = formatDetail(check.detail);
+  row.append(el("span", { class: "r-check-detail", text: detail, title: detail }));
   const ratio = utilisation(check);
   row.append(ratio === null ? el("span", { class: "r-check-nobar" }) : buildBar(ratio, check.passed));
   return row;
-}
-
-export function renderVerdict(root, { checks = [], highlights = [], ok = true } = {}) {
-  clear(root);
-  const head = el("div", { class: "r-verdict-head" });
-  if (checks.length > 0) {
-    const failing = checks.filter((check) => !check.passed).length;
-    head.append(checkMark(ok));
-    head.append(
-      el("span", {
-        class: `r-verdict-word ${ok ? "r-verdict-word--ok" : "r-verdict-word--ko"}`,
-        text: ok ? "Tutte le verifiche soddisfatte" : `${failing} verifiche non soddisfatte`,
-      })
-    );
-  } else {
-    // Load tools (no checks): the governing values are the marker-yellow rows below (DESIGN_SPEC
-    // §0), so this line never restates them -- it only keeps the verdict slot from being empty.
-    const text = highlights.length > 0 ? "Risultato evidenziato qui sotto." : "Calcolo completato.";
-    head.append(el("span", { class: "r-verdict-sintesi", text }));
-  }
-  root.append(head);
-
-  if (checks.length > 0) {
-    const list = el("div", { class: "r-checks" });
-    for (const check of checks) list.append(buildCheckRow(check));
-    root.append(list);
-  }
 }

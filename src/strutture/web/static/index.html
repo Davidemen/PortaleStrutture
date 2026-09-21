@@ -4,23 +4,38 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>StruttureMenni</title>
+  <link rel="icon" href="favicon.ico">
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/nav.css">
   <link rel="stylesheet" href="css/forms.css">
   <link rel="stylesheet" href="css/results.css">
   <link rel="stylesheet" href="css/chart.css">
+  <link rel="stylesheet" href="css/sketch.css">
   <link rel="stylesheet" href="css/midas.css">
+  <link rel="stylesheet" href="css/relazione-overlay.css">
   <link rel="stylesheet" href="css/print.css" media="print">
 </head>
 <body>
-  <div id="app" data-pane="dati">
-    <h1 class="app-h1">StruttureMenni</h1>
+  <div id="app" data-pane="dati" data-view="home">
+    <header class="app-header">
+      <h1 class="app-h1">StruttureMenni</h1>
+      <!-- Review: the header search field is removed -- search already lives in the rail's own
+           "Cerca" destination, on Home and on Ctrl/Cmd+K (js/palette.js); it also broke the
+           390px header, forcing it to wrap. -->
+      <label class="app-live-toggle" for="live-toggle">
+        <input type="checkbox" id="live-toggle" checked>
+        <span>Calcolo automatico</span>
+      </label>
+    </header>
 
     <details class="app-picker">
       <summary>Strumenti</summary>
     </details>
 
-    <nav id="tool-index" aria-label="Elenco strumenti"></nav>
+    <nav id="tool-index" class="rail" aria-label="Navigazione strumenti"></nav>
+
+    <main id="home-pane" aria-label="Home"></main>
 
     <div class="app-tablist" role="tablist">
       <button type="button" class="app-tab" id="tab-dati" role="tab" aria-selected="true" aria-controls="form-pane">Dati</button>
@@ -35,10 +50,17 @@
       <div id="form-actions"></div>
     </div>
 
-    <div id="results-pane" aria-live="polite" aria-atomic="false" hidden>
+    <div id="results-pane" hidden>
+      <div id="sintesi" aria-live="polite" aria-atomic="false"></div>
       <div id="results-root"></div>
     </div>
+
+    <button type="button" id="bottom-bar" hidden aria-label="Vai ai risultati"></button>
   </div>
+
+  <div id="palette-root"></div>
+  <div id="shortcuts-root"></div>
+
   <script type="module" src="js/main.js"></script>
 </body>
 </html>

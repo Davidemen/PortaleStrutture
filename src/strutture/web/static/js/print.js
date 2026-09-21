@@ -1,92 +1,37 @@
-// Builds the print-only header of the "relazione di calcolo" (cartiglio + full input echo) and
-// prepends it to the results sheet; the rest of the sheet (already built by results.js) is
-// reused as-is -- `css/print.css` reshapes colours/chrome for `@media print`.
+// The "cartiglio" (title block) every printed report opens with -- WORKBENCH_SPEC §10/§11. Field
+// EDITING lives in the report personalisation overlay's options pane (js/relazione-overlay-
+// cartiglio.js); persistence (`sm.cartiglio`) and the field defaults (elemento/data) live in
+// js/relazione-options.js, the ONE owner of that storage key -- this module only ever reads them
+// and prints plain text (nothing in a printed report is interactive, so no `<input>` here).
+// `js/relazione.js` is the module that actually composes the printed document; this one only
+// owns the cartiglio piece of it. `overrides`, when given (the overlay's live, not-yet-saved
+// edits), win over storage -- WORKBENCH_SPEC §11's `options.cartiglio` contract.
 import { el } from "./dom.js";
-import { readJSON, writeJSON } from "./storage.js";
-import { humanize } from "./output-schema.js";
+import { cartiglioFields, effectiveCartiglio, formatIsoDateIt, CARTIGLIO_FIELDS } from "./relazione-options.js";
 
-const CARTIGLIO_KEY = "sm.cartiglio";
+const LABELS = Object.fromEntries(CARTIGLIO_FIELDS.map((field) => [field.key, field.label]));
 
-export function cartiglioFields() {
-  return readJSON(CARTIGLIO_KEY, { progetto: "", committente: "" });
-}
-
-function saveCartiglio(next) {
-  writeJSON(CARTIGLIO_KEY, next);
-}
-
-function buildCartiglioInput(labelText, key, current, onChange) {
-  const wrap = el("label", { class: "print-cartiglio-field" });
-  wrap.append(el("span", { text: labelText }));
-  const input = el("input", { type: "text", value: current[key] || "" });
-  input.addEventListener("input", () => onChange({ ...current, [key]: input.value }));
-  wrap.append(input);
-  return wrap;
-}
-
-function buildCartiglio(tool, mode) {
-  const current = cartiglioFields();
+export function buildCartiglio(tool, mode, overrides = {}) {
+  const current = effectiveCartiglio({ ...cartiglioFields(), ...overrides }, tool && tool.title);
   const section = el("section", { class: "print-cartiglio" });
-  section.append(buildCartiglioInput("Progetto", "progetto", current, saveCartiglio));
-  section.append(buildCartiglioInput("Committente", "committente", current, saveCartiglio));
   const meta = el("dl", { class: "print-cartiglio-meta" });
   const entries = [
-    ["Strumento", (tool && tool.title) || ""],
+    [LABELS.progetto, current.progetto],
+    [LABELS.committente, current.committente],
+    [LABELS.elemento, current.elemento],
+    [LABELS.relazioneN, current.relazioneN],
+    [LABELS.revisione, current.revisione],
+    [LABELS.sigla, current.sigla],
+    [LABELS.data, formatIsoDateIt(current.data)],
     ["Norma", (tool && tool.norm) || ""],
-    ["Data", new Intl.DateTimeFormat("it-IT").format(new Date())],
     ["Modalità", mode || "standard"],
   ];
   for (const [term, value] of entries) {
+    if (!value) continue;
     meta.append(el("dt", { text: term }));
     meta.append(el("dd", { text: value }));
   }
   section.append(meta);
+  if (current.note) section.append(el("p", { class: "print-cartiglio-note", text: current.note }));
   return section;
-}
-
-// `fields` (forms' Field[]) is optional: when the caller does not supply it, every non-empty
-// input is listed, ungrouped, with a humanised label -- still no raw key ever shown bare.
-function buildInputEcho(fields, inputsEcho) {
-  const section = el("section", { class: "print-inputs" });
-  section.append(el("h3", { text: "Dati di input" }));
-  const groups = new Map();
-  const order = [];
-  const entries =
-    fields && fields.length > 0
-      ? fields.map((field) => [field.group || "", field.name, field.label])
-      : Object.keys(inputsEcho || {}).map((name) => ["", name, humanize(name)]);
-  for (const [groupName, name, label] of entries) {
-    if (!groups.has(groupName)) {
-      groups.set(groupName, []);
-      order.push(groupName);
-    }
-    groups.get(groupName).push([name, label]);
-  }
-  let hasAnyValue = false;
-  for (const groupName of order) {
-    const dl = el("dl", { class: "print-inputs-list" });
-    for (const [name, label] of groups.get(groupName)) {
-      const value = inputsEcho ? inputsEcho[name] : undefined;
-      if (value === null || value === undefined || value === "") continue;
-      dl.append(el("dt", { text: label }));
-      dl.append(el("dd", { text: String(value) }));
-    }
-    if (dl.children.length === 0) continue; // skip empty groups instead of an orphan heading
-    hasAnyValue = true;
-    if (groupName) section.append(el("h4", { text: groupName }));
-    section.append(dl);
-  }
-  if (!hasAnyValue) section.append(el("p", { text: "Dati di input non disponibili" }));
-  return section;
-}
-
-// root = the results-pane container that already holds the rendered sheet (verdict, groups,
-// tables, charts); this only inserts the print-only cartiglio + input echo at the top of it.
-export function buildRelazione(root, { tool, inputsEcho, fields, mode } = {}) {
-  const existing = root.querySelector(".print-relazione-head");
-  if (existing) existing.remove();
-  const head = el("div", { class: "print-relazione-head" });
-  head.append(buildCartiglio(tool, mode));
-  head.append(buildInputEcho(fields, inputsEcho));
-  root.prepend(head);
 }

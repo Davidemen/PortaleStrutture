@@ -1,8 +1,35 @@
-/* "Stampa relazione" -- @media print only. Package: results. */
+/* Printed "relazione di calcolo" -- WORKBENCH_SPEC §10/§11. Package: results
+   (js/relazione.js/relazione-print.js/relazione-inputs.js/relazione-groups.js/relazione-table.js).
+   Loaded `media="print"` (index.html), so every rule below is already print-only on its own --
+   the interactive app is hidden outright and `#relazione-print-root` (built FROM THE DATA at
+   print time, never by reshaping the interactive tree) is the only thing that ever prints. */
 
 @media print {
   @page {
     margin: 18mm 15mm;
+  }
+
+  /* WORKBENCH_SPEC §11 "Pagina": orientation is chosen through a class on <html> (js/relazione-
+     overlay.js, `pagina.orientamento`) naming a PAGE (CSS Paged Media's `page` property + a named
+     `@page` rule) -- the only standards-based way to make one element's printed pages use a
+     different `@page` from the rest without a second stylesheet swap. */
+  @page relazione-orizzontale {
+    size: A4 landscape;
+    margin: 15mm 18mm;
+  }
+  html.rel-print-landscape #relazione-print-root {
+    page: relazione-orizzontale;
+  }
+
+  /* "corpo... normale | compatto": a smaller print body font, same class-on-<html> mechanism. */
+  html.rel-print-compact #relazione-print-root {
+    font-size: 8pt;
+  }
+
+  /* The overlay itself (js/relazione-overlay.js, a `<dialog>` appended straight to <body>, not
+     inside #app) must never print its own chrome -- only #relazione-print-root ever does. */
+  #relazione-overlay {
+    display: none !important;
   }
 
   :root {
@@ -19,132 +46,175 @@
     color: #000;
   }
 
-  #app {
-    display: block;
-  }
-
-  #tool-index,
-  #tool-search,
-  .app-picker,
-  [role="tablist"],
-  #form-pane,
-  #form-actions,
-  .r-print-trigger,
-  .r-table-actions,
-  .r-pager,
-  .c-tooltip,
-  .c-crosshair {
+  #app,
+  #palette-root,
+  #shortcuts-root {
     display: none !important;
   }
 
-  #results-pane,
-  #results-root {
-    display: block;
-    width: 100%;
-    overflow: visible;
+  /* The one override that matters: `[hidden]` is `display:none` by a built-in UA rule the
+     container carries on SCREEN at every other time (js/relazione-print.js never clears it) --
+     this is the only place, print-only by construction, that ever shows it. */
+  #relazione-print-root[hidden] {
+    display: block !important;
   }
 
-  /* Screen typography is 17px/1.45 -- on paper that runs the wind profile alone to ~39 pages;
-     print at report-body scale instead. */
-  #results-root {
-    padding: 0;
+  #relazione-print-root {
     font-size: 9.5pt;
     line-height: 1.3;
   }
 
-  .r-row {
-    padding: 1mm 0;
-    grid-template-columns: 8mm minmax(0, 1fr) max-content 8mm;
+  .print-refusal {
+    font-size: 12pt;
+    font-weight: 700;
   }
 
-  .r-table th,
-  .r-table td {
-    padding: 0.6mm 2mm;
-    font-size: 8.5pt;
-  }
-
-  .r-table th {
-    text-align: right;
-  }
-
-  .r-table th:first-child {
-    text-align: left;
-  }
-
-  .r-table {
-    break-inside: auto;
-  }
-
-  .r-group:has(.r-table) {
-    break-inside: auto;
-  }
-
-  /* The group heading and the table caption already both say the same title; when a chart is
-     also present that is a third repeat -- drop the heading in that case only. */
-  .r-group h3:has(+ .r-chart) {
-    display: none;
-  }
-
-  .r-verdict {
-    position: static;
-  }
-
-  .print-relazione-head {
-    display: block;
-    margin-bottom: 12mm;
-  }
+  /* -- cartiglio ----------------------------------------------------------------------------- */
 
   .print-cartiglio {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4mm 8mm;
-    border-bottom: 1.5pt solid #000;
-    padding-bottom: 3mm;
-    margin-bottom: 4mm;
+    margin-bottom: 6mm;
   }
 
-  .print-cartiglio-field {
-    display: flex;
-    flex-direction: column;
-    font-size: 9pt;
-  }
-
-  .print-cartiglio-field input {
-    border: none;
-    border-bottom: 1px solid #000;
-    font: inherit;
-    color: #000;
-    background: transparent;
-  }
-
+  /* Review finding 6 (P0): the meta list is a FLAT dt,dd,dt,dd,… sequence (js/print.js) -- a
+     3-column grid places consecutive items into whatever column falls next regardless of whether
+     it is a term or its value, scrambling every pair after the first row. Two (term, value)
+     column-pairs per row instead: dt always lands in an odd column, dd always in the even column
+     right after it. */
   .print-cartiglio-meta {
     display: grid;
-    grid-template-columns: repeat(4, max-content);
-    gap: 2mm 6mm;
+    grid-template-columns: max-content 1fr max-content 1fr;
+    gap: 2mm 10mm;
     font-size: 9pt;
-    margin: 0;
+    margin: 0 0 3mm;
+    border-bottom: 1.5pt solid #000;
+    padding-bottom: 3mm;
   }
 
   .print-cartiglio-meta dt {
     font-weight: 600;
   }
 
-  .print-inputs,
-  .print-inputs-list {
+  .print-omessi {
+    font-size: 8.5pt;
+    font-style: italic;
+    color: #333;
+    margin: 0 0 4mm;
+  }
+
+  /* -- schizzo: large, full text width, >2 views stack one per row (user rule, doc order) ---- */
+
+  .print-schizzo {
+    margin-bottom: 6mm;
+  }
+
+  .print-schizzo h2,
+  .print-inputs h2 {
+    font-size: 12pt;
+    margin: 0 0 3mm;
+  }
+
+  .print-schizzo-views {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6mm;
     margin-bottom: 4mm;
   }
 
-  .print-inputs-list {
-    display: grid;
-    grid-template-columns: max-content 1fr;
-    gap: 1mm 4mm;
+  .print-schizzo-views:has(.sk-figure:nth-child(3)) {
+    grid-template-columns: 1fr;
   }
 
-  .r-group,
-  .r-check,
-  figure,
-  .r-chart {
+  /* Review finding 24: a tool with exactly one view used to sit in the FIRST of two 1fr columns,
+     half-width, with `sk-nota` ("Schema non in scala", the LAST child of this same grid) landing
+     beside it in the second column instead of below -- `:has(.sk-figure):not(:has(.sk-figure ~
+     .sk-figure))` (rather than `:only-child`, since the caption is a sibling too) means "exactly
+     one figure, whatever else is in here". */
+  .print-schizzo-views:has(.sk-figure):not(:has(.sk-figure ~ .sk-figure)) {
+    grid-template-columns: 1fr;
+  }
+  /* Review finding 24's 95mm cap, on the SVG ITSELF (never on the figure): an earlier draft capped
+     `.sk-figure`, and the svg -- `width:100%;height:auto`, sized from its own viewBox aspect
+     ratio -- simply bled past that box into the next section (~12mm into Dati di ingresso). A
+     max-height on the svg element is different: its viewBox content is scaled down to fit
+     ("meet") and centred, nothing overflows and nothing is cropped. Without any cap a lone
+     portrait view (muro-sostegno) filled the whole first page of the report. */
+  .print-schizzo .sk-svg {
+    max-height: 95mm;
+  }
+  /* The caption never shares a row with a figure, in EITHER layout above. */
+  .print-schizzo-views .sk-nota {
+    grid-column: 1 / -1;
+  }
+
+  .print-schizzo .sk-figure {
+    max-width: none;
+    width: 100%;
     break-inside: avoid;
+  }
+
+  /* Review finding 7: the light-grey concrete fill (css/sketch.css's token-driven `color-mix`)
+     as a fixed literal for print specifically -- the one place a colour value is not purely a
+     token (UI_BRIEF: "no new colours except the two literal print greys the review specifies"),
+     print output being the one context this build cannot re-verify a computed `color-mix` against.
+     `print-color-adjust` stops the browser's print pipeline from dropping background/fill colours
+     it otherwise treats as "cosmetic" (measured: fills/markers silently omitted without it). */
+  #relazione-print-root {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .sk-calcestruzzo {
+    fill: #e6e6e6;
+  }
+
+  /* -- Dati di ingresso: one table per section, simbolo | descrizione | valore | unità -------- */
+
+  .print-inputs {
+    margin-bottom: 6mm;
+  }
+
+  .r-inputs-table th,
+  .r-inputs-table td {
+    text-align: left;
+  }
+
+  /* Review finding 24: every OTHER numeric cell in the document is right-aligned (tabular
+     figures line up on the ones digit) -- the inputs table's own values sat left-aligned instead,
+     the one place that convention broke. */
+  .r-inputs-table td.r-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  /* -- group/row/check/table chrome, shared with the interactive sheet ------------------------ */
+
+  .r-group {
+    break-inside: avoid;
+    margin-bottom: 4mm;
+  }
+
+  /* Review finding 24: a tall Dati di ingresso section (a group of 15+ fields, e.g.
+     muro-sostegno's Geometria) kept together as one unbreakable block pushed itself whole onto
+     the next page rather than breaking between its own table rows -- the single biggest cause of
+     a blank third of page 1. Input tables may break at row boundaries like every other print
+     table (`.r-table{break-inside:auto}` already, print.css below); only the compact
+     Verifiche/result-group blocks above stay `avoid` (a short block splitting for no reason reads
+     worse than the rare one that is genuinely too tall for one page). */
+  .print-inputs .r-group {
+    break-inside: auto;
+  }
+
+  .r-group-title {
+    font-size: 11pt;
+    font-weight: 600;
+    margin: 0 0 2mm;
+    border-bottom: 1pt solid #000;
+    padding-bottom: 1mm;
+  }
+
+  .r-row {
+    padding: 1mm 0;
+    grid-template-columns: 8mm minmax(0, 1fr) max-content 8mm;
+    border-bottom: 0.5pt solid #ccc;
   }
 
   .r-row[data-highlight="true"] {
@@ -153,22 +223,65 @@
     font-weight: 700;
   }
 
-  .r-row[data-highlight="true"] .r-cell-symbol,
-  .r-row[data-highlight="true"] .r-cell-label,
-  .r-row[data-highlight="true"] .r-cell-value,
-  .r-row[data-highlight="true"] .r-cell-unit {
-    background: transparent;
+  .r-check {
+    grid-template-columns: 5mm minmax(6rem, 1fr) minmax(8rem, 12rem) 1fr minmax(6rem, 8rem);
+    gap: 3mm;
+    padding: 0.6mm 0;
+    border-bottom: 0.5pt solid #ccc;
+    font-size: 8.5pt;
   }
 
-  .r-table thead {
-    display: table-header-group;
+  .r-table th,
+  .r-table td {
+    padding: 0.6mm 2mm;
+    font-size: 8.5pt;
   }
 
+  /* Review finding 24: "th left" -- a right-aligned header sitting directly above a right-aligned
+     numeric column read as detached from it (the header word and the column of figures did not
+     share a visual edge); every header left-aligned, values still right (`.r-table td.r-num`,
+     results.css, applies here too -- print.css does not repeat it). */
   .r-table th {
-    position: static;
+    text-align: left;
+    border-bottom: 1pt solid #000;
+  }
+
+  .r-table th:first-child,
+  .r-table td:first-child {
+    text-align: left;
+  }
+
+  .r-table {
+    width: 100%;
+    break-inside: auto;
+  }
+
+  .r-table-note {
+    font-size: 8pt;
+    font-style: italic;
+  }
+
+  .r-chart {
+    break-inside: avoid;
+    margin-bottom: 3mm;
   }
 
   .r-bar-fill {
     background: #000 !important;
+  }
+
+  figure,
+  .sk-figure {
+    break-inside: avoid;
+  }
+
+  /* Review finding 24: closing signature line (js/relazione.js), always the last element. */
+  .print-signature {
+    margin-top: 12mm;
+    padding-top: 3mm;
+    width: 70mm;
+    border-top: 0.75pt solid #000;
+    font-size: 9pt;
+    break-inside: avoid;
   }
 }

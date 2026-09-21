@@ -1,5 +1,6 @@
 // Per-tool persistence: last inputs in localStorage, shared inputs in the URL hash params.
-import { readJSON, writeJSON } from "./storage.js";
+import { readJSON, writeJSON, remove } from "./storage.js";
+import { parseListText, formatListText } from "./list-input.js";
 
 function storageKey(tool) {
   return `sm.inputs.${tool}`;
@@ -28,6 +29,11 @@ export function load(tool) {
   return readJSON(storageKey(tool), null);
 }
 
+// "Azzera dati" (WORKBENCH_SPEC §3 action bar): drop the persisted inputs for this tool only.
+export function clearStored(tool) {
+  remove(storageKey(tool));
+}
+
 // Only scalar (non-table) fields go into the shared link: tables can hold thousands of rows.
 export function toParams(values, fields) {
   const params = {};
@@ -35,6 +41,10 @@ export function toParams(values, fields) {
     if (field.kind === "table") continue;
     const value = values[field.name];
     if (value === null || value === undefined || value === "") continue;
+    if (field.kind === "list") {
+      if (Array.isArray(value) && value.length > 0) params[field.name] = formatListText(value, field.itemKind);
+      continue;
+    }
     params[field.name] = String(value);
   }
   return params;
@@ -47,6 +57,7 @@ export function fromParams(params, fields) {
     const raw = params[field.name];
     if (field.kind === "number") values[field.name] = raw === "" ? null : Number(raw);
     else if (field.kind === "boolean") values[field.name] = raw === "true";
+    else if (field.kind === "list") values[field.name] = parseListText(raw, field.itemKind).values;
     else values[field.name] = raw;
   }
   return values;

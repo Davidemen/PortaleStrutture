@@ -173,6 +173,7 @@
 
   /* Sizing */
   --control-h: 2.75rem;
+  --control-h-sm: 2rem;
   --field-max: 22rem;
   --index-w: 240px;
   --form-w: 380px;
@@ -228,4 +229,18 @@ body {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
   border-radius: inherit;
+}
+
+/* -- shell-nav additions (WORKBENCH_SPEC #8): additions only, no edits above -- */
+:root {
+  --rail-w-collapsed: 56px;
+  --bottom-bar-h: 3.5rem;
+  --home-card-min: 15rem;
+  --z-palette: 100;
+  --z-bottom-bar: 10;
+  /* `.app-header`'s own rendered height (layout.css): declared once here -- previously only ever
+     referenced through a `var(--head-h, 2.9rem)` fallback, never an actual custom property, at
+     every one of its several call sites (the `#tool-index`/`#form-pane`/etc. `calc(100dvh - …)`
+     height, and now the rail flyout's own `top`, review finding 23). */
+  --head-h: 2.9rem;
 }
