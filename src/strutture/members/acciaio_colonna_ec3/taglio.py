@@ -11,6 +11,7 @@ the swap. See docs/divergences/acciaio-colonna-ec3.md.
 """
 import math
 
+from strutture.shared.divergences import legacy
 from strutture.shared.report import Check
 from strutture.shared.units import n_to_kn
 
@@ -27,7 +28,10 @@ def costruisci_taglio(
 ) -> Taglio:
     vpl_anima = vpl_rd_kN(av_z_mm2, fyd_MPa)
     vpl_ali = vpl_rd_kN(av_y_mm2, fyd_MPa)
-    domanda_anima, domanda_ali = (vz_sd_kN, vy_sd_kN) if legacy_compat else (vy_sd_kN, vz_sd_kN)
+    domanda_anima, domanda_ali = (
+        (vz_sd_kN, vy_sd_kN) if legacy("acciaio-colonna-ec3/verifica-taglio-assi-scambiati", legacy_compat)
+        else (vy_sd_kN, vz_sd_kN)
+    )
     return Taglio(
         vpl_rd_anima_kN=vpl_anima,
         vpl_rd_ali_kN=vpl_ali,

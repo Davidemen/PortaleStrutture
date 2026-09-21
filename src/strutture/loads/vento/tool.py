@@ -1,4 +1,5 @@
 """Tool registration: vento-pressione. NTC2018 §3.3 / Circ. NTC2019 C3.3.2."""
+from strutture.shared.divergences import legacy
 from strutture.shared.report import Report, success
 from strutture.shared.tool import Tool
 
@@ -15,7 +16,10 @@ from .vref import velocita_riferimento_suolo
 
 def _warnings(inputs: VentoPressioneInput) -> tuple[str, ...]:
     warnings: tuple[str, ...] = ()
-    if inputs.legacy_compat and inputs.altitudine_m > ALTITUDE_WARNING_THRESHOLD_M:
+    if (
+        legacy("vento/correzione-altitudine-formula-ntc2008", inputs.legacy_compat)
+        and inputs.altitudine_m > ALTITUDE_WARNING_THRESHOLD_M
+    ):
         # In legacy_compat il foglio si limita ad avvisare (Vento!L8): oltre questa soglia, in modalità
         # standard (legacy_compat=False) il calcolo di ca solleva invece un CalcError (§3.3.2, vref.py).
         messaggio = (

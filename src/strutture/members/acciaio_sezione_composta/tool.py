@@ -7,6 +7,7 @@ architecture-batch2.md §1).
 """
 import logging
 
+from strutture.shared.divergences import legacy
 from strutture.shared.report import Report, success
 from strutture.shared.tool import Tool
 
@@ -41,21 +42,25 @@ def _riga_elemento(elemento, x_n_mm: float, y_n_mm: float) -> ElementoRisultato:
 
 
 def run(inputs: SezioneHRimpiattataInput) -> Report[SezioneHRimpiattataOutput]:
-    legacy = inputs.legacy_compat
+    legacy_compat = inputs.legacy_compat
     elementi = costruisci_elementi(inputs.h_profilo_mm, inputs.b_profilo_mm, inputs.tf_mm, inputs.tw_mm,
-                                    inputs.piatti, legacy_compat=legacy)
-    x_n_mm, y_n_mm = baricentro(elementi, legacy_compat=legacy)
+                                    inputs.piatti, legacy_compat=legacy_compat)
+    x_n_mm, y_n_mm = baricentro(elementi, legacy_compat=legacy_compat)
     area_mm2 = area_totale_mm2(elementi)
     ix_mm4, iy_mm4 = inerzia_sezione_mm4(elementi, x_n_mm, y_n_mm)
 
-    riferimento_anima = ALTEZZA_ANIMA_RIFERIMENTO_LEGACY_MM if legacy else None
+    riferimento_anima = (
+        ALTEZZA_ANIMA_RIFERIMENTO_LEGACY_MM
+        if legacy("acciaio-sezione-h-rimpiattata/altezza-anima-valore-fisso", legacy_compat)
+        else None
+    )
     profilo = elementi_profilo(inputs.h_profilo_mm, inputs.b_profilo_mm, inputs.tf_mm, inputs.tw_mm,
                                 altezza_riferimento_anima_mm=riferimento_anima)
     x_n0_mm, y_n0_mm = baricentro(profilo, legacy_compat=False)
     ix_base_mm4, iy_base_mm4 = inerzia_sezione_mm4(profilo, x_n0_mm, y_n0_mm)
 
     wel_x_sup, wel_x_inf, wel_y_dx, wel_y_sx = wel_mm3(elementi, ix_mm4, iy_mm4, x_n_mm, y_n_mm)
-    if legacy:
+    if legacy("acciaio-sezione-h-rimpiattata/wpl-non-e-il-vero-modulo-plastico", legacy_compat):
         wpl_x, wpl_y = wpl_x_legacy_mm3(elementi, y_n_mm), wpl_y_legacy_mm3(elementi, x_n_mm)
     else:
         wpl_x, wpl_y = wpl_x_mm3(elementi), wpl_y_mm3(elementi)

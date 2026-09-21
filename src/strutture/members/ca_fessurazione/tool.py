@@ -1,6 +1,7 @@
 """Tool registration for the three `ca_fessurazione` sheets: `ca-sle-limitazione-tensioni`
 (NTC2018 §4.1.2.2.5), `ca-apertura-fessure` (Circ. 2019 §C4.1.2.2.4.5) and
 `ca-apertura-fessure-semplificata` (NTC2018 §4.1.2.2.4)."""
+from strutture.shared.divergences import legacy
 from strutture.shared.materials.concrete import concrete_properties
 from strutture.shared.rebar_catalog import bars_area, sigma_limit_by_diameter
 from strutture.shared.report import CalcError, Check, Report, success
@@ -227,7 +228,7 @@ def _classi_apertura_semplificata(
 ) -> tuple[str, str]:
     """Classe (w1/w2/w3) applicata per FRE/QPE: fissa (w3/w2) sotto `legacy_compat=True`,
     risolta da Tab. 4.1.IV altrimenti — vedi `classe_apertura_normativa`."""
-    if legacy_compat:
+    if legacy("ca-fessurazione/classe-fissa-invece-di-condizioni-ambientali", legacy_compat):
         return CLASSE_FALLBACK_FRE, CLASSE_FALLBACK_QPE
     classe_fre = classe_normativa_fre(condizioni_ambientali, sensibilita_armatura)
     classe_qpe = classe_normativa_qpe(condizioni_ambientali, sensibilita_armatura)

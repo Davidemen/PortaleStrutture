@@ -17,6 +17,7 @@ asymmetry); pairing it with the Y cantilever instead is a bug, invisible on the 
 pairs `ex_m` with the X cantilever (and `ey_m` with the Y one) otherwise."""
 import math
 
+from strutture.shared.divergences import legacy
 from strutture.shared.load_table import Famiglia
 from strutture.shared.rebar_catalog import STANDARD_DIAMETERS_MM, bar_callout, bars_area
 
@@ -36,7 +37,9 @@ ULS_FAMILIES_LEGACY: tuple[Famiglia, ...] = ("SLU_STR", "SLE_QP", "SLU_EQU", "SL
 
 def mead_families(*, legacy_compat: bool) -> tuple[Famiglia, ...]:
     """Families entering the MEd envelope (fix D4: ULS-type only; sheet also includes `SLE_QP`)."""
-    return ULS_FAMILIES_LEGACY if legacy_compat else ULS_FAMILIES_FIXED
+    return (ULS_FAMILIES_LEGACY
+            if legacy("plinti-isolati/inviluppo-momento-slu-include-famiglia-sle", legacy_compat)
+            else ULS_FAMILIES_FIXED)
 
 
 def max_pressione_kpa(inviluppo: tuple[InviluppoRiga, ...], famiglie: tuple[Famiglia, ...]) -> float:
@@ -49,7 +52,7 @@ def _eccentricita_cantilever(ex_m: float, ey_m: float, *, legacy_compat: bool) -
     """Which user eccentricity lengthens which cantilever: `(extra_x_m, extra_y_m)`. `legacy_compat=True`
     reproduces the sheet's own swap (X cantilever gets eY, Y cantilever gets eX, see module docstring);
     `legacy_compat=False` pairs each eccentricity with its own axis (eX -> X cantilever)."""
-    if legacy_compat:
+    if legacy("plinti-isolati/eccentricita-cantilever-x-y-scambiate", legacy_compat):
         return ey_m, ex_m
     return ex_m, ey_m
 
@@ -79,7 +82,9 @@ def flessione(
     n_x = _bar_count(by_m * 100.0, copriferro_cm, passo_armatura_cm)
     n_y = _bar_count(ax_m * 100.0, copriferro_cm, passo_armatura_cm)
 
-    fyk_riferimento = FYK_REFERENCE_LEGACY_MPA if legacy_compat else fyk_MPa
+    fyk_riferimento = (FYK_REFERENCE_LEGACY_MPA
+                       if legacy("plinti-isolati/phi-min-divisore-500-invece-di-fyk", legacy_compat)
+                       else fyk_MPa)
     phi_min_mm = _phi_min_mm(fctm_MPa, fyk_riferimento, h_mm, copriferro_cm, passo_armatura_cm, legacy_compat=legacy_compat)
 
     phi_x_mm = _phi_richiesto_mm(as_x_cm2, as_x_min_cm2, n_x, diametro_manuale_x_mm, legacy_compat=legacy_compat)
@@ -143,7 +148,7 @@ def _phi_min_mm(fctm_MPa: float, fyk_riferimento_MPa: float, h_mm: float, coprif
 def _arrotonda_diametro(diametro_mm: float, *, legacy_compat: bool) -> float:
     """Sheet: round up to the next even millimetre. Fix: round up to the next standard commercial
     diameter (`shared.rebar_catalog.STANDARD_DIAMETERS_MM`)."""
-    if legacy_compat:
+    if legacy("plinti-isolati/diametro-armatura-arrotondato-a-pari-non-commerciale", legacy_compat):
         return math.ceil(diametro_mm / 2.0) * 2.0
     candidati = [d for d in STANDARD_DIAMETERS_MM if d >= diametro_mm]
     if not candidati:

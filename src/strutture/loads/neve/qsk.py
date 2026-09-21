@@ -1,4 +1,5 @@
 """Step (spec §3.4.2 / calc steps 4, `Neve!H10` & `Neve accumulo!H10`): ground snow load qsk."""
+from strutture.shared.divergences import legacy
 from strutture.shared.tables import exact_lookup
 
 from .tables import (
@@ -20,7 +21,7 @@ def _resolve_zona_row(zona: str, *, legacy_compat: bool) -> str:
     the previous row, "I (alpina)", silently reusing its coefficients. Confirmed against the
     LibreOffice oracle (`tests/fixtures/neve_carico_falda_oracle.json`, case 2, Milano/400m).
     """
-    if not legacy_compat:
+    if not legacy("neve/zona-mediterranea-scambiata-con-alpina", legacy_compat):
         return zona
     candidates = [key for key in ZONA_TABELLE_KEYS_LEGACY if key <= zona]
     matched_key = candidates[-1] if candidates else ZONA_TABELLE_KEYS_LEGACY[0]
@@ -51,7 +52,7 @@ def qsk_falda(zona: str, altitude_m: float, *, legacy_compat: bool = False) -> f
     `docs/divergences/neve.md`).
     """
     row = _resolve_zona_row(zona, legacy_compat=legacy_compat)
-    if legacy_compat:
+    if legacy("neve/qsk-confine-200m-non-conservativo", legacy_compat):
         if altitude_m < QSK_BRANCH_THRESHOLD_M:
             return qsk1(row)
         return qsk2(row, altitude_m)
@@ -70,7 +71,11 @@ def qsk_accumulo(zona: str, altitude_m: float, *, legacy_compat: bool, neve_alti
     so the altitude actually used is the *other* sheet's `as`, not this sheet's own, unless the
     caller supplies `neve_altitude_m`.
     """
-    if not legacy_compat:
+    # Both Bug 3 (branch order) and Bug 1 (altitude source) are compounded in the same undivided
+    # legacy body below (the sheet cannot exhibit one without the other): the branch-order id gates
+    # it; neve/qsk-accumulo-quota-altro-foglio names the contaminated-altitude line below and is
+    # registered with ramo="nessuno" (no separate branch).
+    if not legacy("neve/accumulo-branch-qsk-invertito", legacy_compat):
         return qsk_falda(zona, altitude_m)
     row = _resolve_zona_row(zona, legacy_compat=True)
     if altitude_m < QSK_BRANCH_THRESHOLD_M:

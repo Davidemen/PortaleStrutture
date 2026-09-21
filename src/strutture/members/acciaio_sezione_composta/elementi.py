@@ -6,6 +6,8 @@ flat geometric description — they never know whether an element is a flange, t
 """
 from pydantic import BaseModel, ConfigDict, Field
 
+from strutture.shared.divergences import legacy
+
 from .models import PiattoRow
 
 
@@ -85,8 +87,9 @@ _PIATTO_ASSENTE = PiattoRow(b_mm=0.0, h_mm=0.0)
 def elementi_piatti_legacy(piatti: tuple[PiattoRow, ...], h_profilo_mm: float,
                             b_profilo_mm: float) -> tuple[Elemento, ...]:
     """Reproduces the sheet's exact A4/A5 formulas: the A5 x offset mirrors A4's literally
-    (`E10=-E9`), regardless of A5's own width — a latent sheet fragility, harmless while the two
-    plates share the same width (the sheet's default). Both physical slots are always returned,
+    (`E10=-E9`), regardless of A5's own width (acciaio-sezione-h-rimpiattata/piatto-2-offset-
+    rispecchia-piatto-1) — a latent sheet fragility, harmless while the two plates share the same
+    width (the sheet's default). Both physical slots are always returned,
     even when disabled (`b_mm=0`, area 0): the sheet's baricentro formula always references row 10
     by fixed cell address (H6 bug, see baricentro.py), so slot A5 must keep its fixed position in
     the element list regardless of whether it is active."""
@@ -103,11 +106,20 @@ def elementi_piatti_legacy(piatti: tuple[PiattoRow, ...], h_profilo_mm: float,
 def costruisci_elementi(h_profilo_mm: float, b_profilo_mm: float, tf_mm: float, tw_mm: float,
                          piatti: tuple[PiattoRow, ...], *, legacy_compat: bool) -> tuple[Elemento, ...]:
     """All elements of the composite section, profile first then plates, in sheet order."""
-    if legacy_compat:
-        piatto_a4 = piatti[0] if piatti else _PIATTO_ASSENTE
-        profilo = elementi_profilo(h_profilo_mm, b_profilo_mm, tf_mm, tw_mm,
-                                    y_ala_inferiore_legacy=piatto_a4.b_mm / 2.0,
-                                    altezza_riferimento_anima_mm=ALTEZZA_ANIMA_RIFERIMENTO_LEGACY_MM)
+    piatto_a4 = piatti[0] if piatti else _PIATTO_ASSENTE
+    y_ala_inferiore_legacy = (
+        piatto_a4.b_mm / 2.0
+        if legacy("acciaio-sezione-h-rimpiattata/centroide-ala-inferiore-spessore-sbagliato", legacy_compat)
+        else None
+    )
+    altezza_riferimento_anima_mm = (
+        ALTEZZA_ANIMA_RIFERIMENTO_LEGACY_MM
+        if legacy("acciaio-sezione-h-rimpiattata/altezza-anima-valore-fisso", legacy_compat)
+        else None
+    )
+    profilo = elementi_profilo(h_profilo_mm, b_profilo_mm, tf_mm, tw_mm,
+                                y_ala_inferiore_legacy=y_ala_inferiore_legacy,
+                                altezza_riferimento_anima_mm=altezza_riferimento_anima_mm)
+    if legacy("acciaio-sezione-h-rimpiattata/piatto-2-offset-rispecchia-piatto-1", legacy_compat):
         return profilo + elementi_piatti_legacy(piatti, h_profilo_mm, b_profilo_mm)
-    profilo = elementi_profilo(h_profilo_mm, b_profilo_mm, tf_mm, tw_mm)
     return profilo + elementi_piatti_generale(piatti, h_profilo_mm, b_profilo_mm)

@@ -21,7 +21,9 @@
   "corretto": "profilo_pressione genera esattamente n_sezioni+1 righe per qualsiasi n_sezioni, senza limite fisso",
   "clausola": "",
   "impatto": "nessuno sul caso golden (n_sezioni=1000 riproduce la griglia del foglio); la divergenza riguarda solo numeri di sezioni diversi da 1000",
-  "uscite": ["profilo"]
+  "uscite": ["profilo"],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "profilo_pressione genera sempre n_sezioni+1 righe indipendentemente da legacy_compat: il limite fisso di 1000 righe del foglio non puo' e non deve essere riprodotto."
  },
  {
   "id": "vento/etichetta-ce-unita-di-misura-errata",
@@ -33,7 +35,9 @@
   "corretto": "ce_h e il ce di ogni riga del profilo sono documentati con unita' '-'",
   "clausola": "",
   "impatto": "nessuno (solo etichetta)",
-  "uscite": ["ce_h"]
+  "uscite": ["ce_h"],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "E' solo un'etichetta di visualizzazione (unit=\"-\" in VentoPressioneOutput): il valore numerico di ce_h e' identico in entrambe le modalita', quindi non esiste un ramo legacy_compat da collegare."
  },
  {
   "id": "vento/correzione-altitudine-formula-ntc2008",

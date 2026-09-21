@@ -1,5 +1,6 @@
 """Step: minimum longitudinal reinforcement envelope (NTC2018 §7.4.6.2.1 / EC8 5.4.3.2.2),
 rows CX25:DA27 / 23."""
+from strutture.shared.divergences import legacy
 from strutture.shared.units import kn_to_n
 
 RS_MAX = 0.04  # H23 check — rapporto massimo di armatura longitudinale ammesso in CD "B"
@@ -31,7 +32,7 @@ def armatura_minima(
     candidato_percentuale = AC_RATIO_CEILING * ac_mm2
     if combinatore == "max":
         as_min_mm2 = max(candidato_area, candidato_assiale)
-    elif legacy_compat:
+    elif legacy("ca-pilastri/area-minima-longitudinale-min-invece-max", legacy_compat):
         as_min_mm2 = min(candidato_area, candidato_assiale)
     else:
         as_min_mm2 = min(max(candidato_area, candidato_assiale), AC_RATIO_MAX_CEILING * ac_mm2)

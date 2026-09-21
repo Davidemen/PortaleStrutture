@@ -43,7 +43,9 @@
   "corretto": "Il calcolo segue sempre la formula reale (λlim > λ), non l'etichetta testuale; puramente un'imprecisione di etichetta, nessun valore numerico è interessato.",
   "clausola": "",
   "impatto": "nessuno (solo etichetta)",
-  "uscite": []
+  "uscite": [],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "Le funzioni di snellezza non hanno un parametro legacy_compat: la formula reale (corretta) e' usata incondizionatamente in entrambe le modalita', solo il testo dell'etichetta del foglio era scambiato."
  },
  {
   "id": "fond-travi-collegamento/coefficiente-alfa-terreno-a-ntc-vs-en",
@@ -57,6 +59,8 @@
   "corretto": "Entrambi i valori sono mantenuti così come sono (nessuna delle due norme è trattata come sbagliata): sembra una differenza intenzionale tra le due norme, non un errore.",
   "clausola": "NTC2018 (Tabelle!P118) / EN1998-5 §5.4.1.2 punto 5",
   "impatto": "",
-  "uscite": []
+  "uscite": [],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "Sono due tabelle distinte (ALPHA_NTC, EN1998_SOIL_TABLE) usate rispettivamente dallo strumento NTC e da quello EN, non un comportamento selezionato da legacy_compat all'interno dello stesso calcolo."
  }
 ]

@@ -6,6 +6,7 @@ input (0.4 EN 1992-1-1/A1:2014 default, or 0.5 EN 1992-1-1:2004 + Appendice Nazi
 docs/divergences/ec2-shared.md)."""
 import math
 
+from strutture.shared.divergences import legacy
 from strutture.shared.ec2_shear import v_rd_max
 from strutture.shared.materials.concrete import ALPHA_CC
 
@@ -25,7 +26,7 @@ def column_footprint_area_mm2(lato_a_mm: float, lato_b_mm: float, diametro_mm: f
 
 
 def v_rd_max_MPa(fck_MPa: float, *, legacy_compat: bool, coeff_vrd_max: float) -> float:
-    if legacy_compat:
+    if legacy("ca-punzonamento/vrd-max-filo-pilastro-coefficiente-semplificato", legacy_compat):
         return V_RD_MAX_LEGACY_COEFFICIENT * fck_MPa
     return v_rd_max(fck_MPa, GAMMA_C, alpha_cc=ALPHA_CC, coefficient=coeff_vrd_max).v_rd_max_MPa
 

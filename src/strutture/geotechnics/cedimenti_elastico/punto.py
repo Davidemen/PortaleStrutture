@@ -10,6 +10,7 @@ sheet's literal 4-block formula so the oracle fixtures (symmetric points, where 
 numerically invisible) still match bit-for-bit; see `docs/divergences/geo-cedimenti-elastico.md`
 for the asymmetric hand case that tells the two apart.
 """
+from strutture.shared.divergences import legacy
 from strutture.shared.report import CalcError
 from strutture.shared.soil_layers import SoilLayer, depth_grid
 from strutture.shared.soil_stress import newmark_corner, under_point
@@ -52,9 +53,13 @@ def punto_settlement(
     legacy_compat: bool = False,
 ) -> tuple[tuple[Slice, ...], tuple[Slice, ...]]:
     """O-point slices (sheet's `C2`) and O'-corner slices (sheet's `C3`)."""
-    grid = depth_grid(LEGACY_Z_MAX_M, LEGACY_DZ_M)[1:] if legacy_compat else depth_grid(z_max_m, dz_m)[1:]
+    grid = (
+        depth_grid(LEGACY_Z_MAX_M, LEGACY_DZ_M)[1:]
+        if legacy("geo-cedimenti-elastico/blocco-500-profondita-integrazione-troncata", legacy_compat)
+        else depth_grid(z_max_m, dz_m)[1:]
+    )
 
-    if legacy_compat:
+    if legacy("geo-cedimenti-elastico/punto-o-accoppiamento-lati-errato", legacy_compat):
 
         def sigma_o(z_m: float) -> float:
             return _legacy_point_sigma(q_kPa, e1_m, e2_m, side_p_m, side_q_m, z_m)

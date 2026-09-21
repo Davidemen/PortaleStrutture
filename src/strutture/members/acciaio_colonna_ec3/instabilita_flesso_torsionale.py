@@ -12,6 +12,8 @@ reproduces fyd (invisible while gammaM0=1).
 """
 import math
 
+from strutture.shared.divergences import legacy
+
 from .results import InstabilitaTorsoFlessionale
 from .tables import BETA_LT, LAMBDA_LT_0
 
@@ -39,7 +41,10 @@ def fattore_phi_lt(alpha_lt: float, lambda_lt: float) -> float:
 
 def fattore_chi_lt(phi_lt: float, lambda_lt: float, *, legacy_compat: bool) -> float:
     """column-check!U37 — chi_LT, capped at MIN(..., 1, 1/lambda_LT^2); see module docstring."""
-    radicando = lambda_lt**2 * (1.0 - BETA_LT) if legacy_compat else phi_lt**2 - BETA_LT * lambda_lt**2
+    radicando = (
+        lambda_lt**2 * (1.0 - BETA_LT) if legacy("acciaio-colonna-ec3/chi-lt-radicando-incompleto", legacy_compat)
+        else phi_lt**2 - BETA_LT * lambda_lt**2
+    )
     return min(1.0 / (phi_lt + math.sqrt(radicando)), 1.0, 1.0 / lambda_lt**2)
 
 
@@ -68,7 +73,7 @@ def costruisci_ltb(
     legacy_compat: bool,
 ) -> InstabilitaTorsoFlessionale:
     mcr = momento_critico_Nmm(c1, e_MPa, izz_mm4, lt_mm, iw_mm6, g_MPa, it_mm4)
-    fy_lambda = fyd_MPa if legacy_compat else fyk_MPa
+    fy_lambda = fyd_MPa if legacy("acciaio-colonna-ec3/snellezze-adimensionali-usano-fyd", legacy_compat) else fyk_MPa
     lambda_lt = snellezza_lt(classe_num, wel_y_mm3, wpl_y_mm3, fy_lambda, mcr)
     phi_lt = fattore_phi_lt(alpha_lt, lambda_lt)
     return InstabilitaTorsoFlessionale(

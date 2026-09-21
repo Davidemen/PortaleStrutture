@@ -17,6 +17,7 @@ convention, matching `ribaltamento`/`scorrimento`).
 
 Fix 3 (HIGH, review finding flessione.py): reuses `flessione._eccentricita_cantilever` so the SLS
 cantilever moments pair `ex_m`/`ey_m` with their own axis in the fixed mode, matching the ULS fix."""
+from strutture.shared.divergences import legacy
 from strutture.shared.load_table import Famiglia
 from strutture.shared.report import Check
 
@@ -45,7 +46,9 @@ def sle(
 ) -> Sle:
     """SLS concrete/steel stresses under the quasi-permanent/characteristic/frequent envelopes."""
     h_mm = h_plinto_m * 1000.0
-    altezza_utile_mm = h_mm if legacy_compat else h_mm - copriferro_cm * 10.0 - MARGIN_EFFECTIVE_DEPTH_MM
+    altezza_utile_mm = (h_mm
+                        if legacy("plinti-isolati/sezione-parzializzata-altezza-lorda-non-effettiva", legacy_compat)
+                        else h_mm - copriferro_cm * 10.0 - MARGIN_EFFECTIVE_DEPTH_MM)
     by_mm, ax_mm = by_m * 1000.0, ax_m * 1000.0
     xi_x_mm = profondita_asse_neutro_mm(by_mm, altezza_utile_mm, flessione.as_prov_x_mm2)
     xi_y_mm = profondita_asse_neutro_mm(ax_mm, altezza_utile_mm, flessione.as_prov_y_mm2)

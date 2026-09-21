@@ -16,6 +16,7 @@ value, so a `SLU_STR` overturning check would be non-conservative. `legacy_compa
 the overturning check to the families whose gammaW is the correct EQU-type value (`SLU_EQU`: 0.9;
 `SLV_EQU`: 1.0, correct per NTC2018 §2.5.3 seismic combos - see gamma_azioni.py); `legacy_compat=True`
 keeps emitting it for every family (sheet behaviour)."""
+from strutture.shared.divergences import legacy
 from strutture.shared.load_table import Famiglia
 from strutture.shared.report import Check
 
@@ -50,7 +51,8 @@ def checks_inviluppo(inviluppo: tuple[InviluppoRiga, ...], resistenze: tuple[Res
         elif riga.grandezza == "scorrimento_min":
             result = (*result, _check_sicurezza(f"Scorrimento ({riga.famiglia})", riga, OVERTURNING_CLAUSE))
         elif riga.grandezza in ("ribaltamento_x_min", "ribaltamento_y_min"):
-            if not legacy_compat and riga.famiglia not in EQU_FAMIGLIE:
+            if (not legacy("plinti-isolati/ribaltamento-autopeso-famiglia-sbagliata", legacy_compat)
+                    and riga.famiglia not in EQU_FAMIGLIE):
                 continue
             direzione = "X" if riga.grandezza == "ribaltamento_x_min" else "Y"
             result = (*result, _check_sicurezza(f"Ribaltamento {direzione} ({riga.famiglia})", riga, OVERTURNING_CLAUSE))

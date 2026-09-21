@@ -16,6 +16,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from strutture.shared.divergences import legacy
 from strutture.shared.tables import exact_lookup
 
 from .models import CategoriaSottosuoloTravi
@@ -40,7 +41,11 @@ def sismica_en(categoria_sottosuolo: CategoriaSottosuoloTravi, ms: float, ag_g: 
     """TIPO[C7], S[C8], α, amax[C25]."""
     tipo_spettro_corretto: TipoSpettro = "TIPO2" if ms <= MS_SOGLIA_TIPO_SPETTRO else "TIPO1"
     tipo_spettro_sheet: TipoSpettro = "TIPO1" if ms <= MS_SOGLIA_TIPO_SPETTRO else "TIPO2"  # sheet's inverted C7
-    tipo_spettro = tipo_spettro_sheet if legacy_compat else tipo_spettro_corretto
+    tipo_spettro = (
+        tipo_spettro_sheet
+        if legacy("fond-travi-collegamento/etichetta-tipo-spettro-en-invertita", legacy_compat)
+        else tipo_spettro_corretto
+    )
     s_tipo1, s_tipo2, alpha = exact_lookup(EN1998_SOIL_TABLE, categoria_sottosuolo)
     # Sheet's C8 column pick is independently EN-correct (matches tipo_spettro_corretto) in both
     # modes — only the reported label (C7) differs between legacy and fixed.

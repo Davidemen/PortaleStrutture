@@ -6,6 +6,7 @@ reset-to-0-past-cutoff "capped" column M is not reproduced (docs/architecture-ba
 sum for every row; `cedimento.py` reads it at the cutoff depth."""
 from pydantic import BaseModel, ConfigDict, Field
 
+from strutture.shared.divergences import legacy
 from strutture.shared.soil_layers import SoilLayer, depth_grid, effective_overburden
 from strutture.shared.units import m_to_cm
 
@@ -69,7 +70,7 @@ def genera_righe(
     cumulativo_m = 0.0
     for indice, z_m in enumerate(griglia):
         tensione = tensione_indotta(q_prime_kPa, b_m, l_m, z_m, metodo=metodo)
-        if legacy_compat:
+        if legacy("geo-cedimenti-edometrico/tensione-verticale-sempre-sommersa", legacy_compat):
             sigma_v0_kPa = effective_overburden(gamma_kN_m3, z_m)
         else:
             falda_di_riferimento_m = water_table_m if water_table_m is not None else float("inf")

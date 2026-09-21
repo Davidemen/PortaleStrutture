@@ -5,6 +5,7 @@ past the last layer's `z_bot_m`, or falling in a gap, used to look up as 0 (`IFE
 silently zeroing that slice's settlement contribution). `legacy=True` reproduces that behaviour
 (returns `None`, meaning "zero contribution" to the caller) so `legacy_compat` tools can still
 match the golden cases; the code-standard default raises instead of ever returning 0 silently."""
+from strutture.shared import divergences
 from strutture.shared.tables import KeyNotFound
 
 from .models import SoilLayer
@@ -18,6 +19,8 @@ def layer_at(layers: tuple[SoilLayer, ...], z_m: float, *, legacy: bool = False)
         lower_inclusive = index == 0
         if (z_m >= layer.z_top_m if lower_inclusive else z_m > layer.z_top_m) and z_m <= layer.z_bot_m:
             return layer
-    if legacy:
+    # local parameter is named `legacy` (clashing with the `divergences.legacy` marker function by
+    # design, see module docstring); imported qualified to avoid shadowing it.
+    if divergences.legacy("soil-layers-coverage-and-weighting/lookup-strato-zero-oltre-copertura", legacy):
         return None
     raise KeyNotFound(f"la stratigrafia non copre la profondità z={z_m} m")

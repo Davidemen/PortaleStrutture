@@ -3,6 +3,7 @@
 current NTC2018 grade whose fyk=450 MPa matches the sheet's own baked-in Asw,min coefficient."""
 import math
 
+from strutture.shared.divergences import legacy
 from strutture.shared.ec2_shear import fywd_ef as ec2_fywd_ef
 from strutture.shared.materials.rebar import rebar_properties
 from strutture.shared.rebar_catalog import bar_area
@@ -27,7 +28,7 @@ def v_rd_cs_min_kN(v_ed_i_MPa: float, v_rd_i_MPa: float, ui_mm: float, d_mm: flo
 
 
 def fywd_ef_MPa(d_mm: float, *, legacy_compat: bool) -> float:
-    if legacy_compat:
+    if legacy("ca-punzonamento/fywd-ef-senza-limite", legacy_compat):
         return FYWD_LEGACY_BASE_MPA + FYWD_LEGACY_SLOPE * d_mm
     fywd_MPa = rebar_properties(STAFFA_GRADE).fyd_MPa
     return ec2_fywd_ef(d_mm, fywd_MPa)

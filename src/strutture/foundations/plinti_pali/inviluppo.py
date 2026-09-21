@@ -12,6 +12,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from strutture.shared.divergences import legacy
 from strutture.shared.load_table import EnvelopeRow, governing
 
 from .rows import RigaCarico
@@ -57,7 +58,10 @@ def inviluppo(
     if n_min is None or n_max is None or n_totale_max is None or n_totale_min is None:
         raise ValueError("inviluppo: la tabella reazioni non puo' essere vuota")
     peso_per_palo_kN = peso_proprio_kN / numero_pali
-    favourable_divisor = LEGACY_FAVOURABLE_DIVISOR if legacy_compat else gamma_g1
+    favourable_divisor = (
+        LEGACY_FAVOURABLE_DIVISOR if legacy("plinti-pali/peso-proprio-diviso-per-1-4-invece-di-gammag1", legacy_compat)
+        else gamma_g1
+    )
     n_min_env_kN = n_min.valore + peso_per_palo_kN / favourable_divisor * FAVOURABLE_SELF_WEIGHT_FACTOR
     n_max_env_kN = n_max.valore + peso_per_palo_kN
     return Inviluppo(

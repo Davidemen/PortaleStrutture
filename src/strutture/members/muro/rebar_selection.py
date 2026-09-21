@@ -11,6 +11,7 @@ commercial diameter, the standard series starts at 6 mm).
 """
 import math
 
+from strutture.shared.divergences import legacy
 from strutture.shared.rebar_catalog import STANDARD_DIAMETERS_MM, bar_area, bar_callout
 
 LEVA_INTERNA_APPROSSIMATA = 0.9  # NTC 4.1.2 simplified flexure — jd/d assumed lever-arm ratio
@@ -64,8 +65,12 @@ def callout_standard(as_nec_cm2_m: float, passo_m: float) -> str:
 
 
 def diametro_mm(as_nec_cm2_m: float, passo_m: float, *, legacy_compat: bool) -> float:
-    return diametro_sheet_mm(as_nec_cm2_m, passo_m) if legacy_compat else diametro_standard_mm(as_nec_cm2_m, passo_m)
+    if legacy("muro-sostegno/diametro-armatura-non-commerciale", legacy_compat):
+        return diametro_sheet_mm(as_nec_cm2_m, passo_m)
+    return diametro_standard_mm(as_nec_cm2_m, passo_m)
 
 
 def callout(as_nec_cm2_m: float, passo_m: float, *, legacy_compat: bool) -> str:
-    return callout_sheet(as_nec_cm2_m, passo_m) if legacy_compat else callout_standard(as_nec_cm2_m, passo_m)
+    if legacy("muro-sostegno/diametro-armatura-non-commerciale", legacy_compat):
+        return callout_sheet(as_nec_cm2_m, passo_m)
+    return callout_standard(as_nec_cm2_m, passo_m)

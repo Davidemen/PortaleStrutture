@@ -25,6 +25,11 @@
   "corretto": "Questo modulo calcola sempre in kPa esatti; la conversione a kg/cm² con il fattore esatto o con il fattore approssimato del foglio è responsabilità dello strumento che lo consuma, a seconda della modalità.",
   "clausola": "",
   "impatto": "≈1,97% su qualunque pressione riportata in kg/cm² (es. σt,total 1,66283 kg/cm² con il fattore del foglio contro ≈1,6957 kg/cm² con il fattore esatto)",
-  "uscite": []
+  "uscite": [],
+  "ramo": "condiviso",
+  "motivo_senza_ramo": "shared.footing_pressure calcola sempre e solo in kPa esatti, senza parametro legacy_compat; la conversione a kg/cm² (e la scelta del fattore) è interamente a carico dello strumento consumatore, che la traccia con un proprio id di registro",
+  "riprodotta_da": [
+   "plinti-isolati/fattore-mpa-kgcm2-approssimato"
+  ]
  }
 ]

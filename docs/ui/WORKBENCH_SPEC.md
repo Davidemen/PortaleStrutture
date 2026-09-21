@@ -268,8 +268,8 @@ tool's sigla; every tool is reachable in ≤ 2 actions from the collapsed rail; 
 Purpose: the engineer sees every place where the tool departs from the original spreadsheet, decides on each one
 (sign-off, no accounts: a typed `sigla`), and can see for the CURRENT inputs what those departures change.
 API (already live): `GET /api/divergences?strumento=&tipo=&stato=&q=` -> `{divergenze:[entry], totali}`; entry =
-register fields (`id, titolo, tipo, strumenti, cella, foglio, corretto, clausola, impatto, uscite, ramo,
-motivo_senza_ramo`) + `stato (da_confermare|approvato|respinto), sigla, nota, data`; `GET /api/divergences/riepilogo`
+register fields (`id, titolo, tipo, strumenti, cella, foglio, corretto, clausola, impatto, uscite, ramo
+(codice|condiviso|nessuno), motivo_senza_ramo, riprodotta_da`) + `stato (da_confermare|approvato|respinto), sigla, nota, data`; `GET /api/divergences/riepilogo`
 -> `{per_strumento:{tool:{da_confermare,approvato,respinto}}}`; `GET /api/divergences/{unita}/{slug}` (+ `storia`);
 `PUT /api/divergences/{unita}/{slug}/signoff {stato,sigla,nota}` (sigla required unless `da_confermare`; 422 carries
 the Italian message); `POST /api/divergences/signoff-multiplo {ids,stato,sigla,nota}`;
@@ -290,7 +290,10 @@ verifiche:[{nome,standard:{passed,value}|null,excel:{…}|null}], divergenze_coi
   chips of the tools (link to the tool), clausola. `#/registro?id=<id>` opens and scrolls to that row.
 - Expanded row (`button aria-expanded`): two columns "Il foglio" | "Lo strumento" (`foglio` / `corretto`), then
   cella, impatto, the outputs affected (label from the tool's output schema when resolvable, else the path);
-  `ramo="nessuno"` -> "Non riproducibile in modalità Excel: <motivo>". Sign-off form: three radios, sigla (required
+  Excel-mode line from `ramo`: "codice" -> "Riprodotta in modalità Excel"; "condiviso" -> "Riprodotta in modalità
+  Excel insieme a <links to `riprodotta_da`>" (no ids: just "Riprodotta in modalità Excel") + the motivo as a muted
+  note; "nessuno" -> "NON riprodotta in modalità Excel: <motivo>" (warn ink + icon: such an entry never appears in
+  "Confronta con Excel"). A filter chip "Non riprodotte in Excel" next to the tipo select. Sign-off form: three radios, sigla (required
   unless Da confermare), nota, "Salva decisione"; last decision line "AB · 21/09/2026 · nota"; "Storia" disclosure
   (from the detail endpoint). The row updates only after the server confirms; errors inline, in Italian.
 - Bulk: a checkbox per row + "Decidi per le N selezionate…" -> the same small form -> `signoff-multiplo`.

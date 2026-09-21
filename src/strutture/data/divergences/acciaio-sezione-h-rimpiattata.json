@@ -46,5 +46,29 @@
   "clausola": "Modulo plastico - definizione",
   "impatto": "",
   "uscite": ["sezione.wpl_x_cm3", "sezione.wpl_y_cm3"]
+ },
+ {
+  "id": "acciaio-sezione-h-rimpiattata/piatto-2-offset-rispecchia-piatto-1",
+  "titolo": "Lo scostamento orizzontale del secondo piatto rispecchia il primo invece di usare la propria larghezza",
+  "tipo": "errore_foglio",
+  "strumenti": ["acciaio-sezione-h-rimpiattata"],
+  "cella": "Rev00/Rev01!E10",
+  "foglio": "Lo scostamento orizzontale del piatto 2 (E10=-E9) rispecchia letteralmente quello del piatto 1, usando la larghezza del piatto 1 anche per posizionare il piatto 2, invece della propria.",
+  "corretto": "Ogni piatto usa la propria larghezza per calcolare il proprio scostamento orizzontale dal profilo.",
+  "clausola": "Geometria della sezione",
+  "impatto": "nessuno sul caso golden (i due piatti hanno la stessa larghezza, 8mm); con piatti di larghezza diversa: lo scostamento del piatto 2 risulta quello del piatto 1 anziche' il proprio",
+  "uscite": ["sezione.x_n_mm"]
+ },
+ {
+  "id": "acciaio-sezione-h-rimpiattata/legacy-max-due-piatti",
+  "titolo": "In modalita' foglio il numero di piatti e' limitato alle due righe fisiche del foglio",
+  "tipo": "scelta_ingegneristica",
+  "strumenti": ["acciaio-sezione-h-rimpiattata"],
+  "cella": "Rev00/Rev01!A4:A5",
+  "foglio": "Il foglio dispone di sole due righe fisiche per i piatti di rinforzo (A4/A5): non e' possibile modellare piu' di due piatti.",
+  "corretto": "La modalita' standard generalizza a una tabella di piatti fino a 10 righe indipendenti; la modalita' foglio (legacy_compat=True) rifiuta piu' di due piatti con un errore esplicito invece di ignorare silenziosamente quelli in eccesso.",
+  "clausola": "",
+  "impatto": "nessuno sul caso golden (2 piatti); con piu' di due piatti in modalita' foglio: errore esplicito invece di un calcolo indefinito",
+  "uscite": []
  }
 ]

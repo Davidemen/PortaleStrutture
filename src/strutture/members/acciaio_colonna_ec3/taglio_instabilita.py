@@ -15,6 +15,7 @@ Fixed divergences (docs/divergences/acciaio-colonna-ec3.md):
 """
 import math
 
+from strutture.shared.divergences import legacy
 from strutture.shared.numeric import clamp
 from strutture.shared.report import Check
 from strutture.shared.units import kn_to_n, n_to_kn, nmm_to_knm
@@ -40,12 +41,19 @@ def eta(fy_MPa: float) -> float:
 
 def limite_hw_t(eps: float, et: float, *, legacy_compat: bool) -> float:
     """column-check!AD27 — 72*epsilon*eta (legacy) vs 72*epsilon/eta (EN1993-1-5 §5.1(2), fixed)."""
-    return FATTORE_LIMITE_HW_T * eps * et if legacy_compat else FATTORE_LIMITE_HW_T * eps / et
+    return (
+        FATTORE_LIMITE_HW_T * eps * et
+        if legacy("acciaio-colonna-ec3/epsilon-eta-limite-taglio-instabilita", legacy_compat)
+        else FATTORE_LIMITE_HW_T * eps / et
+    )
 
 
 def richiede_verifica_taglio(hw_t: float, limite: float, *, legacy_compat: bool) -> bool:
     """column-check!K32 — legacy reproduces `hw_t <= limite`; fixed uses EN1993-1-5 §5.1(2) `hw_t > limite`."""
-    return hw_t <= limite if legacy_compat else hw_t > limite
+    return (
+        hw_t <= limite if legacy("acciaio-colonna-ec3/epsilon-eta-limite-taglio-instabilita", legacy_compat)
+        else hw_t > limite
+    )
 
 
 def lambda_w(hw_mm: float, tw_mm: float, eps: float) -> float:
@@ -99,7 +107,7 @@ def costruisci_taglio_instabilita(
 ) -> TaglioInstabilita:
     hw_mm = h_mm - 2.0 * tf_mm
     hw_t = hw_su_t(h_mm, tf_mm, tw_mm)
-    fy_eps_eta = fyd_MPa if legacy_compat else fyk_MPa
+    fy_eps_eta = fyd_MPa if legacy("acciaio-colonna-ec3/epsilon-eta-limite-taglio-instabilita", legacy_compat) else fyk_MPa
     eps = epsilon(fy_eps_eta)
     et = eta(fy_eps_eta)
     limite = limite_hw_t(eps, et, legacy_compat=legacy_compat)

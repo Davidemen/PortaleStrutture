@@ -23,6 +23,7 @@ non introduce un nuovo input).
 """
 import math
 
+from strutture.shared.divergences import legacy
 from strutture.shared.rebar_catalog import asw_per_m, bars_area
 
 from .models import ArmaturaLimitiOutput, ClasseDuttilita
@@ -60,7 +61,9 @@ def area_minima_tesa_mm2(
     *, b_mm: float, d_mm: float, z_mm: float, fctm_MPa: float, fyk_MPa: float, ftk_MPa: float, legacy_compat: bool
 ) -> float:
     """As,min (Z12)."""
-    altezza_mm, denominatore_MPa = (z_mm, ftk_MPa) if legacy_compat else (d_mm, fyk_MPa)
+    altezza_mm, denominatore_MPa = (
+        (z_mm, ftk_MPa) if legacy("ca-travi/as-min-usa-z-e-ftk", legacy_compat) else (d_mm, fyk_MPa)
+    )
     return max(
         AS_MIN_RHO_ASSOLUTO * b_mm * altezza_mm,
         AS_MIN_RHO_FCTM * b_mm * altezza_mm * fctm_MPa / denominatore_MPa,
@@ -72,9 +75,14 @@ def limiti_staffe(*, b_mm: float, d_mm: float, z_mm: float, fck_MPa: float, fyk_
 
     Ast,min: NTC2018 §4.1.6.1.1 impone il floor cogente 1.5*b [mm²/m] (Z16); EC2 9.2.2(5) impone
     un floor aggiuntivo rho_w,min*b*1000. In modalità fissa i due minimi si sommano come MAX, mai
-    come sostituzione dell'uno con l'altro (il floor NTC non può essere abbassato)."""
+    come sostituzione dell'uno con l'altro (il floor NTC non può essere abbassato).
+
+    Un unico `if legacy_compat` calcola sia Ast,min (Z16, id `ast-min-staffe-doppio-limite`) sia
+    il passo massimo (Z18, id `passo-max-staffe-usa-z`): il foglio degenera entrambi con la stessa
+    condizione, quindi qui è collegato solo il primo id (vedi il campo `motivo_senza_ramo` del
+    secondo nel registro)."""
     ast_min_ntc_mm2 = AST_MIN_LEGACY_COEFF * b_mm
-    if legacy_compat:
+    if legacy("ca-travi/ast-min-staffe-doppio-limite", legacy_compat):
         return ast_min_ntc_mm2, min(PASSO_MAX_LEGACY_MM, PASSO_MAX_RAPPORTO_D * z_mm)
     rho_w_min = RHO_W_MIN_COEFF * math.sqrt(fck_MPa) / fyk_MPa
     ast_min_ec2_mm2 = rho_w_min * b_mm * MM2_PER_M2

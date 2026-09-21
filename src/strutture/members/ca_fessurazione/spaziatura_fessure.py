@@ -8,6 +8,8 @@ kept under `legacy_compat=True`; EN1992-1-1 eq. 7.14 / Circ. 2019 §C4.1.10 give
 docs/divergences/ca-fessurazione.md."""
 from typing import Literal
 
+from strutture.shared.divergences import legacy
+
 FATTORE_SPAZIATURA_LIMITE = 5.0  # §C4.1.7 soglia di applicabilità, slim = 5*(c+øeq/2) [E12]
 FATTORE_DIVISIONE_C4_1_7 = 1.7  # §C4.1.5/§C4.1.7 [E13]
 FATTORE_DELTA_SM_C4_1_10_LEGACY = 0.75  # foglio [E14] — 1.3/1.7 arrotondato per difetto
@@ -30,7 +32,11 @@ def delta_sm_c4_1_7_mm(k3: float, copriferro_mm: float, k1: float, k2: float, k4
 
 def delta_sm_c4_1_10_mm(h_mm: float, x_mm: float, *, legacy_compat: bool = False) -> float:
     """Δsm = k*(h-x) [E14], §C4.1.10 — vedi nota di modulo per il valore di k."""
-    fattore = FATTORE_DELTA_SM_C4_1_10_LEGACY if legacy_compat else FATTORE_DELTA_SM_C4_1_10
+    fattore = (
+        FATTORE_DELTA_SM_C4_1_10_LEGACY
+        if legacy("ca-fessurazione/costante-delta-sm-arrotondata", legacy_compat)
+        else FATTORE_DELTA_SM_C4_1_10
+    )
     return fattore * (h_mm - x_mm)
 
 

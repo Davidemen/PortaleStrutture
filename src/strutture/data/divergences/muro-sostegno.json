@@ -57,7 +57,9 @@
   "corretto": "Il report include sempre un avviso che ricorda che la verifica di capacita' portante e' fuori dall'ambito di questo strumento e che il controllo di eccentricita' respinge solo |e|>B/2.",
   "clausola": "NTC2018 §6.5.3.1.1, §6.4.2.1",
   "impatto": "nessuno sui valori numerici, solo un avviso aggiuntivo",
-  "uscite": []
+  "uscite": [],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "L'avviso e' incondizionato in entrambe le modalita' (nessun flag legacy_compat ne seleziona la presenza)."
  },
  {
   "id": "muro-sostegno/ss-sempre-calcolato-dal-vivo",
@@ -69,7 +71,9 @@
   "corretto": "Ss e' sempre calcolato dal vivo da categoria di sottosuolo/ag/F0 tramite la tabella condivisa NTC Tab. 3.2.V; le celle morte non sono state portate.",
   "clausola": "NTC2018 Tab. 3.2.V",
   "impatto": "nessuno sul caso golden (Ss calcolato dal vivo coincide con il valore congelato del foglio, 1.5)",
-  "uscite": ["parametri_sismici.ss"]
+  "uscite": ["parametri_sismici.ss"],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "parametri_sismici non ha un parametro legacy_compat: Ss e' sempre ricalcolato dal vivo, in entrambe le modalita'."
  },
  {
   "id": "muro-sostegno/st-input-libero-invece-di-enum",
@@ -81,7 +85,9 @@
   "corretto": "La categoria topografica (T1..T4) e' un input a tendina e ST e' derivato dalla tabella NTC Tab. 3.2.V.",
   "clausola": "NTC2018 Tab. 3.2.V",
   "impatto": "nessuno sul caso golden (categoria T1 -> ST=1.0, identico al valore libero del foglio)",
-  "uscite": ["parametri_sismici.st"]
+  "uscite": ["parametri_sismici.st"],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "E' un cambio dello schema di input (tendina invece di numero libero), non un comportamento numerico selezionabile da legacy_compat."
  },
  {
   "id": "muro-sostegno/gamma-e-unita-ambigua",
@@ -93,7 +99,9 @@
   "corretto": "Mantenuto come input adimensionale, con l'ambiguita' segnalata in descrizione; nessun comportamento numerico dipende dal chiarimento.",
   "clausola": "",
   "impatto": "",
-  "uscite": []
+  "uscite": [],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "E' un'ambiguita' di etichetta/unita' di misura del foglio: mantenuto come input adimensionale in entrambe le modalita', nessun comportamento numerico dipende da un flag."
  },
  {
   "id": "muro-sostegno/diametro-armatura-non-commerciale",
@@ -117,7 +125,9 @@
   "corretto": "Il valore governante aggregato e' limitato inferiormente a zero (nessuna armatura a trazione richiesta); i valori per singola combinazione restano quelli calcolati dal foglio.",
   "clausola": "",
   "impatto": "nessuno su qualunque Tratto del caso golden (la combinazione governante e' sempre positiva)",
-  "uscite": ["armatura_paramento.as_nec_cm2_m", "armatura_fondazione_valle.as_nec_cm2_m", "armatura_fondazione_monte.as_nec_cm2_m"]
+  "uscite": ["armatura_paramento.as_nec_cm2_m", "armatura_fondazione_valle.as_nec_cm2_m", "armatura_fondazione_monte.as_nec_cm2_m"],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "Il limite inferiore a zero del valore governante e' applicato incondizionatamente in entrambe le modalita' (rebar_selection.governante_cm2_m non ha un parametro legacy_compat)."
  },
  {
   "id": "muro-sostegno/pressione-interpolata-tacco-negativa",
@@ -129,7 +139,9 @@
   "corretto": "Riprodotto identico in entrambe le modalita': non e' confermato se si tratti di un errore o del modello geotecnico voluto dall'autore originale; non governa su nessun Tratto del caso golden.",
   "clausola": "",
   "impatto": "",
-  "uscite": ["armatura_fondazione_monte.as_nec_cm2_m"]
+  "uscite": ["armatura_fondazione_monte.as_nec_cm2_m"],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "Riprodotto identico in entrambe le modalita' (nessun parametro legacy_compat nel calcolo della pressione interpolata): non confermato se sia un errore del foglio o il modello voluto."
  },
  {
   "id": "muro-sostegno/fyk-input-libero-invece-di-classe",
@@ -141,6 +153,8 @@
   "corretto": "L'input e' una classe di acciaio a tendina (es. B450C), da cui fyd e' derivato dalla tabella condivisa dei materiali.",
   "clausola": "",
   "impatto": "nessuno (fyd(B450C)=391.304 MPa, identico al valore del foglio per I136=450)",
-  "uscite": []
+  "uscite": [],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "E' un cambio dello schema di input (classe commerciale a tendina invece di numero libero), non un comportamento numerico selezionabile da legacy_compat."
  }
 ]

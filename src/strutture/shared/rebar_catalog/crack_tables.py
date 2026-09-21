@@ -20,6 +20,7 @@ inverted the same way (see docs/divergences/shared-ca.md).
 """
 from typing import Literal
 
+from strutture.shared.divergences import legacy
 from strutture.shared.tables import exact_lookup, interp_lookup
 
 CrackWidthClass = Literal["w1", "w2", "w3"]
@@ -62,7 +63,11 @@ def sigma_limit_by_diameter(diameter_mm: float, w_class: CrackWidthClass, *, leg
     if diameter_mm <= 0:
         raise ValueError(f"diameter_mm must be > 0, got {diameter_mm}")
     table = _DIAMETER_LIMITS[w_class]
-    return exact_lookup(table, diameter_mm) if legacy_compat else interp_lookup(table, diameter_mm)
+    return (
+        exact_lookup(table, diameter_mm)
+        if legacy("shared-ca/tabella-fessurazione-solo-ricerca-esatta", legacy_compat)
+        else interp_lookup(table, diameter_mm)
+    )
 
 
 def sigma_limit_by_spacing(spacing_mm: float, w_class: CrackWidthClass, *, legacy_compat: bool = False) -> float:
@@ -75,4 +80,8 @@ def sigma_limit_by_spacing(spacing_mm: float, w_class: CrackWidthClass, *, legac
     if spacing_mm <= 0:
         raise ValueError(f"spacing_mm must be > 0, got {spacing_mm}")
     table = _SPACING_LIMITS[w_class]
-    return exact_lookup(table, spacing_mm) if legacy_compat else interp_lookup(table, spacing_mm)
+    return (
+        exact_lookup(table, spacing_mm)
+        if legacy("shared-ca/tabella-interferro-solo-ricerca-esatta", legacy_compat)
+        else interp_lookup(table, spacing_mm)
+    )

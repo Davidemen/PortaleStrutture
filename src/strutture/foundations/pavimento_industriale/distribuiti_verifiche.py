@@ -5,6 +5,7 @@ the same sup/inf check pair should use the same strength basis. `legacy_compat=T
 sheet (`fcfk` sup); `legacy_compat=False` uses `fcfd` for both, per every other check on the sheet."""
 from pydantic import BaseModel, ConfigDict, Field
 
+from strutture.shared.divergences import legacy
 from strutture.shared.report import Check
 
 from .tables import CRACK_DERATING_FACTOR
@@ -52,7 +53,11 @@ def verifiche_distribuito(
     sigma_max_inf = m_slu_inf_Nmm_m / w_mm3_m * MPA_UNIT_FIX
     sigma_t_sup = m_sle_freq_sup_Nmm_m / w_mm3_m * MPA_UNIT_FIX
     sigma_t_inf = m_sle_freq_inf_Nmm_m / w_mm3_m * MPA_UNIT_FIX
-    fcfd_sup = fcfk_MPa if legacy_compat else fcfd_MPa
+    fcfd_sup = (
+        fcfk_MPa
+        if legacy("pavimento-industriale/verifica-tensionale-superiore-usa-resistenza-caratteristica", legacy_compat)
+        else fcfd_MPa
+    )
     fessurazione_limite = fctm_MPa / CRACK_DERATING_FACTOR
     checks = (
         _check("Verifica tensionale ULS, sup", sigma_max_sup, fcfd_sup, "CNR-DT211/2014"),

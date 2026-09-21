@@ -9,6 +9,7 @@ reproduces the sheet's per-pile-share formula instead, which reports one Nmin/Nm
 rather than a value per pile (`AB`/`AC`)."""
 from pydantic import BaseModel, ConfigDict, Field
 
+from strutture.shared.divergences import legacy
 from strutture.shared.load_table import Famiglia, ReactionRow
 from strutture.shared.pile_group import PilePos, rigid_cap_axial
 
@@ -42,7 +43,7 @@ def riga_carico(
     """Full per-pile axial demand of one `reazioni` row."""
     momenti = momenti_pila(row.fx_kN, row.fy_kN, row.fz_kN, row.mx_kNm, row.my_kNm, h_plinto_m, ex_m, ey_m)
     n_pali = rigid_cap_axial(row.fz_kN, momenti.mx_finale_kNm, momenti.my_finale_kNm, piles)
-    if legacy_compat:
+    if legacy("plinti-pali/quota-pila-formula-simmetrica-non-generale", legacy_compat):
         n_min, n_max = _quota_per_palo_legacy(row.fz_kN, momenti, len(piles), count_x, count_y, lx_m, ly_m)
     else:
         n_min, n_max = min(n_pali), max(n_pali)

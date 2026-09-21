@@ -10,6 +10,7 @@ B450C/B500C/FeB32k/FeB38k/FeB44k, but `H14`'s dropdown (`BU16:BU20`) offers `FeB
 `legacy_compat=False` fixes it via the shared union rebar table (merge C1, which does carry
 FeB22k) — see `docs/divergences/ca-mensole.md`.
 """
+from strutture.shared.divergences import legacy
 from strutture.shared.materials.concrete import GAMMA_C, concrete_properties
 from strutture.shared.materials.rebar import GAMMA_S, rebar_properties
 from strutture.shared.report import CalcError
@@ -25,7 +26,7 @@ def materiali(
 ) -> MaterialiResult:
     """fyd = fyk/γs, fcd = 0.85·fck/γc (`legacy_compat=True` uses the sheet's fck fill-down bug,
     see `strutture.shared.materials.concrete.fck`)."""
-    if legacy_compat and acciaio == _STEEL_MISSING_FROM_LOCAL_TABLE:
+    if legacy("ca-mensole/acciaio-feb22k-mancante-in-tabella", legacy_compat) and acciaio == _STEEL_MISSING_FROM_LOCAL_TABLE:
         raise CalcError(
             "Combinazione acciaio=FeB22k con legacy_compat=True: il foglio originale restituisce "
             "#N/A perché Tabelle!M45:P49 non contiene la riga FeB22k (vedi docs/divergences/ca-mensole.md)"

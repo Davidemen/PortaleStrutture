@@ -1,16 +1,16 @@
 [
  {
   "id": "plinti-isolati/ribaltamento-mrib-zero-valore-fittizio",
-  "titolo": "Il coefficiente al ribaltamento mostra sempre '>100' quando non c'è momento ribaltante",
+  "titolo": "Il coefficiente al ribaltamento tratta allo stesso modo l'assenza di momento ribaltante e una verifica molto sicura",
   "tipo": "errore_foglio",
   "strumenti": [
    "fond-plinto-isolato"
   ],
   "cella": "CHECKS!AE, AH",
-  "foglio": "Quando il momento ribaltante è zero il foglio scrive sempre '>100', rendendo indistinguibile una combinazione senza domanda di ribaltamento da una realmente molto sicura.",
-  "corretto": "mu_ribaltamento restituisce nessun valore (verifica senza domanda) quando il momento ribaltante è zero; in modalità legacy resta il valore fittizio 100,0 del foglio.",
+  "foglio": "Quando il momento ribaltante è zero e quando il rapporto è maggiore di 100 il foglio scrive sempre '>100', rendendo indistinguibile una combinazione senza domanda di ribaltamento da una realmente molto sicura.",
+  "corretto": "mu_ribaltamento restituisce nessun valore (verifica senza domanda) quando il momento ribaltante è zero, e restituisce il rapporto reale senza riscriverlo quando è definito, anche se maggiore di 100; in modalità legacy resta il valore fittizio 100,0 del foglio in entrambi i casi.",
   "clausola": "NTC2018 §6.4.3.1",
-  "impatto": "nessuno sul caso guida (nessuna delle 537 combinazioni ha momento ribaltante nullo)",
+  "impatto": "nessuno sul caso guida (nessuna delle 537 combinazioni ha momento ribaltante nullo o un rapporto superiore a 100)",
   "uscite": [
    "mu_ribaltamento_minimo"
   ]
@@ -174,7 +174,9 @@
   "impatto": "nessuno sui casi guida/oracolo (tutte e tre le famiglie di esercizio sono presenti)",
   "uscite": [
    "sle"
-  ]
+  ],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "Il fix è incondizionato in entrambe le modalità (sle.py restituisce sempre None per una famiglia assente, anche con legacy_compat=True), quindi non esiste alcun ramo legacy_compat da collegare."
  },
  {
   "id": "plinti-isolati/clausola-portanza-etichettata-come-verifica-ntc-completa",
@@ -188,7 +190,9 @@
   "corretto": "La clausola è sostituita da un'etichetta esplicita che dichiara il confronto con la resistenza ammissibile, non una verifica NTC2018 §6.4.2.1 completa, in entrambe le modalità (solo testo, nessun valore numerico cambia).",
   "clausola": "",
   "impatto": "nessuno (solo etichetta/metadato)",
-  "uscite": []
+  "uscite": [],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "È una correzione solo testuale della clausola, applicata in entrambe le modalità senza alcuna condizione su legacy_compat."
  },
  {
   "id": "plinti-isolati/fattore-mpa-kgcm2-approssimato",
@@ -203,5 +207,27 @@
   "clausola": "",
   "impatto": "≈1,97% su ogni pressione riportata in kg/cm² (es. σt,total 1,66283 kg/cm² legacy contro ≈1,6957 kg/cm² esatto)",
   "uscite": []
+ },
+ {
+  "id": "plinti-isolati/momento-mensola-divisore-kgfcm-knm-approssimato",
+  "titolo": "Il ramo legacy del momento a sbalzo usa un fattore di conversione kgf·cm→kN·m approssimato",
+  "tipo": "da_verificare",
+  "strumenti": [
+   "fond-plinto-isolato"
+  ],
+  "cella": "INPUT!W3, X3",
+  "foglio": "Il ramo che riproduce il foglio calcola il momento a sbalzo passando per kg/cm² e cm e poi lo converte in kN·m dividendo per il letterale 10⁴, invece del fattore esatto 9806,65 (1 kgf·cm = 9,80665e-5 kN·m).",
+  "corretto": "La modalità standard non passa mai per kg/cm² e cm per questo calcolo, quindi il fattore approssimato non si applica.",
+  "clausola": "",
+  "impatto": "≈1,97% in eccesso su ogni momento a sbalzo calcolato in modalità legacy (divisore 10000 invece di 9806,65)",
+  "uscite": [
+   "flessione.mx_slu_kNm",
+   "flessione.my_slu_kNm"
+  ],
+  "ramo": "condiviso",
+  "motivo_senza_ramo": "Il ramo che riproduce questa approssimazione è lo stesso if legacy_compat di plinti-isolati/momento-mensola-misurato-dal-centro-non-dal-filo-pilastro in momento_cantilever.py (vedi commento nel codice); il codice non separa le due divergenze in due condizioni distinte.",
+  "riprodotta_da": [
+   "plinti-isolati/momento-mensola-misurato-dal-centro-non-dal-filo-pilastro"
+  ]
  }
 ]

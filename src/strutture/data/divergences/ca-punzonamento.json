@@ -57,7 +57,9 @@
   "corretto": "ρl sempre limitato al 2% prima del termine a radice cubica, in entrambe le modalità (il modulo condiviso usato da questo strumento è conforme alla norma anche in modalità 'riproduci il foglio')",
   "clausola": "EC2 §6.4.4(1)",
   "impatto": "nessuno per il caso golden (ρl=0,00365); caso di verifica ρl=0,0231, px=py=50mm, φ=25mm: termine calcestruzzo 0,8728 MPa (non limitato) -> 0,8318 MPa (limitato, -4,9%)",
-  "uscite": ["perimetro_critico.rho"]
+  "uscite": ["perimetro_critico.rho"],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "Il limite del 2% è applicato incondizionatamente dal modulo condiviso shared.ec2_shear.v_rd_c in entrambe le modalità: reinforcement_ratio.rho_l non riceve legacy_compat."
  },
  {
   "id": "ca-punzonamento/altezza-utile-non-positiva-crash",
@@ -69,7 +71,9 @@
   "corretto": "controllo esplicito con messaggio in italiano prima di procedere al calcolo, in entrambe le modalità",
   "clausola": "",
   "impatto": "nessuno per i casi golden/oracolo (d comodamente positivo)",
-  "uscite": ["geometria.d_mm"]
+  "uscite": ["geometria.d_mm"],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "Il controllo d<=0 è un CalcError incondizionato in entrambe le modalità, prima di qualunque calcolo: non dipende da legacy_compat."
  },
  {
   "id": "ca-punzonamento/verifica-asw-min-mancante",
@@ -81,7 +85,9 @@
   "corretto": "aggiunta la verifica 'asw_min' che confronta l'area staffa effettiva con il minimo richiesto, in entrambe le modalità (il foglio non ha una verifica equivalente)",
   "clausola": "EN 1992-1-1 §9.4.3(2) eq. (9.11)",
   "impatto": "nessun impatto sui valori golden/oracolo, solo una nuova verifica",
-  "uscite": []
+  "uscite": [],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "La verifica 'Area minima delle cuciture verticali' è aggiunta incondizionatamente in entrambe le modalità, senza un ramo legacy_compat."
  },
  {
   "id": "ca-punzonamento/perimetro-troncato-bordo-angolo-non-implementato",
@@ -93,6 +99,20 @@
   "corretto": "mantenuto come il foglio, in attesa di conferma dall'ingegnere prima di aggiungere un'eventuale modalità con eccentricità esatta e perimetro troncato (richiederebbe un nuovo input)",
   "clausola": "EC2 §6.4.3(3)-(4)",
   "impatto": "",
-  "uscite": []
+  "uscite": [],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "Il metodo semplificato del fattore β tabellato è usato incondizionatamente in entrambe le modalità in attesa di conferma: nessun ramo legacy_compat lo seleziona."
+ },
+ {
+  "id": "ca-punzonamento/vrd-max-filo-pilastro-coefficiente-semplificato",
+  "titolo": "Resistenza massima a punzonamento al filo del pilastro usa un coefficiente semplificato senza base normativa",
+  "tipo": "errore_foglio",
+  "strumenti": ["ca-punzonamento"],
+  "cella": "Shotblast_225N!D17",
+  "foglio": "vRd,max = 0,2·0,85·fck/1,5, un coefficiente semplificato scollegato dalla formula normativa EC2 §6.4.5(3)",
+  "corretto": "vRd,max = coeff_vRd,max·ν·fcd secondo EC2 §6.4.5(3), con coeff_vRd,max scelto dall'utente (vedi ec2-shared/coefficiente-vrd-max-scelta-ingegneristica)",
+  "clausola": "EC2 §6.4.5(3)",
+  "impatto": "v_rd,max 3,967 MPa (foglio) -> 4,094 MPa (corretto, coeff=0,4); nessun cambio di esito per il caso golden (v_ed,0=0,376 MPa)",
+  "uscite": ["faccia_pilastro.v_rd_max_MPa"]
  }
 ]

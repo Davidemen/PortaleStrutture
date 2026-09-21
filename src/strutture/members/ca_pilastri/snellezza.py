@@ -14,6 +14,7 @@ D3 / architecture-batch2.md §3) while every code-standard path, and the NTC2018
 """
 import math
 
+from strutture.shared.divergences import legacy
 from strutture.shared.units import kn_to_n
 
 LAMBDA_LIM_COEFFICIENT_LEGACY = 25.0  # J53/J60, provenienza non documentata nel foglio (NTC2008/NTC2018)
@@ -40,7 +41,7 @@ def l0_effettivo_mm(l0_mm: float | None, h_mm: float, *, legacy_compat: bool, ha
     docs/divergences/ca-pilastri.md."""
     if l0_mm is not None:
         return l0_mm
-    if legacy_compat and hardcode_mm is not None:
+    if legacy("ca-pilastri/l0-fisso-3000mm", legacy_compat) and hardcode_mm is not None:
         return hardcode_mm
     return h_mm
 
@@ -50,7 +51,9 @@ def lambda_limite(ned_kN: float, ac_mm2: float, fcd_MPa: float, *, rm: float | N
     is True (today's behaviour, unchanged); `unit_fix=True` selects the NTC2018 sheet's own
     (already-fixed) "25/√ν" formula instead. `legacy_compat=False` always uses the NTC2018
     code-standard formula (15.4*C/√ν, C = `coefficiente_c(rm)`), independent of `unit_fix`."""
-    if legacy_compat:
+    # unit_fix=True (NTC2018 sheet) reproduces ca-pilastri/lambda-lim-ntc2018-foglio-non-normativo
+    # with the same branch (ramo="nessuno" in the register: no separate legacy() call for it).
+    if legacy("ca-pilastri/lambda-lim-manca-conversione-kn", legacy_compat):
         nu_kn_or_n = kn_to_n(ned_kN) if unit_fix else ned_kN
         return LAMBDA_LIM_COEFFICIENT_LEGACY / math.sqrt(nu_kn_or_n / (ac_mm2 * fcd_MPa))
     nu = kn_to_n(ned_kN) / (ac_mm2 * fcd_MPa)

@@ -8,6 +8,7 @@ settlement (`metodo_tensioni`), not just the sheet's spread formula, so the crit
 matches what `righe.py` actually sums."""
 from pydantic import BaseModel, ConfigDict, Field
 
+from strutture.shared.divergences import legacy
 from strutture.shared.numeric import bisect
 from strutture.shared.report import CalcError
 from strutture.shared.soil_layers import effective_overburden
@@ -89,7 +90,7 @@ def profondita_critica(
     calcolato_m = calcola_z_crit(q_prime_kPa, b_m, l_m, gamma_kN_m3, metodo=metodo, d_m=d_m, water_table_m=water_table_m)
     if z_crit_input_m is not None:
         utilizzato_m = z_crit_input_m
-    elif legacy_compat:
+    elif legacy("geo-cedimenti-edometrico/z-crit-manuale-non-derivata", legacy_compat):
         utilizzato_m = z_max_m + 1.0
     else:
         utilizzato_m = calcolato_m

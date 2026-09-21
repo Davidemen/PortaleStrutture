@@ -13,10 +13,14 @@ exactly, for any q — matching the sheet's own `Sisma!J55 = =N55` (undivided). 
 code-compliant, not a bug: both legacy and fixed modes agree at T=0 (see
 `docs/divergences/sisma.md`).
 
-The only real divergence from the sheet is the missing floor "Sd(T) non può essere inferiore a
-0.2·ag", which only binds on the design (ULS) branch at large T.
+Two real divergences from the sheet coexist in the same undivided legacy body: the missing floor
+"Sd(T) non può essere inferiore a 0.2·ag" (binds at large T), and, on 0≤T<TB, the rising-branch
+formula itself — `se_g / q` (sheet) vs. the η→1/q substitution above (fixed), see
+`sisma/spettro-progetto-salita-eta-sostituita-da-1-q` in the register.
 """
 from typing import Final
+
+from strutture.shared.divergences import legacy
 
 DESIGN_SPECTRUM_FLOOR_RATIO: Final[float] = 0.2  # NTC2018 §3.2.3.2.1: Sd(T) >= 0.2·ag (SLV/SLC)
 
@@ -36,7 +40,10 @@ def valore_spettro(
     """Sd(T) for ULS states (SLV/SLC), Se(T) unreduced for SLE states (SLO/SLD)."""
     if not is_uls:
         return se_g
-    if legacy_compat:
+    # This single branch also implements sisma/spettro-progetto-salita-eta-sostituita-da-1-q (the
+    # sheet doesn't separate the missing 0.2*ag floor from the 0<=T<TB formula, so there is no
+    # second legacy() call here; see that entry, ramo="nessuno").
+    if legacy("sisma/spettro-progetto-senza-pavimento-0-2ag", legacy_compat):
         if t_s == 0.0:
             return se_g  # Sisma!J55: the T=0 row skips the SLU division applied everywhere else
         return se_g / q

@@ -6,6 +6,7 @@ sheet). Legacy mode reproduces the sheet's implicit treatment of class 4 as clas
 section); fixed mode refuses to silently understate the reduction and raises `CalcError` instead
 of inventing an EN1993-1-5 §4.4 effective-width formula that was never specified.
 """
+from strutture.shared.divergences import legacy
 from strutture.shared.materials.structural_steel import modulo_taglio
 from strutture.shared.report import CalcError
 from strutture.shared.units import n_to_kn, nmm_to_knm
@@ -56,7 +57,7 @@ def npl_kN(area_mm2: float, fy_MPa: float) -> float:
 
 def verifica_classe_supportata(classe_num: int, *, legacy_compat: bool) -> None:
     """Class 4 has no effective-width implementation (§4.4) in this module — see module docstring."""
-    if classe_num == 4 and not legacy_compat:
+    if classe_num == 4 and not legacy("acciaio-colonna-ec3/classe-4-non-implementata", legacy_compat):
         raise CalcError(
             "Sezione di classe 4: nessun calcolo di area/moduli efficaci (EN1993-1-5 §4.4) "
             "implementato; la resistenza sulla sezione lorda non è conservativa."

@@ -2,6 +2,7 @@
 import logging
 
 from strutture.shared.comuni import AmbiguousComuneError, KeyNotFound
+from strutture.shared.divergences import legacy
 from strutture.shared.report import CalcError, Report, success
 from strutture.shared.tool import Tool
 
@@ -50,8 +51,9 @@ def run_carico_falda(inputs: CaricoFaldaInput) -> Report[CaricoFaldaOutput]:
         qs1 = qsk * ce * inputs.ct * mu1
         qs2 = qsk * ce * inputs.ct * mu2
 
-    show_una_falda = inputs.legacy_compat or inputs.tipo_copertura == "Copertura ad una falda"
-    show_due_falde = inputs.legacy_compat or inputs.tipo_copertura == "Copertura a due falde"
+    tipo_copertura_ignorato = legacy("neve/tipo-copertura-non-filtra-output", inputs.legacy_compat)
+    show_una_falda = tipo_copertura_ignorato or inputs.tipo_copertura == "Copertura ad una falda"
+    show_due_falde = tipo_copertura_ignorato or inputs.tipo_copertura == "Copertura a due falde"
 
     campi = {
         "provincia": provincia,
@@ -83,7 +85,7 @@ def _resolve_accumulo_zona(inputs: AccumuloInput) -> str:
         comune = resolve_comune(inputs.comune)
     except (KeyNotFound, AmbiguousComuneError) as error:
         raise _location_error(inputs.comune, error) from error
-    if not inputs.legacy_compat:
+    if not legacy("neve/zona-lookup-su-provincia-invece-che-comune", inputs.legacy_compat):
         return comune.zona_neve
     try:
         return zona_from_provincia_bug(comune.provincia)

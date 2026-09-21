@@ -13,6 +13,8 @@ welded I-sections) even though the sheet labels the dropdown "processing" (hot f
 formed) rather than "rolled/welded" — see docs/divergences/acciaio-colonna-ec3.md (Da verificare)
 for the residual uncertainty on that label mapping for "cold formed" open I/H sections.
 """
+from strutture.shared.divergences import legacy
+
 from .models import TipoLavorazione
 from .tables import ALPHA_PER_CURVA, LIMITE_HB_TAB_6_2, LIMITE_TF_SOTTILE_MM, LIMITE_TF_SPESSA_MM
 
@@ -58,7 +60,7 @@ def alpha_flessionali(
 ) -> tuple[float, float, str, str]:
     """(alpha_yy, alpha_zz, curva_yy, curva_zz). Legacy reproduces column-check!Y25/Y26 exactly."""
     curva_yy, curva_zz = curve_flessionali_tab_6_2(h_mm, b_mm, tf_mm)
-    if legacy_compat:
+    if legacy("acciaio-colonna-ec3/alpha-instabilita-flessionale-non-da-curva", legacy_compat):
         hot = lavorazione == "hot finished"
         return (0.34 if hot else 0.21), (0.49 if hot else 0.34), curva_yy, curva_zz
     return ALPHA_PER_CURVA[curva_yy], ALPHA_PER_CURVA[curva_zz], curva_yy, curva_zz

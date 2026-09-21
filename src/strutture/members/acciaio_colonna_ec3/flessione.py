@@ -16,6 +16,7 @@ fixed for `J26`/`J36` in `taglio.py`. EN1993-1-1 §6.2.8(2)-(3) requires the SAM
 both the trigger and rho = (2*VEd/Vpl,Rd - 1)^2. Fixed mode uses one shear per axis; legacy
 reproduces the swap.
 """
+from strutture.shared.divergences import legacy
 from strutture.shared.report import Check
 
 from .results import Flessione
@@ -32,7 +33,7 @@ def mrd_y_kNm(classe_num: int, wel_y_mm3: float, wpl_y_mm3: float, fy_ridotta_MP
     """column-check!D33 — MRd,y = W*fy'/gammaM0; legacy reproduces the extra /gammaM0 (see module docstring)."""
     modulo = wpl_y_mm3 if classe_num < 3 else wel_y_mm3
     valore = modulo * fy_ridotta_MPa / 1_000_000.0
-    return valore / gamma_m0 if legacy_compat else valore
+    return valore / gamma_m0 if legacy("acciaio-colonna-ec3/mrd-y-doppia-divisione-gamma-m0", legacy_compat) else valore
 
 
 def mrd_z_kNm(classe_num: int, wel_z_mm3: float, wpl_z_mm3: float, fy_ridotta_MPa: float) -> float:
@@ -58,7 +59,7 @@ def costruisci_flessione(
     mz_sd_kNm: float,
     legacy_compat: bool,
 ) -> Flessione:
-    if legacy_compat:
+    if legacy("acciaio-colonna-ec3/trigger-taglio-elevato-asse-scambiato", legacy_compat):
         fy_y = fy_ridotta_MPa(vz_sd_kN, vy_sd_kN, vpl_rd_anima_kN, fyd_MPa)
         fy_z = fy_ridotta_MPa(vy_sd_kN, vz_sd_kN, vpl_rd_ali_kN, fyd_MPa)
     else:

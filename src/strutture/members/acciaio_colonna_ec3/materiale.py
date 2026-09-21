@@ -8,6 +8,7 @@ warning if the override differs from the standard value).
 Also fixes `H15` (fuk divided by gammaM0 instead of gammaM2, docs/architecture.md §6 `acciaio H15`)
 — that value is not read by any other formula in the sheet, so the fix has no effect on any check.
 """
+from strutture.shared.divergences import legacy
 from strutture.shared.materials.structural_steel import partial_factors
 from strutture.shared.tables import exact_lookup
 
@@ -18,7 +19,7 @@ from .tables import TABELLA_ACCIAIO_MPA
 
 def _risolvi_gamma(valore_utente: float | None, standard: float, *, legacy_compat: bool) -> tuple[float, str | None]:
     """(gamma risolto, warning). Sheet default is 1 in legacy mode; EC3 default otherwise."""
-    if legacy_compat:
+    if legacy("acciaio-colonna-ec3/gamma-m-hardcoded-a-1", legacy_compat):
         return (valore_utente if valore_utente is not None else 1.0), None
     if valore_utente is None:
         return standard, None
@@ -40,7 +41,7 @@ def risolvi_materiale(
     gamma_m0, warning_m0 = _risolvi_gamma(gamma_m0_input, standard.gamma_m0, legacy_compat=legacy_compat)
     gamma_m1, warning_m1 = _risolvi_gamma(gamma_m1_input, standard.gamma_m1, legacy_compat=legacy_compat)
     fyd_mpa = fyk_mpa / gamma_m0
-    fud_mpa = fuk_mpa / (gamma_m0 if legacy_compat else standard.gamma_m2)
+    fud_mpa = fuk_mpa / (gamma_m0 if legacy("acciaio-colonna-ec3/fud-diviso-gamma-m0", legacy_compat) else standard.gamma_m2)
     warnings = tuple(w for w in (warning_m0, warning_m1) if w is not None)
     materiali = Materiali(
         grado=grado,

@@ -2,6 +2,8 @@
 Tab. 3.4.II (~ EN1991-1-3 Tab. 5.2)."""
 from typing import Final
 
+from strutture.shared.divergences import legacy
+
 MU_FLAT: Final[float] = 0.8  # 0-30°, and always when a barrier holds the snow at the lower eave
 MU_STEEP: Final[float] = 0.0  # >=60°
 ANGLE_LOW_DEG: Final[float] = 30.0
@@ -23,7 +25,7 @@ def coefficiente_forma(angle_deg: float, parapetto: bool, *, legacy_compat: bool
         return MU_FLAT
     on_ramp = (
         ANGLE_LOW_DEG < angle_deg < ANGLE_HIGH_DEG
-        if legacy_compat
+        if legacy("neve/mu-falda-discontinuo-a-30-gradi", legacy_compat)
         else ANGLE_LOW_DEG <= angle_deg < ANGLE_HIGH_DEG
     )
     if on_ramp:

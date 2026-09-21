@@ -9,6 +9,7 @@ no such entry — found independently). The true edge-midpoint factor superposes
 sub-rectangles sharing the edge: `IS_bordo = 2·steinbrenner_is(a/2, b_bordo, mu)` (Bowles,
 "Foundation Analysis and Design", `B'` stays the full `B` for both halves). `legacy_compat=True`
 reproduces the sheet's single-rectangle corner factor."""
+from strutture.shared.divergences import legacy
 from strutture.shared.soil_stress import steinbrenner_is
 
 _EDGE_MIDPOINT_SUB_RECTANGLES = 2  # two B x (L/2) sub-rectangles sharing the edge
@@ -34,7 +35,7 @@ def influence_factors(a: float, b_centro: float, b_bordo: float, mu: float, *, l
     `IS_bordo` uses the sheet's single-rectangle corner factor when `legacy_compat=True`, else the
     true edge-midpoint factor from 2-sub-rectangle superposition."""
     is_centro = steinbrenner_is(a, b_centro, mu)
-    if legacy_compat:
+    if legacy("geo-cedimenti-elastico/fattore-forma-bordo-usa-formula-di-spigolo", legacy_compat):
         is_bordo = steinbrenner_is(a, b_bordo, mu)
     else:
         is_bordo = _EDGE_MIDPOINT_SUB_RECTANGLES * steinbrenner_is(a / 2, b_bordo, mu)

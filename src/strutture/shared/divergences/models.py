@@ -7,7 +7,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 Tipo = Literal["errore_foglio", "aggiornamento_normativo", "scelta_ingegneristica", "da_verificare"]
-Ramo = Literal["codice", "nessuno"]
+Ramo = Literal["codice", "condiviso", "nessuno"]
 ID_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9]+(?:-[a-z0-9]+)*$")  # "<unita>/<slug>"
 
 
@@ -25,9 +25,12 @@ class Divergence(BaseModel):
     impatto: str = Field(default="", description="Numeric impact on the golden case, e.g. 'λ_lim 1084 -> 34,3'")
     uscite: tuple[str, ...] = Field(default=(), description="Output paths that can change, e.g. 'snellezza.lambda_lim'")
     ramo: Ramo = Field(default="codice", description=(
-        '"codice": a `legacy("<id>", legacy_compat)` branch reproduces the spreadsheet; "nessuno": there is '
-        "deliberately no such branch (a label, a sheet limit, a behaviour that cannot be reproduced)"))
-    motivo_senza_ramo: str = Field(default="", description='Why there is no branch (Italian); required iff ramo="nessuno"')
+        'How Excel mode relates to this entry. "codice": a `legacy("<id>", legacy_compat)` branch reproduces the '
+        'spreadsheet. "condiviso": Excel mode DOES reproduce it, but through another entry\'s branch (`riprodotta_da`) '
+        'or a per-norm rules table, not through a call of its own. "nessuno": Excel mode does NOT reproduce it '
+        "(a fix applied in both modes, a sheet label or limit, an input-schema change)"))
+    motivo_senza_ramo: str = Field(default="", description='Why there is no own branch (Italian); required iff ramo != "codice"')
+    riprodotta_da: tuple[str, ...] = Field(default=(), description='ramo="condiviso" only: ids of the entries whose branch reproduces this one')
 
     @field_validator("id")
     @classmethod
@@ -37,9 +40,11 @@ class Divergence(BaseModel):
         return value
 
     @model_validator(mode="after")
-    def _motivo_iff_senza_ramo(self) -> "Divergence":
-        if self.ramo == "nessuno" and len(self.motivo_senza_ramo.strip()) < 5:
-            raise ValueError('ramo="nessuno" requires motivo_senza_ramo (why no legacy branch exists)')
+    def _ramo_coerente(self) -> "Divergence":
+        if self.ramo != "codice" and len(self.motivo_senza_ramo.strip()) < 5:
+            raise ValueError(f'ramo="{self.ramo}" requires motivo_senza_ramo (why there is no legacy branch of its own)')
         if self.ramo == "codice" and self.motivo_senza_ramo:
-            raise ValueError('motivo_senza_ramo is only allowed with ramo="nessuno"')
+            raise ValueError('motivo_senza_ramo is only allowed when ramo is not "codice"')
+        if self.riprodotta_da and self.ramo != "condiviso":
+            raise ValueError('riprodotta_da is only allowed with ramo="condiviso"')
         return self

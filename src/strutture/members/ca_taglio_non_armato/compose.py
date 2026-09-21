@@ -3,6 +3,7 @@ Tool (see `tool.py`). Handles both workbook sheets: `Foglio1` (v1: fck from Rck,
 `1m` (v2: fck direct, Asl from N°/Ø) through the same flat input model."""
 import logging
 
+from strutture.shared.divergences import legacy
 from strutture.shared.report import Check, Report, success
 
 from .asl_from_bars import asl_from_barre_mm2
@@ -43,7 +44,7 @@ def _avviso_fck_rck(inputs: TaglioNonArmatoInput) -> tuple[str, ...]:
 def _avviso_rho_l_capped(rho_l_raw_value: float, rho_l_capped: float, *, legacy_compat: bool) -> tuple[str, ...]:
     """Warn when the §4.1.2.3.5.1 cap actually bites in code-standard mode, since the value
     entering VRd,1 (`rho_l_capped`) then differs from the real Asl/(bw*d) ratio."""
-    if legacy_compat or rho_l_raw_value <= rho_l_capped:
+    if legacy("ca-taglio-non-armato/verifica-rho-l-su-valore-gia-limitato", legacy_compat) or rho_l_raw_value <= rho_l_capped:
         return ()
     messaggio = (
         f"ρl=Asl/(bw*d)={rho_l_raw_value:.5f} supera il limite ρl,max={RHO_L_MAX} "

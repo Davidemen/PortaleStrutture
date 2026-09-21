@@ -33,7 +33,9 @@
   "corretto": "ogni proprietà acciaio riporta un flag legacy_grade che segnala i gradi non più ammessi; i valori numerici restano quelli del foglio",
   "clausola": "NTC2018 §11.3.2, Tab. 11.3.Ia",
   "impatto": "nessuno sui valori numerici, solo un flag informativo",
-  "uscite": ["materiali.acciaio.legacy_grade"]
+  "uscite": ["materiali.acciaio.legacy_grade"],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "shared.materials.rebar non ha un parametro legacy_compat: il flag legacy_grade è calcolato sempre allo stesso modo e i valori numerici sono identici in entrambe le modalità, quindi non c'è nulla da far divergere con un branch"
  },
  {
   "id": "materials/acciaio-en1993-gamma-s420-s460-non-verificati",
@@ -45,6 +47,8 @@
   "corretto": "S420/S460 aggiunti con i valori standard EN1993-1-1 Tab. 3.1 per acciai normalizzati a grana fine, ma non verificabili contro un valore di cella; il grado S450 non è implementato",
   "clausola": "EN1993-1-1 Tab. 3.1, EN10025-3",
   "impatto": "",
-  "uscite": []
+  "uscite": [],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "S420/S460 sono gradi assenti dal foglio sorgente: non c'è un valore legacy da riprodurre, quindi shared.materials.structural_steel li tabula senza alcun branch legacy_compat"
  }
 ]

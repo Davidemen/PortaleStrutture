@@ -9,7 +9,9 @@
   "corretto": "gamma_G2 favorevole e' 0.8 in tutte e tre le righe, il valore NTC2018.",
   "clausola": "NTC2018 Tab. 6.2.I/6.2.II §6.2.1",
   "impatto": "nessuno su qualunque caso golden/oracolo attuale (l'unico consumatore, muro-sostegno, legge solo i campi gamma_G1); latente per i futuri consumatori",
-  "uscite": []
+  "uscite": [],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "shared.ntc_combos non ha parametro legacy_compat: la tabella FATTORI_AZIONI contiene solo il valore corretto 0,8, applicato sempre; non esiste un ramo che riproduca il vecchio 0,0"
  },
  {
   "id": "ntc-combos/riga-ribaltamento-mancante",
@@ -21,6 +23,8 @@
   "corretto": "Aggiunta la riga 'ribaltamento' (r1=1.0, r2=1.15, r3=1.15) alla tabella e alla lista dei valori ammessi.",
   "clausola": "NTC2018 Tab. 6.5.I",
   "impatto": "nessuno su qualunque caso golden/oracolo attuale; sblocca la verifica a ribaltamento del muro di sostegno",
-  "uscite": []
+  "uscite": [],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "shared.ntc_combos non ha parametro legacy_compat: la tabella FATTORI_RESISTENZA include sempre la riga 'ribaltamento'; non esiste una modalità legacy che la ometta"
  }
 ]

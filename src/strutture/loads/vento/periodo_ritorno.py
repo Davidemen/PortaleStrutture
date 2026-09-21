@@ -1,6 +1,8 @@
 """Step (spec §4.5-6): return-period correction, NTC2018 eq. 3.3.2/3.3.3, Vento!H14/H15."""
 import math
 
+from strutture.shared.divergences import legacy
+
 from .costanti import REFERENCE_RETURN_PERIOD_YEARS
 
 
@@ -23,6 +25,6 @@ def velocita_riferimento(vref: float, tr_anni: float, legacy_compat: bool) -> fl
     legacy_compat=False applica `vr = vref*cr(TR)` (NTC2018 eq. 3.3.2/3.3.3), senza rinormalizzazione:
     qui aR*vref == vr sempre, per costruzione.
     """
-    if legacy_compat:
+    if legacy("vento/velocita-riferimento-rinormalizzata-su-tr50", legacy_compat):
         return vref * math.sqrt(_fattore_gumbel(tr_anni) / _fattore_gumbel(REFERENCE_RETURN_PERIOD_YEARS))
     return vref * coefficiente_periodo_ritorno(tr_anni)

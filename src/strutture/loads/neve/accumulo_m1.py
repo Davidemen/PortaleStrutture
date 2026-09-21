@@ -1,6 +1,7 @@
 """Step (spec calc steps 10-14, `Neve accumulo!K38/L38/M38/H43`): design shape coeff at the far edge."""
 from typing import Final
 
+from strutture.shared.divergences import legacy
 from strutture.shared.numeric import clamp
 
 M1_INTERP_MIN: Final[float] = 0.0  # architecture.md §6: FIX — clamp the interpolated m1 (Bug 7)
@@ -20,7 +21,7 @@ def m1_interpolato(b2_m: float, ls_m: float, mu_w: float, m1_input: float, *, le
     slope_per_m = (mu_w - m1_input) / ls_m  # `K38`
     extrapolated_at_b2 = slope_per_m * (ls_m - b2_m)  # `L38`
     interpolated = extrapolated_at_b2 + m1_input
-    if legacy_compat:
+    if legacy("neve/accumulo-m1-interpolato-senza-limiti", legacy_compat):
         return interpolated
     return clamp(interpolated, M1_INTERP_MIN, M1_INTERP_MAX)
 

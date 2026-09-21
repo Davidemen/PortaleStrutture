@@ -11,6 +11,7 @@ sheet integrates U6 to z=910 cm but Z6 (its own QA check) only to z=870 cm -- no
 comparison. `legacy_compat=True` reproduces both hard-coded depths; `legacy_compat=False` uses one
 common, user-set depth for both.
 """
+from strutture.shared.divergences import legacy
 from strutture.shared.soil_layers import SoilLayer, depth_grid
 from strutture.shared.soil_stress import ic_center, under_center
 
@@ -36,7 +37,7 @@ def centro_settlement(
     legacy_compat: bool = False,
 ) -> tuple[tuple[Slice, ...], tuple[Slice, ...]]:
     """Main-path slices (`under_center`, sheet's U6) and QA slices (`ic_center`, sheet's Z6)."""
-    if legacy_compat:
+    if legacy("geo-cedimenti-elastico/profondita-integrazione-centro-t6-z6-diverse", legacy_compat):
         main_grid = depth_grid(LEGACY_MAIN_Z_MAX_M, LEGACY_DZ_M)[1:]
         qa_grid = depth_grid(LEGACY_QA_Z_MAX_M, LEGACY_DZ_M)[1:]
     else:

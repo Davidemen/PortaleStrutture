@@ -58,7 +58,9 @@
   "corretto": "Mantenuto 1,5 in entrambe le modalità: sembra un'etichetta obsoleta (la formula coincide con quella della riga 47), ma non c'è una clausola che giustifichi la soglia 1,2, quindi non è trattato come un bug di formula confermato.",
   "clausola": "",
   "impatto": "",
-  "uscite": []
+  "uscite": [],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "giunti() non ha un parametro legacy_compat: la soglia 1.5 e' usata incondizionatamente in entrambe le modalita', solo l'etichetta del foglio riporta 1.2."
  },
  {
   "id": "pavimento-industriale/carico-slu-bordo-spigolo-riferimento-gamma-centro",
@@ -72,6 +74,8 @@
   "corretto": "Ogni riga della tabella dei carichi ha ora la propria colonna gamma/psi1: non esiste più alcun riferimento a un'altra colonna da sbagliare, in entrambe le modalità (non c'è nulla da riprodurre, il bug è eliminato dalla forma stessa dell'input).",
   "clausola": "",
   "impatto": "nessuno sul caso guida (i coefficienti coincidono in tutte le colonne)",
-  "uscite": []
+  "uscite": [],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "Il bug e' eliminato dalla forma stessa dell'input (ogni riga ha ora la propria colonna gamma/psi1): non esiste un comportamento da riprodurre in nessuna delle due modalita'."
  }
 ]

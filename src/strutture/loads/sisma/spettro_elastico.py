@@ -6,6 +6,7 @@ Sisma!N56:N149 (0<=T<TB branch) drops η from the reciprocal term: `η·ag·S·F
 therefore gives `Se(0)=η·ag·S` instead of the mandatory PGA anchor `Se(0)=ag·S`; invisible at ξ=5%
 (η=1) but wrong for any other damping. Documented in `docs/divergences/sisma.md`.
 """
+from strutture.shared.divergences import legacy
 
 
 def se_elastico(
@@ -15,7 +16,7 @@ def se_elastico(
     if t_s < 0:
         raise ValueError(f"periodo T={t_s} non può essere negativo")
     if t_s < tb_s:
-        if legacy_compat:
+        if legacy("sisma/spettro-elastico-t0-non-ancorato-ad-ags", legacy_compat):
             return eta * ag_g * s * f0 * (t_s / tb_s + (1.0 / f0) * (1.0 - t_s / tb_s))  # Sisma!N56:N149 bug: drops η
         return eta * ag_g * s * f0 * (t_s / tb_s + (1.0 / (eta * f0)) * (1.0 - t_s / tb_s))
     if t_s < tc_s:

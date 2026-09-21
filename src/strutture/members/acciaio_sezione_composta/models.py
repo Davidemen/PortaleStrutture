@@ -8,6 +8,7 @@ physical plate slots and reproduces its exact placement/centroid formulas, bugs 
 """
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from strutture.shared.divergences import legacy
 from strutture.shared.tabular import RowModel, table_field
 
 MAX_PIATTI = 10
@@ -48,6 +49,6 @@ class SezioneHRimpiattataInput(BaseModel):
     def _validazione(self) -> "SezioneHRimpiattataInput":
         if 2.0 * self.tf_mm >= self.h_profilo_mm:
             raise ValueError(f"tf_mm ({self.tf_mm}) deve essere minore della metà di h_profilo_mm ({self.h_profilo_mm})")
-        if self.legacy_compat and len(self.piatti) > LEGACY_MAX_PIATTI:
+        if legacy("acciaio-sezione-h-rimpiattata/legacy-max-due-piatti", self.legacy_compat) and len(self.piatti) > LEGACY_MAX_PIATTI:
             raise ValueError(f"legacy_compat=True: al più {LEGACY_MAX_PIATTI} piatti (righe fisse A4/A5 del foglio)")
         return self

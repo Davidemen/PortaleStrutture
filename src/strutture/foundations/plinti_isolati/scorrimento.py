@@ -16,6 +16,8 @@ input for smooth/pre-cast bases is deferred (no shared module or input field for
 divergence doc)."""
 import math
 
+from strutture.shared.divergences import legacy
+
 LEGACY_NO_DEMAND_RATIO = 100.0  # sheet's IFERROR(...,100) stand-in when S=0 (division by zero).
 GAMMA_R_SCORRIMENTO = 1.1  # NTC2018 Tab. 6.4.I, Approccio 2 (A1+M1+R3) - scorrimento su piano di posa.
 
@@ -27,9 +29,13 @@ def mu_scorrimento(n_kN: float, vx_kN: float, vy_kN: float, phi_terreno_deg: flo
     IFERROR/">100" text as the numeric stand-in `100.0`."""
     s_kN = math.hypot(vx_kN, vy_kN)
     if s_kN == 0:
-        return LEGACY_NO_DEMAND_RATIO if legacy_compat else None
-    gamma_r = 1.0 if legacy_compat else GAMMA_R_SCORRIMENTO
+        return (LEGACY_NO_DEMAND_RATIO
+                if legacy("plinti-isolati/scorrimento-taglio-zero-valore-fittizio", legacy_compat)
+                else None)
+    gamma_r = (1.0 if legacy("plinti-isolati/scorrimento-senza-fattore-parziale-gammar", legacy_compat)
+               else GAMMA_R_SCORRIMENTO)
     ratio = n_kN * math.tan(math.radians(phi_terreno_deg)) / (gamma_r * s_kN)
-    if legacy_compat and ratio > LEGACY_NO_DEMAND_RATIO:
+    if (legacy("plinti-isolati/scorrimento-taglio-zero-valore-fittizio", legacy_compat)
+            and ratio > LEGACY_NO_DEMAND_RATIO):
         return LEGACY_NO_DEMAND_RATIO
     return ratio

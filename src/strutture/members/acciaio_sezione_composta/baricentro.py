@@ -5,6 +5,8 @@
 instead of its y-coordinate (F10). Numerically harmless while that last element's area is zero
 (the golden case), but wrong whenever it is populated — see docs/divergences.
 """
+from strutture.shared.divergences import legacy
+
 from .elementi import Elemento
 
 
@@ -18,7 +20,7 @@ def baricentro(elementi: tuple[Elemento, ...], *, legacy_compat: bool) -> tuple[
     if area <= 0.0:
         raise ValueError("area totale della sezione nulla: nessun elemento con area positiva")
     x_n = sum(e.area_mm2 * e.x_mm for e in elementi) / area
-    if legacy_compat and elementi:
+    if legacy("acciaio-sezione-h-rimpiattata/centroide-yn-ultimo-termine-x", legacy_compat) and elementi:
         *precedenti, ultimo = elementi
         y_n = (sum(e.area_mm2 * e.y_mm for e in precedenti) + ultimo.area_mm2 * ultimo.x_mm) / area
     else:

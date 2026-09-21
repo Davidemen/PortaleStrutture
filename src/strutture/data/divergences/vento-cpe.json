@@ -3,12 +3,37 @@
   "id": "vento-cpe/etichetta-classificazione-edificio-snello-mista",
   "titolo": "L'etichetta di classificazione per il caso misto per direzione non e' scritta nella specifica originale",
   "tipo": "da_verificare",
-  "strumenti": ["vento-cpe-rettangolare"],
+  "strumenti": [
+   "vento-cpe-rettangolare"
+  ],
   "cella": "B10",
   "foglio": "La cella genera le stringhe 'EDIFICIO SNELLO DIR 1' / 'EDIFICIO SNELLO DIR 2' per il caso misto per direzione, lette direttamente dalla formula del foglio",
-  "corretto": "Le stesse stringhe sono riprodotte identiche, confermate contro i casi oracle",
+  "corretto": "La riscrittura maiuscolo/stile frase di vento-cpe/etichetta-classificazione-maiuscolo copre anche queste due stringhe; non esiste una divergenza numerica separata per il caso misto",
   "clausola": "",
-  "impatto": "nessuno, comportamento identico in entrambe le modalita'; solo il testo non era presente letteralmente nella specifica",
-  "uscite": ["classification"]
+  "impatto": "nessuno oltre a quanto gia' descritto in vento-cpe/etichetta-classificazione-maiuscolo; solo il testo non era presente letteralmente nella specifica",
+  "uscite": [
+   "classification"
+  ],
+  "ramo": "condiviso",
+  "motivo_senza_ramo": "Il ramo e' condiviso con vento-cpe/etichetta-classificazione-maiuscolo: un'unica chiamata legacy() in classify() governa tutte e quattro le stringhe di B10, incluso il caso misto.",
+  "riprodotta_da": [
+   "vento-cpe/etichetta-classificazione-maiuscolo"
+  ]
+ },
+ {
+  "id": "vento-cpe/etichetta-classificazione-maiuscolo",
+  "titolo": "Le etichette di classificazione tozzo/snello sono tutte maiuscole nel foglio",
+  "tipo": "scelta_ingegneristica",
+  "strumenti": [
+   "vento-cpe-rettangolare"
+  ],
+  "cella": "B10",
+  "foglio": "La cella B10 restituisce le stringhe interamente maiuscole 'EDIFICIO SNELLO' / 'EDIFICIO TOZZO' per i casi non misti (entrambe le direzioni snelle o entrambe tozze), e 'EDIFICIO SNELLO DIR 1' / 'EDIFICIO SNELLO DIR 2' per il caso misto per direzione",
+  "corretto": "Le stesse stringhe sono riprodotte in stile frase ('Edificio snello' / 'Edificio tozzo' / 'Edificio snello, direzione 1' / 'Edificio snello, direzione 2'), per coerenza con le altre etichette di output del pacchetto",
+  "clausola": "",
+  "impatto": "nessuno sul calcolo, cambia solo il testo del campo classification in tutti i casi",
+  "uscite": [
+   "classification"
+  ]
  }
 ]

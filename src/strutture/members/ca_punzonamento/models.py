@@ -4,6 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from strutture.shared.divergences import legacy
 from strutture.shared.ec2_shear.v_rd_max import V_RD_MAX_COEFF_A1_2014
 from strutture.shared.sketch import Sketch, campo_schizzo
 
@@ -56,7 +57,11 @@ class PunzonamentoInput(BaseModel):
             raise ValueError("pilastro circolare (lato_a_mm=0): indicare il diametro")
         if self.lato_a_mm > 0 and self.lato_b_mm <= 0:
             raise ValueError("pilastro rettangolare: lato_b_mm deve essere positivo")
-        allowed = (*PHI_STAFFA_OPTIONS_MM, PHI_STAFFA_LEGACY_TYPO_MM) if self.legacy_compat else PHI_STAFFA_OPTIONS_MM
+        allowed = (
+            (*PHI_STAFFA_OPTIONS_MM, PHI_STAFFA_LEGACY_TYPO_MM)
+            if legacy("ca-punzonamento/diametro-staffa-28-probabile-refuso", self.legacy_compat)
+            else PHI_STAFFA_OPTIONS_MM
+        )
         if self.phi_staffa_mm not in allowed:
             raise ValueError(f"diametro cuciture non commerciale: {self.phi_staffa_mm} mm (ammessi: {allowed})")
         return self

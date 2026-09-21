@@ -61,7 +61,9 @@
   "corretto": "La lunghezza di appoggio è sempre uguale al diametro del palo inserito, in entrambe le modalità.",
   "clausola": "",
   "impatto": "nessuno sul caso guida (entrambi 600 mm); diverge quando l'utente cambia il diametro del palo",
-  "uscite": []
+  "uscite": [],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "La larghezza di appoggio è sempre calcolata come il diametro del palo inserito, in entrambe le modalità: il letterale fisso del foglio (Lb=600 mm, Footing check!BG13) non viene mai riprodotto, nemmeno in modalità legacy."
  },
  {
   "id": "plinti-pali/tiranti-ortogonali-stesso-angolo-griglia-non-quadrata",
@@ -241,7 +243,12 @@
   "corretto": "Due possibili valori normativi restano disponibili: 0,4 (EN1992-1-1:2004/A1:2014, default) oppure 0,5 (EN1992-1-1:2004 con Appendice Nazionale italiana 2013, anche il valore storico di questo foglio con alpha_cc=1,0); i fogli dell'utente stesso non sono coerenti fra loro su questo punto.",
   "clausola": "EC2 §6.4.5(3)",
   "impatto": "",
-  "uscite": []
+  "uscite": [],
+  "ramo": "condiviso",
+  "motivo_senza_ramo": "Non è una riproduzione del foglio ma la richiesta di conferma della scelta di default del coefficiente: il ramo di codice che implementa la scelta (0,4 di default oppure 0,5 con alpha_cc=1,0 in legacy) è già collegato a plinti-pali/coefficiente-vrd-max-taglio-punzonamento.",
+  "riprodotta_da": [
+   "plinti-pali/coefficiente-vrd-max-taglio-punzonamento"
+  ]
  },
  {
   "id": "plinti-pali/armatura-superiore-diametro-unico-semplificazione",
@@ -258,7 +265,9 @@
   "uscite": [
    "flessione.sup_x",
    "flessione.sup_y"
-  ]
+  ],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "Il modello espone un solo campo diametro per l'armatura superiore per lato, usato sia per l'altezza utile sia per l'area di barra fornita, in entrambe le modalità: un secondo diametro da disambiguare non è mai stato implementato."
  },
  {
   "id": "plinti-pali/schema-non-2x2-generalizzazione-da-verificare",
@@ -272,7 +281,9 @@
   "corretto": "Gli schemi sono implementati seguendo le formule tracciate nel foglio, con test unitari dedicati, ma restano da confermare contro un caso reale.",
   "clausola": "",
   "impatto": "",
-  "uscite": []
+  "uscite": [],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "Gli schemi diversi da 2x2 usano le stesse formule generalizzate in entrambe le modalità: non esiste un ramo legacy da collegare, il dubbio riguarda la correttezza della generalizzazione stessa, non una scelta tra due comportamenti."
  },
  {
   "id": "plinti-pali/angolo-puntone-fascia-sicurezza-20-70-non-normativa",
@@ -286,6 +297,62 @@
   "corretto": "L'errore per angolo fuori dalla fascia 20°-70° resta come cautela contro un meccanismo geometricamente privo di senso (puntone quasi orizzontale o quasi verticale); va confermato contro un riferimento di progettazione puntoni-tiranti prima di considerarlo normativo.",
   "clausola": "",
   "impatto": "",
-  "uscite": []
+  "uscite": [],
+  "ramo": "condiviso",
+  "motivo_senza_ramo": "La fascia 20°-70° è applicata incondizionatamente all'interno dello stesso ramo (non legacy) di plinti-pali/angolo-puntone-limitato-a-25-gradi: non esiste un parametro legacy separato per attivarla o disattivarla.",
+  "riprodotta_da": [
+   "plinti-pali/angolo-puntone-limitato-a-25-gradi"
+  ]
+ },
+ {
+  "id": "plinti-pali/quota-pila-formula-simmetrica-non-generale",
+  "titolo": "La ripartizione della quota di momento tra i pali usa una formula approssimata valida solo per la griglia quadrata",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-plinto-su-pali"
+  ],
+  "cella": "Footing check!AB, AC (quota assiale per palo)",
+  "foglio": "Ogni palo riceve la stessa quota assiale di N più o meno un termine di momento ripartito ugualmente tra i pali della stessa fila (colonne AB/AC), formula valida solo per le griglie in cui gli effetti delle due direzioni sono disaccoppiati (2x2 simmetrica).",
+  "corretto": "Si usa la reazione assiale esatta di ogni palo calcolata dalla rigidezza della piastra rigida a partire dalle coordinate reali (N/n ± M·x/Σx²), valida per qualunque disposizione di pali tra quelle supportate.",
+  "clausola": "Reazione assiale di piastra rigida N/n ± M·x/Σx²",
+  "impatto": "nessuna differenza sul caso guida (griglia 2x2); su una griglia 2x1 (combinazione SLV_10) la formula del foglio dà Nmin=178,08 kN e Nmax=1137,58 kN contro Nmin=245,28 kN e Nmax=1070,38 kN della reazione esatta",
+  "uscite": [
+   "righe.n_min_pila_kN",
+   "righe.n_max_pila_kN"
+  ]
+ },
+ {
+  "id": "plinti-pali/braccio-leva-flessione-pari-a-d-senza-riduzione",
+  "titolo": "Il braccio di leva a flessione usa l'intera altezza utile invece del braccio ridotto da equilibrio",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-plinto-su-pali"
+  ],
+  "cella": "Footing check!AV20, AZ20 (As_req_flexural)",
+  "foglio": "As_req_flexural si calcola come Mu*1e6/(d*fyd), usando l'intera altezza utile d come braccio di leva interno invece di risolvere l'equilibrio della sezione rettangolare.",
+  "corretto": "Si calcola il braccio di leva effettivo z = d*(0,5+√(0,25-mu)) con mu = M/(b*d²*fcd), limitato al valore di sezione bilanciata (mu≤0,25), cosicché As non sia mai sottostimata.",
+  "clausola": "EC2 §6.1 - equilibrio della sezione rettangolare",
+  "impatto": "As_req_flexural passa da 3005,22 a 3204,09 mm²/m in X-X (+6,6%) e da 1971,15 a 2052,77 mm²/m in Y-Y (+4,1%) sul caso guida",
+  "uscite": [
+   "flessione.inf_x.as_req_flexural_mm2",
+   "flessione.inf_y.as_req_flexural_mm2"
+  ]
+ },
+ {
+  "id": "plinti-pali/armatura-superiore-pi-letterale-invece-di-pi-greco",
+  "titolo": "L'area di barra dell'armatura superiore usa il letterale 3,14 invece del valore esatto di pi greco",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "fond-plinto-su-pali"
+  ],
+  "cella": "Footing check!AV51, AZ51",
+  "foglio": "L'area di barra dell'armatura superiore si calcola come ø²*3,14/4*#barre/m, con il letterale 3,14 al posto di PI(), mentre l'armatura inferiore usa l'area esatta del catalogo barre.",
+  "corretto": "Si usa sempre l'area esatta di barra (catalogo barre, π reale) anche per l'armatura superiore.",
+  "clausola": "Area di barra - definizione",
+  "impatto": "as_prov_mm2 (armatura superiore, ø20/200) passa da 1570,0 a 1570,80 mm²/m (+0,05%) sul caso guida",
+  "uscite": [
+   "flessione.sup_x.as_prov_mm2",
+   "flessione.sup_y.as_prov_mm2"
+  ]
  }
 ]

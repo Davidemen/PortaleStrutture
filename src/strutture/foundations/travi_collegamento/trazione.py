@@ -8,6 +8,7 @@ tension demand. `legacy_compat=True` reproduces it; `legacy_compat=False` compar
 """
 from pydantic import BaseModel, ConfigDict, Field
 
+from strutture.shared.divergences import legacy
 from strutture.shared.report import Check
 from strutture.shared.units import N_PER_KN
 
@@ -30,7 +31,11 @@ def trazione(
 ) -> TrazioneResult:
     """Nt,Rd[C32/C30] = As·fyd/1000; verifica: Nt,Rd > NEd (fixed) vs Nt,Rd > T.L._c (sheet bug)."""
     ntrd_kN = as_mm2 * fyd_MPa / N_PER_KN
-    termine_confronto = tasso_lavoro_compressione if legacy_compat else ned_kN
+    termine_confronto = (
+        tasso_lavoro_compressione
+        if legacy("fond-travi-collegamento/trazione-confronta-resistenza-con-rapporto-non-con-forza", legacy_compat)
+        else ned_kN
+    )
     return TrazioneResult(
         ntrd_kN=ntrd_kN,
         verifica=Check(

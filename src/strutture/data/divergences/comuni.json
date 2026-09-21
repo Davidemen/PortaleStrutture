@@ -9,7 +9,9 @@
   "corretto": "La colonna Provincia viene presa dallo snapshot piu' recente (neve)",
   "clausola": "",
   "impatto": "nessuno sui comuni golden delle specifiche (province precedenti al 2009); interessa es. Agrate Brianza (Provincia: 'Monza' -> 'Monza e Brianza')",
-  "uscite": ["provincia", "comune_info.provincia"]
+  "uscite": ["provincia", "comune_info.provincia"],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "shared.comuni.merge unisce sempre e incondizionatamente le tre fonti con questa regola di provenienza per colonna; non esiste un parametro legacy_compat che riproduca la vecchia colonna, perché il dataset comuni è una fusione dati, non un calcolo a doppia modalità"
  },
  {
   "id": "comuni/vento-zona-invalida-56-in-neve",
@@ -21,7 +23,9 @@
   "corretto": "La colonna zona vento viene presa dallo snapshot sisma/vento, sempre un valore valido 1..9",
   "clausola": "",
   "impatto": "nessuno sui comuni golden (i valori concordano gia' tra gli snapshot)",
-  "uscite": ["zona"]
+  "uscite": ["zona"],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "shared.comuni.merge prende sempre la zona vento dallo snapshot sisma/vento, incondizionatamente; non esiste una modalità legacy_compat che riproduca il valore 56 corrotto dello snapshot neve"
  },
  {
   "id": "comuni/zona-neve-mancante-in-sisma-vento",
@@ -33,6 +37,8 @@
   "corretto": "La zona neve viene presa dallo snapshot neve, che non ha righe vuote",
   "clausola": "",
   "impatto": "nessuno sui comuni golden (tutti gia' compilati in ogni snapshot)",
-  "uscite": ["zona"]
+  "uscite": ["zona"],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "shared.comuni.merge prende sempre la zona neve dallo snapshot neve, incondizionatamente; non esiste una modalità legacy_compat che riproduca le righe vuote degli snapshot sisma/vento"
  }
 ]

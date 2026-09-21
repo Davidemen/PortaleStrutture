@@ -3,6 +3,7 @@ docs/architecture-batch2.md §1 `geotechnics/cedimenti_edometrico`). `run` only 
 modules; no calculation lives here."""
 import logging
 
+from strutture.shared.divergences import legacy
 from strutture.shared.report import CalcError, Report, success
 from strutture.shared.sketch import Sketch
 from strutture.shared.tables import KeyNotFound
@@ -40,11 +41,16 @@ ESEMPIO = {
 
 def run(inputs: EdometricoInput) -> Report[EdometricoOutput]:
     si = converti_in_si(inputs)
-    metodo: MetodoTensioni = "approssimato" if inputs.legacy_compat else inputs.metodo_tensioni
+    metodo: MetodoTensioni = (
+        "approssimato"
+        if legacy("geo-cedimenti-edometrico/metodo-tensioni-forzato-approssimato", inputs.legacy_compat)
+        else inputs.metodo_tensioni
+    )
     # legacy_compat=True stays frozen on the sheet's own formulas: embedment/water table ignored
     # for σ'v0 and Z,crit (docs/architecture-batch2.md §7 review finding HIGH; divergence docs).
-    d_m_sigma = 0.0 if inputs.legacy_compat else si.d_m
-    water_table_m_sigma = 0.0 if inputs.legacy_compat else si.falda_m
+    _falda_frozen = legacy("geo-cedimenti-edometrico/tensione-verticale-sempre-sommersa", inputs.legacy_compat)
+    d_m_sigma = 0.0 if _falda_frozen else si.d_m
+    water_table_m_sigma = 0.0 if _falda_frozen else si.falda_m
     carico = pressione_netta(
         si.q_kPa, si.gamma_kN_m3, si.d_m, water_table_m=si.falda_m, legacy_compat=inputs.legacy_compat,
     )

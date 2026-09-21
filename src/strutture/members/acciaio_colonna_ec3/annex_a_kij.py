@@ -12,6 +12,8 @@ EN1993-1-1 Annex A Table A.1 pairs `Czy`'s `Cmy`/`lambda_max` term with `wy**5`,
 """
 import math
 
+from strutture.shared.divergences import legacy
+
 
 def fattore_mu(nsd_kN: float, ncr_kN: float, chi: float) -> float:
     """column-check!AI30/AN30 — mu = (1-Nsd/Ncr)/(1-chi*Nsd/Ncr)."""
@@ -41,7 +43,7 @@ def czy(wy: float, wz: float, cmy: float, cmz: float, chi_lt: float, lambda_max:
     """column-check!AI72/AL72 — Czy (class 1/2). Note: AL72 divides by `lambda_zz` (W24), not chi_zz.
     Legacy reproduces AL72's `wz**5`; fixed mode uses Table A.1's `wy**5` (see module docstring)."""
     d_lt = 2.0 * alpha_lt * (lambda_lt / (0.1 + lambda_zz**4)) * ((my_sd_kNm * mz_sd_kNm) / (cmy * chi_lt * mpl_y_kNm * cmz * mpl_z_kNm))
-    w_potenza_5 = wz**5 if legacy_compat else wy**5
+    w_potenza_5 = wz**5 if legacy("acciaio-colonna-ec3/czy-usa-wz-invece-di-wy", legacy_compat) else wy**5
     parentesi = (2.0 - 14.0 * (cmy**2 * lambda_max**2) / w_potenza_5) * n_pl - d_lt
     return max(1.0 + (wy - 1.0) * parentesi, 0.6 * math.sqrt(wy / wz) * wel_y_mm3 / wpl_y_mm3)
 

@@ -1,4 +1,5 @@
 """NTC 2018 Tab. 3.2.IV — Ss (amplificazione stratigrafica) e Cc (correzione periodo) by categoria sottosuolo."""
+from strutture.shared.divergences import legacy
 from strutture.shared.numeric import clamp
 
 from .models import CategoriaSottosuolo
@@ -16,7 +17,11 @@ def fattore_amplificazione_ss(
     if categoria_sottosuolo == "A":
         return 1.0
     if categoria_sottosuolo == "B":
-        low = SS_CLIP_INFERIORE_CATEGORIA_B_SHEET if legacy_compat else SS_CLIP_INFERIORE_CATEGORIA_B_NTC
+        low = (
+            SS_CLIP_INFERIORE_CATEGORIA_B_SHEET
+            if legacy("ntc-site-seismic/ss-categoria-b-limite-inferiore-basso", legacy_compat)
+            else SS_CLIP_INFERIORE_CATEGORIA_B_NTC
+        )
         return clamp(1.40 - 0.40 * f0 * ag_g, low, 1.20)
     if categoria_sottosuolo == "C":
         return clamp(1.70 - 0.60 * f0 * ag_g, 1.00, 1.50)

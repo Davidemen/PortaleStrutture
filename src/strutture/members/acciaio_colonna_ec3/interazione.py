@@ -15,6 +15,7 @@ resistances NRk=A*fyk, Mi,Rk=Wi*fyk divided by gammaM1 ONLY. Fixed mode uses the
 resistances (`sezione.npl_rk_kN`/`mpl_y_rk_kNm`/`mpl_z_rk_kNm`); legacy reproduces the
 design-strength-based ones (double gamma division included).
 """
+from strutture.shared.divergences import legacy
 from strutture.shared.report import Check
 
 from . import annex_a_cm as cm
@@ -29,7 +30,11 @@ def _utilizzo(nsd_kN: float, chi: float, npl_kN: float, gamma_m1: float, k_diret
     """column-check!Y47/Y50 — N/(chi*Npl/gM1) + k*My/(chiLT*Mpl,y/gM1) + k*Mz/(Mpl,z/gM1)."""
     termine_n = nsd_kN / (chi * npl_kN / gamma_m1)
     termine_my = k_diretto * my_sd_kNm / (chi_lt * mpl_y_kNm / gamma_m1)
-    denominatore_mz = mpl_z_kNm * gamma_m1 if gamma_extra_terzo_termine else mpl_z_kNm / gamma_m1
+    denominatore_mz = (
+        mpl_z_kNm * gamma_m1
+        if legacy("acciaio-colonna-ec3/eq-6-61-terzo-termine-gamma-m1-extra", gamma_extra_terzo_termine)
+        else mpl_z_kNm / gamma_m1
+    )
     termine_mz = k_incrociato * mz_sd_kNm / denominatore_mz
     return termine_n + termine_my + termine_mz
 
@@ -72,9 +77,10 @@ def costruisci_interazione(
     kzz_val = kij.kzz(classe_num, cmz_val, mu_z, n_z, czz_val)
     # EN1993-1-1 §6.3.3 eq. 6.61/6.62: characteristic resistances (NRk, Mi,Rk) in fixed mode; legacy
     # reproduces the sheet's design-strength-based Npl/Mpl (already embedding gammaM0).
-    npl_denom = npl_kN if inputs.legacy_compat else npl_rk_kN
-    mpl_y_denom = mpl_y_kNm if inputs.legacy_compat else mpl_y_rk_kNm
-    mpl_z_denom = mpl_z_kNm if inputs.legacy_compat else mpl_z_rk_kNm
+    doppia_divisione = legacy("acciaio-colonna-ec3/interazione-doppia-divisione-gamma-m0-m1", inputs.legacy_compat)
+    npl_denom = npl_kN if doppia_divisione else npl_rk_kN
+    mpl_y_denom = mpl_y_kNm if doppia_divisione else mpl_y_rk_kNm
+    mpl_z_denom = mpl_z_kNm if doppia_divisione else mpl_z_rk_kNm
     utilizzo_yy = _utilizzo(
         nsd, chi_yy, npl_denom, gamma_m1, kyy_val, my_sd, chi_lt, mpl_y_denom, kyz_val, mz_sd, mpl_z_denom,
         gamma_extra_terzo_termine=inputs.legacy_compat,

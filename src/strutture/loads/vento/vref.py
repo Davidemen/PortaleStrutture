@@ -1,4 +1,5 @@
 """Step (spec §4.4): altitude-corrected reference velocity, Vento!H12, §3.3.1 / §3.3.2."""
+from strutture.shared.divergences import legacy
 from strutture.shared.report import CalcError
 
 MAX_ALTITUDINE_FORMULA_M = 1500.0  # §3.3.2: oltre, la norma richiede una valutazione specifica del sito
@@ -30,7 +31,7 @@ def velocita_riferimento_suolo(
     legacy_compat=True riproduce la forma NTC2008 superata `vb = vb0 + ka*(as-a0)` (Vento!H12,
     nessun limite di quota, spec §7). legacy_compat=False applica `vb = vb0*ca` per §3.3.2/Tab. 3.3.I.
     """
-    if legacy_compat:
+    if legacy("vento/correzione-altitudine-formula-ntc2008", legacy_compat):
         vref = vb0 + ka * (altitudine_m - a0) if altitudine_m > a0 else vb0
         return vref, vref / vb0
     ca = coefficiente_altitudine(ks, a0, altitudine_m)

@@ -17,7 +17,7 @@ TIPO_TITLES: dict[Tipo, str] = {
     "scelta_ingegneristica": "Scelte ingegneristiche",
     "da_verificare": "Da verificare",
 }
-COLUMNS: tuple[str, ...] = ("titolo", "foglio", "corretto", "clausola", "impatto", "strumenti")
+COLUMNS: tuple[str, ...] = ("titolo", "foglio", "corretto", "clausola", "impatto", "strumenti", "modalità Excel")
 GENERATED_HEADER = (
     "<!-- GENERATED FILE — do not edit by hand. Source: src/strutture/data/divergences/*.json, "
     "rendered by `python -m strutture.shared.divergences.render`. -->"
@@ -42,8 +42,20 @@ def _table(rows: tuple[Divergence, ...]) -> str:
     return f"{header}\n{separator}\n{body}"
 
 
+def modalita_excel(d: Divergence) -> str:
+    """How Excel mode (`legacy_compat`) relates to the entry — the one thing an engineer validating
+    the tool against the spreadsheet must know: an entry that is NOT reproduced never shows up in a
+    side-by-side comparison of the two modes."""
+    if d.ramo == "codice":
+        return "riprodotta"
+    if d.ramo == "condiviso":
+        insieme = f" insieme a {', '.join(d.riprodotta_da)}" if d.riprodotta_da else ""
+        return f"riprodotta{insieme} — {d.motivo_senza_ramo}"
+    return f"NON riprodotta — {d.motivo_senza_ramo}"
+
+
 def _row(d: Divergence) -> str:
-    values = (d.titolo, d.foglio, d.corretto, d.clausola, d.impatto, ", ".join(d.strumenti))
+    values = (d.titolo, d.foglio, d.corretto, d.clausola, d.impatto, ", ".join(d.strumenti), modalita_excel(d))
     return "| " + " | ".join(_escape(v) for v in values) + " |"
 
 

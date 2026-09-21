@@ -6,6 +6,8 @@ conflates "no overturning demand" with "very safe" under one text value. Here Mr
 `None` (`senza_domanda`); `legacy_compat=True` keeps the sheet's stand-in."""
 from dataclasses import dataclass
 
+from strutture.shared.divergences import legacy
+
 LEGACY_NO_DEMAND_RATIO = 100.0  # sheet's ">100" text, used both for Mrib=0 and ratio>100.
 
 
@@ -26,8 +28,11 @@ def mu_ribaltamento(n_kN: float, ax_m: float, by_m: float, myy_kNm: float, mxx_k
 
 def _ratio(m_stab_kNm: float, m_rib_kNm: float, *, legacy_compat: bool) -> float | None:
     if m_rib_kNm == 0:
-        return LEGACY_NO_DEMAND_RATIO if legacy_compat else None
+        return (LEGACY_NO_DEMAND_RATIO
+                if legacy("plinti-isolati/ribaltamento-mrib-zero-valore-fittizio", legacy_compat)
+                else None)
     ratio = m_stab_kNm / m_rib_kNm
-    if legacy_compat and ratio > LEGACY_NO_DEMAND_RATIO:
+    if (legacy("plinti-isolati/ribaltamento-mrib-zero-valore-fittizio", legacy_compat)
+            and ratio > LEGACY_NO_DEMAND_RATIO):
         return LEGACY_NO_DEMAND_RATIO
     return ratio

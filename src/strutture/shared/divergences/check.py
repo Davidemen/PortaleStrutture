@@ -104,23 +104,35 @@ def orphan_id_report(register_ids: frozenset[str], code_ids: frozenset[str]) -> 
 
 def linkage_report(register: tuple[Divergence, ...], code_ids: frozenset[str], *,
                    strict: bool) -> tuple[tuple[str, ...], tuple[str, ...]]:
-    """Register <-> code linkage, both directions. An entry declared `ramo="nessuno"` has no branch
-    on purpose: it is never reported as unlinked, and calling `legacy()` with its id is an error.
-    `strict` (the state after the linkage pass) turns every remaining unlinked entry into an error."""
-    register_ids = frozenset(d.id for d in register)
-    branchless = frozenset(d.id for d in register if d.ramo == "nessuno")
-    missing = tuple(f"legacy() id {i!r} used in code but missing from the register" for i in sorted(code_ids - register_ids))
+    """Register <-> code linkage, both directions. Only `ramo="codice"` entries own a `legacy()`
+    call: "condiviso" (reproduced through another entry's branch or a rules table) and "nessuno"
+    (not reproduced) are never reported as unlinked, and calling `legacy()` with their id is an
+    error. `strict` (the state after the linkage pass) turns every unlinked entry into an error."""
+    by_id = {d.id: d for d in register}
+    without_own_branch = {d.id: d.ramo for d in register if d.ramo != "codice"}
+    missing = tuple(f"legacy() id {i!r} used in code but missing from the register" for i in sorted(code_ids - by_id.keys()))
     contradicted = tuple(
-        f"{i}: dichiarata ramo='nessuno' ma il codice chiama legacy() con questo id" for i in sorted(branchless & code_ids)
+        f"{i}: dichiarata ramo='{without_own_branch[i]}' ma il codice chiama legacy() con questo id"
+        for i in sorted(without_own_branch.keys() & code_ids)
     )
-    unlinked = sorted(register_ids - branchless - code_ids)
+    errors = missing + contradicted + _riprodotta_da_errors(register, by_id)
+    unlinked = sorted(by_id.keys() - without_own_branch.keys() - code_ids)
     if strict:
-        unlinked_errors = tuple(
+        return errors + tuple(
             f"{i}: nessuna chiamata legacy() nel codice (dichiarare ramo='nessuno' con un motivo se è voluto)" for i in unlinked
-        )
-        return missing + contradicted + unlinked_errors, ()
-    warnings = tuple(f"{i}: non ancora collegati nel codice (nessuna chiamata legacy())" for i in unlinked)
-    return missing + contradicted, warnings
+        ), ()
+    return errors, tuple(f"{i}: non ancora collegati nel codice (nessuna chiamata legacy())" for i in unlinked)
+
+
+def _riprodotta_da_errors(register: tuple[Divergence, ...], by_id: dict[str, Divergence]) -> tuple[str, ...]:
+    errors = []
+    for divergence in register:
+        for target in divergence.riprodotta_da:
+            if target not in by_id:
+                errors.append(f"{divergence.id}: riprodotta_da {target!r} non esiste nel registro")
+            elif by_id[target].ramo != "codice":
+                errors.append(f"{divergence.id}: riprodotta_da {target!r} non è una voce con ramo='codice'")
+    return tuple(errors)
 
 
 def _deref(node: dict, defs: dict) -> dict:

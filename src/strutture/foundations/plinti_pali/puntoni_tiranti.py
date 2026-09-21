@@ -34,6 +34,7 @@ Code-review fixes (all gated on `legacy_compat=False`, sheet reproduction untouc
   strut's horizontal thrust component (EC2 §6.5.3 node equilibrium)."""
 import math
 
+from strutture.shared.divergences import legacy
 from strutture.shared.ec2_strut_tie import sigma_rd_max
 from strutture.shared.rebar_catalog import bars_area
 from strutture.shared.report import CalcError
@@ -106,9 +107,11 @@ def _geometria_puntone(
     wt_mm = 2.0 * copriferro_mm + 2.0 * max(diametro_inf_x_mm, diametro_inf_y_mm) + diametro_tirante_principale_mm
     h_wt2_m = h_plinto_m - (wt_mm / 2.0) / 1000.0
     theta_reale_deg = math.degrees(math.atan(h_wt2_m / lxy_m))
-    if legacy_compat:
+    if legacy("plinti-pali/angolo-puntone-limitato-a-25-gradi", legacy_compat):
         theta_deg = max(LEGACY_MIN_STRUT_ANGLE_DEG, theta_reale_deg)
     else:
+        # The 20-70 deg sanity band (plinti-pali/angolo-puntone-fascia-sicurezza-20-70-non-normativa,
+        # ramo="nessuno") is enforced unconditionally here, together with this same branch.
         if not (MIN_STRUT_ANGLE_DEG <= theta_reale_deg <= MAX_STRUT_ANGLE_DEG):
             raise CalcError(
                 f"puntone troppo inclinato (θ={theta_reale_deg:.1f}°): meccanismo tirante-puntone non applicabile",
@@ -128,7 +131,7 @@ def _nodo_puntone(
     """(sigma_rd_max_MPa, fns_kN) = MIN over the CCC node and the applicable second node class
     (CCT for a single tie direction, CTT for two tie directions anchored, EC2 §6.5.4(4)).
     `legacy_compat=True` reproduces the sheet's own non-standard coefficients."""
-    if legacy_compat:
+    if legacy("plinti-pali/nodi-puntone-tirante-coefficienti-non-standard", legacy_compat):
         sigma_ccc = sigma_rd_max(fck_MPa, "CCC", gamma_c, alpha_cc=ALPHA_CC_NODE, k1=K1_CCC_STRUT_COEFFICIENT).sigma_rd_max_MPa
         k2 = K2_CCT_ONE_TIE if nodo_secondario == "CCT" else K2_CCT_TWO_TIES
         sigma_secondario = sigma_rd_max(fck_MPa, "CCT", gamma_c, alpha_cc=ALPHA_CC_NODE, k2=k2).sigma_rd_max_MPa
@@ -194,9 +197,15 @@ def _schema_2x2(
     # Fix (node equilibrium, EC2 §6.5.3): the orthogonal ties resolve the strut's HORIZONTAL thrust
     # (fus*cos(theta)), not the full inclined strut force; legacy keeps the sheet's own formula
     # (missing this cos(theta) projection) unconditionally.
-    proiezione_orizzontale = 1.0 if legacy_compat else math.cos(theta_rad)
+    proiezione_orizzontale = (
+        1.0 if legacy("plinti-pali/tiranti-2x2-senza-proiezione-coseno", legacy_compat) else math.cos(theta_rad)
+    )
     fut_x = fus_kN * proiezione_orizzontale * (1.0 - K_TIE_XY_FRACTION) * math.cos(alpha_rad)
-    angolo_y = math.cos(alpha_rad) if legacy_compat else math.sin(alpha_rad)
+    angolo_y = (
+        math.cos(alpha_rad)
+        if legacy("plinti-pali/tiranti-ortogonali-stesso-angolo-griglia-non-quadrata", legacy_compat)
+        else math.sin(alpha_rad)
+    )
     fut_y = fus_kN * proiezione_orizzontale * (1.0 - K_TIE_XY_FRACTION) * angolo_y
     return PuntoniTiranti(
         puntone=puntone,

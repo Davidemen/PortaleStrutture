@@ -58,9 +58,12 @@ under `docs/divergences/` is GENERATED (`python -m strutture.shared.divergences.
   flag unchanged: linking a branch NEVER changes a number. The id must be a string LITERAL (the checker reads the AST).
 - One branch = one entry. A branch that implements two register entries is split into two `legacy()` conditions only if
   the code already separates them; otherwise link the entry that names that behaviour and mention the other id in a comment.
-- A register entry with no branch anywhere (a sheet label, a sheet row limit, behaviour that cannot or must not be
-  reproduced, a fix that is unconditional in BOTH modes) gets `"ramo": "nessuno"` and `"motivo_senza_ramo": "<one
-  Italian sentence>"`. Do not invent a branch to satisfy the checker, and do not delete entries.
+- An entry without a `legacy()` call of its own declares how Excel mode relates to it, with `"motivo_senza_ramo"`
+  (one Italian sentence, >= 20 characters): `"ramo": "condiviso"` = Excel mode DOES reproduce it, through another
+  entry's branch (`"riprodotta_da": ["<id>", …]`, each an existing `ramo="codice"` entry) or through a per-norm rules
+  table; `"ramo": "nessuno"` = Excel mode does NOT reproduce it (a fix applied in both modes, a sheet label or row
+  limit, an input-schema change). The difference matters to the engineer: a "nessuno" entry never shows up in a
+  side-by-side comparison of the two modes. Do not invent a branch to satisfy the checker; do not delete entries.
 - A `legacy_compat` branch with no register entry gets a NEW entry (all required fields, Italian, `tipo` honest —
   `da_verificare` when unsure), not a made-up link to a vaguely related one.
 - Plain plumbing (`legacy_compat=legacy_compat` passed down, a model field, a docstring) is not a branch: leave it.

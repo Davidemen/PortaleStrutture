@@ -46,7 +46,7 @@ def test_render_unit_skips_tipi_with_no_entries() -> None:
 
 def test_table_has_the_contract_columns_in_order() -> None:
     text = render_unit((_div(),))
-    assert "| titolo | foglio | corretto | clausola | impatto | strumenti |" in text
+    assert "| titolo | foglio | corretto | clausola | impatto | strumenti | modalità Excel |" in text
 
 
 def test_row_values_and_strumenti_join_appear_in_table() -> None:
@@ -91,3 +91,17 @@ def test_write_all_creates_missing_directory(tmp_path: Path) -> None:
     docs_dir = tmp_path / "nested" / "divergences"
     write_all((_div(),), docs_dir)
     assert docs_dir.is_dir()
+
+
+def test_the_table_says_how_excel_mode_relates_to_each_entry() -> None:
+    from strutture.shared.divergences.render import modalita_excel
+
+    assert modalita_excel(_div()) == "riprodotta"
+    shared = _div(ramo="condiviso", motivo_senza_ramo="Stesso ramo di demo/altra", riprodotta_da=("demo/altra",))
+    assert modalita_excel(shared) == "riprodotta insieme a demo/altra — Stesso ramo di demo/altra"
+    table_rules = _div(ramo="condiviso", motivo_senza_ramo="Tabella delle regole per norma")
+    assert modalita_excel(table_rules) == "riprodotta — Tabella delle regole per norma"
+    none = _div(ramo="nessuno", motivo_senza_ramo="Correzione applicata in entrambe le modalità")
+    assert modalita_excel(none) == "NON riprodotta — Correzione applicata in entrambe le modalità"
+    assert "| modalità Excel |" in render_unit((none,))
+    assert "NON riprodotta — Correzione applicata in entrambe le modalità" in render_unit((none,))

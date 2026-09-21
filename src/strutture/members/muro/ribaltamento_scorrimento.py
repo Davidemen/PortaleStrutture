@@ -4,6 +4,8 @@
 import math
 from typing import NamedTuple
 
+from strutture.shared.divergences import legacy
+
 # NTC2018 Tab. 6.5.I γR for the "ribaltamento" verification row — the table only ships
 # "capacita_portante"/"scorrimento"/"resistenza_terreno_a_valle" in `shared.ntc_combos`
 # (a shared module outside this package's edit scope), so it is named here instead of imported.
@@ -14,7 +16,7 @@ GAMMA_R_SISMA = 1.0  # NTC2018 §7.11.6.2.1 — γR = 1 per scorrimento/ribaltam
 def soglia_verifica(*, sismica: bool, legacy_compat: bool, gamma_r_statico: float) -> float:
     """Pass/fail threshold on OR/OS: 1 for the sheet (`legacy_compat=True`, no γR at all), γR=1 for
     seismic rows, `gamma_r_statico` (the Tab. 6.5.I R3 column) for static rows."""
-    if legacy_compat:
+    if legacy("muro-sostegno/coefficienti-resistenza-mancanti", legacy_compat):
         return 1.0
     return GAMMA_R_SISMA if sismica else gamma_r_statico
 

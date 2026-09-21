@@ -4,6 +4,7 @@ Circolare 7/2019, EC2 or NTC2008 per `inputs.norma`). Shares ~80% of its step mo
 of L1/L2 (docs/specs/ca-pilastri.md). Norm-specific parameters come from `regole.resolve`."""
 import logging
 
+from strutture.shared.divergences import legacy
 from strutture.shared.report import Check, Report, success
 from strutture.shared.section_geometry import circle
 
@@ -65,7 +66,7 @@ def _taglio(inputs: PilastroCircolareInput, rules: RuleSet, ac_mm2: float, lato_
     nu1 = _nu1(inputs, rules)
     # See tool_rettangolare.py's _taglio: cotθ's own ν1 must match VRd,max's ν1; the EC2 sheet's
     # own CX42 formula hardcodes 0.5 unconditionally, so legacy_compat=True keeps 0.5.
-    nu1_theta = NU1_NTC_FISSO if inputs.legacy_compat else nu1
+    nu1_theta = NU1_NTC_FISSO if legacy("ca-pilastri/cot-theta-nu1-incoerente-ec2", inputs.legacy_compat) else nu1
     theta = cot_theta(inputs.diametro_staffe_mm, fyd_MPa, lato_equiv_mm, inputs.passo_staffe_mm, ac_coef, fcd_MPa, nu1=nu1_theta)
     v_rdc = vrdc(z_mm, lato_equiv_mm, ac_coef, fcd_MPa, theta, nu1=nu1)
     v_rds = vrds(z_mm, inputs.diametro_staffe_mm, inputs.passo_staffe_mm, fyd_MPa, theta)
@@ -96,13 +97,17 @@ def _dettagli(inputs: PilastroCircolareInput, rules: RuleSet, ac_mm2: float, as_
 
     diam_long_ok = (
         inputs.diametro_ferri_mm > rules.diametro_long_min_mm
-        if inputs.legacy_compat
+        if legacy("ca-pilastri/limite-diametro-barre-longitudinali-stretto", inputs.legacy_compat)
         else inputs.diametro_ferri_mm >= rules.diametro_long_min_mm
     )
-    area_min_ok = as_min_mm2 < as_mm2 if inputs.legacy_compat else as_min_mm2 <= as_mm2
+    area_min_ok = (
+        as_min_mm2 < as_mm2
+        if legacy("ca-pilastri/limite-area-minima-longitudinale-stretto", inputs.legacy_compat)
+        else as_min_mm2 <= as_mm2
+    )
     diam_staffe_ok = (
         soglia_staffe < inputs.diametro_staffe_mm
-        if inputs.legacy_compat
+        if legacy("ca-pilastri/limite-diametro-staffe-stretto", inputs.legacy_compat)
         else soglia_staffe <= inputs.diametro_staffe_mm
     )
     result = DettagliResult(

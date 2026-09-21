@@ -9,6 +9,7 @@ SISMA_1, SISMA_2) and returns every intermediate group.
 import logging
 import math
 
+from strutture.shared.divergences import legacy
 from strutture.shared.materials.rebar import rebar_properties
 from strutture.shared.ntc_combos import fattori_resistenza
 from strutture.shared.report import CalcError, Check, Report, success
@@ -89,7 +90,7 @@ def _spinta_combo(nome: NomeCombo, *, inputs: MuroSostegnoInput, geometria: Geom
     if sismica:
         segno_kv = 1.0 if nome == "SISMA_1" else -1.0
         kh, kv, theta_rad = coefficienti_sismici(s=s_sismico, ag_g=inputs.ag_g, beta_m=inputs.beta_m, segno_kv=segno_kv)
-        if not inputs.legacy_compat:
+        if not legacy("muro-sostegno/inerzia-sismica-muro-terreno-assente", inputs.legacy_compat):
             # EN1998-5 §7.3.2.2(2)P / NTC2018 §7.11.6.2.1: the same vertical seismic coefficient kv
             # that de-rates/up-rates the thrust also scales the monolith's own stabilising weight.
             kv_factor = 1 + kv
@@ -142,7 +143,7 @@ def _ribaltamento_scorrimento_combo(spinta: SpintaCombo, *, inputs: MuroSostegno
     # monolith's own mass, on top of MSTAB/Ntot already carrying the (1±kv) weight from `pesi_combo`).
     fh_kN = 0.0
     m_fh_kNm = 0.0
-    if spinta.sismica and not inputs.legacy_compat:
+    if spinta.sismica and not legacy("muro-sostegno/inerzia-sismica-muro-terreno-assente", inputs.legacy_compat):
         fh_kN = spinta.kh * (spinta.w_muro_kN + spinta.w_terr_kN)
         m_fh_kNm = spinta.kh * (spinta.w_muro_kN * geometria.z_muro_m + spinta.w_terr_kN * geometria.z_terr_m)
     m_rib_kNm = momento_ribaltante(
@@ -242,7 +243,7 @@ def _pressioni_combo(spinta: SpintaCombo, verifica: RibaltamentoScorrimentoCombo
 def _armatura_paramento_combo(
     spinta: SpintaCombo, verifica: RibaltamentoScorrimentoCombo, *, inputs: MuroSostegnoInput, geometria: GeometriaResult, fyd_MPa: float
 ) -> ArmaturaParamentoCombo:
-    if inputs.legacy_compat:
+    if legacy("muro-sostegno/momento-paramento-altezza-piena-invece-di-stelo", inputs.legacy_compat):
         zq_m = paramento.leva_sovraccarico_m(h_muro_tot_m=geometria.h_muro_tot_m, s_fond_m=inputs.s_fond_m)
         zterr_m = paramento.leva_terreno_m(braccio_terr_m=verifica.braccio_terr_m, s_fond_m=inputs.s_fond_m)
         m_ed_kNm = paramento.momento_flettente_kNm(sh_q_kN=verifica.sh_q_kN, sh_terr_kN=verifica.sh_terr_kN, zq_m=zq_m, zterr_m=zterr_m)

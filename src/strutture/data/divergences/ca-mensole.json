@@ -9,7 +9,9 @@
   "corretto": "restituisce sempre un numero (1,0 o 1,5)",
   "clausola": "",
   "impatto": "nessuno (il caso golden usa il ramo NO, c=1 in entrambe le modalità)",
-  "uscite": ["capacita.c_coeff"]
+  "uscite": ["capacita.c_coeff"],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "Il bug di tipo (stringa vs numero) non è riproducibile in un modello Pydantic tipizzato: coefficiente_c restituisce sempre un numero, identico nelle due modalità."
  },
  {
   "id": "ca-mensole/acciaio-feb22k-mancante-in-tabella",
@@ -33,7 +35,9 @@
   "corretto": "mantenuto identico al foglio in entrambe le modalità, in attesa di conferma della clausola di riferimento",
   "clausola": "",
   "impatto": "",
-  "uscite": []
+  "uscite": [],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "La formula è mantenuta identica al foglio in entrambe le modalità in attesa di conferma della clausola: armature() non riceve legacy_compat."
  },
  {
   "id": "ca-mensole/costanti-formule-tirante-puntone",
@@ -45,6 +49,8 @@
   "corretto": "riprodotte come sono in entrambe le modalità, in attesa di conferma",
   "clausola": "",
   "impatto": "",
-  "uscite": []
+  "uscite": [],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "Le costanti sono riprodotte identiche in entrambe le modalità in attesa di conferma: capacita() non riceve legacy_compat."
  }
 ]

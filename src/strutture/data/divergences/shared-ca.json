@@ -21,7 +21,9 @@
   "corretto": "la tabella è ora indicizzata correttamente interferro->tensione massima, con una colonna per ciascuna classe di apertura fessura (w1/w2/w3), invertita da Tab. C4.1.III/Table 7.3N",
   "clausola": "NTC2018 Tab. C4.1.III / EN1992-1-1 Table 7.3N",
   "impatto": "nessun caso golden/oracolo chiama questa funzione; solo test unitari",
-  "uscite": []
+  "uscite": [],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "la tabella interferro->tensione corretta (indicizzata giusta, con le tre classi w1/w2/w3) è l'unica esistente in shared.rebar_catalog: non c'è mai stata, nel codice, una versione invertita/senza classi da riprodurre con un branch legacy_compat"
  },
  {
   "id": "shared-ca/tabella-classe-fessurazione-celle-vuote",
@@ -33,7 +35,9 @@
   "corretto": "restituisce esplicitamente 'nessun limite di apertura' (richiede verifica di decompressione) per queste tre combinazioni, invece di un valore fittizio",
   "clausola": "NTC2018 Tab. 4.1.IV",
   "impatto": "nessuno sui casi golden (tutti usano condizioni ordinarie/poco sensibile)",
-  "uscite": []
+  "uscite": [],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "shared.durability_cover.crack_width_limit non ha parametro legacy_compat: restituisce sempre None (nessun limite, richiede decompressione) per le tre combinazioni vuote, in ogni modalità; non esiste un ramo che restituisca il vecchio valore fittizio 0"
  },
  {
   "id": "shared-ca/asse-neutro-fessurato-generalizzato-a-doppia-armatura",
@@ -45,6 +49,20 @@
   "corretto": "formula generalizzata a sezione rettangolare con armatura compressa; con As2=0 si riduce esattamente alla formula del foglio",
   "clausola": "",
   "impatto": "nessuno, il caso As2=0 riproduce esattamente y=126,44mm del foglio",
+  "uscite": [],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "shared.section_geometry.cracked_neutral_axis non ha parametro legacy_compat: la formula generalizzata è l'unica esistente e si applica sempre, riducendosi esattamente al caso del foglio quando As2=0"
+ },
+ {
+  "id": "shared-ca/tabella-interferro-solo-ricerca-esatta",
+  "titolo": "La tabella interferro-vs-tensione limite (Tab. C4.1.III) espone anch'essa una modalità a ricerca esatta",
+  "tipo": "da_verificare",
+  "strumenti": [],
+  "cella": "",
+  "foglio": "n/a: questa tabella non deriva da alcuna cella dei fogli verificati per questo pacchetto (vedi shared-ca/tabella-tensione-vs-interferro-invertita); non c'è un comportamento del foglio sorgente da riprodurre",
+  "corretto": "shared.rebar_catalog.sigma_limit_by_spacing espone comunque, per coerenza di interfaccia con sigma_limit_by_diameter, una modalità legacy_compat=True a ricerca esatta (VLOOKUP-style); legacy_compat=False interpola linearmente tra gli interferri tabellati più vicini",
+  "clausola": "NTC2018 Tab. C4.1.III / EN1992-1-1 Table 7.3N",
+  "impatto": "nessun caso golden/oracolo chiama questa funzione; solo test unitari",
   "uscite": []
  }
 ]

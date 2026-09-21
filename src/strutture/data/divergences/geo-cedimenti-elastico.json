@@ -110,7 +110,9 @@
   "corretto": "Una nuova validazione respinge esplicitamente righe sovrapposte o con un buco fra loro, in entrambe le modalità (un buco iniziale prima del primo strato resta ammesso, perché il riferimento è il piano campagna).",
   "clausola": "coerenza classica della stratigrafia (nessuna clausola NTC diretta)",
   "impatto": "nessuno sui casi guida/oracolo (tutti già continui)",
-  "uscite": []
+  "uscite": [],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "La validazione di continuità della stratigrafia è sempre attiva e identica in entrambe le modalità: non esiste un ramo legacy_compat da collegare."
  },
  {
   "id": "geo-cedimenti-elastico/rettangolo-confronto-500-dieci-volte-piu-grande",
@@ -124,6 +126,24 @@
   "corretto": "Non corretto in nessuna modalità: è un dato di input, non un bug di formula; il valore del foglio 500 è usato così com'è, come richiesto per il caso guida.",
   "clausola": "",
   "impatto": "",
-  "uscite": []
+  "uscite": [],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "È un dato di input del caso guida, non un comportamento di calcolo: non esiste né può esistere un ramo legacy_compat per un valore d'ingresso."
+ },
+ {
+  "id": "geo-cedimenti-elastico/punto-o-accoppiamento-lati-errato",
+  "titolo": "Il cedimento nel punto O generico accoppia due volte lo stesso lato invece di un lato per ciascun rettangolo d'angolo",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "geo-cedimento-elastico-newmark"
+  ],
+  "cella": "500!M-T (Ofga), AK-AR (Ocde)",
+  "foglio": "I blocchi 'Ofga' e 'Ocde' del punto O accoppiano (F7,F9) e (F10,F8), cioè due segmenti dello stesso lato del rettangolo O'gbd, invece di un segmento per lato come richiede un rettangolo d'angolo valido; nei casi guida il punto O è centrato (F7=F8=F9=F10), quindi l'errore è numericamente invisibile.",
+  "corretto": "punto.py in modalità legacy riproduce esattamente la formula letterale a 4 blocchi del foglio; in modalità standard usa shared.soil_stress.under_point, che accoppia correttamente un segmento per lato.",
+  "clausola": "sovrapposizione classica di rettangoli d'angolo (Fadum/Newmark, Poulos & Davis) — nessuna clausola NTC diretta",
+  "impatto": "nessuno sui casi guida (punto O centrato, F7=F8=F9=F10); la differenza emerge solo per un punto O asimmetrico, non ancora verificato con un caso di test dedicato",
+  "uscite": [
+   "punto.w_o_cm"
+  ]
  }
 ]

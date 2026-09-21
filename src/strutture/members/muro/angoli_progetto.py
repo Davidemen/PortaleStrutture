@@ -10,14 +10,16 @@ angle for a given γφ. `legacy_compat=False` implements the norm text; the shee
 kept unchanged under `legacy_compat=True` (see docs/divergences/muro-sostegno.md)."""
 import math
 
+from strutture.shared.divergences import legacy
+
 
 def phi_d_rad(phi_deg: float, gamma_phi_terr: float, *, legacy_compat: bool = False) -> float:
-    if legacy_compat:
+    if legacy("muro-sostegno/phi-d-divide-angolo-invece-di-tangente", legacy_compat):
         return math.radians(phi_deg) / gamma_phi_terr
     return math.atan(math.tan(math.radians(phi_deg)) / gamma_phi_terr)
 
 
 def delta_d_rad(delta_deg: float, gamma_phi_terr: float, *, legacy_compat: bool = False) -> float:
-    if legacy_compat:
+    if legacy("muro-sostegno/phi-d-divide-angolo-invece-di-tangente", legacy_compat):
         return math.atan(math.tan(math.radians(delta_deg))) / gamma_phi_terr
     return math.atan(math.tan(math.radians(delta_deg)) / gamma_phi_terr)

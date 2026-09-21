@@ -9,7 +9,9 @@
   "corretto": "usa la tabella condivisa dei materiali calcestruzzo (stessa classe come input)",
   "clausola": "NTC2018 §11.2.10.1 / Tab. 4.1.I",
   "impatto": "nessuno per il caso golden (C28/35 riproduce esattamente Ecm=32588,1 MPa, fctm=2,83499 MPa)",
-  "uscite": ["materiale.ecm_MPa", "materiale.fctm_MPa"]
+  "uscite": ["materiale.ecm_MPa", "materiale.fctm_MPa"],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "Il collegamento esterno morto non può essere riprodotto numericamente: Ecm/fctm sono sempre calcolati dalla tabella materiali condivisa in entrambe le modalità."
  },
  {
   "id": "ca-fessurazione/opzione-trazione-eccentrica-divisione-per-zero",
@@ -21,7 +23,9 @@
   "corretto": "opzione rimossa, restano solo 'caso di flessione' e 'caso di trazione semplice'",
   "clausola": "Circolare 2019 §C4.1.9",
   "impatto": "nessuno (il caso golden usa 'caso di flessione')",
-  "uscite": []
+  "uscite": [],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "L'opzione 'trazione eccentrica' è stata rimossa dall'enum tipo_sollecitazione: non è più selezionabile in alcuna modalità, quindi non esiste un ramo da attivare."
  },
  {
   "id": "ca-fessurazione/limiti-sigma-s-senza-formula",
@@ -33,7 +37,9 @@
   "corretto": "i limiti sono derivati dal diametro barra tramite la tabella C4.1.II (curva w3 per FRE, w2 per QPE)",
   "clausola": "NTC2018 §4.1.2.2.4 / Tab. C4.1.II",
   "impatto": "nessuno per il caso golden (Ø=16mm riproduce esattamente 280/240 MPa)",
-  "uscite": []
+  "uscite": [],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "I campi D21/D43/D66 digitati sono stati sostituiti da diametro_mm_i in entrambe le modalità: il limite è sempre calcolato dalla tabella C4.1.II, senza un ramo legacy_compat dedicato."
  },
  {
   "id": "ca-fessurazione/sottotitolo-zero-invece-di-vuoto",
@@ -45,7 +51,9 @@
   "corretto": "sottotitolo vuoto quando non presente",
   "clausola": "",
   "impatto": "nessuno (solo estetico)",
-  "uscite": []
+  "uscite": [],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "I sottotitoli sono costanti di modulo (sezioni.py) identiche in entrambe le modalità: non esiste un valore 0 da riprodurre con un ramo."
  },
  {
   "id": "ca-fessurazione/costante-delta-sm-arrotondata",

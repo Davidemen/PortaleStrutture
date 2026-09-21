@@ -3,6 +3,7 @@ of layers via `shared.soil_layers.weighted_modulus` (code-standard) vs the sheet
 to exactly the first 4 rows of the layer table (`docs/architecture-batch2.md` §7 "T-G-3 H11":
 `H11 = Σ_{i=11}^{14} Gi·(Fi-Ei) / C7` -- row 15+ never enters the sum, however deep the real
 stratigraphy goes)."""
+from strutture.shared.divergences import legacy
 from strutture.shared.soil_layers import SoilLayer, weighted_modulus
 
 MAX_LEGACY_LAYERS = 4
@@ -21,6 +22,6 @@ def legacy_weighted_modulus(layers: tuple[SoilLayer, ...], h_m: float) -> float:
 
 
 def es_weighted_modulus(layers: tuple[SoilLayer, ...], h_m: float, *, legacy_compat: bool = False) -> float:
-    if legacy_compat:
+    if legacy("geo-cedimenti-elastico/modulo-medio-pesato-solo-primi-4-strati", legacy_compat):
         return legacy_weighted_modulus(layers, h_m)
     return weighted_modulus(layers, h_m)

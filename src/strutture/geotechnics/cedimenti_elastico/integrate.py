@@ -18,6 +18,7 @@ the layer/modulus lookup is unaffected -- only the stress sample point moves).
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from strutture.shared.divergences import legacy
 from strutture.shared.report import CalcError
 from strutture.shared.soil_layers import SoilLayer, layer_at
 from strutture.shared.tables import KeyNotFound
@@ -61,7 +62,11 @@ def integrate_settlement(
             layer = layer_at(layers, z_m, legacy=legacy_compat)
         except KeyNotFound as error:
             raise CalcError(str(error)) from error
-        sigma_z_m = z_m if legacy_compat else (previous_z_m + z_m) / 2
+        sigma_z_m = (
+            z_m
+            if legacy("geo-cedimenti-elastico/tensione-valutata-a-fondo-fetta", legacy_compat)
+            else (previous_z_m + z_m) / 2
+        )
         sigma_kpa = sigma_kpa_at(sigma_z_m)
         delta_w_m = thickness_m * (sigma_kpa / KPA_PER_MPA) / layer.modulo_MPa if layer is not None else 0.0
         slices.append(Slice(z_m=z_m, sigma_kPa=sigma_kpa, modulo_MPa=layer.modulo_MPa if layer is not None else None, delta_w_m=delta_w_m))

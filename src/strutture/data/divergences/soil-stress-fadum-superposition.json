@@ -3,12 +3,19 @@
   "id": "soil-stress-fadum-superposition/sovrapposizione-fadum-coppie-dello-stesso-lato",
   "titolo": "La sovrapposizione di Fadum per il punto generico accoppia due segmenti dello stesso lato invece di un segmento per lato",
   "tipo": "errore_foglio",
-  "strumenti": ["geo-cedimento-elastico-newmark"],
+  "strumenti": [
+   "geo-cedimento-elastico-newmark"
+  ],
   "cella": "500!M:T (blocco Ofga), 500!AK:AR (blocco Ocde)",
   "foglio": "I due blocchi di calcolo accoppiano due segmenti dello stesso lato del rettangolo (invece di un segmento per ciascuno dei due lati), il che non è un rettangolo d'angolo valido per la sovrapposizione di Newmark quando il punto non è centrato.",
   "corretto": "shared.soil_stress.under_point costruisce ognuno dei 4 sotto-rettangoli accoppiando sempre uno split in x con uno split in y, mai due segmenti dello stesso lato; verificato per confronto indipendente con un'integrazione numerica diretta di Boussinesq (punto interno ed esterno).",
   "clausola": "sovrapposizione classica a 4 rettangoli di Newmark/Fadum (Poulos & Davis)",
   "impatto": "nessuno sui casi guida 500/400/350 (punto sempre centrato, le due formule coincidono); per un punto non centrato le due formule danno risultati diversi",
-  "uscite": []
+  "uscite": [],
+  "ramo": "condiviso",
+  "motivo_senza_ramo": "shared.soil_stress.under_point non ha parametro legacy_compat: costruisce sempre i 4 sotto-rettangoli nel modo corretto; il vecchio accoppiamento errato, se riprodotto, è responsabilità dello strumento consumatore con un proprio id di registro",
+  "riprodotta_da": [
+   "geo-cedimenti-elastico/punto-o-accoppiamento-lati-errato"
+  ]
  }
 ]

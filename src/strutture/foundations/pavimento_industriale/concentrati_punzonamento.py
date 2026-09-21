@@ -11,6 +11,7 @@ import math
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from strutture.shared.divergences import legacy
 from strutture.shared.ec2_shear import control_perimeter
 from strutture.shared.ec2_shear.v_rd_max import V_RD_MAX_COEFF_A1_2014
 from strutture.shared.report import Check
@@ -67,18 +68,29 @@ def punzonamento(
     """spec steps 7-10."""
     v_ed_kn = p_slu_kN * BETA_PUNZONAMENTO[posizione]
     u0_mm = control_perimeter("rett", bx_mm, by_mm, FACE_PERIMETER_DIST_MM).u_mm
-    vrd_max_coefficient = VRD_MAX_COEFFICIENT_NTC if legacy_compat else coeff_vrd_max
+    vrd_max_coefficient = (
+        VRD_MAX_COEFFICIENT_NTC
+        if legacy("pavimento-industriale/coefficiente-vrd-max-punzonamento-scelta-utente", legacy_compat)
+        else coeff_vrd_max
+    )
     v_rd_max_mpa = vrd_max_coefficient * v1 * fcd_MPa
     v_ed0_mpa = v_ed_kn * 1000.0 / (u0_mm * d_mm)
     # Only bordo/spigolo carry the h-vs-d bug (spec bug 2): centro already uses d in the sheet.
-    depth_for_u1 = d_mm if posizione == "centro" else (h_mm if legacy_compat else d_mm)
+    usa_spessore_h = legacy(
+        "pavimento-industriale/perimetro-punzonamento-bordo-spigolo-usa-spessore-non-altezza-utile", legacy_compat,
+    )
+    depth_for_u1 = d_mm if posizione == "centro" else (h_mm if usa_spessore_h else d_mm)
     u1_mm = _u1_mm(posizione, bx_mm, by_mm, depth_for_u1)
     v_ed1_mpa = v_ed_kn * 1000.0 / (u1_mm * d_mm)
     return PunzonamentoResult(
         v_ed_kN=v_ed_kn, u0_mm=u0_mm, v_rd_max_MPa=v_rd_max_mpa, v_ed0_MPa=v_ed0_mpa,
         verifica_u0=Check(
             name="Punzonamento a u0", passed=v_ed0_mpa <= v_rd_max_mpa,
-            clause=VRD_MAX_CLAUSE_LEGACY if legacy_compat else VRD_MAX_CLAUSE_FIXED,
+            clause=(
+                VRD_MAX_CLAUSE_LEGACY
+                if legacy("pavimento-industriale/coefficiente-vrd-max-punzonamento-scelta-utente", legacy_compat)
+                else VRD_MAX_CLAUSE_FIXED
+            ),
             detail=f"vRd,max = {vrd_max_coefficient:g}·ν·fcd",
             value=v_ed0_mpa, limit=v_rd_max_mpa, unit="MPa",
         ),

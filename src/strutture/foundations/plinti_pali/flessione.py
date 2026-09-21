@@ -12,6 +12,7 @@ literal `3.14` instead of `PI()` (docs/architecture-batch2.md §7 `plinti-pali A
 only numeric divergence in this step; both branches otherwise agree with the golden case."""
 import math
 
+from strutture.shared.divergences import legacy
 from strutture.shared.materials.concrete import fcd as concrete_fcd
 from strutture.shared.numeric import clamp
 from strutture.shared.rebar_catalog import bar_area
@@ -104,7 +105,7 @@ def _braccio_leva_mm(mu_kNm: float, d_mm: float, fcd_MPa: float, *, legacy_compa
     the fix solves the rectangular-section equilibrium `z = d*(0.5 + sqrt(0.25 - mu))` with
     `mu = M/(b*d^2*fcd)` (`b` = the 1m design strip), capped at the balanced-section limit so `As`
     is never understated (docs/architecture-batch2.md code-review finding, flessione.py:106)."""
-    if legacy_compat or mu_kNm <= 0.0:
+    if legacy("plinti-pali/braccio-leva-flessione-pari-a-d-senza-riduzione", legacy_compat) or mu_kNm <= 0.0:
         return d_mm
     mu_adim = mu_kNm * 1.0e6 / (STRIP_WIDTH_MM * d_mm**2 * fcd_MPa)
     mu_adim = clamp(mu_adim, 0.0, MU_ADIMENSIONALE_MAX)
@@ -126,7 +127,11 @@ def _progetta(
     as_min = STRIP_WIDTH_MM * h_mm * as_min_ratio
     as_req = max(as_req_flexural, as_min)
     n_barre = math.ceil(STRIP_WIDTH_MM / passo_mm)
-    area_barra = LEGACY_PI / 4.0 * diametro_mm**2 if usa_pi_letterale else bar_area(diametro_mm)
+    area_barra = (
+        LEGACY_PI / 4.0 * diametro_mm**2
+        if legacy("plinti-pali/armatura-superiore-pi-letterale-invece-di-pi-greco", usa_pi_letterale)
+        else bar_area(diametro_mm)
+    )
     as_prov = n_barre * area_barra
     return DesignFlessione(
         mu_kNm=mu_kNm, as_min_mm2=as_min, as_req_flexural_mm2=as_req_flexural, as_req_mm2=as_req,

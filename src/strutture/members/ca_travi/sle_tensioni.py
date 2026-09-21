@@ -6,6 +6,7 @@ La profondità dell'asse neutro parzializzato x è calcolata da
 d2=0 — coincide esattamente con la formula del foglio Z38 quando non c'è armatura compressa); il
 braccio di leva elastico (d - x/3) è comune alle verifiche in entrambe le combinazioni.
 """
+from strutture.shared.divergences import legacy
 from strutture.shared.section_geometry import cracked_neutral_axis
 
 from .models import Combinazione, SleTensioniOutput
@@ -41,7 +42,9 @@ def limite_sigma_acciaio_MPa(fyk_MPa: float, *, legacy_compat: bool = False) -> 
     verifica sbagliata (vedi docs/divergences/ca-travi.md). `legacy_compat=False` applica
     0.80*fyk dinamicamente, come già fa il foglio per il cls (Z47/Y47).
     """
-    return SIGMA_S_LIMITE_LEGACY_MPA if legacy_compat else COEFF_SIGMA_S * fyk_MPa
+    if legacy("ca-travi/limite-sigma-acciaio-sle-fisso", legacy_compat):
+        return SIGMA_S_LIMITE_LEGACY_MPA
+    return COEFF_SIGMA_S * fyk_MPa
 
 
 def verifica_sle_tensioni(

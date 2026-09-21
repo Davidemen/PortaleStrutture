@@ -33,6 +33,7 @@ so the sheet reproduction is untouched):
   `av_over_2d` enhancement (§6.4.4(2)) is used instead of the unreduced formula."""
 import math
 
+from strutture.shared.divergences import legacy
 from strutture.shared.ec2_shear import control_perimeter, k_size, v_rd_c, v_rd_max
 from strutture.shared.ec2_shear.v_rd_max import V_RD_MAX_COEFF_A1_2014
 from strutture.shared.materials.concrete import ALPHA_CC
@@ -61,18 +62,34 @@ def taglio(
         raise CalcError(f"copriferro/diametro troppo grandi: altezza utile d={d_mm} mm non positiva")
     nsd_kN = n_totale_max_kN + peso_proprio_kN
     ved_kN = nsd_kN / 2.0
-    av_eff_mm = av_mm if legacy_compat else clamp(av_mm, AV_MIN_FACTOR * d_mm, AV_MAX_FACTOR * d_mm)
+    av_eff_mm = (
+        av_mm if legacy("plinti-pali/taglio-riduzione-av-senza-limite-inferiore", legacy_compat)
+        else clamp(av_mm, AV_MIN_FACTOR * d_mm, AV_MAX_FACTOR * d_mm)
+    )
     ved_ridotto_kN = ved_kN * av_eff_mm / (2.0 * d_mm)
-    k = (1.0 + (200.0 / d_mm) ** 0.5) if legacy_compat else k_size(d_mm)
-    larghezza_rho_mm = ax_mm if legacy_compat else STRIP_WIDTH_MM
+    k = (
+        (1.0 + (200.0 / d_mm) ** 0.5) if legacy("plinti-pali/coefficiente-k-taglio-non-limitato-a-2", legacy_compat)
+        else k_size(d_mm)
+    )
+    larghezza_rho_mm = (
+        ax_mm if legacy("plinti-pali/rho-taglio-divisa-per-larghezza-piena-plinto", legacy_compat) else STRIP_WIDTH_MM
+    )
     rho = as_prov_x_mm2 / (larghezza_rho_mm * d_mm)
     vrd_c = v_rd_c(k, rho, fck_MPa, sigma_cp_MPa=0.0, gamma_c=gamma_c)
     vrd_c_kN = vrd_c.v_rd_c_MPa * ax_mm * d_mm / 1000.0
-    alpha_cc = 1.0 if legacy_compat else ALPHA_CC
-    coefficient = VED_MAX_COEFFICIENT if legacy_compat else coeff_vrd_max
+    # Same coefficiente-vrd-max-taglio-punzonamento choice as punzonamento_colonna below: the sheet's
+    # alpha_cc=1.0 is coupled with its own coefficient=0.5 for this eq. 6.5 companion check too.
+    alpha_cc = 1.0 if legacy("plinti-pali/coefficiente-vrd-max-taglio-punzonamento", legacy_compat) else ALPHA_CC
+    coefficient = (
+        VED_MAX_COEFFICIENT if legacy("plinti-pali/coefficiente-vrd-max-taglio-punzonamento", legacy_compat)
+        else coeff_vrd_max
+    )
     vrd_max = v_rd_max(fck_MPa, gamma_c, alpha_cc=alpha_cc, coefficient=coefficient)
     ved_max_kN = vrd_max.v_rd_max_MPa * ax_mm * d_mm / 1000.0
-    verificato = ved_ridotto_kN <= vrd_c_kN if legacy_compat else (ved_ridotto_kN <= vrd_c_kN and ved_kN <= ved_max_kN)
+    verificato = (
+        ved_ridotto_kN <= vrd_c_kN if legacy("plinti-pali/taglio-verifica-equazione-6-5-mancante", legacy_compat)
+        else (ved_ridotto_kN <= vrd_c_kN and ved_kN <= ved_max_kN)
+    )
     return Taglio(
         d_mm=d_mm, ved_kN=ved_kN, ved_ridotto_kN=ved_ridotto_kN, k=k, rho=rho, vrd_c_MPa=vrd_c.v_rd_c_MPa,
         vrd_c_kN=vrd_c_kN, ved_max_kN=ved_max_kN, utilizzo=ved_ridotto_kN / vrd_c_kN, verificato=verificato,
@@ -96,11 +113,17 @@ def punzonamento_colonna(
 ) -> Punzonamento:
     """Column-face punching (§6.4.5) + the sheet's own pile-spacing gate for individual pile cones."""
     perimetro = control_perimeter("rett", bx_mm, by_mm, dist_mm=0.0)
-    alpha_cc = 1.0 if legacy_compat else ALPHA_CC
-    coefficient = PUNCHING_COEFFICIENT_COLUMN_FACE if legacy_compat else coeff_vrd_max
+    alpha_cc = 1.0 if legacy("plinti-pali/punzonamento-colonna-alpha-cc-fisso-a-1", legacy_compat) else ALPHA_CC
+    coefficient = (
+        PUNCHING_COEFFICIENT_COLUMN_FACE
+        if legacy("plinti-pali/coefficiente-vrd-max-taglio-punzonamento", legacy_compat) else coeff_vrd_max
+    )
     vrd_max = v_rd_max(fck_MPa, gamma_c, alpha_cc=alpha_cc, coefficient=coefficient)
     vrd_max_kN = vrd_max.v_rd_max_MPa * perimetro.u_mm * d_mm / 1000.0
-    beta = 1.0 if legacy_compat else _beta_eccentricita(nsd_kN, mx_kNm, my_kNm, bx_mm, by_mm)
+    beta = (
+        1.0 if legacy("plinti-pali/punzonamento-colonna-beta-eccentricita-ignorata", legacy_compat)
+        else _beta_eccentricita(nsd_kN, mx_kNm, my_kNm, bx_mm, by_mm)
+    )
     ved_kN = beta * nsd_kN
     return Punzonamento(
         u_mm=perimetro.u_mm, beta=beta, ved_kN=ved_kN, vrd_max_kN=vrd_max_kN,
@@ -139,7 +162,7 @@ def punzonamento_palo(
 ) -> PunzonamentoPalo:
     """Punching of the governing pile at its own control perimeter (task addition, no sheet cell);
     the perimeter is capped to the non-overlapping distance in normal mode (see `_distanza_disponibile_mm`)."""
-    if legacy_compat:
+    if legacy("plinti-pali/punzonamento-palo-perimetro-non-limitato-interasse", legacy_compat):
         a_mm = 2.0 * d_mm
     else:
         a_mm = _distanza_disponibile_mm(d_mm, diametro_pila_mm, lx_m, ly_m, ax_m, by_m, count_x, count_y)
@@ -150,7 +173,11 @@ def punzonamento_palo(
             )
     perimetro = control_perimeter("circ", diametro_pila_mm, None, dist_mm=a_mm)
     k_eff = k_size(d_mm) if k > 2.0 else k
-    av_over_2d = None if legacy_compat or a_mm >= 2.0 * d_mm else a_mm / (2.0 * d_mm)
+    av_over_2d = (
+        None
+        if legacy("plinti-pali/punzonamento-palo-perimetro-non-limitato-interasse", legacy_compat) or a_mm >= 2.0 * d_mm
+        else a_mm / (2.0 * d_mm)
+    )
     vrd_c = v_rd_c(k_eff, rho, fck_MPa, sigma_cp_MPa=0.0, gamma_c=gamma_c, av_over_2d=av_over_2d)
     vrd_c_kN = vrd_c.v_rd_c_MPa * perimetro.u_mm * d_mm / 1000.0
     return PunzonamentoPalo(

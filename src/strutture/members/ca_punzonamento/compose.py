@@ -2,6 +2,7 @@
 (docs/BUILD_CONTRACT.md "Modularity"); each formula lives in its own step module."""
 import logging
 
+from strutture.shared.divergences import legacy
 from strutture.shared.ec2_shear import k_size
 from strutture.shared.report import CalcError, Check, Report, success
 from strutture.shared.tables import exact_lookup
@@ -100,7 +101,14 @@ def run(inputs: PunzonamentoInput) -> Report[PunzonamentoOutput]:
         v_ed_i_MPa=capacity.v_ed_i_MPa, rapporto=capacity.rapporto, armatura_necessaria=capacity.armatura_necessaria,
     )
 
-    faccia_detail = "" if inputs.legacy_compat else f"vRd,max = {inputs.coeff_vrd_max:g}·ν·fcd (c scelto in input)"
+    # Stesso id di column_face.v_rd_max_MPa: la nota informativa "coeff scelto in input" ha senso
+    # solo in modalità codice, dove coeff_vrd_max è davvero usato (in modalità foglio vRd,max usa
+    # il coefficiente semplificato cablato, non l'input).
+    faccia_detail = (
+        ""
+        if legacy("ca-punzonamento/vrd-max-filo-pilastro-coefficiente-semplificato", inputs.legacy_compat)
+        else f"vRd,max = {inputs.coeff_vrd_max:g}·ν·fcd (c scelto in input)"
+    )
     checks = (
         Check(name="Punzonamento al filo del pilastro", passed=faccia.v_ed_0_MPa < faccia.v_rd_max_MPa, clause=FACCIA_CLAUSE,
               detail=faccia_detail, value=faccia.v_ed_0_MPa, limit=faccia.v_rd_max_MPa, unit="MPa"),
@@ -110,7 +118,7 @@ def run(inputs: PunzonamentoInput) -> Report[PunzonamentoOutput]:
     )
 
     armatura = None
-    if inputs.legacy_compat or capacity.armatura_necessaria:
+    if legacy("ca-punzonamento/armatura-calcolata-anche-se-non-necessaria", inputs.legacy_compat) or capacity.armatura_necessaria:
         armatura, armatura_checks = _armatura(inputs, capacity, d_mm, k, rho)
         checks = (*checks, *armatura_checks)
 

@@ -1,6 +1,8 @@
 """Step: detailing checks, NTC2018 §7.4.6.2.2 / EC8 5.4.3.2.2, rows J60-J64 (rett.) / J67-J71 (circ.)."""
 import math
 
+from strutture.shared.divergences import legacy
+
 LONG_BAR_MIN_DIAMETER_MM = 12.0  # J60/J67
 LONG_BAR_MAX_SPACING_MM = 300.0  # J61/J68 — NTC2018 §4.1.6.1.2, limite NON sismico
 LONG_BAR_MAX_SPACING_SEISMIC_MM = 250.0  # NTC2018 §7.4.6.2.2 CD"B": "per tutta la lunghezza del
@@ -40,7 +42,9 @@ def diametro_staffe_minimo_mm(diametro_ferri_mm: float, *, legacy_compat: bool, 
     candidati = (STIRRUP_MIN_DIAMETER_FIXED_MM, diametro_ferri_mm / STIRRUP_MIN_DIAMETER_BAR_DIVISOR)
     if combinatore == "max":
         return max(candidati)
-    return min(candidati) if legacy_compat else max(candidati)
+    if legacy("ca-pilastri/diametro-minimo-staffe-min-invece-max", legacy_compat):
+        return min(candidati)
+    return max(candidati)
 
 
 def interasse_staffe_massimo_mm(

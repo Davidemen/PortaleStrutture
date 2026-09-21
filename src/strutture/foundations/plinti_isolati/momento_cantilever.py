@@ -8,6 +8,8 @@ it from the column/pedestal FACE per the task's "bending at the column face". Ze
 on the golden case (no pedestal, aX=aY=0). `legacy_compat=True` also reproduces the sheet's own
 kgf*cm -> kN*m conversion shortcut (exact: 1 kgf*cm = 9.80665e-5 kN*m); see
 docs/divergences/plinti-isolati.md."""
+from strutture.shared.divergences import legacy
+
 from .legacy_units import kpa_to_kgcm2
 
 LEGACY_KGF_CM_TO_KNM_DIVISOR = 1.0e4  # sheet's `/10^4` (exact would be ~9806.65).
@@ -20,7 +22,10 @@ def momento_cantilever_kNm(sigma_kpa: float, larghezza_m: float, luce_totale_m: 
     `luce_totale_m` (the plinth side perpendicular to the strip) plus `eccentricita_extra_m`.
     `semi_pedestal_m` (half the column/pedestal width along the span) is subtracted from the
     cantilever length, unless `legacy_compat` (sheet ignores the pedestal)."""
-    if legacy_compat:
+    # Same branch also reproduces the sheet's approximate kgf*cm -> kN*m divisor (10^4, see
+    # LEGACY_KGF_CM_TO_KNM_DIVISOR above): plinti-isolati/momento-mensola-divisore-kgfcm-knm-approssimato
+    # (ramo="nessuno" in the register, not split into its own legacy() condition, see that entry's motivo).
+    if legacy("plinti-isolati/momento-mensola-misurato-dal-centro-non-dal-filo-pilastro", legacy_compat):
         cantilever_m = luce_totale_m / 2.0 + eccentricita_extra_m
         sigma_kgcm2 = kpa_to_kgcm2(sigma_kpa, legacy_compat=True)
         return (sigma_kgcm2 * (larghezza_m * CM_PER_M) * 0.5 * (cantilever_m * CM_PER_M) ** 2

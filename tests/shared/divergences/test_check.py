@@ -242,3 +242,49 @@ def test_legacy_id_missing_from_the_register_is_still_an_error() -> None:
 
     errors, _ = linkage_report((_div(id="demo/linked"),), frozenset({"demo/linked", "demo/ghost"}), strict=False)
     assert errors == ("legacy() id 'demo/ghost' used in code but missing from the register",)
+
+
+# --- ramo="condiviso": reproduced in Excel mode, but through another entry's branch or a rules table ---
+
+def test_shared_branch_entry_needs_a_reason_and_may_name_the_entries_that_reproduce_it() -> None:
+    with pytest.raises(ValueError, match="motivo_senza_ramo"):
+        _div(ramo="condiviso")
+    d = _div(ramo="condiviso", motivo_senza_ramo="Stesso ramo di demo/altra", riprodotta_da=("demo/altra",))
+    assert d.riprodotta_da == ("demo/altra",)
+
+
+def test_riprodotta_da_is_only_for_shared_branch_entries() -> None:
+    with pytest.raises(ValueError, match="riprodotta_da"):
+        _div(ramo="nessuno", motivo_senza_ramo="Solo un'etichetta", riprodotta_da=("demo/altra",))
+    with pytest.raises(ValueError, match="riprodotta_da"):
+        _div(riprodotta_da=("demo/altra",))
+
+
+def test_shared_branch_entry_is_not_unlinked_and_its_targets_must_be_real_code_branches() -> None:
+    from strutture.shared.divergences.check import linkage_report
+
+    ok = (
+        _div(id="demo/linked"),
+        _div(id="demo/shared", titolo="Altro titolo di esempio", ramo="condiviso",
+             motivo_senza_ramo="Stesso ramo di demo/linked", riprodotta_da=("demo/linked",)),
+    )
+    assert linkage_report(ok, frozenset({"demo/linked"}), strict=True) == ((), ())
+
+    bad = (
+        _div(id="demo/no-branch", ramo="nessuno", motivo_senza_ramo="Solo un'etichetta"),
+        _div(id="demo/shared", titolo="Altro titolo di esempio", ramo="condiviso",
+             motivo_senza_ramo="Stesso ramo", riprodotta_da=("demo/ghost", "demo/no-branch")),
+    )
+    errors, _ = linkage_report(bad, frozenset(), strict=True)
+    assert errors == (
+        "demo/shared: riprodotta_da 'demo/ghost' non esiste nel registro",
+        "demo/shared: riprodotta_da 'demo/no-branch' non è una voce con ramo='codice'",
+    )
+
+
+def test_a_shared_branch_entry_called_in_code_is_an_error() -> None:
+    from strutture.shared.divergences.check import linkage_report
+
+    register = (_div(id="demo/shared", ramo="condiviso", motivo_senza_ramo="Tabella delle regole per norma"),)
+    errors, _ = linkage_report(register, frozenset({"demo/shared"}), strict=False)
+    assert errors == ("demo/shared: dichiarata ramo='condiviso' ma il codice chiama legacy() con questo id",)

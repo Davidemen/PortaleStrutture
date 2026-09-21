@@ -8,6 +8,7 @@ reproduces fyd.
 """
 import math
 
+from strutture.shared.divergences import legacy
 from strutture.shared.units import kn_to_n
 
 from .results import InstabilitaFlessionale
@@ -40,7 +41,7 @@ def costruisci_instabilita_flessionale(
     alpha_zz: float,
     legacy_compat: bool,
 ) -> InstabilitaFlessionale:
-    fy_lambda = fyd_MPa if legacy_compat else fyk_MPa
+    fy_lambda = fyd_MPa if legacy("acciaio-colonna-ec3/snellezze-adimensionali-usano-fyd", legacy_compat) else fyk_MPa
     lambda_yy = snellezza_adimensionale(area_mm2, fy_lambda, ncr_y_kN)
     lambda_zz = snellezza_adimensionale(area_mm2, fy_lambda, ncr_z_kN)
     phi_yy = fattore_phi(alpha_yy, lambda_yy)

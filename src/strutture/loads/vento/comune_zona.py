@@ -1,5 +1,6 @@
 """Step (spec §4.1-2): province/region lookup and wind-zone determination, incl. the §7 legacy bug."""
 from strutture.shared.comuni import AmbiguousComuneError, Comune, load_comuni, lookup_comune
+from strutture.shared.divergences import legacy
 from strutture.shared.report import CalcError
 from strutture.shared.tables import KeyNotFound, exact_lookup
 
@@ -37,6 +38,6 @@ def risolvi_zona(
     if zona is not None:
         return zona, None
     resolved = _resolve_comune(comune or "", provincia)
-    if legacy_compat:
+    if legacy("vento/zona-lookup-su-provincia-invece-che-comune", legacy_compat):
         return _zona_da_provincia_legacy(resolved.provincia), resolved
     return resolved.zona_vento, resolved

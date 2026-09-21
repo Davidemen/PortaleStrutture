@@ -3,7 +3,10 @@
   "id": "soil-layers-coverage-and-weighting/lookup-strato-zero-oltre-copertura",
   "titolo": "La ricerca dello strato oltre l'ultima profondità coperta restituiva zero invece di segnalare un errore",
   "tipo": "errore_foglio",
-  "strumenti": ["geo-cedimento-edometrico", "geo-cedimento-elastico-newmark"],
+  "strumenti": [
+   "geo-cedimento-edometrico",
+   "geo-cedimento-elastico-newmark"
+  ],
   "cella": "Edometrico!J, Elastico_centrale_Newmark!S, 500!L",
   "foglio": "La ricerca del modulo per una profondità oltre l'ultimo strato (o dentro un buco della stratigrafia) restituisce 0, che si traduce in un contributo di cedimento nullo silenzioso per quella fetta.",
   "corretto": "shared.soil_layers.layer_at solleva un errore che indica la profondità non coperta; in modalità legacy (usata dagli strumenti che devono riprodurre un caso cablato) restituisce None, trattato come contributo nullo, senza mai dividere per zero.",
@@ -15,12 +18,19 @@
   "id": "soil-layers-coverage-and-weighting/modulo-pesato-solo-primi-4-strati",
   "titolo": "Il modulo medio pesato su una profondità H sommava solo i primi 4 strati, ignorando quelli oltre e senza tagliarli a H",
   "tipo": "errore_foglio",
-  "strumenti": ["geo-cedimento-elastico-timoshenko-goodier"],
+  "strumenti": [
+   "geo-cedimento-elastico-timoshenko-goodier"
+  ],
   "cella": "Elastico_Timoshenko_Goodier_3!H11",
   "foglio": "La somma pesata del modulo è sempre limitata ai primi 4 strati della tabella, mentre continua a dividere per l'intera altezza H; se la stratigrafia richiede un 5° strato dentro [0,H] (come nel caso guida del foglio), quella parte viene persa dal numeratore ma resta nel denominatore.",
   "corretto": "shared.soil_layers.weighted_modulus somma la sovrapposizione di ogni strato con [0,H], per un numero qualunque di strati, e segnala un errore se la tabella non copre l'intero intervallo.",
   "clausola": "",
   "impatto": "caso guida della specifica: H11 foglio=138,8 kg/cmq (solo strati 1-2); calcolo corretto sugli stessi strati reali=166,8 kg/cmq (16,3559 MPa), +20,1%",
-  "uscite": []
+  "uscite": [],
+  "ramo": "condiviso",
+  "motivo_senza_ramo": "shared.soil_layers.weighted_modulus non ha parametro legacy_compat: somma sempre tutti gli strati sovrapposti a [0,H]; non esiste un ramo che riproduca il vecchio troncamento ai primi 4 strati (riprodotto, se serve, dallo strumento consumatore con un proprio id)",
+  "riprodotta_da": [
+   "geo-cedimenti-elastico/modulo-medio-pesato-solo-primi-4-strati"
+  ]
  }
 ]

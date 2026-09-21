@@ -9,6 +9,7 @@ downstream step. `legacy_compat=True` keeps the sheet's own `γ·D` formula, wat
 frozen, see `docs/divergences/geo-cedimenti-edometrico.md`."""
 from pydantic import BaseModel, ConfigDict, Field
 
+from strutture.shared.divergences import legacy
 from strutture.shared.report import CalcError
 from strutture.shared.soil_layers import effective_overburden
 
@@ -37,7 +38,7 @@ def pressione_netta(
     """`water_table_m=None` (default) = dry site, plain total weight `γ·D` — identical to
     `legacy_compat=True` unless an explicit water table is given. In `legacy_compat=True`,
     `water_table_m` is always ignored (sheet's own formula, frozen)."""
-    if legacy_compat:
+    if legacy("geo-cedimenti-edometrico/tensione-verticale-sempre-sommersa", legacy_compat):
         sovraccarico_kPa = gamma_kN_m3 * d_m
     else:
         riferimento_falda_m = water_table_m if water_table_m is not None else float("inf")

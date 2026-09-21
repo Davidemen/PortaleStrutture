@@ -1,4 +1,5 @@
 """Step 2 (spec §4.2): building classification by slenderness, cell B10."""
+from strutture.shared.divergences import legacy
 
 SLENDER_THRESHOLD = 5.0  # Circ. C3.3.8.1: h/d>5 excluded from the rectangular-plan cpe table
 
@@ -19,10 +20,13 @@ EDIFICIO_SNELLO_DIR2 = "Edificio snello, direzione 2"
 
 def classify(hd_dir1: float, hd_dir2: float, *, legacy_compat: bool = False) -> str:
     """Squat/slender classification, matching sheet cell B10's nested IFs."""
+    maiuscolo = legacy("vento-cpe/etichetta-classificazione-maiuscolo", legacy_compat)
     if hd_dir1 > SLENDER_THRESHOLD and hd_dir2 > SLENDER_THRESHOLD:
-        return EDIFICIO_SNELLO_LEGACY if legacy_compat else EDIFICIO_SNELLO
+        return EDIFICIO_SNELLO_LEGACY if maiuscolo else EDIFICIO_SNELLO
     if hd_dir1 <= SLENDER_THRESHOLD and hd_dir2 <= SLENDER_THRESHOLD:
-        return EDIFICIO_TOZZO_LEGACY if legacy_compat else EDIFICIO_TOZZO
+        return EDIFICIO_TOZZO_LEGACY if maiuscolo else EDIFICIO_TOZZO
+    # vento-cpe/etichetta-classificazione-edificio-snello-mista: same maiuscolo/frase rewrite as
+    # above, no separate branch (register entry has ramo="nessuno").
     if hd_dir1 > SLENDER_THRESHOLD:
-        return EDIFICIO_SNELLO_DIR1_LEGACY if legacy_compat else EDIFICIO_SNELLO_DIR1
-    return EDIFICIO_SNELLO_DIR2_LEGACY if legacy_compat else EDIFICIO_SNELLO_DIR2
+        return EDIFICIO_SNELLO_DIR1_LEGACY if maiuscolo else EDIFICIO_SNELLO_DIR1
+    return EDIFICIO_SNELLO_DIR2_LEGACY if maiuscolo else EDIFICIO_SNELLO_DIR2

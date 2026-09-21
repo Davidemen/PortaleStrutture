@@ -3,103 +3,146 @@
   "id": "ca-pilastri/lambda-lim-manca-conversione-kn",
   "titolo": "Snellezza limite (NTC2008) confronta Ned in kN direttamente contro Ac·fcd in N, senza conversione",
   "tipo": "errore_foglio",
-  "strumenti": ["ca-pilastro-rettangolare", "ca-pilastro-circolare"],
+  "strumenti": [
+   "ca-pilastro-rettangolare",
+   "ca-pilastro-circolare"
+  ],
   "cella": "Pilastri rettangolari!J53 / Pilastri circolari!J60",
   "foglio": "λlim = 25/√(Ned/(Ac·fcd)) confronta Ned in kN contro Ac·fcd in N, un errore dimensionale non conservativo",
   "corretto": "per norma NTC2008: λlim = 15,4·C/√ν, con ν = Ned(N)/(Ac·fcd), Ned correttamente convertito in N; C=1,7-rm, rm nuovo input opzionale",
   "clausola": "NTC2018 §4.1.2.3.9.2",
   "impatto": "λlim 1084,36 (foglio) -> 35,91 (corretto), riduzione di circa 30 volte",
-  "uscite": ["snellezza.lambda_lim"]
+  "uscite": [
+   "snellezza.lambda_lim"
+  ]
  },
  {
   "id": "ca-pilastri/interasse-barre-formula-circolare",
   "titolo": "L'interasse barre longitudinali del pilastro rettangolare usa la formula circolare, ignora il secondo lato",
   "tipo": "errore_foglio",
-  "strumenti": ["ca-pilastro-rettangolare"],
+  "strumenti": [
+   "ca-pilastro-rettangolare"
+  ],
   "cella": "Pilastri rettangolari!CX24",
   "foglio": "interasse = 2π·((L1/2)-c)/n, formula del perimetro circolare copiata sul foglio rettangolare, ignora completamente L2",
   "corretto": "perimetro per-faccia della gabbia di armatura: 2·((L1-2c)+(L2-2c))/n",
   "clausola": "NTC2018 §7.4.6.2.2",
   "impatto": "sezione quadrata (caso golden): 117,81 mm (foglio) vs 150 mm (corretto), entrambi passano; per sezioni non quadrate la differenza aumenta",
-  "uscite": ["dettagli.interasse_long_calcolato_mm"]
+  "uscite": [
+   "dettagli.interasse_long_calcolato_mm"
+  ]
  },
  {
   "id": "ca-pilastri/ramo-morto-coefficiente-ac",
   "titolo": "Il ramo 'sezione in trazione' del coefficiente ac è inattingibile per un errore nella condizione",
   "tipo": "errore_foglio",
-  "strumenti": ["ca-pilastro-rettangolare", "ca-pilastro-circolare"],
+  "strumenti": [
+   "ca-pilastro-rettangolare",
+   "ca-pilastro-circolare"
+  ],
   "cella": "Pilastri rettangolari!CX38",
   "foglio": "la condizione testa l'altezza libera del pilastro (sempre positiva) invece della tensione σcp, rendendo il ramo ac=1 inattingibile",
   "corretto": "la condizione testa σcp<0",
   "clausola": "EC2 6.2.3",
   "impatto": "nessuno, l'input Ned è sempre positivo quindi il ramo resta inattingibile in entrambe le modalità",
-  "uscite": ["taglio.ac"]
+  "uscite": [
+   "taglio.ac"
+  ]
  },
  {
   "id": "ca-pilastri/taglio-capacity-design-manca-gamma-rd",
   "titolo": "Il taglio da capacity design non applica il fattore di sovraresistenza γRd e considera un solo momento resistente",
   "tipo": "errore_foglio",
-  "strumenti": ["ca-pilastro-rettangolare", "ca-pilastro-circolare"],
+  "strumenti": [
+   "ca-pilastro-rettangolare",
+   "ca-pilastro-circolare"
+  ],
   "cella": "Pilastri rettangolari!Y20",
   "foglio": "domanda di taglio = MRd/(H/1000), senza fattore di sovraresistenza e considerando un solo momento resistente",
   "corretto": "γRd·2·MRd/(H/1000), γRd=1,10 per CD\"B\" come richiesto da NTC2018 §7.4.4.2.1",
   "clausola": "NTC2018 §7.4.4.2.1",
   "impatto": "domanda 45,71 kN (foglio) -> 100,57 kN (corretto); VRd=322,696 kN supera comunque entrambi",
-  "uscite": ["taglio.domanda_capacity_design_kN"]
+  "uscite": [
+   "taglio.domanda_capacity_design_kN"
+  ]
  },
  {
   "id": "ca-pilastri/raggio-inerzia-sezione-netta",
   "titolo": "Raggio d'inerzia calcolato sulla sezione netta (ridotta del copriferro) invece che sulla sezione lorda",
   "tipo": "errore_foglio",
-  "strumenti": ["ca-pilastro-rettangolare", "ca-pilastro-circolare"],
+  "strumenti": [
+   "ca-pilastro-rettangolare",
+   "ca-pilastro-circolare"
+  ],
   "cella": "Pilastri rettangolari!J55 / Pilastri circolari!J62",
   "foglio": "il raggio d'inerzia i è calcolato sulle dimensioni ridotte di 2 volte il copriferro",
   "corretto": "raggio d'inerzia sulla sezione lorda Ac, come richiesto da EC2 5.8.3.1",
   "clausola": "EC2 5.8.3.1",
   "impatto": "i (rett.) 86,60 mm (foglio, sezione netta 300x300) -> 173,21 mm (corretto, sezione lorda 400x400)",
-  "uscite": ["snellezza.i_mm"]
+  "uscite": [
+   "snellezza.i_mm"
+  ],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "Il tipo di raggio d'inerzia (netto/lordo) è scelto dalla tabella RuleSet per (norma, legacy_compat) in regole.py: per NTC2018 ed EC2 è sempre 'lordo' in entrambe le modalità, per NTC2008 è sempre 'netto' (unica modalità disponibile), senza un ramo if/ternario su legacy_compat nel codice."
  },
  {
   "id": "ca-pilastri/l0-fisso-3000mm",
   "titolo": "La lunghezza libera di inflessione l0 è fissata a 3000 mm indipendentemente dall'altezza reale del pilastro",
   "tipo": "errore_foglio",
-  "strumenti": ["ca-pilastro-rettangolare", "ca-pilastro-circolare"],
+  "strumenti": [
+   "ca-pilastro-rettangolare",
+   "ca-pilastro-circolare"
+  ],
   "cella": "Pilastri rettangolari!J54 / Pilastri circolari!J61",
   "foglio": "l0 = 3000 mm, valore fisso indipendente dall'altezza libera H realmente inserita",
   "corretto": "l0 è un input reale, di default pari all'altezza libera H se non specificato",
   "clausola": "",
   "impatto": "l0 3000 mm (foglio) -> 3500 mm (corretto, = H del caso golden)",
-  "uscite": ["snellezza.l0_mm"]
+  "uscite": [
+   "snellezza.l0_mm"
+  ]
  },
  {
   "id": "ca-pilastri/area-minima-longitudinale-min-invece-max",
   "titolo": "L'area minima di armatura longitudinale combina i due criteri con il minimo invece del massimo",
   "tipo": "errore_foglio",
-  "strumenti": ["ca-pilastro-rettangolare", "ca-pilastro-circolare"],
+  "strumenti": [
+   "ca-pilastro-rettangolare",
+   "ca-pilastro-circolare"
+  ],
   "cella": "Pilastri rettangolari!J62 / Pilastri circolari!J69",
   "foglio": "As,min = MIN(0,003·Ac; 0,10·Ned/fyd), non conservativo",
   "corretto": "As,min = MAX(0,003·Ac; 0,10·Ned/fyd), limitato a 0,04·Ac, come richiesto da NTC2018 §4.1.6.1.2",
   "clausola": "NTC2018 §4.1.6.1.2",
   "impatto": "candidati (480, 306,67): MIN=306,67 mm² (foglio) vs MAX=480 mm² (corretto); As=1608,5 mm² supera entrambi nel caso golden",
-  "uscite": ["armatura_minima.as_min_mm2"]
+  "uscite": [
+   "armatura_minima.as_min_mm2"
+  ]
  },
  {
   "id": "ca-pilastri/diametro-minimo-staffe-min-invece-max",
   "titolo": "Il diametro minimo delle staffe combina i due criteri con il minimo invece del massimo",
   "tipo": "errore_foglio",
-  "strumenti": ["ca-pilastro-rettangolare", "ca-pilastro-circolare"],
+  "strumenti": [
+   "ca-pilastro-rettangolare",
+   "ca-pilastro-circolare"
+  ],
   "cella": "Pilastri rettangolari!J63 / Pilastri circolari!J70",
   "foglio": "diametro minimo staffe = MIN(6 mm; Ø_long/4), non conservativo; l'avviso accanto all'input (K16) usa correttamente il massimo per la stessa coppia di criteri",
   "corretto": "diametro minimo staffe = MAX(6 mm; Ø_long/4), come richiesto da NTC2018 §7.4.6.2.2",
   "clausola": "NTC2018 §7.4.6.2.2",
   "impatto": "candidati (6, 4): MIN=4 mm (foglio) vs MAX=6 mm (corretto); Ø10 usato nel caso golden supera entrambi",
-  "uscite": ["dettagli.diametro_staffe_min_mm"]
+  "uscite": [
+   "dettagli.diametro_staffe_min_mm"
+  ]
  },
  {
   "id": "ca-pilastri/verifica-staffe-confronta-classe-calcestruzzo",
   "titolo": "Verifica diametro minimo staffe (rett.) confronta con la classe calcestruzzo (testo), non col diametro effettivo",
   "tipo": "errore_foglio",
-  "strumenti": ["ca-pilastro-rettangolare"],
+  "strumenti": [
+   "ca-pilastro-rettangolare"
+  ],
   "cella": "Pilastri rettangolari!L63",
   "foglio": "il confronto è fatto contro H9 (classe di calcestruzzo, una cella di testo) invece che contro H16 (diametro staffe effettivo); Excel confronta sempre un numero come minore di un testo, quindi l'esito è sempre \"OK\"",
   "corretto": "confronto contro il diametro staffe effettivo H16, come già fa correttamente il foglio circolare",
@@ -111,7 +154,10 @@
   "id": "ca-pilastri/limite-diametro-barre-longitudinali-stretto",
   "titolo": "Verifica diametro minimo barre longitudinali con confronto stretto invece che inclusivo",
   "tipo": "errore_foglio",
-  "strumenti": ["ca-pilastro-rettangolare", "ca-pilastro-circolare"],
+  "strumenti": [
+   "ca-pilastro-rettangolare",
+   "ca-pilastro-circolare"
+  ],
   "cella": "Pilastri rettangolari!L60 / Pilastri circolari!L67",
   "foglio": "verifica Ø_long > 12 mm (stretta), quindi Ø=12mm esatto risulta non conforme",
   "corretto": "Ø_long >= 12 mm (inclusiva), come richiesto dal testo di NTC2018 §4.1.6.1.2 ('non deve essere minore di 12 mm')",
@@ -123,7 +169,10 @@
   "id": "ca-pilastri/limite-area-minima-longitudinale-stretto",
   "titolo": "Verifica area minima armatura longitudinale con confronto stretto invece che inclusivo",
   "tipo": "errore_foglio",
-  "strumenti": ["ca-pilastro-rettangolare", "ca-pilastro-circolare"],
+  "strumenti": [
+   "ca-pilastro-rettangolare",
+   "ca-pilastro-circolare"
+  ],
   "cella": "Pilastri rettangolari!L62 / Pilastri circolari!L69",
   "foglio": "verifica As,min < As (stretta), quindi As esattamente uguale al minimo risulta non conforme",
   "corretto": "As,min <= As (inclusiva)",
@@ -135,7 +184,10 @@
   "id": "ca-pilastri/limite-diametro-staffe-stretto",
   "titolo": "Verifica diametro minimo staffe con confronto stretto invece che inclusivo",
   "tipo": "errore_foglio",
-  "strumenti": ["ca-pilastro-rettangolare", "ca-pilastro-circolare"],
+  "strumenti": [
+   "ca-pilastro-rettangolare",
+   "ca-pilastro-circolare"
+  ],
   "cella": "Pilastri rettangolari!L63 / Pilastri circolari!L70",
   "foglio": "verifica soglia_staffe < Ø_staffe (stretta)",
   "corretto": "soglia_staffe <= Ø_staffe (inclusiva), come richiesto da NTC2018 §7.4.6.2.2 ('Ø >= max(6, Ø_long/4)')",
@@ -147,132 +199,213 @@
   "id": "ca-pilastri/norma-scelta-e-modalita-foglio-per-norma",
   "titolo": "Il pilastro supporta tre norme (NTC2018/EC2/NTC2008), ciascuna col proprio foglio in modalità 'riproduci il foglio'",
   "tipo": "scelta_ingegneristica",
-  "strumenti": ["ca-pilastro-rettangolare", "ca-pilastro-circolare"],
+  "strumenti": [
+   "ca-pilastro-rettangolare",
+   "ca-pilastro-circolare"
+  ],
   "cella": "",
   "foglio": "esistono tre fogli separati (NTC2008, NTC2018, EC2) con formule proprie",
   "corretto": "per norma NTC2018 (default): usa le formule NTC2018 §4.1.2.3.9.2 e seguenti sopra descritte; per norma EC2: usa le formule EC2 proprie del foglio EC2; per norma NTC2008: solo modalità 'riproduci il foglio' disponibile, nessuna modalità standard mantenuta (norma superata)",
   "clausola": "",
   "impatto": "",
-  "uscite": ["regole.norma"]
+  "uscite": [
+   "regole.norma"
+  ],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "La scelta della norma è un campo di input (PilastroInput.norma), non un ramo su legacy_compat: regole.resolve() seleziona il RuleSet corrispondente da una tabella dati indicizzata su (norma, legacy_compat), senza un if/ternario su legacy_compat da collegare."
  },
  {
   "id": "ca-pilastri/lambda-lim-ntc2018-foglio-non-normativo",
   "titolo": "Snellezza limite del foglio NTC2018 usa una formula empirica diversa dal testo normativo",
   "tipo": "aggiornamento_normativo",
-  "strumenti": ["ca-pilastro-rettangolare", "ca-pilastro-circolare"],
+  "strumenti": [
+   "ca-pilastro-rettangolare",
+   "ca-pilastro-circolare"
+  ],
   "cella": "Pilastri rettangolari (foglio NTC2018)!J53",
   "foglio": "λlim = 25/√ν, forma empirica con coefficiente 25 (non 15,4·C)",
   "corretto": "per norma NTC2018: λlim = 15,4·C/√ν come richiesto da NTC2018 §4.1.2.3.9.2",
   "clausola": "NTC2018 §4.1.2.3.9.2",
   "impatto": "λlim 34,29 (foglio NTC2018) vs 35,91 (corretto) per il caso golden, ordini di grandezza simili ma formule diverse",
-  "uscite": ["snellezza.lambda_lim"]
+  "uscite": [
+   "snellezza.lambda_lim"
+  ],
+  "ramo": "condiviso",
+  "motivo_senza_ramo": "Condivide lo stesso ramo if legacy_compat di ca-pilastri/lambda-lim-manca-conversione-kn in snellezza.lambda_limite (selezionato dal parametro unit_fix, citato in un commento accanto alla chiamata legacy() collegata a quell'id); il codice non separa le due divergenze in due rami distinti.",
+  "riprodotta_da": [
+   "ca-pilastri/lambda-lim-manca-conversione-kn"
+  ]
  },
  {
   "id": "ca-pilastri/controllo-percentuale-minima-rimosso-ntc2018-ec2",
   "titolo": "I fogli NTC2018 ed EC2 non verificano più il limite minimo di percentuale di armatura, solo il tetto massimo del 4%",
   "tipo": "errore_foglio",
-  "strumenti": ["ca-pilastro-rettangolare", "ca-pilastro-circolare"],
+  "strumenti": [
+   "ca-pilastro-rettangolare",
+   "ca-pilastro-circolare"
+  ],
   "cella": "Pilastri rettangolari (fogli NTC2018/EC2)!J24",
   "foglio": "verifica solo rs<0,04, ha eliminato il confronto con il minimo presente nel foglio NTC2008",
   "corretto": "verifica sia il tetto massimo che il minimo, come nel foglio NTC2008 originale",
   "clausola": "NTC2018 §7.4.6.2.1/.2",
   "impatto": "nessun cambiamento del valore di rs, solo se viene segnalata anche una violazione del minimo",
-  "uscite": ["geometria.rs"]
+  "uscite": [
+   "geometria.rs"
+  ],
+  "ramo": "condiviso",
+  "motivo_senza_ramo": "Il flag controlla_minimo arriva da rules.rs_controlla_minimo (tabella RuleSet per norma/legacy_compat, regole.py) e viene letto con un if su controlla_minimo in armatura_minima.verifica_percentuale_armatura, non con un ramo diretto su legacy_compat."
  },
  {
   "id": "ca-pilastri/ec2-fattore-nu1-resistenza-taglio",
   "titolo": "Il foglio EC2 usa il fattore ν1 nella resistenza a taglio calcestruzzo, diverso dal valore fisso NTC",
   "tipo": "aggiornamento_normativo",
-  "strumenti": ["ca-pilastro-rettangolare", "ca-pilastro-circolare"],
+  "strumenti": [
+   "ca-pilastro-rettangolare",
+   "ca-pilastro-circolare"
+  ],
   "cella": "Pilastri rettangolari (foglio EC2)!CX28",
   "foglio": "VRdc del foglio EC2 usa ν1=0,6·(1-fck/250) al posto del valore fisso 0,5 dei fogli NTC",
   "corretto": "stessa formula in entrambe le modalità per norma EC2 (non è un bug, è la formula propria della norma); il modulo condiviso accetta ν1 come parametro, default 0,5 (NTC)",
   "clausola": "EC2 §6.2.2(6)",
   "impatto": "VRdc 358,99 kN (NTC, ν=0,5) -> 387,88 kN (EC2, ν1=0,54024) per il caso golden",
-  "uscite": ["taglio.vrdc_kN"]
+  "uscite": [
+   "taglio.vrdc_kN"
+  ],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "ν1 è selezionato da rules.nu1_ec2 (tabella RuleSet, vero per la norma EC2 in entrambe le modalità legacy_compat e falso per NTC in entrambe), quindi la formula EC2 è sempre applicata per quella norma senza un ramo if/ternario su legacy_compat nel codice."
  },
  {
   "id": "ca-pilastri/ec2-snellezza-limite-a-c-fissi",
   "titolo": "Il foglio EC2 fissa a 0,7 i coefficienti A e C della snellezza limite, invece di calcolarli dai dati reali",
   "tipo": "errore_foglio",
-  "strumenti": ["ca-pilastro-rettangolare", "ca-pilastro-circolare"],
+  "strumenti": [
+   "ca-pilastro-rettangolare",
+   "ca-pilastro-circolare"
+  ],
   "cella": "Pilastri rettangolari (foglio EC2)!λlim = 20·A·B·C/√n",
   "foglio": "A=C=0,7 fissi, indipendenti da rm e dal fluage φef",
   "corretto": "per norma EC2: A=1/(1+0,2·φef) se φef è fornito (altrimenti 0,7); C=1,7-rm, come richiesto da EC2 §5.8.3.1(1) note 1 e 3",
   "clausola": "EC2 §5.8.3.1(1) note 1 e 3",
   "impatto": "λlim = 40,79 (corretto, A=0,7, C=1,7, phi_ef non dato) vs 16,78 (foglio, A=C=0,7), una differenza di circa 2,4x guidata da C",
-  "uscite": ["snellezza.lambda_lim", "regole.a_snellezza", "regole.c_snellezza"]
+  "uscite": [
+   "snellezza.lambda_lim",
+   "regole.a_snellezza",
+   "regole.c_snellezza"
+  ],
+  "ramo": "condiviso",
+  "motivo_senza_ramo": "I coefficienti A e C fissi derivano da rules.a_fisso/c_fisso (tabella RuleSet per norma/legacy_compat) e sono letti in limiti_ec2.py con un if su 'a_fisso/c_fisso is not None', non con un ramo diretto su legacy_compat."
  },
  {
   "id": "ca-pilastri/rm-default-non-noto-va-a-c-07",
   "titolo": "Il valore di default di rm quando non noto deve dare C=0,7, non C=1,7",
   "tipo": "aggiornamento_normativo",
-  "strumenti": ["ca-pilastro-rettangolare", "ca-pilastro-circolare"],
+  "strumenti": [
+   "ca-pilastro-rettangolare",
+   "ca-pilastro-circolare"
+  ],
   "cella": "",
   "foglio": "n/a, riguarda solo la modalità standard: il valore di default precedente di rm (0,0) dava C=1,7, interpretando erroneamente rm=0 come 'non noto'",
   "corretto": "quando rm non è fornito (None), NTC2018 §4.1.2.3.9.2 ed EC2 §5.8.3.1(1) nota 3 richiedono C=0,7 (equivalente a rm=1, curvatura singola)",
   "clausola": "NTC2018 §4.1.2.3.9.2 / EN 1992-1-1 §5.8.3.1(1) nota 3",
   "impatto": "λlim in modalità standard, rm non specificato, era sovrastimata di un fattore 1,7/0,7≈2,43x prima della correzione (es. 35,908 -> 14,786 per Ac=160000mm², fcd=14,11MPa, Ned=1200kN)",
-  "uscite": ["snellezza.lambda_lim", "regole.c_snellezza"]
+  "uscite": [
+   "snellezza.lambda_lim",
+   "regole.c_snellezza"
+  ],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "coefficiente_c(rm) non ha un parametro legacy_compat e applica sempre C=0,7 di default quando rm è None: è invocata solo nel ramo standard di lambda_limite (mai sotto legacy_compat=True), quindi non esiste un ramo legacy_compat da collegare."
  },
  {
   "id": "ca-pilastri/confinamento-lato-sbagliato",
   "titolo": "Geometria di confinamento del pilastro rettangolare usa sempre lo stesso lato invece del lato maggiore/minore corretti",
   "tipo": "errore_foglio",
-  "strumenti": ["ca-pilastro-rettangolare"],
+  "strumenti": [
+   "ca-pilastro-rettangolare"
+  ],
   "cella": "",
   "foglio": "n/a, riguarda solo la modalità standard: sia la lunghezza critica che il passo massimo confinato usavano sempre L1 (il lato 'base'), indipendentemente da quale lato è effettivamente maggiore o minore",
   "corretto": "la lunghezza critica usa il lato maggiore max(L1,L2), come richiesto da NTC2018 §7.4.6.1.2; il passo massimo confinato usa il lato minore min(L1,L2), come richiesto da NTC2018 §7.4.6.2.2",
   "clausola": "NTC2018 §7.4.6.1.2 / §7.4.6.2.2",
   "impatto": "nessun cambiamento per sezioni quadrate (caso golden); per L1=300,L2=600 hcr passa da governato da 300mm a governato da 600mm",
-  "uscite": ["confinamento.hcr_mm", "confinamento.passo_max_confinato_mm"]
+  "uscite": [
+   "confinamento.hcr_mm",
+   "confinamento.passo_max_confinato_mm"
+  ],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "confinamento.py usa sempre max(L1,L2)/min(L1,L2), incondizionatamente in entrambe le modalità: il modulo non ha un parametro legacy_compat, quindi non esiste un ramo che riproduca il vecchio comportamento del foglio."
  },
  {
   "id": "ca-pilastri/verifica-passo-staffe-zona-critica-mancante",
   "titolo": "Il passo massimo delle staffe in zona critica era calcolato ma mai confrontato con il passo effettivo in una verifica",
   "tipo": "aggiornamento_normativo",
-  "strumenti": ["ca-pilastro-rettangolare", "ca-pilastro-circolare"],
+  "strumenti": [
+   "ca-pilastro-rettangolare",
+   "ca-pilastro-circolare"
+  ],
   "cella": "",
   "foglio": "n/a, riguarda solo la modalità standard: il valore era calcolato e riportato ma nessuna verifica lo confrontava con il passo staffe effettivo",
   "corretto": "aggiunta la verifica 'passo staffe zona critica' che confronta il passo effettivo con il limite calcolato",
   "clausola": "NTC2018 §7.4.6.2.2",
   "impatto": "caso golden rettangolare, sezione quadrata, passo staffe 150mm, limite 128mm (governa 8·Ø16): la nuova verifica ora segnala correttamente il mancato rispetto, prima semplicemente assente",
-  "uscite": ["confinamento.passo_max_confinato_mm"]
+  "uscite": [
+   "confinamento.passo_max_confinato_mm"
+  ],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "Il check 'Passo delle staffe in zona critica' è aggiunto incondizionatamente nei tool, in entrambe le modalità: il foglio originale non aveva affatto questa verifica, quindi non c'è un comportamento alternativo da selezionare con legacy_compat."
  },
  {
   "id": "ca-pilastri/ec2-coefficiente-area-minima-annesso-nazionale",
   "titolo": "Area minima armatura EC2 standard deve usare 0,003 dell'Annesso Nazionale italiano, non 0,002 raccomandato",
   "tipo": "aggiornamento_normativo",
-  "strumenti": ["ca-pilastro-rettangolare", "ca-pilastro-circolare"],
+  "strumenti": [
+   "ca-pilastro-rettangolare",
+   "ca-pilastro-circolare"
+  ],
   "cella": "",
   "foglio": "n/a, riguarda solo la modalità standard: il coefficiente EC2 usato era 0,002 (valore raccomandato EN 1992-1-1 §9.5.2(2)), incoerente con l'uso dell'Annesso Nazionale italiano già applicato altrove nello stesso strumento (αcc=0,85)",
   "corretto": "coefficiente 0,003, allineato a NTC2018 §4.1.6.1.2 e all'Annesso Nazionale italiano",
   "clausola": "EN 1992-1-1 §9.5.2(2) + Annesso Nazionale italiano",
   "impatto": "As,min EC2 modalità standard: 320 mm² (coeff. 0,002) -> 480 mm² (coeff. 0,003, +50%)",
-  "uscite": ["armatura_minima.as_min_mm2"]
+  "uscite": [
+   "armatura_minima.as_min_mm2"
+  ],
+  "ramo": "condiviso",
+  "motivo_senza_ramo": "Il coefficiente arriva da rules.as_min_area_ratio (tabella RuleSet per norma/legacy_compat: 0,002 per EC2 legacy, 0,003 per EC2 standard) e viene passato come parametro ad armatura_minima, senza un ulteriore ramo su legacy_compat nel codice."
  },
  {
   "id": "ca-pilastri/interasse-barre-sismico-etichetta-errata",
   "titolo": "Verifica interasse massimo barre longitudinali etichettata sismica ma confrontava il limite non sismico 300mm",
   "tipo": "aggiornamento_normativo",
-  "strumenti": ["ca-pilastro-rettangolare", "ca-pilastro-circolare"],
+  "strumenti": [
+   "ca-pilastro-rettangolare",
+   "ca-pilastro-circolare"
+  ],
   "cella": "",
   "foglio": "n/a, riguarda solo la modalità standard: la verifica citava la clausola sismica §7.4.6.2.2 (CD\"B\": 'interasse non superiore a 25 cm') ma confrontava contro 300mm, il limite non sismico §4.1.6.1.2",
   "corretto": "300mm resta il valore in modalità 'riproduci il foglio' (comportamento invariato del foglio); 250mm in modalità standard, come richiesto da NTC2018 §7.4.6.2.2",
   "clausola": "NTC2018 §7.4.6.2.2",
   "impatto": "un pilastro con interasse calcolato di 300mm passa in modalità foglio, fallisce in modalità standard (300 > 250)",
-  "uscite": ["dettagli.interasse_long_max_mm"]
+  "uscite": [
+   "dettagli.interasse_long_max_mm"
+  ],
+  "ramo": "condiviso",
+  "motivo_senza_ramo": "Il limite rules.long_bar_max_spacing_mm (300mm legacy, 250mm standard) proviene dalla tabella RuleSet per norma/legacy_compat in regole.py ed è usato direttamente nel Check, senza un ramo if/ternario su legacy_compat nel codice."
  },
  {
   "id": "ca-pilastri/cot-theta-nu1-incoerente-ec2",
   "titolo": "L'angolo del traliccio (cotθ) usava sempre il coefficiente ν1 NTC anche in norma EC2, incoerente col resto",
   "tipo": "errore_foglio",
-  "strumenti": ["ca-pilastro-rettangolare", "ca-pilastro-circolare"],
+  "strumenti": [
+   "ca-pilastro-rettangolare",
+   "ca-pilastro-circolare"
+  ],
   "cella": "",
   "foglio": "n/a, riguarda solo la modalità standard: cotθ usava sempre ν1=0,5 (valore NTC) indipendentemente dalla norma scelta, mentre VRd,max in norma EC2 usa già ν1=0,6·(1-fck/250)",
   "corretto": "cotθ usa lo stesso ν1 di VRd,max per la norma scelta in modalità standard; la formula propria del foglio EC2 resta fissa a 0,5 in modalità 'riproduci il foglio' (confermata dalla cellmap)",
   "clausola": "EC2 §6.2.2(6) / §6.2.3(3)",
   "impatto": "norma EC2, modalità standard, passo staffe 100mm (non clampato): cotθ 2,103 (ν1=0,5) -> 2,204 (ν1=0,54); il caso golden resta clampato a 2,5 in entrambi i casi",
-  "uscite": ["taglio.cot_theta"]
+  "uscite": [
+   "taglio.cot_theta"
+  ]
  }
 ]

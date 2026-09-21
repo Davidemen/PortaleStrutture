@@ -3,6 +3,7 @@ CD "B" (NTC2018 + Circolare 7/2019, EC2 or NTC2008 per `inputs.norma`). `run` on
 step modules; norm-specific parameters come from `regole.resolve` (architecture-batch2.md §3)."""
 import logging
 
+from strutture.shared.divergences import legacy
 from strutture.shared.report import Check, Report, success
 from strutture.shared.section_geometry import rect
 
@@ -67,7 +68,7 @@ def _taglio(inputs: PilastroRettangolareInput, rules: RuleSet, ac_mm2: float, fc
     # returned θ balances VRd,s and VRd,max consistently — review finding (MEDIUM). The EC2
     # SHEET's own CX42 formula hardcodes 0.5 regardless of norma (confirmed against
     # build/cellmaps/ca-pilastri-ec2), so legacy_compat=True keeps 0.5 unconditionally.
-    nu1_theta = NU1_NTC_FISSO if inputs.legacy_compat else nu1
+    nu1_theta = NU1_NTC_FISSO if legacy("ca-pilastri/cot-theta-nu1-incoerente-ec2", inputs.legacy_compat) else nu1
     theta = cot_theta(inputs.diametro_staffe_mm, fyd_MPa, inputs.l1_mm, inputs.passo_staffe_mm, ac_coef, fcd_MPa, nu1=nu1_theta)
     v_rdc = vrdc(z_mm, inputs.l1_mm, ac_coef, fcd_MPa, theta, nu1=nu1)
     v_rds = vrds(z_mm, inputs.diametro_staffe_mm, inputs.passo_staffe_mm, fyd_MPa, theta)
@@ -89,7 +90,7 @@ def _taglio(inputs: PilastroRettangolareInput, rules: RuleSet, ac_mm2: float, fc
 def _dettagli(inputs: PilastroRettangolareInput, rules: RuleSet, ac_mm2: float, as_min_mm2: float, as_mm2: float) -> tuple[DettagliResult, tuple[Check, ...]]:
     perimetro_mm = (
         perimetro_circolare_mm(inputs.l1_mm, inputs.c_mm)
-        if inputs.legacy_compat
+        if legacy("ca-pilastri/interasse-barre-formula-circolare", inputs.legacy_compat)
         else perimetro_rettangolare_mm(inputs.l1_mm, inputs.l2_mm, inputs.c_mm)
     )
     interasse_calc = interasse_ferri_verticali_mm(perimetro_mm, inputs.n_ferri)
@@ -100,13 +101,21 @@ def _dettagli(inputs: PilastroRettangolareInput, rules: RuleSet, ac_mm2: float, 
         dimensione_min_mm=dimensione_min_mm,
     )
 
-    diam_staffe_ok = True if inputs.legacy_compat else soglia_staffe <= inputs.diametro_staffe_mm
+    diam_staffe_ok = (
+        True
+        if legacy("ca-pilastri/verifica-staffe-confronta-classe-calcestruzzo", inputs.legacy_compat)
+        else soglia_staffe <= inputs.diametro_staffe_mm
+    )
     diam_long_ok = (
         inputs.diametro_ferri_mm > rules.diametro_long_min_mm
-        if inputs.legacy_compat
+        if legacy("ca-pilastri/limite-diametro-barre-longitudinali-stretto", inputs.legacy_compat)
         else inputs.diametro_ferri_mm >= rules.diametro_long_min_mm
     )
-    area_min_ok = as_min_mm2 < as_mm2 if inputs.legacy_compat else as_min_mm2 <= as_mm2
+    area_min_ok = (
+        as_min_mm2 < as_mm2
+        if legacy("ca-pilastri/limite-area-minima-longitudinale-stretto", inputs.legacy_compat)
+        else as_min_mm2 <= as_mm2
+    )
     result = DettagliResult(
         diametro_long_min_mm=rules.diametro_long_min_mm, interasse_long_max_mm=rules.long_bar_max_spacing_mm,
         interasse_long_calcolato_mm=interasse_calc, as_long_min_mm2=as_min_mm2,
@@ -118,7 +127,11 @@ def _dettagli(inputs: PilastroRettangolareInput, rules: RuleSet, ac_mm2: float, 
         Check(name="Area minima di armatura longitudinale", passed=area_min_ok, clause="NTC2018 §7.4.6.2.1"),
         Check(
             name="Diametro minimo delle staffe", passed=diam_staffe_ok, clause="NTC2018 §7.4.6.2.2",
-            detail="" if not inputs.legacy_compat else "legacy: confronto col foglio contro una cella non numerica, sempre vero",
+            detail=(
+                "legacy: confronto col foglio contro una cella non numerica, sempre vero"
+                if legacy("ca-pilastri/verifica-staffe-confronta-classe-calcestruzzo", inputs.legacy_compat)
+                else ""
+            ),
         ),
         Check(name="Interasse massimo delle staffe", passed=inputs.passo_staffe_mm <= soglia_interasse_staffe, clause="NTC2018 §7.4.6.2.2"),
     )

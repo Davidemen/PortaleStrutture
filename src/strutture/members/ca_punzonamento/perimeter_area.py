@@ -6,6 +6,7 @@ silently drops the circular term (`A=lato_a_mm=0`); the code-standard branch use
 from `shared.ec2_shear.control_perimeter` instead."""
 import math
 
+from strutture.shared.divergences import legacy
 from strutture.shared.ec2_shear import control_perimeter
 
 from .effective_depth import column_shape
@@ -21,7 +22,7 @@ def perimeter_length_mm(lato_a_mm: float, lato_b_mm: float, diametro_mm: float, 
 
 def area_within_perimeter_mm2(lato_a_mm: float, lato_b_mm: float, diametro_mm: float, dist_mm: float, *, legacy_compat: bool) -> float:
     """A_a(a): legacy sheet formula (unconditional on shape) or shape-aware code-standard formula."""
-    if legacy_compat:
+    if legacy("ca-punzonamento/area-perimetro-colonna-circolare-errata", legacy_compat):
         return lato_a_mm * lato_b_mm + 4.0 * min(lato_a_mm, lato_b_mm) * dist_mm + math.pi * dist_mm**2
     shape = column_shape(lato_a_mm)
     a_mm = diametro_mm if shape == "circ" else lato_a_mm

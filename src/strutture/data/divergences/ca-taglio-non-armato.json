@@ -33,6 +33,8 @@
   "corretto": "aggiunto un avviso in entrambe le modalità quando |fck - 0,83·Rck|/(0,83·Rck) > 5%; il calcolo di VRd resta invariato",
   "clausola": "",
   "impatto": "nessuno per il caso golden (fck=32 vs Rck-derivato 33,2, entro tolleranza, nessun avviso)",
-  "uscite": []
+  "uscite": [],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "L'avviso di incoerenza fck/Rck è aggiunto incondizionatamente in entrambe le modalità: avviso_incoerenza_fck_rck non riceve né usa legacy_compat."
  }
 ]

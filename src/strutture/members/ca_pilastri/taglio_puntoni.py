@@ -1,4 +1,5 @@
 """Step: strut coefficient ac (EC2 6.2.3), rows CX31-CX38."""
+from strutture.shared.divergences import legacy
 from strutture.shared.units import kn_to_n
 
 STRUT_COEFFICIENT_TENSION = 1.0  # CX32
@@ -20,7 +21,7 @@ def coefficiente_ac(sigma_cp_MPa: float, fcd_MPa: float, *, legacy_compat: bool)
     Under `legacy_compat=False` the corrected condition (`σcp<0`) is used; with the current input
     domain (Ned always > 0, pilastro semplicemente compresso) this never changes the result.
     """
-    tension = False if legacy_compat else sigma_cp_MPa < 0
+    tension = False if legacy("ca-pilastri/ramo-morto-coefficiente-ac", legacy_compat) else sigma_cp_MPa < 0
     if tension:
         return STRUT_COEFFICIENT_TENSION
     if sigma_cp_MPa < STRUT_COEFFICIENT_LOW_THRESHOLD * fcd_MPa:

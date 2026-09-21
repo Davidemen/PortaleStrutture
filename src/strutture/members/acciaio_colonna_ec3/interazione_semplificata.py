@@ -17,6 +17,7 @@ BOTH axes, and then applies the y-y interpolation formula to z-z as well — not
 z-z expression (`Mpl,z,Rd` for `n<=a`, `Mpl,z,Rd*[1-((n-a)/(1-a))^2]` for `n>a`). Fixed mode
 implements §6.2.9.1(5) literally for MN,z,Rd; legacy reproduces the sheet's substitute formula.
 """
+from strutture.shared.divergences import legacy
 from strutture.shared.report import Check
 from strutture.shared.units import kn_to_n
 
@@ -61,7 +62,11 @@ def mn_rd_z_kNm_fixed(mpl_z_kNm: float, n: float, a: float) -> float:
 def v54_lineare(nsd_kN: float, area_mm2: float, fyd_MPa: float, my_sd_kNm: float, mn_rd_y_kNm: float,
                  mz_sd_kNm: float, mn_rd_z_kNm: float, *, legacy_compat: bool) -> float:
     """column-check!V54 — sum of linear utilisation ratios; legacy reproduces the mis-scaled n term."""
-    termine_n = nsd_kN / (area_mm2 * fyd_MPa) if legacy_compat else rapporto_assiale(nsd_kN, area_mm2, fyd_MPa)
+    termine_n = (
+        nsd_kN / (area_mm2 * fyd_MPa)
+        if legacy("acciaio-colonna-ec3/v54-termine-assiale-mille-volte-piccolo", legacy_compat)
+        else rapporto_assiale(nsd_kN, area_mm2, fyd_MPa)
+    )
     return termine_n + my_sd_kNm / mn_rd_y_kNm + mz_sd_kNm / mn_rd_z_kNm
 
 
@@ -78,7 +83,7 @@ def costruisci_interazione_semplificata(
 ) -> InterazioneSemplificata:
     n = rapporto_assiale(nsd_kN, area_mm2, fyd_MPa)
     a_yy = fattore_area_ali(area_mm2, b_mm, tf_mm)
-    if legacy_compat:
+    if legacy("acciaio-colonna-ec3/mn-rd-z-formula-sbagliata", legacy_compat):
         a_zz = fattore_area_anima(area_mm2, h_mm, tw_mm)
         mn_rd_y = mn_rd_kNm(mpl_y_kNm, n, a_yy)
         mn_rd_z = mn_rd_kNm(mpl_z_kNm, n, a_zz)
@@ -86,7 +91,10 @@ def costruisci_interazione_semplificata(
         mn_rd_y = mn_rd_y_kNm(mpl_y_kNm, n, a_yy)
         mn_rd_z = mn_rd_z_kNm_fixed(mpl_z_kNm, n, a_yy)
     v54 = v54_lineare(nsd_kN, area_mm2, fyd_MPa, my_sd_kNm, mn_rd_y, mz_sd_kNm, mn_rd_z, legacy_compat=legacy_compat)
-    i56_denom_y, i56_denom_z = (mpl_y_kNm, mpl_z_kNm) if legacy_compat else (mn_rd_y, mn_rd_z)
+    i56_denom_y, i56_denom_z = (
+        (mpl_y_kNm, mpl_z_kNm) if legacy("acciaio-colonna-ec3/i56-usa-mpl-invece-di-mn-rd", legacy_compat)
+        else (mn_rd_y, mn_rd_z)
+    )
     i56 = i56_potenza(my_sd_kNm, i56_denom_y, mz_sd_kNm, i56_denom_z, n)
     return InterazioneSemplificata(
         n_ratio=n,

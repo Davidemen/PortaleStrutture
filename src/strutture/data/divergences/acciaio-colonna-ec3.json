@@ -63,7 +63,9 @@
   "corretto": "Mantenuto identico in entrambe le modalita': non e' certo se 'formato a freddo' debba mappare sulla riga profili saldati della Tab. 6.2 per una sezione H aperta; non inventata una clausola.",
   "clausola": "EN1993-1-1 Tab. 6.2/6.3",
   "impatto": "",
-  "uscite": []
+  "uscite": [],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "Non essendoci certezza sulla clausola corretta per 'formato a freddo', curva_lt e' identica in entrambe le modalita' e non esiste alcun ramo da collegare."
  },
  {
   "id": "acciaio-colonna-ec3/mrd-y-doppia-divisione-gamma-m0",
@@ -297,7 +299,9 @@
   "impatto": "",
   "uscite": [
    "taglio_instabilita.cw"
-  ]
+  ],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "cw=0.83/lambda_w e' applicata sempre identica in entrambe le modalita': i rami mancanti della Tab. 5.1 non sono implementati, quindi non c'e' nulla da riprodurre con un ramo."
  },
  {
   "id": "acciaio-colonna-ec3/cij-denominatore-lambda-zz-da-verificare",
@@ -311,7 +315,9 @@
   "corretto": "Riprodotto identico in entrambe le modalita': non confermato come bug distinto dal punto Czy, non c'e' un riferimento normativo certo per ri-derivare i termini dell'Annex A.",
   "clausola": "EN1993-1-1 Annex A",
   "impatto": "",
-  "uscite": []
+  "uscite": [],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "I termini Cij dividono per lambda_zz identicamente in entrambe le modalita': senza un riferimento normativo certo non e' stato aggiunto un ramo per ri-derivarli."
  },
  {
   "id": "acciaio-colonna-ec3/classe-4-non-implementata",

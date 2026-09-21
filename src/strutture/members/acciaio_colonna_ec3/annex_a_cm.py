@@ -10,6 +10,7 @@ uses Izz; legacy reproduces the Iyy reuse. See docs/divergences/acciaio-colonna-
 """
 import math
 
+from strutture.shared.divergences import legacy
 from strutture.shared.units import kn_to_n, knm_to_nmm
 
 from .models import DiagrammaMomento
@@ -54,7 +55,7 @@ def cmz(
     if tipo == "1":
         return cm0_tipo1(rapporto_estremi(mz_sd_kNm, mj_z_kNm), nsd_kN, ncr_z_kN)
     if tipo == "2":
-        inerzia = iyy_mm4 if legacy_compat else izz_mm4
+        inerzia = iyy_mm4 if legacy("acciaio-colonna-ec3/cmz-usa-iyy-invece-di-izz", legacy_compat) else izz_mm4
         return cm0_tipo2(e_MPa, inerzia, dmax_zz_mm, lcr_zz_mm, mz_sd_kNm, nsd_kN, ncr_z_kN)
     if tipo == "3a":
         return cm0_tipo3a(nsd_kN, ncr_z_kN)

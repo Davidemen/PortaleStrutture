@@ -13,6 +13,8 @@ verifica mai questa compatibilità): §4.1.2.3.4.2/§4.1.2.1.2.2 richiedono che 
 snervato (eps_s >= eps_yd) prima di applicare MRd = As*fyd*(d-0.4x); `eps_s_permille`/
 `acciaio_snervato` riportano questo controllo di compatibilità/duttilità.
 """
+from strutture.shared.divergences import legacy
+
 from .models import FlessioneOutput
 
 STRESS_BLOCK_FATTORE_LEGACY = 0.81  # sheet Z32/Z33 (vedi divergenze)
@@ -21,7 +23,9 @@ EPS_CU_PERMILLE = 3.5  # NTC2018 §4.1.2.1.2.2 — deformazione ultima a compres
 
 
 def _fattore_blocco(legacy_compat: bool) -> float:
-    return STRESS_BLOCK_FATTORE_LEGACY if legacy_compat else STRESS_BLOCK_FATTORE
+    if legacy("ca-travi/blocco-tensioni-081-vs-08", legacy_compat):
+        return STRESS_BLOCK_FATTORE_LEGACY
+    return STRESS_BLOCK_FATTORE
 
 
 def profondita_asse_neutro_mm(as_o_mm2: float, fyd_MPa: float, b_mm: float, fcd_MPa: float, *, legacy_compat: bool = False) -> float:

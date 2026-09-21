@@ -11,6 +11,8 @@ Divergenze rispetto al foglio (`legacy_compat=True` le riproduce, vedi docs/dive
   la confronta con VRd (una forza, in kN) senza mai dividere per la luce della trave Lt (K80,
   input validato ma mai usato). NTC2018 §7.4.4.1.1 richiede VEd = (ΣMi,d)/Lt.
 """
+from strutture.shared.divergences import legacy
+
 from .models import CapacityDesignOutput, ClasseDuttilita
 
 LCR_FATTORE_CDA = 1.5  # NTC2018 §7.4.6.1.1 — lunghezza critica CD"A" = 1.5*h (CD"B" = h)
@@ -53,7 +55,7 @@ def passo_max_zona_critica_mm(
     NTC2018 §7.4.6.2.1 richiede un quarto dell'ALTEZZA UTILE d (non l'altezza lorda h) nel primo
     termine del MIN; il foglio (K60) usa H7 (h) — vedi docs/divergences/ca-travi.md item 4.
     """
-    if legacy_compat:
+    if legacy("ca-travi/passo-max-zona-critica-degenera", legacy_compat):
         staffa_min_mm = diametro_staffe1_mm  # il foglio (K60) referenzia solo H15, non MIN(H15,H18)
         barra_min_mm = min(diametro_ferri1_mm, diametro_ferri2_mm)  # include lo 0 se il tipo 2 è inutilizzato
         primo_termine_mm = h_mm / PASSO_MAX_FRAZIONE_ALTEZZA_LEGACY
@@ -88,7 +90,7 @@ def taglio_capacity_design_kN(
     single beam moment capacity for both ends, so both end moments use the same MRb/MRc pair).
     """
     momento_amplificato_kNm = GAMMA_RD_CAPACITY[classe] * mrb_kNm * min(1.0, mrc_kNm / mrb_kNm)
-    if legacy_compat:
+    if legacy("ca-travi/taglio-capacity-design-ignora-luce", legacy_compat):
         return momento_amplificato_kNm
     return 2.0 * momento_amplificato_kNm / lt_m
 
