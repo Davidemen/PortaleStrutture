@@ -19,3 +19,6 @@ var/
 .env
 # Staging copy of the UI while a redesign is in progress
 src/strutture/web/static_next/
+
+# copie di lavoro temporanee degli agenti
+.claude/worktrees/
