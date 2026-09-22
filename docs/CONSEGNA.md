@@ -10,9 +10,9 @@ con agenti, in oltre 60 commit; tutto ciò che conta è nel repository, nulla di
 Gira su macOS (sviluppo) e Windows (scritto per, non ancora provato dall'ufficio: `docs/VERIFICA_WINDOWS.md`).
 
 ## 2. Stato alla consegna
-- Git: remoto `origin` = github.com/Davidemen/PortaleStrutture (pubblico). `main` (rilasci, solo avanzamento
-  rapido) e `sviluppo` (lavoro comune) sono allineati al 2026-09-23; da qui in poi si lavora su `sviluppo` o su
-  rami di funzione, come in `docs/GUIDA_SVILUPPO.md`. Nessun tag ancora (il primo sarà `v0.0.1`).
+- Git: remoto `origin` = github.com/Davidemen/PortaleStrutture (pubblico). Branch `main` (release, solo
+  fast-forward) e `develop` (lavoro comune); branch `feat/…`/`fix/…`, worktree e issue come in `docs/GUIDA_SVILUPPO.md`.
+  Nessun tag ancora (il primo sarà `v0.0.1`).
 - Suite verdi al 2026-09-23 (dopo il blocco B, vedi §3/§4 punto 8): `uv run pytest -q` → 4359 superati ·
   `uv run pytest tests/e2e -m e2e -q` → 302 superati, 1 saltato (circa 3 minuti e mezzo) ·
   `node --test tests/e2e/*.mjs` → 92 · `uv run ruff check .` pulito ·
@@ -21,9 +21,11 @@ Gira su macOS (sviluppo) e Windows (scritto per, non ancora provato dall'ufficio
   differenza, i calcoli non sono cambiati.
 - Interfaccia servita: `src/strutture/web/static/`. Copia di lavoro: `src/strutture/web/static_next/` (ignorata da
   git; identica a `static/` dopo la promozione del 2026-09-23). Il flusso di lavoro e di promozione è in `CLAUDE.md`, regola 3.
-- Server: `uv run python scripts/serve_live.py --host 127.0.0.1 --port 8000` (il lanciatore esiste perché una volta
-  un agente ha fermato il server dell'ufficio con `pkill -f strutture.web`; la sua riga di comando non contiene
-  il nome del modulo). Controllo: `curl -s http://127.0.0.1:8000/api/tools`.
+- Server: `scripts/server.ps1 avvia|ferma|riavvia|stato` (alias `strutture`), solo branch `main`, porta 8000, tutte le
+  interfacce, in background; log in `var/server.log`. Parte da solo all'accesso a Windows (attività pianificata
+  "StruttureMenni"). Usa `scripts/serve_live.py`, che esiste perché una volta un agente ha fermato il server
+  dell'ufficio con `pkill -f strutture.web`. Controllo: `curl -s http://127.0.0.1:8000/api/tools`.
+  Porte di sviluppo: `CLAUDE.md`, regola 1.
 - Dati: `var/strutture.db` (SQLite: firme del registro, progetti, elementi, revisioni). Registro delle correzioni:
   209 voci, tutte "da confermare".
 
