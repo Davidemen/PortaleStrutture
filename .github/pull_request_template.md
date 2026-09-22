@@ -1,7 +1,7 @@
 ## Cosa cambia
 
 ## Perché
-Chiude #
+Closes #
 
 ## Come è stato provato
 - [ ] `uv run pytest -q`

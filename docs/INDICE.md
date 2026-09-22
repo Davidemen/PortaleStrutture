@@ -11,7 +11,7 @@ tradurle non aggiunge nulla e rischia errori nelle formule). I comandi sono iden
 | `docs/GUIDA_PROPRIETARIO.md` | IT | installazione, avvio, uso quotidiano, dati e backup, cose da fare, lavorare con gli agenti, problemi comuni, glossario |
 | `docs/CONSEGNA.md` | IT | stato alla consegna: numeri dei test, cosa è in corso, lavori aperti, convenzioni |
 | `docs/DECISIONI_DA_CONFERMARE.md` | IT | scelte ingegneristiche da confermare, dubbi aperti, lavori rinviati |
-| `docs/GUIDA_SVILUPPO.md` | IT | rami (`main`, `sviluppo`, funzioni), ciclo di una funzione, validazione, issue, rilasci, commit |
+| `docs/GUIDA_SVILUPPO.md` | IT | branch (`main`, `develop`, `feat/`, `fix/`), worktree, ciclo di una funzione, validazione, issue, release, commit |
 | `docs/VERIFICA_WINDOWS.md` | IT | controlli da fare una volta sul PC Windows |
 | `docs/VERIFICA_MIDAS.md` | IT | verifica dell'importazione da MIDAS NX su un modello reale |
 | `docs/VALIDAZIONE_STRUMENTI.md` | IT | validazione strumento per strumento: i sei passi, la tabella di stato (compilata a mano, conservata) e le schede generate da `scripts/validazione_strumenti.py` |

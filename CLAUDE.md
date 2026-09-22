@@ -61,20 +61,20 @@ comandi non sono tutti verdi.
 ## Regole dure
 1. Mai fermare un processo per nome (`pkill -f`, `killall`, `taskkill /IM`, `lsof | xargs kill`). Porte, decise
    dal titolare: 8000 solo il server dell'ufficio (`main`, regola 2); 8001 la copia di sviluppo (`static_next`,
-   regola 3); dalla 8002 in su un ramo di funzionalità per porta (worktree), da 8012 a 8015 le prove temporanee.
+   regola 3); dalla 8002 in su un branch di lavoro per porta (worktree), da 8012 a 8015 le prove temporanee.
    I server 8001 e 8002+ li avvii e fermi tu, in background, annotando il PID e fermando solo quello.
-2. Il server dell'ufficio (ramo `main`, porta 8000, tutte le interfacce) si gestisce SOLO con `scripts/server.ps1
+2. Il server dell'ufficio (branch `main`, porta 8000, tutte le interfacce) si gestisce SOLO con `scripts/server.ps1
    avvia|ferma|riavvia|stato` (alias `strutture` sul PC dell'ufficio; si avvia da solo all'accesso a Windows con
    l'attività pianificata "StruttureMenni"). Lo script usa `scripts/serve_live.py`, la cui riga di comando non
    contiene il nome del modulo, apposta. Riavvialo solo dopo averlo detto al titolare.
    La cartella principale del repository resta SEMPRE su `main` e serve solo al server dell'ufficio: mai lavorarci
-   dentro direttamente (niente modifiche, commit o `git switch`). Si lavora sempre in una cartella di lavoro
-   separata (git worktree), una per ramo, accanto al repository:
-   `git worktree add ../PortaleStrutture-wt/<nome> -b funzione/<nome> origin/sviluppo` (per `sviluppo`:
-   `git worktree add ../PortaleStrutture-wt/sviluppo sviluppo`), poi `uv sync` al suo interno; i server di prova
-   di quella cartella usano la porta del ramo (regola 1). A lavoro unito: `git worktree remove ../PortaleStrutture-wt/<nome>`.
-   Il rilascio (`main` avanza fino a `sviluppo`, `docs/GUIDA_SVILUPPO.md`) è l'unico caso in cui la cartella
-   principale cambia: `git pull --ff-only` al suo interno, poi `strutture riavvia`, dopo averlo detto al titolare.
+   dentro direttamente (niente modifiche, commit o `git switch`). Si lavora sempre in un worktree separato, uno per
+   branch, accanto al repository: `git worktree add ../PortaleStrutture-wt/<nome> -b feat/<nome> origin/develop`
+   (per `develop`: `git worktree add ../PortaleStrutture-wt/develop develop`), poi `uv sync` al suo interno; i
+   server di prova di quel worktree usano la porta del branch (regola 1). Dopo il merge:
+   `git worktree remove ../PortaleStrutture-wt/<nome>`. La release (`main` avanza con fast-forward fino a `develop`,
+   `docs/GUIDA_SVILUPPO.md`) è l'unico caso in cui la cartella principale cambia: `git pull --ff-only` al suo
+   interno, poi `strutture riavvia`, dopo averlo detto al titolare.
 3. Interfaccia: si lavora nella copia `src/strutture/web/static_next/` (se manca: `cp -R static static_next`),
    servita con `--static-dir src/strutture/web/static_next --data-dir build/ui-dev-data`, si prova con
    `STRUTTURE_E2E_STATIC_DIR=src/strutture/web/static_next uv run pytest tests/e2e -m e2e -q`, poi si promuove:
@@ -125,8 +125,10 @@ comandi non sono tutti verdi.
    formule; per l'interfaccia la suite e2e completa.
 4. Aggiorna `docs/CONSEGNA.md` se cambi lo stato del progetto (numeri dei test, lavori aperti).
 5. Un commit per pacchetto finito, messaggio in italiano `tipo: descrizione` (feat, fix, refactor, docs, test,
-   chore, perf, ci). Rami e rilasci: `docs/GUIDA_SVILUPPO.md`. Mai commit diretti su `main` (si muove solo in
-   avanti fino a `sviluppo`); si lavora su `sviluppo` o su un ramo `funzione/…`/`correzione/…` nato da `sviluppo`.
+   chore, perf, ci). Branch e release: `docs/GUIDA_SVILUPPO.md`. Mai commit diretti su `main` (solo fast-forward
+   fino a `develop`); si lavora su `develop` o su un branch `feat/…`, `fix/…` (o altro tipo di commit) nato da
+   `develop`, sempre nel suo worktree. Nomi dei branch e termini di git e GitHub (branch, merge, pull request,
+   release, worktree) in inglese.
 6. Riferisci al titolare in italiano: cosa è cambiato, cosa hai verificato, cosa deve controllare lui
    nell'app (quale strumento, quale esempio), cosa resta aperto.
 

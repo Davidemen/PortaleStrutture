@@ -4,7 +4,7 @@ Server dell'ufficio in background (Windows): resta acceso anche chiudendo il ter
     powershell -ExecutionPolicy Bypass -File scripts\server.ps1 avvia|ferma|riavvia|stato
 
 Alias `strutture` e avvio automatico all'accesso: docs/CONSEGNA.md, sezione "Server". Usa scripts/serve_live.py
-(regola dura 2) con il Python di .venv, cosi' il PID sulla porta e' quello del server. `ferma` agisce solo sul
+(CLAUDE.md, regola 2) con il Python di .venv, cosi' il PID sulla porta e' quello del server. `ferma` agisce solo sul
 processo in ascolto sulla porta, e solo se e' il Python di questo progetto: mai per nome.
 Testi senza lettere accentate: PowerShell 5.1 legge i .ps1 senza BOM come ANSI.
 #>
@@ -13,7 +13,7 @@ param(
     [string]$Comando = 'stato'
 )
 
-# Solo il server dell'ufficio: ramo main, porta 8000, tutte le interfacce. Sviluppo e rami: CLAUDE.md, regola 1.
+# Solo il server dell'ufficio: branch main, porta 8000, tutte le interfacce. develop e altri branch: CLAUDE.md, regole 1-2.
 $Porta = 8000
 $Indirizzo = '0.0.0.0'
 $Ramo = 'main'
@@ -60,7 +60,7 @@ function Start-Server {
     }
     $ramoAttuale = git -C $Radice branch --show-current
     if ($ramoAttuale -ne $Ramo) {
-        throw "La cartella $Radice e' sul ramo '$ramoAttuale': il server dell'ufficio parte solo da '$Ramo'."
+        throw "La cartella $Radice e' sul branch '$ramoAttuale': il server dell'ufficio parte solo da '$Ramo'."
     }
     New-Item -ItemType Directory -Force (Split-Path $Log) | Out-Null
     $argomenti = @('scripts/serve_live.py', '--host', $Indirizzo, '--port', "$Porta")
