@@ -138,8 +138,8 @@ class _LazySqliteProjectRepository:
     def ripristina_progetto(self, progetto_id: str) -> Progetto:
         return self._resolved().ripristina_progetto(progetto_id)
 
-    def list_elementi(self, progetto_id: str) -> tuple[Elemento, ...]:
-        return self._resolved().list_elementi(progetto_id)
+    def list_elementi(self, progetto_id: str, *, inclusi_eliminati: bool = False) -> tuple[Elemento, ...]:
+        return self._resolved().list_elementi(progetto_id, inclusi_eliminati=inclusi_eliminati)
 
     def get_elemento(self, elemento_id: str) -> Elemento:
         return self._resolved().get_elemento(elemento_id)
@@ -155,6 +155,9 @@ class _LazySqliteProjectRepository:
 
     def elimina_elemento(self, elemento_id: str, revisione: int) -> None:
         self._resolved().elimina_elemento(elemento_id, revisione)
+
+    def ripristina_elemento(self, elemento_id: str) -> Elemento:
+        return self._resolved().ripristina_elemento(elemento_id)
 
     def revisioni(self, elemento_id: str) -> tuple[RevisioneElemento, ...]:
         return self._resolved().revisioni(elemento_id)
