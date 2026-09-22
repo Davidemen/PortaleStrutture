@@ -179,7 +179,11 @@ def _esegui_dimensiona(
     # be, which may not even be admissible.
     avvisi_base = tuple(base_report.warnings) if base_report.ok else ()
     valuta, cache = costruisci_valuta(tool, inputs, corpo.campo, riporti, orientamenti, corpo.obiettivo, obiettivo_su_minimi, avvisi_base)
-    risultato = cerca(griglia, valuta, corpo.verso, max_valutazioni=stato.max_valutazioni, tempo_max_s=stato.tempo_max_s)
+    # §23.3 point 6: `TEMPO_MAX_S` covers the WHOLE search, not just `cerca()`'s own clock -- the
+    # `N_CAMPIONI` initial samples above already spent real wall time that must count against it,
+    # or a slow tool's initial sampling alone could exceed the advertised budget unnoticed.
+    tempo_restante = max(stato.tempo_max_s - (time.monotonic() - inizio), 0.0)
+    risultato = cerca(griglia, valuta, corpo.verso, max_valutazioni=stato.max_valutazioni, tempo_max_s=tempo_restante)
     report, esito = esito_alla_risposta(
         risultato.valore, tool, inputs, corpo.campo, cache, orientamenti, corpo.obiettivo, obiettivo_su_minimi,
     )
