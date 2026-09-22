@@ -703,16 +703,24 @@ with utilisation η ≤ the target. The search runs on the server over the same 
 UI never applies a result by itself. It works alongside §19 (varianti affiancate: a found value can be kept as a
 variant) and §21 (applying the value is one undoable data change).
 
-### 23.1 Owner's rule: rounding step and target are engineering choices
+### 23.1 Owner's rule: rounding step and target are engineering choices (decided 2026-09-22)
 The rounding step (`passo`) and the utilisation target (`obiettivo`) are chosen by the owner, never by the program.
-The dialog ALWAYS shows both and the search cannot start without them. Proposed values: `obiettivo` = 1,00 (the
-code limit), editable, allowed range 0 < obiettivo ≤ 1,00 (above 1 a check fails by definition). `passo` is EMPTY
-and required, except (a) integer fields (bar counts), where 1 is the only meaningful step and is prefilled (still
-editable, e.g. 2 for symmetric layouts), and (b) fields whose model declares a step hint
-`json_schema_extra={"passo": <number>}` (no field declares one today; adding one is an owner decision,
-`docs/DECISIONI_DA_CONFERMARE.md` items 17–18). The hint lives in the tool's own `models.py`, not in the shared
-contract; pydantic copies `json_schema_extra` into the field's schema, so the hint reaches the UI through
-`GET /api/tools/{name}/schema` unchanged (no change to `_ui_schema`, which only strips class-level descriptions).
+Owner's decisions 17 and 18 (`docs/DECISIONI_DA_CONFERMARE.md`): both are SETTABLE office defaults, stored in
+§26 "Impostazioni" and only PROPOSED by the dialog, which ALWAYS shows both; the search cannot start without them.
+- `obiettivo`: prefilled with the §26 value `obiettivo_sfruttamento` (factory value 1,00, the code limit),
+  editable per search, allowed range 0 < obiettivo ≤ 1,00 (above 1 a check fails by definition).
+- `passo`: prefilled with the step §26.5 resolves for (tool, field): the per-field exception if one exists, else
+  the step of the field's data type (§26.4), else — for integer fields only — 1 (the only meaningful step, still
+  editable, e.g. 2 for symmetric layouts), else EMPTY and required. Factory settings hold no step at all, so until
+  the office enters some, every non-integer field starts empty. Under the field the dialog says where the
+  proposal comes from ("Passo d'ufficio per diametri di armatura" · "Passo d'ufficio per questo campo" · "Numero
+  intero"), with a link to `#/impostazioni`.
+- The body of the search request always carries the explicit `passo` and `obiettivo` shown in the dialog: the
+  server never substitutes a setting, so a search is reproducible and a settings change never alters a search
+  already open in a dialog, nor any saved element.
+- The earlier per-model hint `json_schema_extra={"passo": …}` is dropped: steps live only in §26 (one place, set by
+  the office, visible and resettable). The only per-model hint kept is `tipo_dato` (§26.4), which classifies a
+  field and never carries a number.
 
 ### 23.2 How η is read from a Report (no contract change)
 `Check` carries `passed` plus optional `value`/`limit` (`shared/report.py`). Most checks set `value=`/`limit=`;
@@ -737,13 +745,17 @@ ca-taglio-non-armato). Server rule, pure function in `shared/dimensiona/sfruttam
   check passes AND every check with η has η ≤ obiettivo. The search therefore bisects on a boolean outcome and works
   with outcome-only checks too; the response lists them in `verifiche_solo_esito` and the UI says so ("Considerate
   solo come esito, senza obiettivo: …"). Whether that is acceptable is decision 19.
-- **The target applies only to resistance/demand-capacity checks.** For minimum, detailing or ceiling checks
-  (minimum reinforcement, bar spacing, cover, maximum reinforcement ratio) only pass/fail counts, until the owner
-  decides otherwise (decision 19-bis) — an `obiettivo < 1` turning `As ≥ As,min` into `As ≥ 1,25·As,min`, or a
-  ceiling check into `ρl ≤ 0,80·ρl,max`, is an engineering margin the program must not invent. The program has no
-  `verso`/category contract yet to make this distinction automatically: until it does, whenever `obiettivo < 1` the
-  response is always `affidabile = false` with a `motivo` "Obiettivo applicato anche a verifiche di minimo/dettaglio:
-  controllare", and the response separately lists the checks the target was NOT applied to.
+- Outcome-only checks in a sizing are accepted (owner's decision 19, 2026-09-22): no contract change for them.
+- **Target on minimum/detailing checks — setting `obiettivo_su_verifiche_minimo` (§26, decision 19-bis still
+  open, factory value `false`).** The server reads it from the §26 repository at request time and echoes it in the
+  response. With `false`: the target applies only to "diretto" checks (value ≤ limit); "inverso" checks (value ≥
+  limit: minimum reinforcement, minimum cover…) count as pass/fail only and are listed in
+  `verifiche_senza_obiettivo` — an `obiettivo < 1` turning `As ≥ As,min` into `As ≥ 1,25·As,min` is a margin the
+  program must not invent. A "diretto" ceiling/detailing check (`ρl ≤ ρl,max`) cannot be told apart from a
+  resistance check without a `verso`/category contract, so with `false` and `obiettivo < 1` the response is always
+  `affidabile = false` with the `motivo` "Obiettivo applicato anche a eventuali limiti massimi di dettaglio:
+  controllare". With `true`: the target applies to every check with η (both orientations), `verifiche_senza_obiettivo`
+  is empty and that `motivo` is not added.
 - Contract proposal, NOT done (rule 15, needs the owner's go-ahead): an optional `Check.verso: "max" | "min"`
   ("value must stay below / above limit") would make the orientation explicit and remove the learning step. Until
   then a permanent test (`tests/shared/dimensiona/test_copertura_rapporti.py`) runs every tool's example and
@@ -816,7 +828,8 @@ grid so that 0,05 steps never drift:
 New router `src/strutture/web/routes/dimensiona.py` (keeps `routes/tools.py` small), mounted under `/api/tools`:
 `POST /api/tools/{name}/dimensiona`, body
 `{inputs: {…the run payload…}, campo, da, a, passo, obiettivo, verso?: "auto"|"minimo"|"massimo"}`.
-`build_dimensiona_router(tools, signoffs, register=None)` is wired in `web/app.py` next to `build_tools_router`;
+`build_dimensiona_router(tools, signoffs, impostazioni, register=None)` (the §26 repository, read once per
+request for `obiettivo_su_verifiche_minimo`) is wired in `web/app.py` next to `build_tools_router`;
 "approved" (for the "forced off" legacy_compat rule of §16/§23.3 point 2) is computed with the same
 `riepilogo_per_strumento` of §25.2 (approvato = register entries present, `da_confermare == 0` and `respinto == 0`).
 An element saved in Excel mode for a tool that later becomes approved recalculates in standard mode, as §16.
@@ -824,9 +837,10 @@ Response 200: `{ok: true, campo, verso, esito:
 "trovato"|"estremo_sufficiente"|"nessun_valore"|"interrotta"|"limite_validita",
 valore: number|null, affidabile, motivi: [str], governante: {nome, eta}|null, verifiche_solo_esito: [str],
 verifiche_senza_obiettivo: [str], campioni: [{valore, esito, eta_max, messaggio?, avvisi_nuovi: [str]}], valutazioni,
-durata_s, modalita, correzioni: {da_confermare, respinto}, report: <run envelope at `valore`>}`.
-`verifiche_senza_obiettivo` lists the resistance checks the target was NOT applied to under the §23.2 rule (minimum,
-detailing, ceiling checks); `modalita`/`correzioni` are read the same way as §25.2 so the UI can show the same
+durata_s, modalita, correzioni: {da_confermare, respinto}, obiettivo, passo, obiettivo_su_minimi: bool,
+report: <run envelope at `valore`>}`.
+`verifiche_senza_obiettivo` lists the checks the target was NOT applied to under the §23.2 rule ("inverso" checks
+when `obiettivo_su_minimi` is false); `obiettivo`/`passo` echo the body; `modalita`/`correzioni` are read the same way as §25.2 so the UI can show the same
 "⚠ riproduce il foglio Excel" / "◐ Provvisorio" caveats as a saved element (§23.5).
 Errors (standard envelope, Italian `errors[0]`, `error_details.loc` naming the body key): 404 unknown tool; 422
 unknown or non-numeric `campo` (tables, enums, booleans and `legacy_compat` are refused: "Il campo … non è
@@ -851,7 +865,9 @@ for body and response in `shared/dimensiona/modelli.py`.
   `min(current × 0,5, …)`, never 0).
 - Dialog (`role="dialog"`, non-modal side panel so the Dati stay readable, `aria-labelledby` on the title): Campo
   (select of numeric inputs grouped like the Dati sections, symbol + label + unit; focus starts here on open), Da /
-  A (above), **Passo** (empty and required, see 23.1), **Obiettivo di sfruttamento** (1,00), Verso (Automatico ·
+  A (above), **Passo** (prefilled per 23.1 from §26, else empty and required; changing Campo re-resolves it unless
+  the user already typed one), **Obiettivo di sfruttamento** (prefilled from §26), a read-only line "Obiettivo
+  anche sulle verifiche di minimo: no|sì (Impostazioni)" linking to `#/impostazioni`, Verso (Automatico ·
   Valore minimo · Valore massimo), "Cerca" (Enter inside the dialog; `Ctrl+Enter` inside the dialog is handled by
   the dialog's own handler, which calls `preventDefault()` + `stopPropagation()` so the global "Calcola" shortcut of
   §6 does not also fire), disabled with `aria-disabled` + `aria-describedby` pointing at the reason text (still
@@ -870,7 +886,9 @@ for body and response in `shared/dimensiona/modelli.py`.
   <nuovo>"; the field flashes) and **"Studia la sensibilità"** (opens §24 with the same field and range). "Nessun
   valore", "interrotta" and "limite_validita" show the best sample and no Applica.
 - Modules: `js/dimensiona.js` (dialog, ≤ 400 lines), `js/dimensiona-api.js`, `js/dimensiona-esito.js`,
-  `css/dimensiona.css`; small edits to `results-toolbar.js`, `shortcuts.js`, `schizzo-modifica.js`. CSP (rule 4):
+  `css/dimensiona.css`; small edits to `results-toolbar.js`, `shortcuts.js`, `schizzo-modifica.js`. Settings are
+  read through `js/impostazioni-api.js` (§26.7: `leggiImpostazioni()` cached per page load and dropped on the
+  `impostazioni:salvate` event, `passiStrumento(tool)`). CSP (rule 4):
   no inline style or script, no `innerHTML`, geometry via classes or `style.setProperty`.
 
 ### 23.6 Acceptance
@@ -896,11 +914,13 @@ for body and response in `shared/dimensiona/modelli.py`.
   starts the search and does not also trigger the global "Calcola"; repeated at 390×844 for the mobile layout;
   `tests/e2e/dimensiona.test.mjs` for the pure formatting helpers (Da/A prefill rule).
 
-### 23.7 Open engineering decisions
-Default `obiettivo` (decision 17); default `passo` per kind of field and any per-field `passo` hint (18); whether
-outcome-only checks are acceptable in a sizing (19); whether the target also applies to minimum/detailing/ceiling
-checks (19-bis, proposed: no). Until decided: no default step, target proposed 1,00, target applies only to
-resistance checks.
+### 23.7 Engineering decisions
+Decided by the owner on 2026-09-22: target and steps are settable office defaults (17, 18 → §26); outcome-only
+checks are acceptable in a sizing (19). Still open: whether the target also applies to minimum/detailing checks
+(19-bis) — a §26 setting, factory value "no", with the §23.2 caveat. The API test adds: `obiettivo_su_minimi`
+echoed from a settings repository set both ways, and with `true` an "inverso" check limits the answer at the target.
+The E2E test adds: with §26 holding a step for the field's type and a target 0,90, the dialog opens prefilled with
+both and the provenance line (run on a temporary data-dir fixture, as §26.8).
 
 ## 24. Studio di sensibilità (owner's request 2026-09-22)
 Purpose: see how every check reacts to one input over a range, before or after §23.
@@ -914,14 +934,14 @@ errori: [{valore, messaggio}], verifiche_solo_esito: [str], modalita, correzioni
 completa: bool}` — `completa=false` when the time limit cut the series (the points evaluated so far are returned).
 `modalita`/`correzioni` are read the same way as §23.4/§25.2, for the same caveats in the UI. 422s as §23.4 (`punti`
 out of range: "Indicare fra 2 e 41 punti"); no `obiettivo` in the body: the target line is drawn client-side from
-the dialog value (prefilled 1,00, same rule as 23.1).
+the dialog value (prefilled from §26 `obiettivo_sfruttamento`, same rule as 23.1).
 
 ### 24.2 UI
 - Entry: results toolbar **"∿ Sensibilità…"**, `g s` (outside text fields, same preselection rule as `g d` in
   §23.5), or "Studia la sensibilità" from §23. Dialog (`role="dialog"`, `aria-labelledby`, focus on Campo at open,
   Esc at rest closes and returns focus, full-width sheet below 720 px, `aria-live="polite"` announcing "Ricerca in
-  corso…" and then the result — all as §23.5): Campo, Da / A, Punti (proposed 21), Obiettivo (1,00, only draws the
-  line), "Calcola" (Enter inside the dialog; `Ctrl+Enter` inside the dialog is handled locally with
+  corso…" and then the result — all as §23.5): Campo, Da / A, Punti (proposed 21), Obiettivo (prefilled from
+  §26, only draws the line), "Calcola" (Enter inside the dialog; `Ctrl+Enter` inside the dialog is handled locally with
   `stopPropagation()` so it does not also trigger the global "Calcola").
 - Chart: `renderChart` from `js/chart.js`, rows `[{x: valore, s1: η, …, s5: η}]`, `chart = {x: "x", x_label:
   "<symbol> [<unit>]", y_label: "η"}`. Series = the 5 most critical checks over the range (failed somewhere first,
@@ -992,15 +1012,39 @@ be detected — `revisione` alone is kept in the cache key only to make the "Agg
 trigger. A provider run that fails gives "origine non calcolabile" (marked, message kept); a rename or a note alone
 never marks anything, because the value at `percorso` is unchanged. The marker clears when the consumer is saved
 again with current values (new "Usa in…" or the row action below).
-Propagation along the chain (proposal, NOT implemented — decision 22): neither "da ricalcolare" nor "provvisorio"
-propagate today. If A changes, B is marked, but B's saved inputs do not change until the owner acts on it; when C
-uses B, a fresh run of B's stored inputs still returns the OLD value (nothing in B's own data changed yet), so C is
-never marked even though it rests on a stale B. Symmetrically, a standard-mode element with no pending corrections
-that consumes a value from a provvisorio or Excel-mode provider looks fully "definitivo" even though it rests on
-unapproved corrections or on the sheet's own errors. Proposed rule, pending decision 22: propagate via `elemento_id`
-(cycle-checked, capped by `MAX_RICALCOLI_ORIGINI`) with `causa: "origine_da_ricalcolare"` when the provider is da
-ricalcolare, and a "provvisorio per origine" state when the provider is provvisorio or in Excel mode ("Usa valori di
-<sigla>, che applica correzioni non approvate / riproduce il foglio Excel"). Not applied before the owner answers.
+**Propagation along the chain (owner's decision 22, 2026-09-22: yes — to be built).** Without it, if A changes, B
+is marked, but B's saved inputs do not change until the owner acts on it; when C uses B, a fresh run of B's stored
+inputs still returns the OLD value, so C would never be marked although it rests on a stale B. Symmetrically, a
+standard-mode element with no pending corrections that consumes a value from a provvisorio or Excel-mode provider
+would look fully "definitivo". Rule (pure, `shared/stato_progetto/propagazione.py`, ≤ 150 lines, functions ≤ 40):
+- Graph: one node per element, one edge consumer → provider for each provenance item WITH `elemento_id` (items
+  without it, "origine non salvata", never propagate; their tooltip says so). A provider may live in another
+  project: it is read with `get_elemento` and evaluated exactly like a local one (its own §25.1/§25.2 state),
+  counting towards `MAX_RICALCOLI_ORIGINI`; only elements of the requested project appear in `elementi`/`conteggi`.
+- Own states: the §25.1 comparison and the §25.2 provvisorio rule are computed at most once per `elemento_id` per
+  request (memoised; they are the expensive part, provider runs).
+- Propagated states, defined per element X as a bounded reachability, so the result never depends on the order of
+  the elements: breadth-first from X along provider edges, with a visited set, up to `PROFONDITA_MAX_ORIGINI = 10`
+  edges.
+  - **da ricalcolare per origine**: X is marked with `causa: "origine_da_ricalcolare"` when some reached provider
+    is da ricalcolare by its OWN state; one motivo per direct provider on such a path, naming it (`elemento_id`,
+    `strumento`, name) with the farthest-upstream own motivo as `messaggio` ("da SPS via MUR: ag 0,150 → 0,180 g").
+  - **provvisorio per origine**: new flag `provvisorio_origine` with `motivi_origine: [{elemento_id, strumento,
+    causa: "origine_provvisoria"|"origine_excel"}]` when some reached provider is provvisorio by its own state or is
+    saved in Excel mode. Shown and counted separately: it never changes X's own `provvisorio`/`correzioni`.
+  - **Depth limit**: when the BFS still has unvisited providers at depth `PROFONDITA_MAX_ORIGINI`, X gets one motivo
+    `causa: "controllo_rinviato"` ("Catena di origini più lunga di 10 passaggi: controllo interrotto"), not marked
+    by it, counted as the run cap of §25.3.
+- **Cycles**: "Usa in…" cannot prevent them (two elements may copy values from each other at different times). The
+  visited set makes every BFS terminate; in addition the strongly connected components of the graph (Tarjan,
+  iterative, order-independent) with more than one node or a self-edge give each member one motivo `causa:
+  "ciclo_origini"` ("Le origini formano un ciclo: <sigla> → … → <sigla>"), not marked by it, counted in
+  `conteggi.cicli_origini`. Marking through a cycle still follows the reachability rule above.
+- Tests (§25.5) prove order independence (every permutation of the element list gives the same result) and
+  termination on cycles of length 1, 2 and 5.
+The row action for `origine_da_ricalcolare` is "Apri l'origine <sigla>" (opens the provider element, which has its
+own "Aggiorna dai dati a monte"): the consumer's values are refreshed only once the provider has been updated and
+saved, at which point the consumer's own `valore_cambiato` rule takes over.
 "Aggiorna dai dati a monte" (row action, §25.4) reads the CURRENT values through `GET /api/progetti/{id}/stato`
 (the same `valore_attuale` already carried in each `motivo`), fills the linked fields, and `provenienza.js` updates
 each item's `valore`/`revisione_fornitore` to the provider's current value/revision (read again via `GET` on the
@@ -1022,40 +1066,47 @@ are open doubts, not applied corrections: they are counted SEPARATELY and never 
 tooltip names them "N dubbi da verificare" rather than listing them as corrections applied. Granularity is the
 tool, as in the register: the program does not know which entries a given run traversed; the tooltip says "Il
 calcolo applica correzioni del registro non ancora approvate (N da confermare, M respinte)", plus "N dubbi da
-verificare" when non-zero, and links to the register filtered on the tool. Whether `respinto` counts towards
-provvisorio is decision 21 — proposal in the meantime: yes, it counts; the rule lives in a single place
-(`shared/stato_progetto/provvisorio.py`, constant `RESPINTO_RENDE_PROVVISORIO = True`) so it flips with one edit
-once the owner answers, and the tooltip always reports the two counts (`da_confermare`, `respinto`) separately.
-**The printed relazione is unchanged** (single tool §10 and project §14.3): whether "provvisorio" must appear on
-paper is the owner's decision 20; until then nothing is printed.
+verificare" when non-zero, and links to the register filtered on the tool. A rejected entry counts towards
+provvisorio (owner's decision 21, 2026-09-22): the rule lives in a single place (`shared/stato_progetto/
+provvisorio.py`, constant `RESPINTO_RENDE_PROVVISORIO = True`), and the tooltip always reports the two counts
+(`da_confermare`, `respinto`) separately.
+**The printed relazione is unchanged** (single tool §10 and project §14.3), including "provvisorio per origine":
+the owner decided on 2026-09-22 (decision 20) that "provvisorio" does not appear on paper. It stays on screen only
+(project page, §20 table, §23 dialog).
 
 ### 25.3 API
 `GET /api/progetti/{id}/stato` (new router `routes/progetti_stato.py`; `routes/progetti.py` is already 358 lines) →
 `{elementi: {<id>: {da_ricalcolare: bool, motivi: [{chiave, strumento, elemento_id, causa:
-"valore_cambiato"|"origine_eliminata"|"origine_non_calcolabile"|"controllo_rinviato", valore_salvato,
-valore_attuale|null, messaggio?}], provvisorio: bool, correzioni: {da_confermare, respinto, ramo_nessuno,
-da_verificare}}}, conteggi: {elementi, verificati, non_verificati, dati_modificati, da_ricalcolare, provvisori,
-controllo_rinviato}}`. `build_progetti_stato_router(progetti, tools, signoffs, register=None)` needs the project,
+"valore_cambiato"|"origine_eliminata"|"origine_non_calcolabile"|"origine_da_ricalcolare"|"ciclo_origini"|
+"controllo_rinviato", valore_salvato|null, valore_attuale|null, messaggio?}], provvisorio: bool,
+provvisorio_origine: bool, motivi_origine: [{elemento_id, strumento, causa: "origine_provvisoria"|"origine_excel"}],
+correzioni: {da_confermare, respinto, ramo_nessuno, da_verificare}}}, conteggi: {elementi, verificati,
+non_verificati, dati_modificati, da_ricalcolare, provvisori, provvisori_per_origine, controllo_rinviato,
+cicli_origini}}`. `build_progetti_stato_router(progetti, tools, signoffs, register=None)` needs the project,
 tool and register/signoff repositories together (same dependency shape as `build_dimensiona_router`, §23.4), wired
 in `web/app.py`. 404 unknown or deleted project (Italian envelope). Provider runs are off the event loop, cached in
 memory per `(elemento_id, revisione, impronta)` per §25.1, at most `MAX_RICALCOLI_ORIGINI = 50` per request (beyond:
 `causa: "controllo_rinviato"`, not marked, counted). The page fetches the state after the element list, again after
 every save/duplicate/delete/restore on the page and after a register sign-off (the rail badge's refresh event
 already exists).
-Modules: `src/strutture/shared/stato_progetto/{origini.py, provvisorio.py, conteggi.py}` (pure, ≤ 150 lines each).
+Modules: `src/strutture/shared/stato_progetto/{origini.py, provvisorio.py, propagazione.py, conteggi.py}` (pure,
+≤ 150 lines each). The route builds the graph and hands `propagazione.py` a callable for the own state of one
+element, so the propagation is tested without the web layer.
 
 ### 25.4 UI
 - Element row (§14.3 list and the state column of the §20 table): next to the stato, chips as icon + word, never
   colour alone: **"↻ Da ricalcolare"** (tooltip: each motivo, e.g. "ag da SPS: 0,150 → 0,180 g") and
-  **"◐ Provvisorio"** (tooltip + register link, 25.2). Row action **"Aggiorna dai dati a monte"** (only when da
-  ricalcolare) opens `#/<tool>?elemento=<id>&aggiorna_origini=1`: the page calls `GET /api/progetti/{id}/stato`,
+  **"◐ Provvisorio"** (tooltip + register link, 25.2) and **"◐ Provvisorio per origine"** (tooltip: "Usa valori
+  di <sigla>, che applica correzioni non approvate" / "…, che riproduce il foglio Excel", each provider a link to its
+  element). "↻ Da ricalcolare" caused only by `origine_da_ricalcolare` has the row action "Apri l'origine <sigla>"
+  (§25.1). Row action **"Aggiorna dai dati a monte"** (only when da ricalcolare by the element's own values) opens `#/<tool>?elemento=<id>&aggiorna_origini=1`: the page calls `GET /api/progetti/{id}/stato`,
   reads `valore_attuale` from the element's motivi and fills the linked fields, with §15's "da <sigla>" chips and
   the old value in the chip tooltip; the fill happens AFTER §21's history reset on `?elemento=` load and is itself
   one undoable step "Aggiorna dai dati a monte"; nothing is saved until "Salva", which then stores the refreshed
   `valore`/`revisione_fornitore` per §25.1.
 - Project head: one line of counts, each a button that filters the list/table (Tab + Enter; Esc clears the filter):
-  "12 elementi · ✓ 9 verificati · ✕ 1 non verificato · ○ 2 dati modificati · ↻ 3 da ricalcolare · ◐ 5 provvisori".
-  "Controllo rinviato" appears only when non-zero.
+  "12 elementi · ✓ 9 verificati · ✕ 1 non verificato · ○ 2 dati modificati · ↻ 3 da ricalcolare · ◐ 5 provvisori ·
+  ◐ 2 provvisori per origine". "Controllo rinviato" and "⟲ N cicli di origini" appear only when non-zero.
 - Modules: `js/progetto-stato.js` (fetch, chips, counts; ≤ 400 lines), `css/progetto-stato.css`; small edits to
   `progetto.js`, `progetto-elementi.js` (and the §20 table module), `usa-in.js`, `provenienza.js`. The provenance
   payload (`collegamenti` with `elemento_id`/`revisione_fornitore`, and the §25.1 reconstruction-on-open) is built
@@ -1071,17 +1122,231 @@ changed value, deleted provider, failing provider run → marked with the right 
 marker; reopening and resaving an element without touching a linked field keeps its `collegamenti` (25.1); "Usa
 in…" from an unsaved/modified provider saves without `elemento_id`; provvisorio for standard mode
 (da_confermare/respinto) and Excel mode (`ramo == "nessuno"` entries only); `da_verificare` entries counted
-separately, never provvisorio; counts. API (`tests/web/test_progetti_stato_api.py`, in-memory repository): 404,
+separately, never provvisorio; counts. Propagation (`test_propagazione.py`): chain A → B → C with A changed
+marks B `valore_cambiato` and C `origine_da_ricalcolare`; a provvisorio or Excel-mode A makes B and C
+`provvisorio_origine` without touching their own `provvisorio`; items without `elemento_id` never propagate; a
+self-edge, a 2-cycle and a 5-cycle terminate and give each member one `ciclo_origini`; a chain longer than
+`PROFONDITA_MAX_ORIGINI` gives `controllo_rinviato` and is not marked; same result for every permutation of the element list; a provider in
+another project is followed. API (`tests/web/test_progetti_stato_api.py`, in-memory repository): 404,
 shape, cache hit on unchanged revision AND unchanged impronta, `MAX_RICALCOLI_ORIGINI`. E2E
 (`tests/e2e/test_progetto_stato.py`): save sisma-parametri-sito as an element, "Usa in…" muro-sostegno from it and
 save; change ag_g in the provider and save → the wall shows "↻ Da ricalcolare" and the head count is 1; reopen the
 wall, rename it only, Salva → the provenance and "↻ Da ricalcolare" survive; "Aggiorna dai dati a monte" + Salva
 clears it; sign off every register entry of the wall via `signoff-multiplo` with sigla "E2E" on a fresh temporary
 data-dir fixture (so other tests' "da confermare" expectations are not disturbed), reload the project page →
-"◐ Provvisorio" disappears; the printed project relazione contains no "Provvisorio".
+"◐ Provvisorio" disappears; the printed project relazione contains no "Provvisorio". Chain: "Usa in…" a third
+element from the saved wall and save; change the provider again → the third element shows "↻ Da ricalcolare" with
+"Apri l'origine", and a provider saved in Excel mode makes both consumers "◐ Provvisorio per origine".
 
-### 25.6 Open engineering decisions
-Printing "provvisorio" in the relazione (decision 20); whether rejected entries make an element provvisorio
-(decision 21 — proposal until decided: yes, respinto counts); whether "da ricalcolare"/"provvisorio" propagate
-along the usage chain (decision 22, §25.1 — not implemented before the owner answers). The comparison tolerance
-(1e-9 relative) is a guard against numeric noise, not an engineering threshold.
+### 25.6 Engineering decisions
+Decided by the owner on 2026-09-22: "provvisorio" is not printed in any relazione (20); a rejected entry makes an
+element provvisorio (21); "da ricalcolare" and "provvisorio" propagate along the usage chain (22, §25.1, to be
+built). None open. The comparison tolerance (1e-9 relative) and `PROFONDITA_MAX_ORIGINI` are guards against numeric
+noise and runaway graphs, not engineering thresholds.
+
+## 26. Impostazioni — office defaults (owner's decisions 17, 18, 19-bis, 2026-09-22)
+Purpose: one page where the office sets the defaults that §23/§24 PROPOSE, instead of the program choosing them.
+There are no users (roadmap decision): one set of settings for the whole installation, stored in the server's SQLite
+database next to projects and register sign-offs, so every workstation sees the same values. A setting is only ever
+a proposal: every dialog that uses one still shows the value and lets the engineer change it for that operation.
+
+### 26.1 Content (initial) and factory values
+| Setting | Key | Factory value | Limits |
+|---|---|---|---|
+| Obiettivo di sfruttamento (decision 17) | `obiettivo_sfruttamento` | 1,00 | 0 < x ≤ 1,00, at most 2 decimals |
+| Obiettivo anche sulle verifiche di minimo e di dettaglio (decision 19-bis, still open) | `obiettivo_su_verifiche_minimo` | `false` ("no") | boolean |
+| Passo di arrotondamento per tipo di dato (decision 18) | `passi_per_tipo: {<tipo>: number\|null}` | every type `null` (no step) | see 26.3 |
+| Eccezioni per campo (decision 18) | `passi_per_campo: [{strumento, campo, passo: number\|null}]` | empty | at most `MAX_ECCEZIONI = 200`, unique (strumento, campo) |
+The factory steps are EMPTY on purpose: the office enters them, the program invents none. New settings added later
+follow the same pattern: a key with a factory value, limits in the model, one row on the page, a test.
+
+### 26.2 Model (`src/strutture/shared/impostazioni/modelli.py`, frozen pydantic v2)
+- `TipoDato = Literal["lunghezza_m", "lunghezza_cm", "lunghezza_mm", "diametro_armatura", "passo_armatura",
+  "copriferro", "spessore", "intero"]` (26.4).
+- `PassoCampo(strumento: str, campo: str, passo: float | None)` — `passo = None` means "no step for this field",
+  which masks the type step (the dialog then asks every time).
+- `Impostazioni(obiettivo_sfruttamento: float = 1.0, obiettivo_su_verifiche_minimo: bool = False, passi_per_tipo:
+  dict[TipoDato, float | None] = {every type: None}, passi_per_campo: tuple[PassoCampo, ...] = ())`,
+  `extra="forbid"`; `FABBRICA = Impostazioni()` is the single definition of the factory values.
+- Field validation in the model (Italian messages, `loc` naming the key): obiettivo `gt=0, le=1`, "L'obiettivo di
+  sfruttamento deve essere maggiore di 0 e al massimo 1,00", at most 2 decimals; every step `gt=0`,
+  `le=PASSO_MAX = 1000` (in the type's unit), at most 4 decimals, checked on the decimal string of the number (no
+  binary-float drift, same `Decimal` convention as §23.3); the `intero` step and any exception on an integer field
+  must be an integer ≥ 1 ("Il passo deve essere intero"); duplicate (strumento, campo) refused.
+- Validation that needs the tool registry lives in `shared/impostazioni/validazione.py` (pure, receives the tools'
+  input schemas): `strumento` must exist ("Strumento sconosciuto: …"), `campo` must be a numeric input of it (same
+  "numeric" definition as §23.4: tables, enums, booleans and `legacy_compat` refused).
+- `ImpostazioniSalvate(valori: Impostazioni, revisione: int, sigla: str, aggiornato_il: str)`; revisione 0 with an
+  empty sigla = factory values never saved.
+
+### 26.3 Units of the steps
+A step is expressed in the unit of its data type (26.4): `lunghezza_m` in m, `lunghezza_cm` in cm, `lunghezza_mm`,
+`diametro_armatura`, `passo_armatura`, `copriferro` and `spessore` in mm, `intero` without unit. Types that group
+fields in different units (a `copriferro_cm` field next to `c_mm` fields) convert the step into the field's unit with
+the factors of `shared/units.py` (the only place for conversion factors) when resolving (26.5); a converted step that
+does not survive the 4-decimal rule is refused at save time with the field named ("Il passo di 0,5 mm non è
+esprimibile in cm per fond-plinto-isolato.copriferro_cm"). An exception is always in the FIELD's own unit, shown
+next to the input.
+
+### 26.4 Data types of the fields (`shared/impostazioni/tipi_dato.py`, pure)
+Read from the input schemas that `GET /api/tools/{name}/schema` already serves (unit, symbol, group, JSON type;
+survey of 2026-09-22 over the 28 tools: 117 inputs in mm, 50 in m, 3 in cm, 24 integers). `tipo_dato(nome,
+schema_campo) -> TipoDato | None`, first matching rule wins:
+0. Explicit hint `json_schema_extra={"tipo_dato": "<tipo>"}` in the tool's own `models.py` (not the shared
+   contract; pydantic copies it into the field schema). None exists today; it is added only where the rules below
+   misclassify a field.
+1. JSON type `integer` (or `anyOf` with `integer`) → `intero` (bar counts, number of legs, sections…).
+2. Unit not in {m, cm, mm} → `None`: no type step (angles, forces, stresses, coefficients, times…); only a
+   per-field exception can give such a field a step.
+3. Name contains `copriferro`, or is `c_mm`/`cf_mm` (all described as "Copriferro") → `copriferro`.
+4. Symbol starts with `⌀`, `φ` or `Φ`, or the field has no symbol and its name contains `diametro` →
+   `diametro_armatura` (so `ca-punzonamento.diametro_mm` "D", `ca-sezione-dominio-mn.diametro_mm` "D" and
+   `fond-plinto-su-pali.diametro_pila_mm` "Ø_palo" — section and pile diameters — stay lengths).
+5. Name contains `passo` or `interferro` → `passo_armatura`.
+6. Symbol starts with `t_` or equals `h_f`, or the name contains `spessore` → `spessore`.
+7. Otherwise by unit: m → `lunghezza_m`, cm → `lunghezza_cm`, mm → `lunghezza_mm`.
+A frozen table test (`tests/shared/impostazioni/test_tipi_dato_copertura.py`) lists the type of EVERY numeric input
+of every tool, so a new field or a rule change is noticed and reviewed; spacings the rules cannot recognise by name
+(e.g. `ca-punzonamento.st_mm`, `px_mm`) remain `lunghezza_mm` in that table until a builder, reading the field's
+description, adds a `tipo_dato` hint. Italian labels (page and messages): Lunghezze in m · Lunghezze in cm ·
+Lunghezze in mm · Diametri di armatura · Passi di armatura · Copriferri · Spessori · Numeri interi.
+
+### 26.5 Resolution for §23 (`shared/impostazioni/risolvi.py`, pure)
+`passo_proposto(impostazioni, strumento, campo, schema_campo) -> PassoProposto(passo: float | None, origine:
+"campo" | "tipo" | "intero" | None, tipo: TipoDato | None)`, in this order:
+1. an exception for (strumento, campo) → its `passo` (also when `None`: the office wants no proposal there),
+   `origine = "campo"`;
+2. the step of the field's type, converted per 26.3 → `origine = "tipo"`;
+3. integer field with no step set → 1, `origine = "intero"` (§23.1: the only meaningful step, not an engineering
+   choice);
+4. otherwise `None`: the dialog's Passo starts empty and required.
+An exception whose tool or field no longer exists (a tool renamed after the save) is ignored by the resolution and
+reported in `GET /api/impostazioni` `avvisi` ("Eccezione ignorata: il campo … non esiste più"); it is removed only
+when the office saves the page.
+
+### 26.6 Storage (`src/strutture/storage/`, same pattern as projects)
+- Migration 3 in `migrations.py`: `impostazioni (id INTEGER PRIMARY KEY CHECK (id = 1), valori TEXT NOT NULL,
+  revisione INTEGER NOT NULL, sigla TEXT NOT NULL, aggiornato_il TEXT NOT NULL)` (one row) and
+  `impostazioni_storia (revisione INTEGER PRIMARY KEY, valori TEXT NOT NULL, sigla TEXT NOT NULL, aggiornato_il TEXT
+  NOT NULL)` (append-only). No row = `FABBRICA` at revisione 0. `valori` is the model's JSON (`ensure_ascii=False`).
+- `ImpostazioniRepository` Protocol in `interfaces.py`: `leggi() -> ImpostazioniSalvate`, `salva(valori,
+  revisione_attesa, sigla) -> ImpostazioniSalvate`, `storia(limite=50) -> tuple[ImpostazioniSalvate, ...]`.
+  `salva` checks `revisione_attesa` against the stored one INSIDE the same `write_session` transaction and raises
+  the existing `ConflictError` on mismatch (optimistic lock, as `progetti_sqlite.py`), then writes the row with
+  revisione + 1 and appends the same values to the history. Implementations `impostazioni_sqlite.py`
+  (`open_impostazioni_repository(data_dir)`) and `impostazioni_memory.py` (tests, e2e in-memory server).
+- Reading is defensive (file content is external data): a stored `valori` that no longer validates (hand-edited
+  database, a type removed in a later version) is logged with the revision number, replaced in memory by `FABBRICA`
+  merged with every key that still validates, and reported in `avvisi` ("Impostazioni salvate non leggibili in
+  parte: usati i valori di fabbrica per …"); never silently. Nothing is written until the office saves.
+- Settings are part of `var/strutture.db`, so the existing backup covers them; the project export/import
+  (`scambio.py`) does not carry them (they belong to the office, not to a project).
+
+### 26.7 API (`src/strutture/web/routes/impostazioni.py`, `build_impostazioni_router(repository, tools)`)
+Wired in `web/app.py` next to the other routers; the existing middleware (rate limit, security headers, same-origin
+check on writes) applies unchanged. Standard envelope for errors, Italian `errors[0]`, `error_details.loc` naming
+the body key (e.g. `["passi_per_campo", 3, "passo"]`).
+- `GET /api/impostazioni` → `{ok, impostazioni, revisione, sigla, aggiornato_il, fabbrica: <FABBRICA>, avvisi:
+  [str]}` (`fabbrica` feeds "Ripristina predefiniti" without a second definition in JavaScript).
+- `PUT /api/impostazioni` body `{impostazioni, revisione, sigla}` → 200 as GET with the new revision; 409 when
+  `revisione` is stale, same envelope as the projects' conflict (`attuale` = the stored settings, message "Le
+  impostazioni sono state modificate nel frattempo (revisione N, sigla X): ricaricare e riprovare"); 422 for every
+  26.2 rule and a missing sigla (same 1-12 characters rule and message style as the register sign-off).
+- `GET /api/impostazioni/tipi` → `{tipi: [{tipo, etichetta, unita, campi: [{strumento, campo, simbolo, etichetta,
+  unita}]}], senza_tipo: [same item shape]}` from 26.4 over all tools (cached per process: schemas are static).
+- `GET /api/impostazioni/passi?strumento=<name>` → `{strumento, obiettivo_sfruttamento,
+  obiettivo_su_verifiche_minimo, passi: {<campo>: {passo, origine, tipo}}}` for every numeric input of the tool
+  (26.5); 404 unknown tool. This is what §23/§24 read; the resolution logic exists only on the server.
+- `GET /api/impostazioni/storia` → the last 50 revisions (`revisione, sigla, aggiornato_il, valori`).
+- 500 envelope on an unexpected exception, logged with the route, never the body.
+
+### 26.8 Page `#/impostazioni`
+- Reach: a fixed rail entry "Impostazioni" below "Registro correzioni" (§13.1), own pictogram (a gear with a ruler
+  tick, distinct from every category and from the register ledger), label always present next to the icon when the
+  rail is expanded and as tooltip + `aria-label` when collapsed (§12); a palette entry "Impostazioni" (keywords:
+  passo, arrotondamento, obiettivo, sfruttamento, predefiniti); the shortcut `g i` (outside text fields, as `g h`),
+  listed in the shortcut sheet. `main.js` routes `impostazioni` like `registro` (full-width main area, no
+  Dati/Sintesi split, `data-view="impostazioni"`).
+- Title + one sentence: "Valori d'ufficio proposti dal programma. Ogni finestra li mostra e si possono cambiare
+  caso per caso." Last change line: "Revisione N · modificata il <data> da <sigla>" (or "Valori di fabbrica, mai
+  modificati").
+- Section **"Dimensiona e sensibilità"**: "Obiettivo di sfruttamento" (numeric input through `number-input.js`,
+  Italian comma, 2 decimals, hint "fabbrica 1,00"); checkbox "Applica l'obiettivo anche alle verifiche di minimo e
+  di dettaglio" with the note "Decisione ancora aperta (19-bis): valore di fabbrica no".
+- Section **"Passi di arrotondamento per tipo di dato"**: an accessible table with caption, one row per type: tipo ·
+  unità · passo (input, empty = "nessun passo") · a disclosure "N campi" listing the fields of that type (strumento
+  sigla · simbolo · etichetta), from `/tipi`. Under the table: "Campi senza tipo (angoli, forze, tensioni…): solo
+  eccezioni per campo" with its own disclosure.
+- Section **"Eccezioni per campo"**: table rows strumento (select: sigla + title) · campo (select of that tool's
+  numeric inputs, symbol + label + unit, grouped like the Dati) · passo in the field's unit (empty = "nessun passo:
+  chiedi ogni volta") · button "✕ Rimuovi" (icon + word); button "+ Aggiungi eccezione" adds a row and focuses its
+  strumento select. Duplicates are flagged in place before saving.
+- Footer: "Sigla" (required, 1-12 characters), **"Salva"** (Enter inside the sigla field submits), **"Annulla
+  modifiche"** (back to the last loaded values), **"Ripristina predefiniti"**: a confirmation dialog (`role=
+  "alertdialog"`, focus trapped, Esc = no) "Ripristinare i valori di fabbrica? Obiettivo 1,00, obiettivo sulle
+  verifiche di minimo no, nessun passo, nessuna eccezione. Diventano effettivi solo con Salva." → fills the form
+  with `fabbrica`; nothing is written until Salva, which stores them as a new revision (history kept).
+- State: "○ Modifiche non salvate" (icon + word) while the form differs from the loaded values; leaving the page
+  (router navigation or `beforeunload`) with unsaved changes asks for confirmation. Save success is announced in an
+  `aria-live="polite"` region ("Impostazioni salvate: revisione N") and dispatches `impostazioni:salvate` on
+  `window` so open §23/§24 helpers drop their cache. 422: the message next to each offending input
+  (`aria-invalid`, `aria-describedby`), a summary at the top listing them as links, focus on the summary. 409: a
+  dialog with the server message and **"Ricarica"** (loads the stored values, discarding local edits after a second
+  confirmation) or "Chiudi" (keeps the local edits so they can be copied by hand).
+- Disclosure "Storia delle modifiche": table revisione · data · sigla · what changed (a readable diff of the two
+  JSONs: "Obiettivo 1,00 → 0,90", "Diametri di armatura: — → 2 mm", "Eccezione aggiunta: PIR ⌀ 2 mm").
+- `avvisi` from GET are shown at the top as warnings (icon + word "⚠ Attenzione").
+- Every control reachable by Tab in reading order; no action needs a pointer; below 720 px the tables become stacked
+  cards with the same controls.
+- Modules: `js/impostazioni.js` (page and orchestration, ≤ 400 lines), `js/impostazioni-api.js` (fetch helpers:
+  `leggiImpostazioni`, `salvaImpostazioni`, `leggiTipi`, `passiStrumento`, cache + `impostazioni:salvate`),
+  `js/impostazioni-passi.js` (type table and exception rows), `js/impostazioni-modello.js` (pure: form ↔ payload,
+  dirty detection, readable diff), `css/impostazioni.css`; small edits to `main.js`, `tool-index.js` (rail entry),
+  `palette.js`, `shortcuts.js`, `icons.js`, and the §23/§24 dialogs (prefill). CSP (rule 4): no inline style or
+  script, no `innerHTML`, geometry via classes or `style.setProperty`. Built in `static_next/` and promoted per
+  CLAUDE.md rule 3.
+
+### 26.9 How §23 and §24 use them
+Opening "Dimensiona" or "Sensibilità" calls `passiStrumento(tool)` (one request per dialog opening, cached until
+`impostazioni:salvate`): Obiettivo ← `obiettivo_sfruttamento`; Passo ← `passi[campo].passo` with the provenance
+line of §23.1; the read-only "Obiettivo anche sulle verifiche di minimo" line ← `obiettivo_su_verifiche_minimo`.
+If the request fails the dialog still opens with Obiettivo 1,00 (factory value, from `fabbrica` if already cached,
+else the constant exported by `impostazioni-modello.js`), Passo empty and a visible note "Impostazioni non
+disponibili: valori di fabbrica" — never a silent fallback. The search/series requests carry the explicit values
+(§23.1); only `obiettivo_su_verifiche_minimo` is read by the server itself (§23.2). Saved elements, variants (§19)
+and relazioni never store or print settings: they store the values actually used.
+
+### 26.10 Acceptance
+- Unit (`tests/shared/impostazioni/`): `test_modelli.py` (factory values; each limit and message; 2 and 4 decimals
+  on the decimal string; integer step; duplicate exceptions; `extra="forbid"`), `test_validazione.py` (unknown
+  tool, unknown field, non-numeric field, integer field with a fractional exception), `test_tipi_dato.py` (each rule
+  0-7 with a synthetic schema, including the three "D"/"Ø_palo" diameters staying lengths),
+  `test_tipi_dato_copertura.py` (frozen table, 26.4), `test_risolvi.py` (precedence campo > tipo > intero > none;
+  `None` exception masks the type step; cm/mm conversion of a `copriferro` step; vanished field ignored with avviso).
+- Storage (`tests/storage/test_impostazioni_sqlite.py`, and the same cases on the memory repository): empty database
+  → `FABBRICA` at revisione 0; save increments the revision and appends history; stale revision → `ConflictError`
+  and nothing written; corrupted `valori` → factory merge + avviso, nothing written; migration 3 applied once over a
+  database that already has migrations 1-2 and its data intact.
+- API (`tests/web/test_impostazioni_api.py`): GET factory shape (with `fabbrica`); PUT ok and revision +1; 409 shape
+  with `attuale`; every 422 message with its `loc` (obiettivo 0, 1,01, 0,905; step 0, negative, 5 decimals, 1001;
+  fractional integer step; unknown tool; unknown or non-numeric field; duplicate; missing sigla; more than
+  `MAX_ECCEZIONI`); `/tipi` covers every numeric input exactly once; `/passi` 404 and precedence; `/storia` order;
+  §23 `obiettivo_su_minimi` echoes the stored setting.
+- JS (`tests/e2e/impostazioni.test.mjs`): form ↔ payload round trip, dirty detection, readable diff, comma parsing.
+- E2E (`tests/e2e/test_impostazioni.py`, on a fresh temporary data-dir fixture so the settings never leak into other
+  tests, which expect factory values): the page is reached from the rail, from the palette and with `g i`; factory
+  values shown (1,00, every step empty, checkbox off, no exceptions); set obiettivo 0,90, a step for "Diametri di
+  armatura" and an exception on one field, Salva with a sigla → reload shows them and "Revisione 1"; open
+  `ca-pilastro-rettangolare`, "Dimensiona…" on the bar diameter → Passo and Obiettivo prefilled with the provenance
+  line, the excepted field prefilled with its own step; a field with no step still starts empty; "Ripristina
+  predefiniti" + Salva → factory values at revisione 2 and the history lists both changes; two pages saving from the
+  same revision → the second gets the 409 dialog and "Ricarica" shows the first page's values; a 422 (obiettivo
+  1,5) shows the message next to the input and in the summary; leaving with unsaved changes asks for confirmation;
+  the whole flow keyboard-only; repeated at 390×844. `Calcola` locators follow CLAUDE.md rule 10.
+
+### 26.11 Engineering decisions
+Decided by the owner on 2026-09-22: target and steps are settable (17, 18), with factory target 1,00 and no factory
+step. Open: 19-bis, exposed as the setting `obiettivo_su_verifiche_minimo` with factory value "no" — the owner may
+change it on the page at any time; the decision stays listed in `docs/DECISIONI_DA_CONFERMARE.md` until a
+definitive value is chosen. No change to `pyproject.toml` or to the shared contract (`shared/{tool,report,numeric,
+tables}.py`) is needed for §26.

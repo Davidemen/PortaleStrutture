@@ -83,30 +83,28 @@ roadmap). Cambierebbero i numeri rispetto ai fogli: è una decisione ingegnerist
 | Cartiglio dello studio (logo, numerazione) | logo e campi che volete in relazione |
 | Login e permessi | escluso dal committente: tutti vedono e modificano tutto |
 
-## Scelte dell'interfaccia da confermare (specifica interfaccia §23-25, 2026-09-22)
-Dimensiona e studio di sensibilità (`docs/ui/WORKBENCH_SPEC.md` §23-24):
-17. Obiettivo di sfruttamento proposto: 1,00 (limite di norma). Il programma lo propone sempre e l'utente lo può
-    cambiare; decidere se il valore predefinito resta 1,00 o se lo studio preferisce un margine (per esempio 0,90).
-18. Passo di arrotondamento: oggi il campo è vuoto e obbligatorio (solo i numeri interi, come il numero di barre,
-    propongono 1). Decidere se e quali passi predefiniti dare per tipo di dato (dimensioni, spessori, diametri) o
-    campo per campo; il programma non ne sceglie nessuno da solo.
-19. Verifiche senza rapporto numerico (valore e limite): nella ricerca contano solo come "passa / non passa", senza
-    obiettivo. Oggi riguarda 20 verifiche di pilastri e travi (dettagli costruttivi, percentuali di armatura):
-    ca-pilastro-rettangolare 7, ca-pilastro-circolare 7, ca-trave-rettangolare 6 (esempio: percentuale di armatura
-    longitudinale, verifica di snellezza, passo massimo staffe, duttilità sezione). Decidere se è accettabile o se
-    quelle verifiche vanno completate (modifica del contratto condiviso `Check`, da concordare).
-19-bis. L'obiettivo di sfruttamento < 1 vale anche per le verifiche di minimo o di dettaglio (armatura minima,
-    passo, copriferro, rapporto massimo di armatura)? Proposta: no, per quelle conta solo l'esito passa/non passa,
-    finché il programma non distingue automaticamente le verifiche di resistenza dalle altre (manca un campo
-    `verso` e una categoria nel contratto `Check`).
+## Scelte dell'interfaccia (specifica interfaccia §23-26)
+Decise dal titolare il 2026-09-22 (restano qui come traccia; la specifica è già aggiornata):
+17. Obiettivo di sfruttamento: **impostabile**. È un valore d'ufficio nella pagina "Impostazioni"
+    (`docs/ui/WORKBENCH_SPEC.md` §26), valore di fabbrica 1,00, modificabile; la finestra "Dimensiona" lo propone e
+    resta modificabile a ogni ricerca.
+18. Passi di arrotondamento: **impostabili** nella pagina "Impostazioni", per tipo di dato (lunghezze in m, cm, mm,
+    diametri di armatura, passi di armatura, copriferri, spessori, numeri interi) con eccezioni per singolo campo di
+    uno strumento. Valori di fabbrica: tutti vuoti; il programma non inventa passi, li inserisce l'ufficio.
+19. Verifiche senza rapporto numerico nella ricerca: **sì**, contano solo come "passa / non passa", senza
+    obiettivo; il contratto `Check` non si modifica per questo.
+20. "Provvisorio" nella relazione stampata: **no**. L'indicatore resta solo nella pagina del progetto (e nella
+    finestra "Dimensiona"); la relazione del singolo strumento e quella di progetto non cambiano.
+21. Una correzione del registro respinta rende l'elemento "provvisorio" come una da confermare: **sì**.
+22. "Da ricalcolare" e "provvisorio" si propagano lungo la catena "Usa in…": **sì**. Va costruita con la regola
+    di `docs/ui/WORKBENCH_SPEC.md` §25.1 (limite di profondità, protezione dai cicli, "provvisorio per origine").
 
-Stato del progetto (§25):
-20. "Provvisorio" nella relazione stampata: oggi l'indicatore compare solo nella pagina del progetto; decidere se
-    deve comparire anche nella relazione del singolo strumento e in quella di progetto, e con quale frase.
-21. Una correzione del registro respinta (ancora applicata in modalità standard finché un agente non adegua il
-    codice) rende l'elemento "provvisorio" come una da confermare? La specifica propone di sì (in attesa della
-    risposta, il conteggio la considera provvisoria).
-22. "Da ricalcolare" e "provvisorio" si devono propagare lungo la catena "Usa in…" (se A cambia e B viene segnato,
-    anche C che usa B dovrebbe segnalarlo, e un elemento che usa un fornitore provvisorio o in modalità Excel
-    dovrebbe risultare a sua volta "provvisorio per origine")? Non ancora implementato: la specifica propone di sì
-    e descrive la regola in `docs/ui/WORKBENCH_SPEC.md` §25.1, ma non la applica finché non rispondete.
+Ancora aperta:
+19-bis. L'obiettivo di sfruttamento < 1 vale anche per le verifiche di minimo o di dettaglio (armatura minima,
+    passo, copriferro, rapporto massimo di armatura)? Risposta del titolare il 2026-09-22: "non so". Diventa
+    un'**impostazione** della pagina "Impostazioni" (§26), **predefinita "no"**: con "no" l'obiettivo si applica
+    alle verifiche "valore ≤ limite" e le verifiche di minimo ("valore ≥ limite", come As ≥ As,min) contano solo
+    come passa/non passa; con "sì" si applica a tutte le verifiche con rapporto. Il programma non sa ancora
+    distinguere una verifica di resistenza da un limite massimo di dettaglio (ρ ≤ ρmax): con "no" e obiettivo < 1
+    la finestra "Dimensiona" segna quindi il risultato "da controllare". La voce resta aperta finché il titolare
+    non sceglie un valore definitivo.
