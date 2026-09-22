@@ -35,6 +35,11 @@ def goto_progetti(page: Page, base_url: str) -> None:
     page.locator("#progetti-pane h2").wait_for(state="visible")
 
 
+def open_azioni(row) -> None:
+    """WORKBENCH_SPEC §20.2: row actions moved into a per-row "⋯ Azioni" menu button."""
+    row.locator(".pt-azioni-btn").click()
+
+
 def create_project_via_ui(page: Page, base_url: str, nome: str, *, codice: str = "", committente: str = "") -> str:
     """Creates a project through the #/progetti "Nuovo progetto" form; returns its id (parsed
     from the resulting #/progetti/<id> redirect)."""
@@ -95,7 +100,8 @@ def test_save_element_from_tool_and_reopen_with_tables(page: Page, base_url: str
     save_current_tool_as_new_element(page, progetto_id=progetto_id, nome="Stratigrafia 1")
 
     page.goto(f"{base_url}/#/progetti/{progetto_id}")
-    page.locator(".pe-row", has_text="Stratigrafia 1").get_by_role("link", name="Apri").click()
+    page.locator(".pt-table").wait_for(state="visible")
+    page.locator(".pt-row", has_text="Stratigrafia 1").locator(".pt-cell-nome a").click()
     page.locator("#tool-title").wait_for(state="visible")
 
     rows = page.locator("[data-field='stratigrafia'] table tbody tr")
@@ -206,11 +212,13 @@ def test_rename_element_inline_keeps_inputs(page: Page, base_url: str) -> None:
     elemento_id = elemento_by_nome(page, base_url, progetto_id, "Nome originale")["id"]
 
     page.goto(f"{base_url}/#/progetti/{progetto_id}")
+    page.locator(".pt-table").wait_for(state="visible")
     # `data-id`, not `has_text`: see test_rename_project_inline's own comment -- the name moves
     # into an `<input value=...>` the instant "Rinomina" is clicked, which `has_text` cannot see.
-    row = page.locator(f'.pe-row[data-id="{elemento_id}"]')
-    row.get_by_role("button", name="Rinomina").click()
-    row.locator(".pe-rename-input").fill("Nome rinominato")
+    row = page.locator(f'.pt-row[data-id="{elemento_id}"]')
+    open_azioni(row)
+    row.get_by_role("menuitem", name="Rinomina").click()
+    row.locator(".pt-inline-input").fill("Nome rinominato")
     row.get_by_role("button", name="Salva", exact=True).click()
     expect(row).to_contain_text("Nome rinominato")
 
@@ -228,14 +236,16 @@ def test_duplicate_element(page: Page, base_url: str) -> None:
     save_current_tool_as_new_element(page, progetto_id=progetto_id, nome="Originale")
 
     page.goto(f"{base_url}/#/progetti/{progetto_id}")
-    row = page.locator(".pe-row", has_text="Originale")
-    row.get_by_role("button", name="Duplica").click()
-    name_input = row.locator(".pe-rename-input")
+    page.locator(".pt-table").wait_for(state="visible")
+    row = page.locator(".pt-row", has_text="Originale")
+    open_azioni(row)
+    row.get_by_role("menuitem", name="Duplica").click()
+    name_input = row.locator(".pt-inline-input")
     expect(name_input).to_have_value("Originale (copia)")
     row.get_by_role("button", name="Duplica", exact=True).click()
 
-    expect(page.locator(".pe-row")).to_have_count(2)
-    expect(page.locator(".pe-row", has_text="Originale (copia)")).to_have_count(1)
+    expect(page.locator(".pt-row")).to_have_count(2)
+    expect(page.locator(".pt-row", has_text="Originale (copia)")).to_have_count(1)
 
 
 def test_history_carica_questa_revisione_previews_without_saving(page: Page, base_url: str) -> None:
@@ -261,8 +271,10 @@ def test_history_carica_questa_revisione_previews_without_saving(page: Page, bas
     expect(page.locator(".es-status")).to_have_text("Elemento salvato.")
 
     page.goto(f"{base_url}/#/progetti/{progetto_id}")
-    row = page.locator(".pe-row", has_text=nome)
-    row.get_by_text("Storia", exact=True).click()
+    page.locator(".pt-table").wait_for(state="visible")
+    row = page.locator(".pt-row", has_text=nome)
+    open_azioni(row)
+    row.get_by_role("menuitem", name="Storia", exact=True).click()
     items = row.locator(".ps-item")
     expect(items).to_have_count(2)
 
@@ -309,11 +321,13 @@ def test_soft_delete_and_restore_element(page: Page, base_url: str) -> None:
     save_current_tool_as_new_element(page, progetto_id=progetto_id, nome=nome)
 
     page.goto(f"{base_url}/#/progetti/{progetto_id}")
-    row = page.locator(".pe-row", has_text=nome)
+    page.locator(".pt-table").wait_for(state="visible")
+    row = page.locator(".pt-row", has_text=nome)
     expect(row).to_have_count(1)
-    row.get_by_role("button", name="Elimina", exact=True).click()
+    open_azioni(row)
+    row.get_by_role("menuitem", name="Elimina", exact=True).click()
     row.get_by_role("button", name="Conferma eliminazione").click()
-    expect(page.locator(".pe-row", has_text=nome)).to_have_count(0)
+    expect(page.locator(".pt-row", has_text=nome)).to_have_count(0)
 
     # SAME session, no reload: the deleted row must reappear from the client's own in-memory
     # list (js/progetto-elementi.js marks it deleted in place rather than dropping it), not only
@@ -334,8 +348,8 @@ def test_soft_delete_and_restore_element(page: Page, base_url: str) -> None:
     deleted_row.get_by_role("button", name="Ripristina").click()
     expect(page.locator(".pe-row", has_text=nome)).to_have_count(0)  # gone from the deleted view
 
-    page.get_by_role("button", name="Mostra eliminati").click()  # back to the active view
-    expect(page.locator(".pe-row", has_text=nome)).to_have_count(1)
+    page.get_by_role("button", name="Mostra eliminati").click()  # back to the active view -- .pt-table
+    expect(page.locator(".pt-row", has_text=nome)).to_have_count(1)
 
     goto_progetti(page, base_url)
     expect(count_cell).to_have_text("1")
@@ -353,10 +367,11 @@ def test_filter_elements_by_tool(page: Page, base_url: str) -> None:
     save_current_tool_as_new_element(page, progetto_id=progetto_id, nome="Elemento B")
 
     page.goto(f"{base_url}/#/progetti/{progetto_id}")
-    expect(page.locator(".pe-row")).to_have_count(2)
-    page.locator("#pe-filter-strumento").select_option("demo-tabella")
-    expect(page.locator(".pe-row")).to_have_count(1)
-    expect(page.locator(".pe-row-nome")).to_have_text("Elemento B")
+    page.locator(".pt-table").wait_for(state="visible")
+    expect(page.locator(".pt-row")).to_have_count(2)
+    page.locator(".pt-filter-strumento").select_option("demo-tabella")
+    expect(page.locator(".pt-row")).to_have_count(1)
+    expect(page.locator(".pt-cell-nome")).to_have_text("Elemento B")
 
 
 # -- export / import round trip -------------------------------------------------------------------
@@ -383,8 +398,9 @@ def test_export_import_round_trip(page: Page, base_url: str) -> None:
     assert "importato" in imported["nome"], imported["nome"]
 
     page.goto(f"{base_url}/#/progetti/{imported['id']}")
-    expect(page.locator(".pe-row")).to_have_count(1)
-    expect(page.locator(".pe-row-nome")).to_have_text("Elemento esportato")
+    page.locator(".pt-table").wait_for(state="visible")
+    expect(page.locator(".pt-row")).to_have_count(1)
+    expect(page.locator(".pt-cell-nome")).to_have_text("Elemento esportato")
 
 
 def test_import_via_file_input_shows_name_and_warnings(page: Page, base_url: str, tmp_path) -> None:
@@ -562,7 +578,8 @@ def test_zero_console_errors_across_progetti_flow(desktop_page: tuple[Page, Page
 
     goto_progetti(page, base_url)
     page.goto(f"{base_url}/#/progetti/{progetto_id}")
-    page.locator(".pe-row").first.get_by_role("link", name="Apri").click()
+    page.locator(".pt-table").wait_for(state="visible")
+    page.locator(".pt-cell-nome a").first.click()
     page.locator("#tool-title").wait_for(state="visible")
     page.wait_for_timeout(500)
 
