@@ -404,3 +404,16 @@ A key's value is copied as it is (the key names the unit); the registry test alr
   fond-trave-collegamento, choosing muro-sostegno prefills ag_g/f0/categorie with chips, editing ag_g clears its chip;
   a tool without consumers shows no button. Files: `js/usa-in.js`, `js/provenienza.js`, `css/usa-in.css`; small edits
   to `results-toolbar.js`, `router.js`, `forms.js`. Staging + full suite green as in §13.4.
+
+## 16. Excel mode retires per approved tool (phase 7, 2026-09-22)
+Data: `GET /api/divergences/riepilogo` -> `{per_strumento: {tool: {da_confermare, approvato, respinto}}}` (already
+fetched by the rail badge and refreshed after every sign-off). A tool is **approvato** when it has register entries,
+`da_confermare == 0` and `respinto == 0`.
+- For an approved tool the input `legacy_compat` ("Riproduci il foglio Excel originale") is not rendered in the Dati
+  column (its value is always false), the "Confronta con Excel" toolbar button is hidden, and the tool header's
+  correction link reads "Correzioni approvate" (muted, still a link to the register filtered on the tool).
+- A share link or a saved element that carries `legacy_compat: true` for an approved tool loads with the switch
+  forced off and a dismissible note: "Modalità Excel non più disponibile: tutte le correzioni di questo strumento sono
+  state approvate." Nothing else changes; a later rejection (respinto > 0) brings the switch back.
+- Tests (`tests/e2e/test_excel_ritirato.py`): approve every entry of one tool through the API (`signoff-multiplo`),
+  reload the tool: no switch, no compare button, header text; reject one entry: both come back.
