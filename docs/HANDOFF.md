@@ -26,6 +26,10 @@ Windows (not yet checked by the user — `docs/WINDOWS_CHECK.md`).
   tests/e2e/*.mjs`, full e2e on `static/`, commit `src/strutture/web/static tests/e2e`, announce, restart 8000.
 
 ## 3. In flight — check this first
+**If the previous session is still alive (ask the user), it owns this section, `static_next/`, `tests/e2e/` and
+port 8000 until it reports the builder done: do not touch those, do not start a server on 8000, and start from
+§4 item 3 instead. Two sessions on the same files or port will collide.**
+
 A Sonnet builder was working in `static_next/` + `tests/e2e/` on WORKBENCH_SPEC §15 ("Usa in…" typed links),
 §16 (Excel mode retires per approved tool) and the element-restore control of the project page (§14.3) when this
 handoff was written. It may have finished, died on a session limit, or been killed with the session.
