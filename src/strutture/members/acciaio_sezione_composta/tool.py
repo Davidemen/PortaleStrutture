@@ -12,7 +12,7 @@ from strutture.shared.report import Report, success
 from strutture.shared.tool import Tool
 
 from .baricentro import area_totale_mm2, baricentro
-from .elementi import ALTEZZA_ANIMA_RIFERIMENTO_LEGACY_MM, costruisci_elementi, elementi_profilo
+from .elementi import ALTEZZA_ANIMA_RIFERIMENTO_LEGACY_MM, Elemento, costruisci_elementi, elementi_profilo
 from .inerzia import contributo_ix_mm4, contributo_iy_mm4, inerzia_sezione_mm4
 from .models import SezioneHRimpiattataInput
 from .moduli_elastici import wel_mm3
@@ -42,14 +42,8 @@ def _riga_elemento(elemento, x_n_mm: float, y_n_mm: float) -> ElementoRisultato:
     )
 
 
-def run(inputs: SezioneHRimpiattataInput) -> Report[SezioneHRimpiattataOutput]:
-    legacy_compat = inputs.legacy_compat
-    elementi = costruisci_elementi(inputs.h_profilo_mm, inputs.b_profilo_mm, inputs.tf_mm, inputs.tw_mm,
-                                    inputs.piatti, legacy_compat=legacy_compat)
-    x_n_mm, y_n_mm = baricentro(elementi, legacy_compat=legacy_compat)
-    area_mm2 = area_totale_mm2(elementi)
-    ix_mm4, iy_mm4 = inerzia_sezione_mm4(elementi, x_n_mm, y_n_mm)
-
+def _base_profilo_non_rinforzato(inputs: SezioneHRimpiattataInput, *, legacy_compat: bool) -> tuple[float, float]:
+    """Ix/Iy del solo profilo (senza piatti), per il rapporto di rinforzo `rapporto_ix`/`rapporto_iy`."""
     riferimento_anima = (
         ALTEZZA_ANIMA_RIFERIMENTO_LEGACY_MM
         if legacy("acciaio-sezione-h-rimpiattata/altezza-anima-valore-fisso", legacy_compat)
@@ -58,15 +52,22 @@ def run(inputs: SezioneHRimpiattataInput) -> Report[SezioneHRimpiattataOutput]:
     profilo = elementi_profilo(inputs.h_profilo_mm, inputs.b_profilo_mm, inputs.tf_mm, inputs.tw_mm,
                                 altezza_riferimento_anima_mm=riferimento_anima)
     x_n0_mm, y_n0_mm = baricentro(profilo, legacy_compat=False)
-    ix_base_mm4, iy_base_mm4 = inerzia_sezione_mm4(profilo, x_n0_mm, y_n0_mm)
+    return inerzia_sezione_mm4(profilo, x_n0_mm, y_n0_mm)
 
+
+def _costruisci_sezione(
+    inputs: SezioneHRimpiattataInput, elementi: tuple[Elemento, ...], x_n_mm: float, y_n_mm: float,
+    *, legacy_compat: bool,
+) -> Sezione:
+    area_mm2 = area_totale_mm2(elementi)
+    ix_mm4, iy_mm4 = inerzia_sezione_mm4(elementi, x_n_mm, y_n_mm)
+    ix_base_mm4, iy_base_mm4 = _base_profilo_non_rinforzato(inputs, legacy_compat=legacy_compat)
     wel_x_sup, wel_x_inf, wel_y_dx, wel_y_sx = wel_mm3(elementi, ix_mm4, iy_mm4, x_n_mm, y_n_mm)
     if legacy("acciaio-sezione-h-rimpiattata/wpl-non-e-il-vero-modulo-plastico", legacy_compat):
         wpl_x, wpl_y = wpl_x_legacy_mm3(elementi, y_n_mm), wpl_y_legacy_mm3(elementi, x_n_mm)
     else:
         wpl_x, wpl_y = wpl_x_mm3(elementi), wpl_y_mm3(elementi)
-
-    sezione = Sezione(
+    return Sezione(
         area_mm2=area_mm2, x_n_mm=x_n_mm, y_n_mm=y_n_mm,
         ix_cm4=ix_mm4 / MM4_PER_CM4, iy_cm4=iy_mm4 / MM4_PER_CM4,
         ix_base_cm4=ix_base_mm4 / MM4_PER_CM4, iy_base_cm4=iy_base_mm4 / MM4_PER_CM4,
@@ -76,6 +77,14 @@ def run(inputs: SezioneHRimpiattataInput) -> Report[SezioneHRimpiattataOutput]:
         wpl_x_cm3=wpl_x / MM3_PER_CM3, wpl_y_cm3=wpl_y / MM3_PER_CM3,
         raggio_x_mm=raggio_giro_mm(ix_mm4, area_mm2), raggio_y_mm=raggio_giro_mm(iy_mm4, area_mm2),
     )
+
+
+def run(inputs: SezioneHRimpiattataInput) -> Report[SezioneHRimpiattataOutput]:
+    legacy_compat = inputs.legacy_compat
+    elementi = costruisci_elementi(inputs.h_profilo_mm, inputs.b_profilo_mm, inputs.tf_mm, inputs.tw_mm,
+                                    inputs.piatti, legacy_compat=legacy_compat)
+    x_n_mm, y_n_mm = baricentro(elementi, legacy_compat=legacy_compat)
+    sezione = _costruisci_sezione(inputs, elementi, x_n_mm, y_n_mm, legacy_compat=legacy_compat)
     try:
         schizzo = disegna_schizzo(elementi, x_n_mm, y_n_mm, inputs.h_profilo_mm, inputs.b_profilo_mm)
     except Exception:

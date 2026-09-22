@@ -39,18 +39,15 @@ def _utilizzo(nsd_kN: float, chi: float, npl_kN: float, gamma_m1: float, k_diret
     return termine_n + termine_my + termine_mz
 
 
-def costruisci_interazione(
-    *, inputs: ColonnaEc3Input, classe_num: int, gamma_m1: float, area_mm2: float,
-    npl_kN: float, mpl_y_kNm: float, mpl_z_kNm: float,
-    npl_rk_kN: float, mpl_y_rk_kNm: float, mpl_z_rk_kNm: float,
-    wy: float, wz: float,
-    wel_y_mm3: float, wpl_y_mm3: float, wel_z_mm3: float, wpl_z_mm3: float,
+def _fattori_c_e_k(
+    *, inputs: ColonnaEc3Input, classe_num: int, area_mm2: float, mpl_y_kNm: float, mpl_z_kNm: float,
+    wy: float, wz: float, wel_y_mm3: float, wpl_y_mm3: float, wel_z_mm3: float, wpl_z_mm3: float,
     ncr_y_kN: float, ncr_z_kN: float, ncr_t_kN: float, chi_yy: float, chi_zz: float, chi_lt: float,
-    lambda_max: float, lambda_zz: float, lambda_lt: float, alpha_lt_torsione: float,
-) -> Interazione:
+    lambda_max: float, lambda_zz: float, lambda_lt: float, alpha_lt_torsione: float, n_pl: float,
+) -> tuple[float, float, float, float, float, float, float]:
+    """Cmy/Cmz/CmLT (Annex A Tab. A.2) e kyy/kyz/kzy/kzz (Annex A Tab. A.1)."""
     nsd, my_sd, mz_sd = inputs.nsd_kN, inputs.my_sd_kNm, inputs.mz_sd_kNm
     n_y, n_z = nsd / ncr_y_kN, nsd / ncr_z_kN
-    n_pl = nsd / npl_kN
     eps_y = cm.epsilon_y(my_sd, area_mm2, nsd, wel_y_mm3)
     soglia = cm.soglia_lambda0(inputs.c1, nsd, ncr_z_kN, ncr_t_kN)
     cmy_val = cm.cmy(
@@ -75,12 +72,52 @@ def costruisci_interazione(
     kyz_val = kij.kyz(classe_num, cmz_val, mu_y, n_z, cyz_val, wy, wz)
     kzy_val = kij.kzy(classe_num, cmy_val, cm_lt_val, mu_z, n_y, czy_val, wy, wz)
     kzz_val = kij.kzz(classe_num, cmz_val, mu_z, n_z, czz_val)
-    # EN1993-1-1 §6.3.3 eq. 6.61/6.62: characteristic resistances (NRk, Mi,Rk) in fixed mode; legacy
-    # reproduces the sheet's design-strength-based Npl/Mpl (already embedding gammaM0).
-    doppia_divisione = legacy("acciaio-colonna-ec3/interazione-doppia-divisione-gamma-m0-m1", inputs.legacy_compat)
+    return cmy_val, cmz_val, cm_lt_val, kyy_val, kyz_val, kzy_val, kzz_val
+
+
+def _denominatori_resistenza(
+    *, legacy_compat: bool, npl_kN: float, mpl_y_kNm: float, mpl_z_kNm: float,
+    npl_rk_kN: float, mpl_y_rk_kNm: float, mpl_z_rk_kNm: float,
+) -> tuple[float, float, float]:
+    """EN1993-1-1 §6.3.3 eq. 6.61/6.62: resistenze caratteristiche (NRk, Mi,Rk) in modalità standard;
+    la modalità Excel riproduce Npl/Mpl del foglio (già con gammaM0 incorporato)."""
+    doppia_divisione = legacy("acciaio-colonna-ec3/interazione-doppia-divisione-gamma-m0-m1", legacy_compat)
     npl_denom = npl_kN if doppia_divisione else npl_rk_kN
     mpl_y_denom = mpl_y_kNm if doppia_divisione else mpl_y_rk_kNm
     mpl_z_denom = mpl_z_kNm if doppia_divisione else mpl_z_rk_kNm
+    return npl_denom, mpl_y_denom, mpl_z_denom
+
+
+def _verifica_utilizzo(asse: str, clausola: str, utilizzo: float) -> Check:
+    """column-check!Y47/Y50 < 1 — nome ed etichetta comuni alle verifiche yy/zz."""
+    return Check(
+        name=f"Interazione N-My-Mz ({asse})", passed=utilizzo < 1.0, detail=f"utilizzo={utilizzo:.4f} < 1",
+        clause=clausola, value=utilizzo, limit=1.0, unit="-",
+    )
+
+
+def costruisci_interazione(
+    *, inputs: ColonnaEc3Input, classe_num: int, gamma_m1: float, area_mm2: float,
+    npl_kN: float, mpl_y_kNm: float, mpl_z_kNm: float,
+    npl_rk_kN: float, mpl_y_rk_kNm: float, mpl_z_rk_kNm: float,
+    wy: float, wz: float,
+    wel_y_mm3: float, wpl_y_mm3: float, wel_z_mm3: float, wpl_z_mm3: float,
+    ncr_y_kN: float, ncr_z_kN: float, ncr_t_kN: float, chi_yy: float, chi_zz: float, chi_lt: float,
+    lambda_max: float, lambda_zz: float, lambda_lt: float, alpha_lt_torsione: float,
+) -> Interazione:
+    nsd, my_sd, mz_sd = inputs.nsd_kN, inputs.my_sd_kNm, inputs.mz_sd_kNm
+    n_pl = nsd / npl_kN
+    cmy_val, cmz_val, cm_lt_val, kyy_val, kyz_val, kzy_val, kzz_val = _fattori_c_e_k(
+        inputs=inputs, classe_num=classe_num, area_mm2=area_mm2, mpl_y_kNm=mpl_y_kNm, mpl_z_kNm=mpl_z_kNm,
+        wy=wy, wz=wz, wel_y_mm3=wel_y_mm3, wpl_y_mm3=wpl_y_mm3, wel_z_mm3=wel_z_mm3, wpl_z_mm3=wpl_z_mm3,
+        ncr_y_kN=ncr_y_kN, ncr_z_kN=ncr_z_kN, ncr_t_kN=ncr_t_kN, chi_yy=chi_yy, chi_zz=chi_zz, chi_lt=chi_lt,
+        lambda_max=lambda_max, lambda_zz=lambda_zz, lambda_lt=lambda_lt, alpha_lt_torsione=alpha_lt_torsione,
+        n_pl=n_pl,
+    )
+    npl_denom, mpl_y_denom, mpl_z_denom = _denominatori_resistenza(
+        legacy_compat=inputs.legacy_compat, npl_kN=npl_kN, mpl_y_kNm=mpl_y_kNm, mpl_z_kNm=mpl_z_kNm,
+        npl_rk_kN=npl_rk_kN, mpl_y_rk_kNm=mpl_y_rk_kNm, mpl_z_rk_kNm=mpl_z_rk_kNm,
+    )
     utilizzo_yy = _utilizzo(
         nsd, chi_yy, npl_denom, gamma_m1, kyy_val, my_sd, chi_lt, mpl_y_denom, kyz_val, mz_sd, mpl_z_denom,
         gamma_extra_terzo_termine=inputs.legacy_compat,
@@ -93,12 +130,6 @@ def costruisci_interazione(
         cmy=cmy_val, cmz=cmz_val, cm_lt=cm_lt_val,
         kyy=kyy_val, kyz=kyz_val, kzy=kzy_val, kzz=kzz_val,
         utilizzo_yy=utilizzo_yy, utilizzo_zz=utilizzo_zz,
-        verifica_yy=Check(
-            name="Interazione N-My-Mz (yy)", passed=utilizzo_yy < 1.0, detail=f"utilizzo={utilizzo_yy:.4f} < 1",
-            clause="EN1993-1-1 §6.3.3 eq. 6.61", value=utilizzo_yy, limit=1.0, unit="-",
-        ),
-        verifica_zz=Check(
-            name="Interazione N-My-Mz (zz)", passed=utilizzo_zz < 1.0, detail=f"utilizzo={utilizzo_zz:.4f} < 1",
-            clause="EN1993-1-1 §6.3.3 eq. 6.62", value=utilizzo_zz, limit=1.0, unit="-",
-        ),
+        verifica_yy=_verifica_utilizzo("yy", "EN1993-1-1 §6.3.3 eq. 6.61", utilizzo_yy),
+        verifica_zz=_verifica_utilizzo("zz", "EN1993-1-1 §6.3.3 eq. 6.62", utilizzo_zz),
     )

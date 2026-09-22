@@ -184,12 +184,12 @@ def test_esempio_ha_schizzo_e_gira_in_meno_di_300ms() -> None:
 @pytest.mark.unit
 def test_errore_nel_disegno_non_fa_fallire_il_calcolo(monkeypatch: pytest.MonkeyPatch) -> None:
     """Un'eccezione nello schizzo deve essere loggata e assorbita: il calcolo resta valido."""
-    import strutture.members.acciaio_colonna_ec3.tool as tool_module
+    import strutture.members.acciaio_colonna_ec3.compose as compose_module
 
     def _rompi(*_args: object, **_kwargs: object) -> None:
         raise RuntimeError("errore forzato di disegno")
 
-    monkeypatch.setattr(tool_module, "disegna_schizzo", _rompi)
+    monkeypatch.setattr(compose_module, "disegna_schizzo", _rompi)
     report = execute(TOOL, TOOL.example)
     assert report.ok, report.errors
     assert report.data.schizzo is None
