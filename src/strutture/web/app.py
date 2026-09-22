@@ -4,8 +4,9 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
+from strutture.shared.impostazioni.modelli import Impostazioni, ImpostazioniSalvate
 from strutture.shared.tool import Tool, discover
-from strutture.storage.interfaces import ProjectRepository, SignoffRepository
+from strutture.storage.interfaces import ImpostazioniRepository, ProjectRepository, SignoffRepository
 from strutture.storage.models import (
     Elemento,
     Progetto,
@@ -23,8 +24,10 @@ from .middleware.security_headers import SecurityHeadersMiddleware
 from .routes.comuni import build_comuni_router
 from .routes.dimensiona import StatoDimensiona, build_dimensiona_router
 from .routes.divergences import build_divergences_router
+from .routes.impostazioni import build_impostazioni_router
 from .routes.midas import build_midas_router
 from .routes.progetti import build_progetti_router
+from .routes.progetti_stato import build_progetti_stato_router
 from .routes.tools import build_tools_router
 
 
@@ -33,14 +36,19 @@ def create_app(
     settings: config.Settings | None = None,
     signoffs: SignoffRepository | None = None,
     progetti: ProjectRepository | None = None,
+    impostazioni: ImpostazioniRepository | None = None,
 ) -> FastAPI:
     """Build the FastAPI app. `tools` defaults to `discover()`; inject a fake registry for tests.
-    `signoffs`/`progetti` default to the real SQLite repositories, imported lazily so tests never
-    need them (they inject small in-test fakes implementing the respective Protocols instead)."""
+    `signoffs`/`progetti`/`impostazioni` default to the real SQLite repositories, imported lazily so
+    tests never need them (they inject small in-test fakes implementing the respective Protocols
+    instead)."""
     resolved_tools = tools if tools is not None else discover()
     resolved_settings = settings if settings is not None else config.from_env()
     resolved_signoffs = signoffs if signoffs is not None else _default_signoff_repository(resolved_settings.data_dir)
     resolved_progetti = progetti if progetti is not None else _default_project_repository(resolved_settings.data_dir)
+    resolved_impostazioni = (
+        impostazioni if impostazioni is not None else _default_impostazioni_repository(resolved_settings.data_dir)
+    )
 
     app = FastAPI(title="StruttureMenni", docs_url=None, redoc_url=None)
 
@@ -61,6 +69,8 @@ def create_app(
     app.include_router(build_midas_router())
     app.include_router(build_divergences_router(resolved_signoffs))
     app.include_router(build_progetti_router(resolved_progetti, resolved_tools))
+    app.include_router(build_impostazioni_router(resolved_impostazioni, resolved_tools))
+    app.include_router(build_progetti_stato_router(resolved_progetti, resolved_tools, resolved_signoffs))
     app.mount("/", StaticFiles(directory=resolved_settings.static_dir, html=True), name="static")
 
     return app
@@ -164,3 +174,33 @@ class _LazySqliteProjectRepository:
 
     def revisioni(self, elemento_id: str) -> tuple[RevisioneElemento, ...]:
         return self._resolved().revisioni(elemento_id)
+
+
+def _default_impostazioni_repository(data_dir: Path) -> ImpostazioniRepository:
+    """Deferred to `_LazySqliteImpostazioniRepository`, same reasoning as the other two lazy
+    repositories above: the SQLite module must not be imported before the first real call."""
+    return _LazySqliteImpostazioniRepository(data_dir)
+
+
+class _LazySqliteImpostazioniRepository:
+    """Implements `ImpostazioniRepository`, importing and opening the real repository on first use."""
+
+    def __init__(self, data_dir: Path) -> None:
+        self._data_dir = data_dir
+        self._repository: ImpostazioniRepository | None = None
+
+    def _resolved(self) -> ImpostazioniRepository:
+        if self._repository is None:
+            from strutture.storage.impostazioni_sqlite import open_impostazioni_repository
+
+            self._repository = open_impostazioni_repository(self._data_dir)
+        return self._repository
+
+    def leggi(self) -> ImpostazioniSalvate:
+        return self._resolved().leggi()
+
+    def salva(self, valori: Impostazioni, revisione_attesa: int, sigla: str) -> ImpostazioniSalvate:
+        return self._resolved().salva(valori, revisione_attesa, sigla)
+
+    def storia(self, limite: int = 50) -> tuple[ImpostazioniSalvate, ...]:
+        return self._resolved().storia(limite)

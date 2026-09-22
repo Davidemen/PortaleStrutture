@@ -78,9 +78,27 @@ CREATE TABLE IF NOT EXISTS elemento_revisione (
 CREATE INDEX IF NOT EXISTS idx_elemento_revisione_elemento ON elemento_revisione (elemento_id, revisione);
 """
 
+MIGRATION_3 = """
+CREATE TABLE IF NOT EXISTS impostazioni (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    valori TEXT NOT NULL,
+    revisione INTEGER NOT NULL,
+    sigla TEXT NOT NULL,
+    aggiornato_il TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS impostazioni_storia (
+    revisione INTEGER PRIMARY KEY,
+    valori TEXT NOT NULL,
+    sigla TEXT NOT NULL,
+    aggiornato_il TEXT NOT NULL
+);
+"""
+
 MIGRATIONS: tuple[tuple[int, str], ...] = (
     (1, MIGRATION_1),
     (2, MIGRATION_2),
+    (3, MIGRATION_3),
 )
 
 

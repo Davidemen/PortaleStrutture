@@ -87,3 +87,35 @@ def test_migrate_survives_reopen(tmp_path):
         assert version == MIGRATIONS[-1][0]
     finally:
         second.close()
+
+
+@pytest.mark.unit
+def test_migrate_creates_migration_3_tables(tmp_path):
+    connection = connect(tmp_path / "db.sqlite")
+    try:
+        migrate(connection)
+        tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        assert {"impostazioni", "impostazioni_storia"} <= tables
+    finally:
+        connection.close()
+
+
+@pytest.mark.unit
+def test_migrate_from_version_2_preserves_existing_data(tmp_path):
+    from strutture.storage.models import Progetto
+    from strutture.storage.progetti_sqlite import open_project_repository
+
+    db_path = tmp_path
+    repo = open_project_repository(db_path)  # runs migrations 1-2 only, at the time it shipped
+    created = repo.crea_progetto(Progetto(nome="Prova migrazione 3"))
+
+    connection = connect(db_path / "strutture.db")
+    try:
+        migrate(connection)  # now also applies migration 3
+        tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        assert {"impostazioni", "impostazioni_storia", "progetto", "elemento"} <= tables
+        row = connection.execute("SELECT * FROM progetto WHERE id = ?", (created.id,)).fetchone()
+        assert row["nome"] == "Prova migrazione 3"
+        assert connection.execute("SELECT COUNT(*) FROM impostazioni").fetchone()[0] == 0
+    finally:
+        connection.close()

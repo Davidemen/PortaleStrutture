@@ -1,6 +1,8 @@
 """Repository interfaces. Business code and routes depend on these Protocols, never on sqlite3."""
 from typing import Protocol
 
+from strutture.shared.impostazioni.modelli import Impostazioni, ImpostazioniSalvate
+
 from .models import Elemento, Progetto, RevisioneElemento, Signoff, Stato
 
 
@@ -49,3 +51,12 @@ class ProjectRepository(Protocol):
     def elimina_elemento(self, elemento_id: str, revisione: int) -> None: ...
     def ripristina_elemento(self, elemento_id: str) -> Elemento: ...
     def revisioni(self, elemento_id: str) -> tuple[RevisioneElemento, ...]: ...
+
+
+class ImpostazioniRepository(Protocol):
+    """The single office-wide settings row (WORKBENCH_SPEC.md §26.6). `salva` checks
+    `revisione_attesa` against the stored one and raises `ConflictError` on mismatch."""
+
+    def leggi(self) -> ImpostazioniSalvate: ...
+    def salva(self, valori: Impostazioni, revisione_attesa: int, sigla: str) -> ImpostazioniSalvate: ...
+    def storia(self, limite: int = 50) -> tuple[ImpostazioniSalvate, ...]: ...
