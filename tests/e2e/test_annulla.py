@@ -187,3 +187,90 @@ def test_mid_typing_ctrl_z_is_native_and_leaves_the_app_history_untouched(page: 
     page.keyboard.type("9")  # value now differs from the confirmed snapshot: mid-edit, never committed
     page.keyboard.press("Control+z")  # left to the browser (in-box character undo), not app-handled
     expect(undo_btn).to_have_attribute("title", title_before)  # the app's own history never moved
+    # Headless Chromium's own undo stack for a CDP-synthesized keystroke is not reliable enough to
+    # assert an exact reverted string here, but the app-handled branch (`doUndo`) would have
+    # OVERWRITTEN the whole field with the last confirmed snapshot ("2,4") -- so "still not that
+    # snapshot" is the one assertion that actually distinguishes "left alone" from "app hijacked it".
+    expect(field).not_to_have_value("2,4")
+
+
+def test_ctrl_z_in_home_search_is_native_and_leaves_tool_history_untouched(page: Page, base_url: str) -> None:
+    """A control OUTSIDE #tool-form (Home's own search box) must never be captured by the
+    tool-scoped undo/redo, even after a tool has a history on the stack (WORKBENCH_SPEC §21.1)."""
+    _open_muro(page, base_url)
+    field = page.locator(field_id("h_muro_m"))
+    field.fill("3,5")
+    field.press("Tab")
+
+    page.goto(f"{base_url}/#/")
+    search = page.locator("#home-search")
+    search.click()
+    search.type("muro")
+    page.keyboard.press("Control+z")
+    # Same headless-undo caveat as above: assert the app never touched this control (still holds
+    # what was typed) rather than an exact native-undo result.
+    expect(search).to_have_value("muro")
+
+    page.goto(f"{base_url}/#/muro-sostegno")
+    field = page.locator(field_id("h_muro_m"))
+    expect(field).to_have_value("3,5")  # the tool's own history is untouched by the search-box undo
+    page.keyboard.press("Control+z")
+    expect(field).to_have_value("2,4")
+
+
+def test_opening_elemento_empties_history(page: Page, base_url: str) -> None:
+    """WORKBENCH_SPEC §21.1: "?elemento=<id>" is a history boundary -- it must never let an
+    "Annulla" reach back into whatever the user typed before the saved element was loaded."""
+    from .test_progetti import create_project_via_ui, elemento_by_nome, save_current_tool_as_new_element
+
+    progetto_id = create_project_via_ui(page, base_url, f"Progetto annulla {page.url}")
+    goto_tool(page, base_url, "muro-sostegno")
+    load_example(page)
+    nome = "Muro per annulla"
+    save_current_tool_as_new_element(page, progetto_id=progetto_id, nome=nome)
+    elemento = elemento_by_nome(page, base_url, progetto_id, nome)
+
+    field = page.locator(field_id("h_muro_m"))
+    field.fill("9,9")
+    field.press("Tab")
+    undo_btn = page.get_by_role("button", name=UNDO)
+    expect(undo_btn).to_have_attribute("aria-disabled", "false")
+
+    page.goto(f"{base_url}/#/muro-sostegno?elemento={elemento['id']}")
+    page.locator("#tool-title").wait_for(state="visible")
+    expect(undo_btn).to_have_attribute("aria-disabled", "true")
+    expect(page.get_by_role("button", name=REDO)).to_have_attribute("aria-disabled", "true")
+
+
+def test_table_row_insert_and_delete_are_one_step_each(page: Page, base_url: str) -> None:
+    goto_tool(page, base_url, "demo-tabella")
+    load_example(page)
+    rows = page.locator("[data-field='stratigrafia'] table tbody tr")
+    expect(rows).to_have_count(2)
+
+    page.get_by_role("button", name="Aggiungi riga").click()
+    expect(rows).to_have_count(3)
+    page.keyboard.press("Control+z")
+    expect(rows).to_have_count(2)  # the whole insert undone in one step
+    page.keyboard.press("Control+y")
+    expect(rows).to_have_count(3)
+
+    rows.nth(2).get_by_role("button", name="Elimina").click()
+    expect(rows).to_have_count(2)
+    page.keyboard.press("Control+z")
+    expect(rows).to_have_count(3)  # the whole delete undone in one step
+
+
+def test_table_cell_edit_is_one_step(page: Page, base_url: str) -> None:
+    goto_tool(page, base_url, "demo-tabella")
+    load_example(page)
+    rows = page.locator("[data-field='stratigrafia'] table tbody tr")
+    cell = rows.nth(1).locator("input, select").nth(1)
+    expect(cell).to_have_value("22")
+
+    cell.fill("30")
+    cell.press("Tab")
+    expect(cell).to_have_value("30")
+
+    page.keyboard.press("Control+z")
+    expect(cell).to_have_value("22")
