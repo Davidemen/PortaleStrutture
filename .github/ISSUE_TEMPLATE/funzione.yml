@@ -1,6 +1,6 @@
 name: Nuova funzione
 description: Una funzione nuova o una miglioria
-labels: [funzione]
+labels: [funzione, "per agente"]
 body:
   - type: textarea
     id: cosa

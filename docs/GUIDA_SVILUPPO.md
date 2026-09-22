@@ -26,7 +26,8 @@ Regole:
 
 ## 2. Il ciclo di una funzione
 
-1. **Issue.** Ogni lavoro parte da una issue su GitHub (§4). Chi lo prende se la assegna.
+1. **Issue.** Ogni lavoro parte da una issue su GitHub (§4), di solito con la label `per agente`: un agente la
+   prende, lo scrive in un commento e la porta avanti da solo fino alla pull request.
 2. **Branch e worktree.** Dalla cartella principale, senza cambiarne il branch:
    ```
    git fetch
@@ -45,7 +46,8 @@ Regole:
    uv run pytest tests/e2e -m e2e -q        # se tocca l'interfaccia
    ```
 6. **Pull request** verso `develop`, compilando il modello (cosa, perché, come provato, cosa controllare
-   nell'app). Scrivere `Closes #42` nel testo: la issue si chiude da sola al merge.
+   nell'app). Scrivere `Closes #42` nel testo: la issue si chiude da sola al merge. Label `per agente` finché
+   c'è lavoro dell'agente, poi `per umano` (con `da-validare` se tocca un calcolo) quando tocca al titolare (§4).
 7. **Controlli automatici.** GitHub esegue la suite (Windows e macOS) su ogni pull request. Se è rossa, niente merge.
 8. **Validazione** (§3), poi **merge** con "Squash and merge" (un commit per funzione su `develop`) oppure
    "Rebase and merge" se i commit del branch sono già puliti. Dopo il merge si cancellano il branch e il worktree
@@ -95,9 +97,33 @@ Label:
 | `da-validare` | Pronto, aspetta il validatore. |
 | `documentazione` | Solo documenti. |
 | `urgente` | Blocca il lavoro in ufficio. |
+| `per agente` | La prossima mossa è di un agente. |
+| `per umano` | La prossima mossa è del titolare. |
 
 Le **milestone** raccolgono le issue di una release (`v0.1.0`, …). Chi apre una issue non deve scegliere tutto:
 bastano titolo, modello compilato e una label; il resto lo sistema chi la prende.
+
+### Chi se ne occupa: `per agente` e `per umano`
+
+Issue e pull request si gestiscono preferibilmente con gli agenti. Ogni issue e pull request aperta ha sempre
+una e una sola di queste due label, che dice chi deve fare la prossima mossa:
+
+- `per agente` (il caso normale): difetti, funzioni, documenti, refactoring. L'agente prende la issue, lo
+  scrive in un commento, lavora nel suo worktree, apre la pull request e la porta fino ai controlli verdi.
+  Risponde da solo ai commenti di revisione.
+- `per umano`: serve il titolare. Succede per una decisione ingegneristica, per validare un calcolo o provare un
+  flusso nell'app, per firmare il registro, per approvare una pull request, per una release o per le
+  impostazioni di GitHub.
+
+Passaggio di mano: chi finisce la sua parte cambia la label e lascia un commento breve, con cosa ha fatto e cosa
+serve dall'altro. Esempi:
+- Una pull request che tocca un calcolo è pronta: passa a `per umano` + `da-validare`.
+- Il titolare chiede modifiche: torna `per agente`.
+- Il titolare decide nel commento di una issue `decisione`: la issue torna `per agente`, che riporta la scelta
+  in `docs/DECISIONI_DA_CONFERMARE.md` e la applica nel codice.
+
+Un agente che trova una scelta ingegneristica non la prende: apre una issue `decisione` + `per umano` e
+intanto lascia il comportamento del foglio.
 
 Commit e pull request citano la issue: `fix: neve con α = 0 non disegna la falda (#17)`.
 
