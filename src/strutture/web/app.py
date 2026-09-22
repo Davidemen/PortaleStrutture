@@ -21,6 +21,7 @@ from .middleware.rate_limit import SlidingWindowRateLimitMiddleware
 from .middleware.same_origin import SameOriginMiddleware
 from .middleware.security_headers import SecurityHeadersMiddleware
 from .routes.comuni import build_comuni_router
+from .routes.dimensiona import StatoDimensiona, build_dimensiona_router
 from .routes.divergences import build_divergences_router
 from .routes.midas import build_midas_router
 from .routes.progetti import build_progetti_router
@@ -53,7 +54,9 @@ def create_app(
     app.add_middleware(SameOriginMiddleware)
     app.add_middleware(SecurityHeadersMiddleware)
 
+    app.state.dimensiona = StatoDimensiona()
     app.include_router(build_tools_router(resolved_tools))
+    app.include_router(build_dimensiona_router(resolved_tools, resolved_signoffs))
     app.include_router(build_comuni_router())
     app.include_router(build_midas_router())
     app.include_router(build_divergences_router(resolved_signoffs))

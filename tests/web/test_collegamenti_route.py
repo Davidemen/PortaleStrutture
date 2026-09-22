@@ -23,4 +23,8 @@ def test_collegamenti_lists_keys_with_both_ends_and_per_tool_summaries(client: T
 def test_collegamenti_of_tools_without_links_is_empty(client: TestClient) -> None:
     body = client.get("/api/tools/collegamenti").json()
     assert body["chiavi"] == {}
-    assert body["per_strumento"] == {"fake-sum": {"fornisce": [], "accetta": {}, "usa_in": []}, "fake-flag": {"fornisce": [], "accetta": {}, "usa_in": []}}
+    assert body["per_strumento"] == {
+        "fake-sum": {"fornisce": [], "accetta": {}, "usa_in": []},
+        "fake-flag": {"fornisce": [], "accetta": {}, "usa_in": []},
+        "fake-verifica": {"fornisce": [], "accetta": {}, "usa_in": []},
+    }

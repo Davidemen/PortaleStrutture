@@ -67,4 +67,39 @@ FLAG_TOOL = Tool(
     run=_run_flag,
 )
 
-FAKE_TOOLS: dict[str, Tool] = {SUM_TOOL.name: SUM_TOOL, FLAG_TOOL.name: FLAG_TOOL}
+class VerificaInputs(BaseModel):
+    """A demand/capacity check monotone in `b` (§23/§24 API tests): larger `b` -> smaller η."""
+
+    model_config = ConfigDict(frozen=True)
+
+    domanda: float = Field(description="Domanda", json_schema_extra={"unit": "kN"}, gt=0)
+    capacita: float = Field(description="Capacità", json_schema_extra={"unit": "kN"}, gt=0, le=1000)
+    n_barre: int = Field(description="Numero di barre", json_schema_extra={"unit": ""}, ge=1, le=20, default=1)
+    legacy_compat: bool = False
+
+
+class VerificaOutputs(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    eta: float
+
+
+def _run_verifica(inputs: VerificaInputs) -> Report[VerificaOutputs]:
+    eta = inputs.domanda / inputs.capacita
+    checks = (Check(name="Resistenza", passed=eta <= 1, clause="TEST §3", value=inputs.domanda, limit=inputs.capacita),)
+    return success(VerificaOutputs(eta=eta), inputs, checks=checks)
+
+
+VERIFICA_TOOL = Tool(
+    name="fake-verifica",
+    title="Verifica di prova",
+    group="Prova",
+    norm="TEST §3",
+    input_model=VerificaInputs,
+    output_model=VerificaOutputs,
+    run=_run_verifica,
+)
+
+FAKE_TOOLS: dict[str, Tool] = {
+    SUM_TOOL.name: SUM_TOOL, FLAG_TOOL.name: FLAG_TOOL, VERIFICA_TOOL.name: VERIFICA_TOOL,
+}

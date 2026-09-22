@@ -7,7 +7,7 @@ def test_list_tools_returns_summaries(client: TestClient) -> None:
     response = client.get("/api/tools")
     assert response.status_code == 200
     names = {item["name"] for item in response.json()}
-    assert names == {"fake-sum", "fake-flag"}
+    assert names == {"fake-sum", "fake-flag", "fake-verifica"}
     sum_summary = next(item for item in response.json() if item["name"] == "fake-sum")
     assert sum_summary == {
         "name": "fake-sum",
