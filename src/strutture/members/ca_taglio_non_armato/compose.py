@@ -57,6 +57,18 @@ def _warnings(inputs: TaglioNonArmatoInput, rho_l_raw_value: float, rho_l_capped
     return _avviso_fck_rck(inputs) + _avviso_rho_l_capped(rho_l_raw_value, rho_l_capped, legacy_compat=inputs.legacy_compat)
 
 
+def _check_rho_l(rl_raw: float, rl: float) -> tuple[Check, ...]:
+    return (
+        Check(
+            name="Rapporto di armatura longitudinale entro il limite",
+            passed=rl_raw <= RHO_L_MAX,
+            detail=f"ρl={rl_raw:.5f} <= ρl,max={RHO_L_MAX}" + ("" if rl_raw == rl else f" (usato ρl={rl:.5f} in VRd,1)"),
+            clause="NTC2018 §4.1.2.3.5.1",
+            value=rl_raw, limit=RHO_L_MAX, unit="-",
+        ),
+    )
+
+
 def run(inputs: TaglioNonArmatoInput) -> Report[TaglioNonArmatoOutput]:
     fck = _fck_MPa(inputs)
     fcd = fcd_from_fck(fck, gamma_c=inputs.gamma_c)
@@ -92,13 +104,4 @@ def run(inputs: TaglioNonArmatoInput) -> Report[TaglioNonArmatoOutput]:
         ),
         schizzo=schizzo,
     )
-    checks = (
-        Check(
-            name="Rapporto di armatura longitudinale entro il limite",
-            passed=rl_raw <= RHO_L_MAX,
-            detail=f"ρl={rl_raw:.5f} <= ρl,max={RHO_L_MAX}" + ("" if rl_raw == rl else f" (usato ρl={rl:.5f} in VRd,1)"),
-            clause="NTC2018 §4.1.2.3.5.1",
-            value=rl_raw, limit=RHO_L_MAX, unit="-",
-        ),
-    )
-    return success(data, inputs, checks=checks, warnings=_warnings(inputs, rl_raw, rl))
+    return success(data, inputs, checks=_check_rho_l(rl_raw, rl), warnings=_warnings(inputs, rl_raw, rl))

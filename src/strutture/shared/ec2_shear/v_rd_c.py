@@ -10,6 +10,27 @@ K1_EN = 0.15  # EN default axial-stress coefficient k1 (§6.2.2(1)).
 RHO_L_MAX = 0.02  # EC2 §6.2.2(1)/§6.4.4(1): rho_l used in the formula is capped at 2%.
 
 
+def _valida_ingressi(fck_MPa: float, gamma_c: float, rho: float) -> None:
+    if fck_MPa <= 0:
+        raise ValueError(f"fck_MPa must be positive, got {fck_MPa}")
+    if gamma_c <= 0:
+        raise ValueError(f"gamma_c must be positive, got {gamma_c}")
+    if rho < 0:
+        raise ValueError(f"rho must be non-negative, got {rho}")
+
+
+def _termini(
+    k: float, rho: float, fck_MPa: float, gamma_c: float, sigma_cp_MPa: float,
+    c_rd_c_coefficient: float, k1: float, v_min_coefficient: float,
+) -> tuple[float, float, float]:
+    """(concrete_term, v_min_MPa, k1_sigma_cp) del termine vRd,c (§6.2.2 eq. 6.2.a)."""
+    rho_capped = clamp(rho, 0.0, RHO_L_MAX)
+    c_rd_c = c_rd_c_coefficient / gamma_c
+    concrete_term = c_rd_c * k * (100.0 * rho_capped * fck_MPa) ** (1.0 / 3.0)
+    v_min_MPa = v_min(k, fck_MPa, coefficient=v_min_coefficient)
+    return concrete_term, v_min_MPa, k1 * sigma_cp_MPa
+
+
 def v_rd_c(
     k: float,
     rho: float,
@@ -29,33 +50,15 @@ def v_rd_c(
     (§6.4.4(2) eq. 6.50) — the vmin floor is enhanced by the same 2d/a factor rather than dropped, and
     sigma_cp (for prestressed/axially-loaded slabs) is still added.
     """
-    if fck_MPa <= 0:
-        raise ValueError(f"fck_MPa must be positive, got {fck_MPa}")
-    if gamma_c <= 0:
-        raise ValueError(f"gamma_c must be positive, got {gamma_c}")
-    if rho < 0:
-        raise ValueError(f"rho must be non-negative, got {rho}")
-
-    rho_capped = clamp(rho, 0.0, RHO_L_MAX)
-    c_rd_c = c_rd_c_coefficient / gamma_c
-    concrete_term = c_rd_c * k * (100.0 * rho_capped * fck_MPa) ** (1.0 / 3.0)
-
-    v_min_MPa = v_min(k, fck_MPa, coefficient=v_min_coefficient)
-    k1_sigma_cp = k1 * sigma_cp_MPa
-
-    if av_over_2d is not None:
-        return VRdC(
-            v_rd_c_MPa=max(concrete_term, v_min_MPa) * av_over_2d + k1_sigma_cp,
-            concrete_term_MPa=concrete_term,
-            v_min_MPa=v_min_MPa,
-            k1_sigma_cp_MPa=k1_sigma_cp,
-            enhancement_factor=av_over_2d,
-        )
-
+    _valida_ingressi(fck_MPa, gamma_c, rho)
+    concrete_term, v_min_MPa, k1_sigma_cp = _termini(
+        k, rho, fck_MPa, gamma_c, sigma_cp_MPa, c_rd_c_coefficient, k1, v_min_coefficient
+    )
+    fattore = av_over_2d if av_over_2d is not None else 1.0
     return VRdC(
-        v_rd_c_MPa=max(concrete_term, v_min_MPa) + k1_sigma_cp,
+        v_rd_c_MPa=max(concrete_term, v_min_MPa) * fattore + k1_sigma_cp,
         concrete_term_MPa=concrete_term,
         v_min_MPa=v_min_MPa,
         k1_sigma_cp_MPa=k1_sigma_cp,
-        enhancement_factor=None,
+        enhancement_factor=av_over_2d,
     )

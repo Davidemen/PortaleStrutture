@@ -12,23 +12,14 @@ from . import shear_reinf_design as design
 from . import shear_reinf_layout as layout
 from .column_face import faccia_pilastro, u0_mm
 from .effective_depth import effective_depth
-from .models import (
-    ArmaturaOutput,
-    GeometriaOutput,
-    PerimetroCriticoOutput,
-    PunzonamentoInput,
-    PunzonamentoOutput,
-)
-from .perimeter_scan import scan_perimetro
-from .reinforcement_ratio import RHO_MAX_WARNING, rho_l
+from .models import ArmaturaOutput, GeometriaOutput, PunzonamentoInput, PunzonamentoOutput
+from .perimetro_e_checks import checks_base, perimetro_critico
+from .reinforcement_ratio import rho_l
 from .schizzo import disegna as disegna_schizzo
 from .tables import POSIZIONE_BETA
 
 logger = logging.getLogger(__name__)
 
-RHO_L_CLAUSE = "EN 1992-1-1 §6.4.4(1)"
-FACCIA_CLAUSE = "EN 1992-1-1 §6.4.5(3)"
-PERIMETRO_CLAUSE = "EN 1992-1-1 §6.4.4"
 DETTAGLI_CLAUSE = "EN 1992-1-1 §9.4.3(1)"
 RESISTENZA_CLAUSE = "EN 1992-1-1 §6.4.5(1)/eq.(9.11)"
 ASW_MIN_CLAUSE = "EN 1992-1-1 §9.4.3(2) eq. (9.11)"
@@ -86,36 +77,8 @@ def run(inputs: PunzonamentoInput) -> Report[PunzonamentoOutput]:
     rho = rho_l(inputs.px_mm, inputs.py_mm, inputs.phix_mm, inputs.phiy_mm, inputs.paddx_mm, inputs.paddy_mm,
                 inputs.phiaddx_mm, inputs.phiaddy_mm, d_mm)
 
-    righe, governing = scan_perimetro(
-        inputs.ved_kN, beta, inputs.pterreno_MPa, inputs.lato_a_mm, inputs.lato_b_mm, inputs.diametro_mm,
-        inputs.umanuale_mm, d_mm, k, rho, inputs.fck_MPa, legacy_compat=inputs.legacy_compat,
-    )
-    capacity = gov.governing_capacity(
-        inputs.ved_kN, beta, inputs.pterreno_MPa, inputs.lato_a_mm, inputs.lato_b_mm, inputs.diametro_mm,
-        inputs.umanuale_mm, inputs.a_amanuale_mm2, governing.x, d_mm, k, rho, inputs.fck_MPa,
-        legacy_compat=inputs.legacy_compat,
-    )
-    perimetro_critico = PerimetroCriticoOutput(
-        righe=righe, a_governante_su_d=governing.x, a_governante_mm=capacity.a_governante_mm, ui_mm=capacity.ui_mm,
-        area_mm2=capacity.area_mm2, rho=rho, k=k, ved_red_ui_kN=capacity.ved_red_ui_kN, v_rd_i_MPa=capacity.v_rd_i_MPa,
-        v_ed_i_MPa=capacity.v_ed_i_MPa, rapporto=capacity.rapporto, armatura_necessaria=capacity.armatura_necessaria,
-    )
-
-    # Stesso id di column_face.v_rd_max_MPa: la nota informativa "coeff scelto in input" ha senso
-    # solo in modalità codice, dove coeff_vrd_max è davvero usato (in modalità foglio vRd,max usa
-    # il coefficiente semplificato cablato, non l'input).
-    faccia_detail = (
-        ""
-        if legacy("ca-punzonamento/vrd-max-filo-pilastro-coefficiente-semplificato", inputs.legacy_compat)
-        else f"vRd,max = {inputs.coeff_vrd_max:g}·ν·fcd (c scelto in input)"
-    )
-    checks = (
-        Check(name="Punzonamento al filo del pilastro", passed=faccia.v_ed_0_MPa < faccia.v_rd_max_MPa, clause=FACCIA_CLAUSE,
-              detail=faccia_detail, value=faccia.v_ed_0_MPa, limit=faccia.v_rd_max_MPa, unit="MPa"),
-        Check(name="Punzonamento al perimetro critico", passed=not capacity.armatura_necessaria, clause=PERIMETRO_CLAUSE,
-              value=capacity.v_ed_i_MPa, limit=capacity.v_rd_i_MPa, unit="MPa"),
-        Check(name="Percentuale massima di armatura tesa", passed=rho <= RHO_MAX_WARNING, clause=RHO_L_CLAUSE, value=rho, limit=RHO_MAX_WARNING, unit="-"),
-    )
+    perimetro_critico_output, capacity = perimetro_critico(inputs, beta, d_mm, k, rho)
+    checks = checks_base(inputs, faccia, capacity, rho)
 
     armatura = None
     if legacy("ca-punzonamento/armatura-calcolata-anche-se-non-necessaria", inputs.legacy_compat) or capacity.armatura_necessaria:
@@ -124,7 +87,7 @@ def run(inputs: PunzonamentoInput) -> Report[PunzonamentoOutput]:
 
     geometria = GeometriaOutput(dx_mm=dx_mm, dy_mm=dy_mm, d_mm=d_mm, u0_mm=u0)
     try:
-        schizzo = disegna_schizzo(inputs, geometria, perimetro_critico, armatura)
+        schizzo = disegna_schizzo(inputs, geometria, perimetro_critico_output, armatura)
     except Exception:
         logger.exception("errore nel disegno dello schizzo per ca-punzonamento")
         schizzo = None
@@ -132,7 +95,7 @@ def run(inputs: PunzonamentoInput) -> Report[PunzonamentoOutput]:
     data = PunzonamentoOutput(
         geometria=geometria,
         faccia_pilastro=faccia,
-        perimetro_critico=perimetro_critico,
+        perimetro_critico=perimetro_critico_output,
         messaggio=gov.messaggio_esito(capacity.armatura_necessaria),
         armatura=armatura,
         schizzo=schizzo,

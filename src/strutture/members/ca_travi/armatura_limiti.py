@@ -107,25 +107,10 @@ def duttilita_longitudinale_sismica(
 
 
 def armatura_minima_massima(
-    *,
-    b_mm: float,
-    h_mm: float,
-    d_mm: float,
-    z_mm: float,
-    n_ferri1: int,
-    diametro_ferri1_mm: float,
-    n_ferri2: int,
-    diametro_ferri2_mm: float,
-    diametro_staffe1_mm: float,
-    n_bracci_staffe1: int,
-    passo_staffe1_mm: float,
-    diametro_staffe2_mm: float,
-    n_bracci_staffe2: int,
-    fck_MPa: float,
-    fctm_MPa: float,
-    fyk_MPa: float,
-    ftk_MPa: float,
-    classe_duttilita: ClasseDuttilita,
+    *, b_mm: float, h_mm: float, d_mm: float, z_mm: float, n_ferri1: int, diametro_ferri1_mm: float,
+    n_ferri2: int, diametro_ferri2_mm: float, diametro_staffe1_mm: float, n_bracci_staffe1: int,
+    passo_staffe1_mm: float, diametro_staffe2_mm: float, n_bracci_staffe2: int, fck_MPa: float,
+    fctm_MPa: float, fyk_MPa: float, ftk_MPa: float, classe_duttilita: ClasseDuttilita,
     legacy_compat: bool = False,
 ) -> ArmaturaLimitiOutput:
     as_o_mm2 = _area_ferri_tesi(n_ferri1, diametro_ferri1_mm, n_ferri2, diametro_ferri2_mm)

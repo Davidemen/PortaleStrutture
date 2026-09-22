@@ -55,7 +55,7 @@ ESEMPIO_AUREO = {
 }
 
 
-def _checks_armatura(inputs: TraveRettangolareInput, armatura: ArmaturaLimitiOutput) -> tuple[Check, ...]:
+def _checks_armatura_longitudinale(armatura: ArmaturaLimitiOutput) -> tuple[Check, ...]:
     return (
         Check(
             name="Armatura minima tesa",
@@ -71,6 +71,11 @@ def _checks_armatura(inputs: TraveRettangolareInput, armatura: ArmaturaLimitiOut
             clause="NTC2018 §4.1.6.1.1",
             value=armatura.as_o_mm2, limit=armatura.as_max_mm2, unit="mm²",
         ),
+    )
+
+
+def _checks_armatura_trasversale(inputs: TraveRettangolareInput, armatura: ArmaturaLimitiOutput) -> tuple[Check, ...]:
+    return (
         Check(
             name="Armatura minima a taglio (staffe)",
             passed=armatura.asw_per_m_mm2 >= armatura.ast_min_per_m_mm2,
@@ -82,6 +87,11 @@ def _checks_armatura(inputs: TraveRettangolareInput, armatura: ArmaturaLimitiOut
             passed=inputs.passo_staffe1_mm <= armatura.passo_max_staffe_mm,
             clause="NTC2018 §4.1.6.1.1",
         ),
+    )
+
+
+def _checks_armatura_sismica(armatura: ArmaturaLimitiOutput) -> tuple[Check, ...]:
+    return (
         Check(
             name="Percentuale di armatura tesa minima sismica",
             passed=armatura.rho_tesa >= armatura.rho_min_sismico,
@@ -100,6 +110,14 @@ def _checks_armatura(inputs: TraveRettangolareInput, armatura: ArmaturaLimitiOut
             detail=f"As'={armatura.as_comp_mm2:.1f} mm² >= As',min={armatura.as_comp_min_sismico_mm2:.1f} mm²",
             clause="NTC2018 §7.4.6.2.1",
         ),
+    )
+
+
+def _checks_armatura(inputs: TraveRettangolareInput, armatura: ArmaturaLimitiOutput) -> tuple[Check, ...]:
+    return (
+        _checks_armatura_longitudinale(armatura)
+        + _checks_armatura_trasversale(inputs, armatura)
+        + _checks_armatura_sismica(armatura)
     )
 
 
@@ -137,8 +155,8 @@ def _checks_flessione_taglio(
     )
 
 
-def _checks_sle(sle_tensioni: SleTensioniOutput, fessurazione: FessurazioneOutput, inputs: TraveRettangolareInput) -> tuple[Check, ...]:
-    checks = (
+def _checks_sle_tensioni(sle_tensioni: SleTensioniOutput) -> tuple[Check, ...]:
+    return (
         Check(
             name="Tensione di compressione nel calcestruzzo, combinazione rara",
             passed=sle_tensioni.sigma_c_rara_MPa < sle_tensioni.limite_sigma_c_rara_MPa,
@@ -160,6 +178,13 @@ def _checks_sle(sle_tensioni: SleTensioniOutput, fessurazione: FessurazioneOutpu
             clause="NTC2018 §4.1.2.2.5",
             value=sle_tensioni.sigma_c_qp_MPa, limit=sle_tensioni.limite_sigma_c_qp_MPa, unit="MPa",
         ),
+    )
+
+
+def _checks_sle_fessurazione(
+    sle_tensioni: SleTensioniOutput, fessurazione: FessurazioneOutput, inputs: TraveRettangolareInput
+) -> tuple[Check, ...]:
+    checks = (
         Check(
             name="Controllo indiretto di fessurazione",
             passed=sle_tensioni.sigma_s_combinazione_MPa < fessurazione.sigma_limite_MPa,
@@ -179,6 +204,10 @@ def _checks_sle(sle_tensioni: SleTensioniOutput, fessurazione: FessurazioneOutpu
             clause="NTC2018 Tab. 4.1.IV",
         ),
     )
+
+
+def _checks_sle(sle_tensioni: SleTensioniOutput, fessurazione: FessurazioneOutput, inputs: TraveRettangolareInput) -> tuple[Check, ...]:
+    return _checks_sle_tensioni(sle_tensioni) + _checks_sle_fessurazione(sle_tensioni, fessurazione, inputs)
 
 
 def _checks(
