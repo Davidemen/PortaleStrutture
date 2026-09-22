@@ -43,12 +43,9 @@ ESEMPIO = {
 }
 
 
-def run(inputs: PlintoSuPaliInput) -> Report[PlintoSuPaliOutput]:
-    """Compose the per-row per-pile demand, the envelope, and the flexural/strut-tie/shear design."""
-    count_x, count_y = grid_counts(inputs.schema_pali)
-    n_pali = numero_pali(inputs.schema_pali)
-    piles = pile_coordinates(inputs.schema_pali, inputs.lx_m, inputs.ly_m)
-
+def _righe_e_inviluppo(inputs: PlintoSuPaliInput, piles, count_x: int, count_y: int, n_pali: int):
+    """(righe, peso_kN, env, inviluppo_result, governante): per-row demand, envelope, and the row
+    governing the pile-axial check (Nmax)."""
     righe: tuple[RigaCarico, ...] = tuple(
         riga_carico(row, piles, count_x, count_y, inputs.lx_m, inputs.ly_m, inputs.h_plinto_m,
                     inputs.ex_m, inputs.ey_m, legacy_compat=inputs.legacy_compat)
@@ -63,11 +60,13 @@ def run(inputs: PlintoSuPaliInput) -> Report[PlintoSuPaliOutput]:
     if governante_env is None:
         raise CalcError("la tabella reazioni non puo' essere vuota")
     governante = righe[governante_env.indice]
+    return righe, peso_kN, env, inviluppo_result, governante
 
-    materiali_result = materiali(inputs.classe_calcestruzzo, inputs.grado_acciaio, inputs.gamma_s)
-    fyd_MPa = materiali_result.acciaio.fyd_MPa
-    fck_MPa = materiali_result.calcestruzzo.fck_MPa
 
+def _progetta_sezioni(inputs: PlintoSuPaliInput, righe, env, count_x: int, count_y: int, peso_kN: float,
+                       fck_MPa: float, fyd_MPa: float):
+    """(flessione, puntoni_tiranti, taglio, punzonamento_colonna, punzonamento_palo) results for the
+    governing envelope, in the order the pile-cap design steps are composed (Tools 2-4)."""
     flessione_result = flessione(
         righe, env, count_x, count_y, inputs.lx_m, inputs.ly_m, inputs.h_plinto_m, peso_kN,
         inputs.copriferro_cm * 10.0,
@@ -75,7 +74,6 @@ def run(inputs: PlintoSuPaliInput) -> Report[PlintoSuPaliOutput]:
         inputs.diametro_sup_x_mm, inputs.diametro_sup_y_mm, inputs.passo_sup_x_mm, inputs.passo_sup_y_mm,
         fyd_MPa, fck_MPa, inputs.gamma_c, legacy_compat=inputs.legacy_compat,
     )
-
     puntoni_tiranti_result = puntoni_tiranti(
         count_x, count_y, inputs.lx_m, inputs.ly_m, inputs.h_plinto_m, inputs.copriferro_cm * 10.0,
         inputs.diametro_inf_x_mm, inputs.diametro_inf_y_mm, inputs.diametro_pila_mm,
@@ -84,7 +82,6 @@ def run(inputs: PlintoSuPaliInput) -> Report[PlintoSuPaliOutput]:
         env.n_max_env_kN, inputs.bx_pilastro_m * 1000.0, inputs.by_pilastro_m * 1000.0,
         fck_MPa, inputs.gamma_c, fyd_MPa, legacy_compat=inputs.legacy_compat,
     )
-
     taglio_result = taglio(
         env.n_totale_max.valore, peso_kN, inputs.ax_m * 1000.0, inputs.h_plinto_m * 1000.0,
         inputs.copriferro_cm * 10.0, inputs.diametro_long_assunto_mm, inputs.av_mm,
@@ -104,7 +101,28 @@ def run(inputs: PlintoSuPaliInput) -> Report[PlintoSuPaliOutput]:
         fck_MPa, inputs.gamma_c, lx_m=inputs.lx_m, ly_m=inputs.ly_m, ax_m=inputs.ax_m, by_m=inputs.by_m,
         count_x=count_x, count_y=count_y, legacy_compat=inputs.legacy_compat,
     )
+    return flessione_result, puntoni_tiranti_result, taglio_result, punzonamento_result, punzonamento_palo_result
 
+
+def _utilizzi(puntoni_tiranti_result, taglio_result, punzonamento_result, punzonamento_palo_result) -> tuple[float, float]:
+    """(utilizzo_puntoni_tiranti, utilizzo_taglio_punzonamento): worst-case ratio across each family
+    of checks, for the summary shown alongside the individual `Check`s."""
+    utilizzo_st = max(
+        puntoni_tiranti_result.puntone.utilizzo,
+        *(t.utilizzo for t in (puntoni_tiranti_result.tirante_xy, puntoni_tiranti_result.tirante_x,
+                                puntoni_tiranti_result.tirante_y) if t is not None),
+    )
+    utilizzo_v = max(taglio_result.utilizzo, punzonamento_result.utilizzo, punzonamento_palo_result.utilizzo)
+    return utilizzo_st, utilizzo_v
+
+
+def _assembla_report(
+    inputs: PlintoSuPaliInput, piles, righe, env, materiali_result, governante, inviluppo_result,
+    count_x: int, count_y: int, flessione_result, puntoni_tiranti_result, taglio_result,
+    punzonamento_result, punzonamento_palo_result,
+) -> Report[PlintoSuPaliOutput]:
+    """Pile capacity + checks/warnings/schizzo + the frozen `PlintoSuPaliOutput`, from the design
+    results already computed by `_progetta_sezioni`."""
     capacita_compressione_result = capacita_compressione(env.n_max_env_kN, inputs.resistenza_pila_compressione_kN)
     capacita_trazione_result = None
     if env.n_min_env_kN < 0:
@@ -115,13 +133,8 @@ def run(inputs: PlintoSuPaliInput) -> Report[PlintoSuPaliOutput]:
     checks = _checks(puntoni_tiranti_result, taglio_result, punzonamento_result, punzonamento_palo_result,
                       capacita_compressione_result, capacita_trazione_result, flessione_result)
     warnings = _warnings(inputs, count_x, count_y, env)
-
-    utilizzo_st = max(
-        puntoni_tiranti_result.puntone.utilizzo,
-        *(t.utilizzo for t in (puntoni_tiranti_result.tirante_xy, puntoni_tiranti_result.tirante_x,
-                                puntoni_tiranti_result.tirante_y) if t is not None),
-    )
-    utilizzo_v = max(taglio_result.utilizzo, punzonamento_result.utilizzo, punzonamento_palo_result.utilizzo)
+    utilizzo_st, utilizzo_v = _utilizzi(puntoni_tiranti_result, taglio_result, punzonamento_result,
+                                        punzonamento_palo_result)
 
     schizzo: Sketch | None
     try:
@@ -139,6 +152,28 @@ def run(inputs: PlintoSuPaliInput) -> Report[PlintoSuPaliOutput]:
         schizzo=schizzo,
     )
     return success(data, inputs, checks=checks, warnings=warnings)
+
+
+def run(inputs: PlintoSuPaliInput) -> Report[PlintoSuPaliOutput]:
+    """Compose the per-row per-pile demand, the envelope, and the flexural/strut-tie/shear design."""
+    count_x, count_y = grid_counts(inputs.schema_pali)
+    n_pali = numero_pali(inputs.schema_pali)
+    piles = pile_coordinates(inputs.schema_pali, inputs.lx_m, inputs.ly_m)
+
+    righe, peso_kN, env, inviluppo_result, governante = _righe_e_inviluppo(inputs, piles, count_x, count_y, n_pali)
+
+    materiali_result = materiali(inputs.classe_calcestruzzo, inputs.grado_acciaio, inputs.gamma_s)
+    fyd_MPa = materiali_result.acciaio.fyd_MPa
+    fck_MPa = materiali_result.calcestruzzo.fck_MPa
+
+    flessione_result, puntoni_tiranti_result, taglio_result, punzonamento_result, punzonamento_palo_result = (
+        _progetta_sezioni(inputs, righe, env, count_x, count_y, peso_kN, fck_MPa, fyd_MPa)
+    )
+
+    return _assembla_report(
+        inputs, piles, righe, env, materiali_result, governante, inviluppo_result, count_x, count_y,
+        flessione_result, puntoni_tiranti_result, taglio_result, punzonamento_result, punzonamento_palo_result,
+    )
 
 
 def _checks(pt, taglio_result, punzonamento_result, punzonamento_palo_result, capacita_c, capacita_t, flessione_result) -> tuple[Check, ...]:
