@@ -27,19 +27,18 @@ Gira su macOS (sviluppo) e Windows (scritto per, non ancora provato dall'ufficio
 Nessun lavoro in corso. Le ultime tre sezioni della specifica dell'interfaccia (`docs/ui/WORKBENCH_SPEC.md` §15
 "Usa in…", §16 ritiro della modalità Excel per strumento, §14.3 ripristino degli elementi eliminati) sono state
 completate, provate con la suite e2e (`test_usa_in.py`, `test_excel_ritirato.py`, `test_progetti.py`) e promosse in
-`static/` il 2026-09-22. Il server dell'ufficio (porta 8000) serve ancora la versione precedente finché non viene
-riavviato: chiedere al titolare e riavviarlo (sezione 2).
+`static/` il 2026-09-22. Il server dell'ufficio (porta 8000) è stato riavviato alle 14:54 sull'ultimo commit: serve
+l'interfaccia promossa e il codice corrente (verificato: l'API restituisce i collegamenti `campo` degli schizzi).
 
 ## 4. Lavori aperti, in ordine
-1. Riavvio del server dell'ufficio con l'interfaccia promossa (dopo averlo detto al titolare).
-2. In attesa del titolare (non iniziare, ricordarglielo): verifica su Windows (`docs/VERIFICA_WINDOWS.md`,
+1. In attesa del titolare (non iniziare, ricordarglielo): verifica su Windows (`docs/VERIFICA_WINDOWS.md`,
    incluso il lanciatore `Avvia StruttureMenni.bat`); verifica MIDAS dal vivo (`docs/VERIFICA_MIDAS.md`); firma
    del registro delle correzioni (pagina `#/registro`); validazione strumento per strumento
    (`docs/VALIDAZIONE_STRUMENTI.md`: sei passi, tabella di stato compilata da lui o su sua richiesta, schede
    rigenerate con `uv run python scripts/validazione_strumenti.py`); le decisioni di
    `docs/DECISIONI_DA_CONFERMARE.md`; poi i lavori rinviati di `docs/ROADMAP.md`: GitHub + test automatici,
    griglia di pericolosità sismica, relazione DOCX, MIDAS fase 2.
-3. Testi modificabili nel disegno (`docs/ui/WORKBENCH_SPEC.md` §18): quote, etichette, testi delle frecce e dei
+2. Testi modificabili nel disegno (`docs/ui/WORKBENCH_SPEC.md` §18): quote, etichette, testi delle frecce e dei
    diagrammi si collegano al campo in automatico per simbolo, unità e valore mostrato; dove il disegno stampa un
    altro simbolo o unità, o un valore guidato da un dato, lo schizzo mette `campo=` (fatto per tutti gli strumenti:
    cedimenti `B`, trave di collegamento `B`/`H`, muro `H` → `h_muro_m`, neve `α`, sezione H rimpiattata `h`/`b`, taglio
@@ -47,10 +46,10 @@ riavviato: chiedere al titolare e riavviarlo (sezione 2).
    schizzo d'esempio porta il simbolo di un dato senza essere collegato, o se `campo=` nomina un campo inesistente;
    un testo calcolato omonimo di un dato va rinominato (fatto: punzonamento `a` → `a_gov`, cedimenti `Δz` → `s`).
    Restano testo semplice, giustamente, i risultati e le somme di più dati (muro `B`, punzonamento `2d`, neve-accumulo `l_s`).
-4. Piccoli seguiti lato calcolo (facoltativi): altri collegamenti tipizzati in `src/strutture/shared/collegamenti.py`
+3. Piccoli seguiti lato calcolo (facoltativi): altri collegamenti tipizzati in `src/strutture/shared/collegamenti.py`
    (plinto su pali → punzonamento richiede prima uscite in mm); `avvisi_campi` per gli avvisi degli strumenti
    diversi da muro, plinti isolati, travi, vento (`docs/BUILD_CONTRACT.md`, sezione sugli avvisi legati a un solo campo).
-5. Difetti noti minori. Corretti il 2026-09-22 dalle segnalazioni del titolare: menu "⋯" della barra Dati sotto la
+4. Difetti noti minori. Corretti il 2026-09-22 dalle segnalazioni del titolare: menu "⋯" della barra Dati sotto la
    barra laterale; simboli con pedice lungo sopra la descrizione (colonna 4,5 rem + a capo solo dopo virgola o barra,
    `js/symbols.js`); schizzo CPE con due impaginazioni diverse; pulsante "Comprimi la barra di navigazione" sotto il
    bordo dello schermo (il token `--head-h` era 23 px più corto dell'intestazione reale: ora è derivato e l'intestazione
