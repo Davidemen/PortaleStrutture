@@ -1,0 +1,36 @@
+/* Project "stato" chips and head counts (WORKBENCH_SPEC §25.4). Icon + word only, never colour
+   alone (rule 4): each chip is plain text with an accessible tooltip. */
+.pst-chip {
+  display: inline-block;
+  margin-right: var(--s1);
+  padding: 0 var(--s1);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  font-size: var(--t-xs);
+  white-space: nowrap;
+}
+.pst-chip--ricalcola {
+  border-color: var(--warn, #a15c00);
+  color: var(--warn, #a15c00);
+}
+.pst-chip--provvisorio {
+  border-color: var(--graphite);
+  color: var(--graphite);
+}
+.pst-head-line {
+  font-size: var(--t-s);
+  margin: var(--s2) 0;
+}
+.pst-head-count {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.pst-head-count--static {
+  text-decoration: none;
+  cursor: default;
+}
