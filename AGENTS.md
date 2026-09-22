@@ -6,7 +6,8 @@ Le istruzioni complete sono in `CLAUDE.md` alla radice del progetto e valgono pe
 Regole irrinunciabili, in breve:
 1. Si comunica in italiano con il titolare. Interfaccia, messaggi, registro e documentazione rivolta a lui: in italiano.
 2. Mai fermare un processo per nome (`pkill`, `killall`, `taskkill /IM`): si ferma solo il PID che si è avviato.
-   Il server dell'ufficio gira sulla porta 8000 e va riavviato solo dopo averlo detto al titolare.
+   Il server dell'ufficio (`main`, porta 8000) si gestisce solo con `scripts/server.ps1` e va riavviato solo dopo
+   averlo detto al titolare; 8001 sviluppo, 8002+ rami di funzionalità (dettagli in `CLAUDE.md`, regola 1).
 3. Una modifica ai calcoli non è finita finché `uv run pytest -q`, il controllo del registro
    (`uv run python -m strutture.shared.divergences.check --strict`) e `uv run ruff check .` non sono puliti;
    una modifica all'interfaccia non è finita finché `uv run pytest tests/e2e -m e2e -q` non è verde.

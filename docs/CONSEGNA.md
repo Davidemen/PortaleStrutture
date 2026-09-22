@@ -19,9 +19,11 @@ Gira su macOS (sviluppo) e Windows (scritto per, non ancora provato dall'ufficio
   innocui).
 - Interfaccia servita: `src/strutture/web/static/`. Copia di lavoro: `src/strutture/web/static_next/` (ignorata da
   git; identica a `static/` dopo la promozione del 2026-09-22). Il flusso di lavoro e di promozione è in `CLAUDE.md`, regola 3.
-- Server: `uv run python scripts/serve_live.py --host 127.0.0.1 --port 8000` (il lanciatore esiste perché una volta
-  un agente ha fermato il server dell'ufficio con `pkill -f strutture.web`; la sua riga di comando non contiene
-  il nome del modulo). Controllo: `curl -s http://127.0.0.1:8000/api/tools`.
+- Server: `scripts/server.ps1 avvia|ferma|riavvia|stato` (alias `strutture`), solo ramo `main`, porta 8000, tutte le
+  interfacce, in background; log in `var/server.log`. Parte da solo all'accesso a Windows (attività pianificata
+  "StruttureMenni"). Usa `scripts/serve_live.py`, che esiste perché una volta un agente ha fermato il server
+  dell'ufficio con `pkill -f strutture.web`. Controllo: `curl -s http://127.0.0.1:8000/api/tools`.
+  Porte di sviluppo: `CLAUDE.md`, regola 1.
 - Dati: `var/strutture.db` (SQLite: firme del registro, progetti, elementi, revisioni). Registro delle correzioni:
   209 voci, tutte "da confermare".
 

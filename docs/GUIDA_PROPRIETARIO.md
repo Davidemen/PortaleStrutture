@@ -55,8 +55,14 @@ uv run playwright install chromium
 - Doppio clic su `Avvia StruttureMenni.bat` (o `.command`). Si apre una finestra nera (il server) e poi il
   browser su `http://127.0.0.1:8000`. Chiudendo la finestra nera il programma si ferma.
 - Su macOS, se il sistema blocca il doppio clic la prima volta: tasto destro → Apri.
-- Dal terminale, con più controllo (questo è il comando giusto per un server da lasciare acceso; le istruzioni
-  per gli agenti spiegano perché):
+- Server da lasciare acceso (Windows): dal terminale `strutture avvia`. Il server gira in background, resta acceso
+  chiudendo il terminale ed è raggiungibile dai colleghi della rete (lo script mostra gli indirizzi). Parte solo
+  dal ramo `main`, sempre sulla porta 8000. Gli altri comandi: `strutture stato`, `strutture riavvia` (dopo un
+  aggiornamento), `strutture ferma`. Si avvia da solo all'accesso a Windows (Utilità di pianificazione,
+  attività "StruttureMenni"). Senza l'alias: `powershell -ExecutionPolicy Bypass -File scripts\server.ps1 avvia`.
+  L'alias è il file `%USERPROFILE%\.localin\strutture.cmd`, che contiene una riga sola:
+  `powershell -NoProfile -ExecutionPolicy Bypass -File "<cartella del progetto>\scripts\server.ps1" %*`.
+- Su macOS, o per un avvio in primo piano:
   ```
   uv run python scripts/serve_live.py --host 127.0.0.1 --port 8000
   ```

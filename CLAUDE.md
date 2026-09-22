@@ -40,7 +40,8 @@ foglio errori inclusi). Ogni differenza fra le due è una voce del registro dell
   server in memoria in `_server.py`). `tests/fixtures/*.json` sono valori di riferimento calcolati dai fogli.
 - `docs/`: indice in `docs/INDICE.md`. `docs/VALIDAZIONE_STRUMENTI.md`: tabella di stato compilata dal titolare (le
   righe fra i marcatori si toccano solo su sua richiesta) + schede generate da `scripts/validazione_strumenti.py`. `extract/`: strumenti di sviluppo per leggere i fogli Excel (non servono
-  in produzione). `scripts/serve_live.py`, `scripts/avvia.py`, `Avvia StruttureMenni.{bat,command}`: avvio.
+  in produzione). `scripts/server.ps1` (server dell'ufficio in background), `scripts/serve_live.py`, `scripts/avvia.py`,
+  `Avvia StruttureMenni.{bat,command}`: avvio.
 
 ## Comandi
 ```
@@ -58,10 +59,14 @@ Numeri attesi al 2026-09-22: vedi `docs/CONSEGNA.md`, sezione "Stato". Un lavoro
 comandi non sono tutti verdi.
 
 ## Regole dure
-1. Mai fermare un processo per nome (`pkill -f`, `killall`, `taskkill /IM`, `lsof | xargs kill`). Avvia i tuoi
-   server di prova su una porta libera fra 8012 e 8015, annota il PID e ferma solo quello.
-2. Il server dell'ufficio gira sulla porta 8000, avviato con `uv run python scripts/serve_live.py --host … --port 8000`
-   (la riga di comando non contiene il nome del modulo, apposta). Riavvialo solo dopo averlo detto al titolare.
+1. Mai fermare un processo per nome (`pkill -f`, `killall`, `taskkill /IM`, `lsof | xargs kill`). Porte, decise
+   dal titolare: 8000 solo il server dell'ufficio (`main`, regola 2); 8001 la copia di sviluppo (`static_next`,
+   regola 3); dalla 8002 in su un ramo di funzionalità per porta (worktree), da 8012 a 8015 le prove temporanee.
+   I server 8001 e 8002+ li avvii e fermi tu, in background, annotando il PID e fermando solo quello.
+2. Il server dell'ufficio (ramo `main`, porta 8000, tutte le interfacce) si gestisce SOLO con `scripts/server.ps1
+   avvia|ferma|riavvia|stato` (alias `strutture` sul PC dell'ufficio; si avvia da solo all'accesso a Windows con
+   l'attività pianificata "StruttureMenni"). Lo script usa `scripts/serve_live.py`, la cui riga di comando non
+   contiene il nome del modulo, apposta. Riavvialo solo dopo averlo detto al titolare.
 3. Interfaccia: si lavora nella copia `src/strutture/web/static_next/` (se manca: `cp -R static static_next`),
    servita con `--static-dir src/strutture/web/static_next --data-dir build/ui-dev-data`, si prova con
    `STRUTTURE_E2E_STATIC_DIR=src/strutture/web/static_next uv run pytest tests/e2e -m e2e -q`, poi si promuove:
