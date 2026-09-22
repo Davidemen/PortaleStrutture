@@ -19,6 +19,13 @@ import { renderSketch } from "./sketch.js";
 export const DEFAULT_OPTIONS = {
   preset: "completa",
   sezioni: {
+    // Every existing caller (the single-tool overlay, the `beforeprint` fallback) always wants
+    // this -- WORKBENCH_SPEC §11 never exposes a checkbox for it. The one exception is
+    // js/progetto-relazione.js (§14.3): a project report's per-element section needs a DIFFERENT
+    // sub-cartiglio shape (nome/sigla/tool title/stato/aggiornato, not progetto/committente/
+    // elemento/relazione n./revisione/sigla/data/note) -- it prints its own and sets this false so
+    // `buildRelazione` below does not ALSO print the generic one.
+    cartiglio: true,
     schizzo: true,
     dati: true,
     sintesi: true,
@@ -103,7 +110,7 @@ export function buildRelazione(container, { tool, report, outputNodes, fields } 
   const data = report.data || {};
   const legacyMode = Boolean(report.inputs_echo && report.inputs_echo.legacy_compat);
 
-  container.append(buildCartiglio(tool, legacyMode ? "foglio Excel" : "standard", resolved.cartiglio));
+  if (resolved.sezioni.cartiglio) container.append(buildCartiglio(tool, legacyMode ? "foglio Excel" : "standard", resolved.cartiglio));
   // "Sviluppo dei calcoli" is only ever relevant for a tool whose schema says `relazione: true`
   // (`tool.relazione`, results.js) -- `omittedSections` itself stays tool-agnostic (pure over
   // `options` alone, reused by every other §11 caller), so a tool that never had formulas can

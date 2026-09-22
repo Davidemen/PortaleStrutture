@@ -9,6 +9,7 @@ import { renderIndex } from "./tool-index.js";
 import { renderHome } from "./home.js";
 import { initPalette } from "./palette.js";
 import { initShortcuts } from "./shortcuts.js";
+import { initProgettoPicker } from "./progetto-picker.js";
 import { addRecent, siglaChip } from "./nav-state.js";
 import { navigate, onRoute, start as startRouter } from "./router.js";
 import { focusResults, focusFirstError } from "./layout.js";
@@ -18,6 +19,8 @@ const appEl = document.getElementById("app");
 const indexRoot = document.getElementById("tool-index");
 const homeRoot = document.getElementById("home-pane");
 const registroRoot = document.getElementById("registro-pane");
+const progettiRoot = document.getElementById("progetti-pane");
+const progettoPickerRoot = document.getElementById("progetto-picker-root");
 const formRoot = document.getElementById("form-root");
 const toolTitleEl = document.getElementById("tool-title");
 const runErrorEl = document.getElementById("run-error");
@@ -75,6 +78,48 @@ function showRegistro(params) {
     });
 }
 
+// #/progetti and #/progetti/<id> (WORKBENCH_SPEC §14.2/§14.3): fixed rail destinations, not tools
+// -- same full-width, no Dati/Sintesi split pattern as #/registro just above. `router.js`'s own
+// `tool` string carries the id as its second path segment ("progetti/<id>"), never a query param.
+//
+// Both routes render into the SAME `progettiRoot` node via a dynamic `import()` -- and a cold
+// `import("./progetto.js")` (a bigger module graph: progetto-elementi.js, progetto-relazione.js,
+// ...) measurably takes LONGER to resolve than an already-warm `import("./progetti.js")`, so two
+// navigations fired moments apart (observed: create a project, `navigate()` straight to it, then
+// immediately back to the list -- e.g. router.js's own same-tick hashchange/popstate coalescing
+// still lets that pair through as two real, close-together dispatches) do not necessarily FINISH
+// their imports in the order they were REQUESTED. `owner` is claimed HERE, synchronously, before
+// either import even starts, so whichever call was requested LAST always wins regardless of which
+// one's import happens to resolve last -- js/progetto.js's own `renderProgetto` (the one page here
+// that awaits before finishing its first paint) checks it after that await and simply stops
+// touching the DOM if a newer navigation already claimed the root.
+function showProgetti(owner, view) {
+  if (appEl) appEl.dataset.view = "progetti";
+  clear(formRoot);
+  toolTitleEl.textContent = "";
+  updatePicker("");
+  if (bottomBarEl) bottomBarEl.hidden = true;
+  indexApi.setActive("progetti");
+  view()
+    .catch(() => {
+      if (progettiRoot._smOwner !== owner) return;
+      clear(progettiRoot);
+      progettiRoot.append(el("p", { text: "Impossibile caricare la pagina dei progetti." }));
+    });
+}
+
+function showProgettiList() {
+  const owner = {};
+  progettiRoot._smOwner = owner;
+  showProgetti(owner, () => import("./progetti.js").then(({ renderProgettiList }) => renderProgettiList(progettiRoot, { owner })));
+}
+
+function showProgettoPage(progettoId, params) {
+  const owner = {};
+  progettiRoot._smOwner = owner;
+  showProgetti(owner, () => import("./progetto.js").then(({ renderProgetto }) => renderProgetto(progettiRoot, { progettoId, params, owner })));
+}
+
 function showUnknownTool(name) {
   if (appEl) appEl.dataset.view = "tool";
   clear(formRoot);
@@ -87,7 +132,21 @@ function showUnknownTool(name) {
   );
 }
 
+// A redundant `notify()` (router.js: hashchange+popstate for one logical navigation, coalesced
+// there when they land in the same tick but NOT when a genuinely separate later navigation -- e.g.
+// js/progetto-storia.js's "Carica questa revisione", `navigate()` away from a project page --
+// still overlaps this function's own `await fetchSchema`) can start this async function again
+// before the first call's `fetchSchema` has resolved. Both calls would otherwise go on to
+// `dispatch("strutture:tool-schema", ...)`, rebuilding the form TWICE -- forms.js's own listener
+// is synchronous, so this never doubles the DOM the way js/progetto.js's async render once did,
+// but the SECOND dispatch reads `params` from whichever call it belongs to: a stale call for a
+// PLAIN `#/<tool>` re-applies `initialValues` from localStorage/defaults, silently overwriting
+// whatever a newer, more specific navigation (an `?elemento=`/`?anteprima=` deep link) had just
+// asked to load. `token` makes only the LAST call to start ever allowed to dispatch.
+let selectToolToken = 0;
+
 async function selectTool(name, params) {
+  const token = ++selectToolToken;
   const tool = tools.find((candidate) => candidate.name === name);
   if (!tool) {
     showUnknownTool(name);
@@ -106,10 +165,12 @@ async function selectTool(name, params) {
   try {
     schema = await fetchSchema(name);
   } catch (error) {
+    if (token !== selectToolToken) return;
     clear(formRoot);
     formRoot.append(el("p", { text: "Impossibile caricare lo schema dello strumento." }));
     return;
   }
+  if (token !== selectToolToken) return;
   addRecent(name);
   dispatch("strutture:nav-state-changed");
   dispatch("strutture:tool-schema", { ...schema, params });
@@ -122,6 +183,14 @@ function onRouteChange({ tool, params }) {
   }
   if (tool === "registro") {
     showRegistro(params);
+    return;
+  }
+  if (tool === "progetti") {
+    showProgettiList();
+    return;
+  }
+  if (tool.startsWith("progetti/")) {
+    showProgettoPage(tool.slice("progetti/".length), params);
     return;
   }
   selectTool(tool, params);
@@ -186,6 +255,7 @@ async function boot() {
   indexApi = renderIndex(indexRoot, { onSelect: (name) => navigate(name) });
   initPalette({ onNavigate: (name) => navigate(name) });
   initShortcuts({ onHome: () => navigate("") });
+  initProgettoPicker(progettoPickerRoot);
   document.addEventListener("strutture:run-request", handleRunRequest);
   document.addEventListener("strutture:results-rendered", handleResultsRendered);
   onRoute(onRouteChange);

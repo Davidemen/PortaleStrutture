@@ -54,10 +54,12 @@ export function clearRefusal() {
 }
 
 // A direct fetch rather than `js/api.js::runTool` (which has no notion of query parameters): the
-// ONLY caller in the whole app that ever needs `?relazione=1` (docs/architecture-phase2.md §1
-// cost model: "the trace is built only on request"), so the one extra query string stays local to
-// this print-only path instead of growing the shared, everywhere-else-used `runTool` contract.
-async function runToolForPrint(name, values, relazione) {
+// ONLY callers that ever need `?relazione=1` (docs/architecture-phase2.md §1 cost model: "the
+// trace is built only on request"), so the one extra query string stays local to this print-only
+// path instead of growing the shared, everywhere-else-used `runTool` contract. Exported: WORKBENCH_
+// SPEC §14.3's project report (js/progetto-relazione.js) needs the exact same fresh-run-with-
+// optional-trace fetch, once per element, rather than a second copy of it.
+export async function runToolForPrint(name, values, relazione) {
   const suffix = relazione ? "?relazione=1" : "";
   const response = await fetch(`/api/tools/${encodeURIComponent(name)}/run${suffix}`, {
     method: "POST",

@@ -101,6 +101,26 @@
     margin: 0 0 4mm;
   }
 
+  /* -- project report (WORKBENCH_SPEC §14.3, js/progetto-relazione.js) ----------------------- */
+
+  .print-progetto-cartiglio h1 {
+    font-size: 15pt;
+    margin: 0 0 4mm;
+  }
+
+  /* Each element starts its own page (never mid-way down the previous one's tables/checks) --
+     the FIRST element sits right after the project cartiglio on the same page instead, so the
+     document does not open with an empty page. */
+  .print-elemento-sezione {
+    break-before: page;
+  }
+  .print-elemento-sezione:first-of-type {
+    break-before: auto;
+  }
+  .print-elemento-sezione .print-cartiglio {
+    margin-top: 6mm;
+  }
+
   /* -- schizzo: large, full text width, >2 views stack one per row (user rule, doc order) ---- */
 
   .print-schizzo {

@@ -12,6 +12,7 @@ import { save, load, fromParams, clearStored } from "./form-state.js";
 import { groupFields, visibleValues, applyConditions, wireUnitSelector, renderSummary, copyShareLink } from "./forms-sections.js";
 import { buildSections } from "./form-sections-summary.js";
 import { requestRun, isLiveEnabled } from "./live.js";
+import { mountElementoSalva } from "./elemento-salva.js";
 import "./forms-submit.js";
 
 const FORM_ID = "tool-form";
@@ -57,7 +58,7 @@ function buildMenu(form, fields, tool) {
 
 // `renderForm(root, {fields, example, initialValues}) -> FormApi`, per DESIGN_SPEC §5, extended
 // per WORKBENCH_SPEC §2/§3. `tool` is needed for persistence/share-link/live-session keying.
-export function renderForm(root, { fields = [], example = null, initialValues = {}, tool = "" } = {}) {
+export function renderForm(root, { fields = [], example = null, initialValues = {}, tool = "", params = {}, title = "" } = {}) {
   clear(root);
   const actions = document.getElementById("form-actions");
   if (actions) clear(actions);
@@ -108,7 +109,13 @@ export function renderForm(root, { fields = [], example = null, initialValues = 
       }
     },
   });
-  if (actions) actions.append(exampleButton, calcolaButton, liveStatus, buildMenu(form, fields, tool));
+  // WORKBENCH_SPEC §14.1: "Salva in progetto" next to "Carica esempio". `getApi` is a live
+  // accessor (not the `api` object itself, still a few lines from being assigned below) -- its
+  // own dialog/deep-link handlers only ever call it once the engineer has interacted with the
+  // page, by which time `api` is long since assigned, so the temporal-dead-zone read is safe.
+  let api;
+  const salvaWidget = mountElementoSalva({ toolForm: form, tool, title, fields, params, getApi: () => api });
+  if (actions) actions.append(exampleButton, salvaWidget, calcolaButton, liveStatus, buildMenu(form, fields, tool));
 
   function updateRunUi(values) {
     const live = isLiveEnabled(values);
@@ -154,7 +161,7 @@ export function renderForm(root, { fields = [], example = null, initialValues = 
   sectionsApi.refresh(visibleValues(form, fields), {});
   updateRunUi(visibleValues(form, fields));
 
-  const api = {
+  api = {
     values: () => visibleValues(form, fields),
     setValues: (values) => {
       fields.forEach((field) => setValue(form, field, values[field.name]));
@@ -204,7 +211,7 @@ export function renderForm(root, { fields = [], example = null, initialValues = 
 export const current = { tool: null, fields: [], api: null };
 
 document.addEventListener("strutture:tool-schema", (event) => {
-  const { name, input, example, params } = event.detail;
+  const { name, input, example, params, title } = event.detail;
   const root = document.getElementById("form-root");
   if (!root) return;
   const fields = describeFields(input || {});
@@ -212,7 +219,7 @@ document.addEventListener("strutture:tool-schema", (event) => {
   const initialValues = { ...defaults, ...(load(name) || {}), ...fromParams(params || {}, fields) };
   current.tool = name;
   current.fields = fields;
-  current.api = renderForm(root, { fields, example, initialValues, tool: name });
+  current.api = renderForm(root, { fields, example, initialValues, tool: name, params: params || {}, title });
 });
 
 document.addEventListener("strutture:live-setting", () => {

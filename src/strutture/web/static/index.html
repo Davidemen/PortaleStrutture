@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="css/forms.css">
   <link rel="stylesheet" href="css/results.css">
   <link rel="stylesheet" href="css/registro.css">
+  <link rel="stylesheet" href="css/progetti.css">
   <link rel="stylesheet" href="css/confronto.css">
   <link rel="stylesheet" href="css/chart.css">
   <link rel="stylesheet" href="css/sketch.css">
@@ -26,6 +27,9 @@
       <!-- Review: the header search field is removed -- search already lives in the rail's own
            "Cerca" destination, on Home and on Ctrl/Cmd+K (js/palette.js); it also broke the
            390px header, forcing it to wrap. -->
+      <!-- WORKBENCH_SPEC §14.1: the project picker, left of "Calcolo automatico" -- js/progetto-
+           picker.js renders into this mount point (js/main.js `initProgettoPicker`). -->
+      <div id="progetto-picker-root" class="pp-root"></div>
       <label class="app-live-toggle" for="live-toggle">
         <input type="checkbox" id="live-toggle" checked>
         <span>Calcolo automatico</span>
@@ -41,6 +45,8 @@
     <main id="home-pane" aria-label="Home"></main>
 
     <main id="registro-pane" aria-label="Registro correzioni"></main>
+
+    <main id="progetti-pane" aria-label="Progetti"></main>
 
     <div class="app-tablist" role="tablist">
       <button type="button" class="app-tab" id="tab-dati" role="tab" aria-selected="true" aria-controls="form-pane">Dati</button>

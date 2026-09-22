@@ -244,6 +244,17 @@ export function renderIndex(root, { onSelect }) {
         badge: pendingCount,
       })
     );
+    // "Rail: fixed entry 'Progetti' below 'Registro correzioni'" (WORKBENCH_SPEC §14.1), the same
+    // plain-destination pattern -- current for BOTH #/progetti (list) and #/progetti/<id>
+    // (project page), since main.js's `indexApi.setActive("progetti")` covers either route.
+    list.append(
+      buildNavButton({
+        title: "Progetti",
+        icon: "progetti",
+        onClick: () => onSelect("progetti"),
+        current: currentName === "progetti",
+      })
+    );
 
     const categoryKinds = [...groupByCategory(allTools)].map(([level1]) => ({ type: "category", title: level1, icon: CATEGORY_ICONS[level1] || "progetti" }));
     categoryKinds.forEach((kind, index) => {

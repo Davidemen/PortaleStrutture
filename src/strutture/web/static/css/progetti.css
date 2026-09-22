@@ -1,0 +1,686 @@
+/* Progetti (WORKBENCH_SPEC §14): the header project picker, the "Salva in progetto" action-bar
+   widget + its dialogs, the #/progetti list page, the #/progetti/<id> project page and its
+   element list/storia, and the "Relazione di progetto" dialog. Tokens only, same ruled-list/
+   filter-row/dialog language as css/registro.css and css/midas.css -- no card kit, no new colours. */
+
+/* -- header project picker (js/progetto-picker.js) ------------------------------------------- */
+
+.pp-root {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  position: relative;
+  min-width: 0;
+}
+/* Visually hidden, still reachable by a screen reader -- the header has no room for a visible
+   "Progetto" label next to "StruttureMenni" and "Calcolo automatico" at 390px (nav.css review:
+   the header search field was removed for the exact same reason). */
+.pp-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.pp-select {
+  min-width: 0;
+  max-width: 11rem;
+  height: var(--control-h-sm);
+  padding: 0 var(--s2);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--t-xs);
+}
+@media (max-width: 719.98px) {
+  .pp-select {
+    max-width: 7rem;
+  }
+}
+.pp-new-form {
+  position: absolute;
+  top: calc(100% + var(--s1));
+  left: 0;
+  z-index: var(--z-palette);
+  width: 18rem;
+  max-width: calc(100vw - var(--s5));
+  padding: var(--s4);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  box-shadow: 0 2px 8px rgba(21, 32, 43, 0.2);
+}
+.pp-new-fields,
+.es-dialog-form,
+.pj-new-form form,
+.pd-field,
+.pe-storia-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+.pp-new-field,
+.es-dialog-field,
+.pj-new-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+}
+.pp-new-field label,
+.es-dialog-field label,
+.pj-new-field label {
+  font-family: var(--font-label);
+  font-size: var(--t-xs);
+  color: var(--graphite);
+}
+.pp-new-field input,
+.es-dialog-field input,
+.es-dialog-field select,
+.es-dialog-field textarea,
+.pj-new-field input {
+  min-height: var(--control-h);
+  padding: 0 var(--s3);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--t-s);
+}
+.es-dialog-field textarea {
+  padding: var(--s2) var(--s3);
+  resize: vertical;
+}
+.pp-new-actions,
+.es-dialog-actions,
+.pj-new-actions {
+  display: flex;
+  gap: var(--s2);
+}
+.pp-new-save,
+.es-dialog-save,
+.es-btn-save,
+.pj-new-save,
+.pj-new-btn,
+.pd-action--primary,
+.rel-btn-print {
+  min-height: var(--control-h);
+  padding: 0 var(--s4);
+  border: 1px solid var(--ink);
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-label);
+  font-size: var(--t-s);
+  cursor: pointer;
+}
+.pp-new-save[disabled],
+.es-dialog-save[disabled],
+.es-btn-save[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.pp-new-cancel,
+.es-dialog-cancel,
+.es-btn-save-new,
+.pj-new-cancel,
+.pj-import-btn,
+.pj-toggle-deleted,
+.pd-action,
+/* Row actions are compact text buttons on one line (the register's rows are the pattern): four
+   bordered controls per row cost a full extra line each and read as a form, not a list. Kept ≥ 1.75rem
+   tall (WCAG 2.2 §2.5.8 minimum target) and underlined on hover/focus so they still read as actions. */
+.pe-action,
+.pj-action {
+  min-height: 1.75rem;
+  padding: 0 var(--s1);
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--ink);
+  font-family: var(--font-label);
+  font-size: var(--t-xs);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+.pe-action:hover,
+.pj-action:hover,
+.pe-action:focus-visible,
+.pj-action:focus-visible {
+  background: var(--film);
+}
+.pj-toggle-deleted[aria-pressed="true"] {
+  background: var(--marker);
+  border-color: var(--marker);
+}
+.pp-new-error,
+.es-dialog-error,
+.es-error,
+.pj-new-error,
+.pj-inline-error,
+.pe-inline-error,
+.pd-field-error,
+.pr-dialog-error {
+  color: var(--ko);
+  font-size: var(--t-xs);
+  margin: 0;
+}
+.pp-new-error[hidden],
+.es-dialog-error[hidden],
+.es-error[hidden],
+.pj-new-error[hidden],
+.pj-inline-error[hidden],
+.pe-inline-error[hidden],
+.pd-field-error[hidden] {
+  display: none;
+}
+
+/* -- "Salva in progetto" action-bar widget (js/elemento-salva.js) --------------------------- */
+
+.es-widget {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+.es-state-text {
+  font-size: var(--t-xs);
+  color: var(--graphite);
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.es-state-text[hidden] {
+  display: none;
+}
+/* `.es-btn-save-new` also matches the generic "cancel-style button" group below (`display:
+   inline-flex`), which -- author stylesheet vs. the UA stylesheet's own `[hidden]` rule, equal
+   specificity -- otherwise WINS over `[hidden]`'s `display:none` and left the button visibly
+   clickable while `.hidden` was true (caught visually: "Salva come nuovo" showing up before any
+   element was ever saved). */
+.es-btn-save-new[hidden] {
+  display: none;
+}
+.es-btn-save,
+.es-btn-save-new {
+  flex: none;
+}
+.es-status {
+  color: var(--ok);
+  font-size: var(--t-xs);
+  margin: 0;
+}
+.es-status:empty {
+  display: none;
+}
+.es-error {
+  margin: 0;
+}
+
+/* `#form-actions` (css/forms.css) is a deliberate `flex-wrap: nowrap` row sized for its ORIGINAL
+   three controls (Carica esempio / Calcola-or-status / "⋯") -- WORKBENCH_SPEC §14.1 adds this
+   widget as a fourth, and at <720px there is no longer room for all four side by side without
+   clipping the "⋯" menu off-screen (measured: it landed past the 390px viewport entirely). This
+   widget wraps onto its own row there instead; the original three stay nowrap-sized exactly as
+   forms.css intends, above 720px nothing here changes at all. */
+@media (max-width: 719.98px) {
+  #form-actions {
+    flex-wrap: wrap;
+    row-gap: var(--s2);
+  }
+  .es-widget {
+    flex: 1 1 100%;
+    order: 10;
+  }
+}
+
+/* Dialogs (js/elemento-salva.js's create/conflict dialogs) -- same compact modal language as
+   css/midas.css's `.midas-dialog`. */
+.es-dialog {
+  width: min(30rem, calc(100vw - var(--s5)));
+  max-height: min(34rem, calc(100dvh - var(--s6)));
+  overflow-y: auto;
+  padding: var(--s5);
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  box-shadow: none;
+}
+.es-dialog::backdrop {
+  background: rgba(21, 32, 43, 0.55);
+}
+@media (prefers-color-scheme: dark) {
+  .es-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.65);
+  }
+}
+.es-dialog h2 {
+  font-family: var(--font-label);
+  font-size: var(--t-l);
+  line-height: var(--lh-tight);
+  margin: 0 0 var(--s4);
+}
+.es-new-progetto {
+  padding: var(--s3);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+}
+.es-new-progetto[hidden] {
+  display: none;
+}
+
+/* -- #/progetti list page (js/progetti.js) --------------------------------------------------- */
+
+#progetti-pane {
+  padding: var(--s4) var(--s5) var(--s7);
+  max-width: 64rem;
+}
+#progetti-pane > h2,
+.pd-head h3,
+#progetti-pane h3 {
+  font-family: var(--font-label);
+  font-size: var(--t-l);
+  line-height: var(--lh-tight);
+  margin: 0 0 var(--s2);
+}
+.pj-intro {
+  color: var(--graphite);
+  font-size: var(--t-s);
+  max-width: 48rem;
+  margin: 0 0 var(--s5);
+}
+.pj-error,
+.pe-error {
+  margin-bottom: var(--s4);
+  padding: var(--s2) var(--s3);
+  background: var(--ko-bg);
+  color: var(--ko);
+  border-radius: var(--radius);
+  font-size: var(--t-s);
+}
+.pj-error[hidden],
+.pe-error[hidden] {
+  display: none;
+}
+.pj-toolbar,
+.pe-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s3);
+  margin-bottom: var(--s4);
+}
+.pj-import-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.pj-import-status {
+  color: var(--graphite);
+  font-size: var(--t-xs);
+  margin: 0 0 var(--s3);
+}
+.pj-import-status:empty {
+  display: none;
+}
+.pj-new-form[hidden] {
+  display: none;
+}
+.pj-new-form {
+  margin-bottom: var(--s4);
+  padding: var(--s4);
+  border: 1px solid var(--hairline);
+  max-width: 28rem;
+}
+
+.pj-empty,
+.pe-empty {
+  color: var(--graphite);
+  font-size: var(--t-s);
+  margin: var(--s4) 0;
+}
+
+.pj-list,
+.pe-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.pj-row,
+.pe-row {
+  border-bottom: 1px solid var(--hairline);
+  padding: var(--s2) 0;
+}
+.pj-row--deleted {
+  opacity: 0.6;
+}
+.pj-row-grid {
+  display: grid;
+  grid-template-columns: 8rem minmax(0, 1.4fr) minmax(0, 1fr) 5rem 9rem;
+  align-items: baseline;
+  gap: var(--s3);
+  min-height: var(--control-h);
+  padding: var(--s1);
+}
+.pj-row-codice,
+.pj-row-committente,
+.pj-row-count,
+.pj-row-updated {
+  color: var(--graphite);
+  font-size: var(--t-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pj-row-count {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.pj-row-nome {
+  min-width: 0;
+  font-size: var(--t-s);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pj-row-nome a {
+  color: var(--ink);
+  font-weight: 600;
+}
+.pj-row-actions,
+.pe-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s1) var(--s1) 0;
+}
+.pj-action--danger,
+.pe-action--danger {
+  color: var(--ko);
+  border-color: var(--ko);
+}
+.pe-action--disabled {
+  color: var(--warn);
+  font-size: var(--t-s);
+  padding: 0 var(--s2);
+}
+.pj-inline-question,
+.pe-inline-question {
+  font-size: var(--t-s);
+  color: var(--ink);
+}
+.pj-rename-input,
+.pe-rename-input {
+  min-height: var(--control-h);
+  padding: 0 var(--s3);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--t-s);
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+@media (max-width: 719.98px) {
+  .pj-row-grid {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--s1);
+  }
+}
+
+/* -- #/progetti/<id> project page (js/progetto.js) ------------------------------------------- */
+
+.pd-back {
+  display: inline-block;
+  margin-bottom: var(--s4);
+  color: var(--ink);
+  font-size: var(--t-s);
+}
+.pd-error {
+  padding: var(--s3);
+  background: var(--ko-bg);
+  color: var(--ko);
+  border-radius: var(--radius);
+}
+.pd-head {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: var(--s4);
+  margin-bottom: var(--s5);
+  padding-bottom: var(--s4);
+  border-bottom: 1px solid var(--hairline);
+}
+.pd-field {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s2);
+}
+.pd-field-label {
+  flex: none;
+  width: 100%;
+  font-family: var(--font-label);
+  font-size: var(--t-xs);
+  color: var(--graphite);
+}
+.pd-field-value {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--t-s);
+  overflow-wrap: break-word;
+}
+.pd-field input,
+.pd-field textarea {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: var(--control-h);
+  padding: 0 var(--s3);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--t-s);
+}
+.pd-field textarea {
+  width: 100%;
+  padding: var(--s2) var(--s3);
+  resize: vertical;
+}
+.pd-field-edit,
+.pd-field-save,
+.pd-field-cancel {
+  min-height: var(--control-h-sm);
+  padding: 0 var(--s3);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-label);
+  font-size: var(--t-xs);
+  cursor: pointer;
+}
+.pd-head-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  margin-bottom: var(--s5);
+}
+.pd-export-status {
+  color: var(--graphite);
+  font-size: var(--t-xs);
+  margin: 0;
+}
+.pd-export-status:empty {
+  display: none;
+}
+.pd-elementi-host {
+  margin-top: var(--s2);
+}
+
+/* -- project element rows (js/progetto-elementi.js) ------------------------------------------ */
+
+.pe-filter-label {
+  font-family: var(--font-label);
+  font-size: var(--t-xs);
+  color: var(--graphite);
+}
+.pe-filter-select {
+  min-height: var(--control-h);
+  padding: 0 var(--s3);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--t-s);
+}
+.pe-row-grid {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1.4fr) 9rem 4.5rem minmax(0, 1fr) 9rem;
+  align-items: baseline;
+  gap: var(--s3);
+  min-height: var(--control-h);
+  padding: var(--s1);
+}
+@media (max-width: 719.98px) {
+  .pe-row-grid {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--s1);
+  }
+}
+.pe-row-nome {
+  min-width: 0;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pe-row-eta {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.pe-row-governante,
+.pe-row-updated {
+  color: var(--graphite);
+  font-size: var(--t-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* State mark: icon + word, never colour alone -- same rule as css/registro.css's `.reg-state`. */
+.pe-stato {
+  font-variant-numeric: tabular-nums lining-nums;
+  white-space: nowrap;
+}
+.pe-stato--verificato {
+  color: var(--ok);
+}
+.pe-stato--non_verificato {
+  color: var(--ko);
+}
+.pe-stato--dati_modificati {
+  color: var(--graphite);
+}
+
+/* -- Storia disclosure (js/progetto-storia.js) ------------------------------------------------ */
+
+.ps-details {
+  margin: var(--s1) 0 0 var(--s1);
+}
+.ps-details > summary {
+  cursor: pointer;
+  color: var(--graphite);
+  font-size: var(--t-xs);
+  padding: var(--s1) 0;
+}
+.ps-body {
+  padding-top: var(--s2);
+}
+.ps-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ps-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s2);
+  padding: var(--s2) 0;
+  border-bottom: 1px solid var(--hairline);
+  font-size: var(--t-xs);
+}
+.ps-item-meta {
+  color: var(--graphite);
+}
+.ps-load {
+  min-height: var(--control-h-sm);
+  padding: 0 var(--s3);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-label);
+  font-size: var(--t-xs);
+  cursor: pointer;
+  flex: none;
+}
+.ps-empty {
+  color: var(--graphite);
+  font-size: var(--t-xs);
+  margin: 0;
+}
+
+/* -- "Relazione di progetto" dialog (js/progetto-relazione.js) ------------------------------- */
+/* Reuses css/relazione-overlay.css's `.rel-overlay`/`.rel-fieldset`/etc. (same personalisation
+   look as the single-tool report overlay) -- these overrides only ever adapt the two-pane layout
+   (options + live A4 preview) that overlay has and this one deliberately does not: a project
+   report iterates N elements' worth of fresh runs, so there is no single "current" report to
+   preview live the way js/relazione-preview.js does for one tool. */
+.pr-overlay-body {
+  flex-direction: column;
+  overflow-y: auto;
+  padding: var(--s4) var(--s5);
+}
+.pr-options-pane {
+  width: 100%;
+  border-right: none;
+  padding: 0;
+}
+.pr-count,
+.pr-dialog-error {
+  margin: 0 var(--s5) var(--s3);
+  font-size: var(--t-s);
+}
+.pr-dialog-error {
+  color: var(--ko);
+}
+.pr-progress {
+  margin: var(--s5);
+  font-family: var(--font-label);
+  font-size: var(--t-m);
+  color: var(--ink);
+}
+.pr-progress[hidden] {
+  display: none;
+}
