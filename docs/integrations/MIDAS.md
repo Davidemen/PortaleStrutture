@@ -92,6 +92,6 @@ reports `n_righe` + warnings. No per-tool code: everything is driven by the hint
 - E2E: a fake MIDAS relay (in-process ASGI app on a free port, allowed through `MIDAS_ALLOWED_HOSTS`) -> dialog ->
   table filled -> tool runs.
 
-## 7. What the engineer must verify with a real MIDAS (docs/MIDAS_CHECK.md)
+## 7. What the engineer must verify with a real MIDAS (docs/VERIFICA_MIDAS.md)
 Connection + version, a reactions import on a small model compared with MIDAS's own Reaction table (values, signs,
 units), a model set to non-SI units, a model with construction stages, large imports (rows/time), key refresh.

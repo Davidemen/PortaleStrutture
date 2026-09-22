@@ -8,7 +8,7 @@ from .client import MidasClient
 
 # Suffix per §1 "Load case names in tables carry the analysis suffix". LCOM-STLCOMP and
 # LCOM-SEISMIC are not documented separately by MIDAS; verify against a live model, see
-# docs/MIDAS_CHECK.md.
+# docs/VERIFICA_MIDAS.md.
 _SUFFIX_BY_ENDPOINT = {
     "LCOM-GEN": "CB",
     "LCOM-CONC": "CBC",

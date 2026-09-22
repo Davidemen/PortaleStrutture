@@ -1,7 +1,7 @@
 """Constrained nodes with coordinates (docs/integrations/MIDAS.md §1 `/db/cons` + `/db/node`, §3
 supports.py).
 
-Assumed response shape, NOT verified against a live MIDAS instance (see docs/MIDAS_CHECK.md): both
+Assumed response shape, NOT verified against a live MIDAS instance (see docs/VERIFICA_MIDAS.md): both
 endpoints key their dict by the node id, e.g. `{"CONS": {"12": {"CONSTRAINT": "111111"}}}` and
 `{"NODE": {"12": {"X": .., "Y": .., "Z": ..}}}`."""
 from pydantic import BaseModel, ConfigDict

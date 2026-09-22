@@ -1,6 +1,6 @@
 """read_combinations — the six LCOM-* endpoints, docs/integrations/MIDAS.md §1/§3.
 
-Assumption (not verified against a live instance, see docs/MIDAS_CHECK.md): a classification with
+Assumption (not verified against a live instance, see docs/VERIFICA_MIDAS.md): a classification with
 no combinations answers 200 with an empty object, not a 404 — every fixture below supplies all six
 endpoints for that reason."""
 import pytest

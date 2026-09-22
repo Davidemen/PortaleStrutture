@@ -19,7 +19,7 @@ correct them before the phase starts.
 
 ## Phase 0 — finish MIDAS reactions import *(in progress)*
 Security fixes from the review (cross-origin protection for all API POSTs, bounded requests, MIDAS calls off the
-event loop) -> swap the staging UI in -> **you verify against a real model** with `docs/MIDAS_CHECK.md`.
+event loop) -> swap the staging UI in -> **you verify against a real model** with `docs/VERIFICA_MIDAS.md`.
 Manual entry / paste / CSV remain exactly as they are.
 
 ## Phase 1 — Trust layer *(first; everything else builds on confirmed results)*
@@ -105,7 +105,7 @@ Effort ≈ 2 M.
 ## Marked down (decided, not scheduled)
 | Item | Decision | What is needed to start |
 |---|---|---|
-| Private GitHub repo + Actions on Windows & macOS | **chosen, deferred [U]** | your go-ahead + a repository; the suite is already portable (`docs/WINDOWS_CHECK.md`), the workflow file is a 30-line job |
+| Private GitHub repo + Actions on Windows & macOS | **chosen, deferred [U]** | your go-ahead + a repository; the suite is already portable (`docs/VERIFICA_WINDOWS.md`), the workflow file is a 30-line job |
 | Seismic hazard grid (ag, F0, T*C from coordinates) | **deferred [U]** | a trusted copy of NTC Allegato B (e.g. the CSLP "Spettri-NTC" workbook) + 5 sites with known values for validation; coordinates per comune for a by-name lookup |
 | DOCX relazione | after the PDF | Phase 2 data model; a DOCX renderer with native Word equations |
 | Login / permissions | **excluded [U]** | — |
