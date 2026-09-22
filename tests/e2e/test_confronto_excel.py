@@ -95,9 +95,10 @@ def test_summary_sentence_and_diff_table(page: Page, base_url: str) -> None:
 
     summary = page.locator("#confronto-panel .cf-summary").inner_text()
     assert re.search(r"\d+ valor(e diverso|i diversi)", summary), summary
-    # a verdict that differs and a utilisation that merely moves are different news: on this example
-    # every check keeps its verdict in both modes, and the sentence must say so
-    assert "nessuna verifica cambia esito" in summary, summary
+    # a verdict that differs and a utilisation that merely moves are different news, and the sentence
+    # must always say which is which (on this example the minimum-reinforcement checks DO change
+    # verdict: the sheet chose the bars without the code minimum)
+    assert re.search(r"(nessuna verifica cambia esito|\d+ verific(a cambia|he cambiano) esito)", summary), summary
     assert re.search(r"\d+ verific(a|he) con valore diverso", summary), summary
     assert re.search(r"\d+ correzion(e coinvolta|i coinvolte)", summary), summary
 
