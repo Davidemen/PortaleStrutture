@@ -32,13 +32,25 @@ def bisezione(
         ammissibile_da_basso = (campione.esito == "ammissibile") == (verso == "minimo")
         lo, hi = (lo, mid) if ammissibile_da_basso else (mid, hi)
     indice_risposta = hi if verso == "minimo" else lo
+    indice_confine = lo if verso == "minimo" else hi  # the immediate neighbour, the "errore" side
     valore = griglia[indice_risposta]
-    if conosciuti[indice_risposta].avviso_nuovo:
+    campione_risposta = conosciuti[indice_risposta]
+    if campione_risposta.avvisi_nuovi:
         affidabile = False
-        motivi.append(conosciuti[indice_risposta].avviso_nuovo)
+        motivi.extend(campione_risposta.avvisi_nuovi)
     affidabile_conferma, motivi_conferma, conferma = _conferma(griglia, indice_risposta, verso, sessione)
     esito: EsitoRicerca = "limite_validita" if limite else "trovato"
-    tutti_motivi = tuple(motivi + motivi_conferma) or (("Il valore trovato è il limite di validità del metodo",) if limite else ())
+    # §23.3 point 4: the "limite_validita" motivo names WHICH boundary it is (the confine sample's
+    # own error message) unconditionally -- not just as a last-resort fallback when nothing else
+    # was collected, which used to silently drop it whenever bisection had ALSO picked up a
+    # avvisi_nuovi/conferma motivo along the way.
+    if limite:
+        messaggio_confine = conosciuti.get(indice_confine, campione_risposta).messaggio or "motivo non disponibile"
+        motivi = [
+            f"Il valore trovato è il limite di validità del metodo ({messaggio_confine}), non il limite delle verifiche",
+            *motivi,
+        ]
+    tutti_motivi = tuple(motivi + motivi_conferma)
     return Risultato(
         esito=esito, verso=verso, valore=valore, affidabile=affidabile and affidabile_conferma and not limite,
         motivi=tutti_motivi, campioni=(*campioni, *extra, *conferma), valutazioni=sessione.valutazioni,
@@ -64,7 +76,7 @@ def _conferma(
         if campione.esito != "ammissibile":
             affidabile = False
             motivi.append(f"Il valore {griglia[indice]}, subito oltre la risposta, non soddisfa le verifiche")
-        if campione.avviso_nuovo:
+        if campione.avvisi_nuovi:
             affidabile = False
-            motivi.append(campione.avviso_nuovo)
+            motivi.extend(campione.avvisi_nuovi)
     return affidabile, motivi, campioni

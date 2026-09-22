@@ -82,6 +82,7 @@ def test_banda_di_errore_alla_bordatura_e_limite_validita():
     assert r.esito == "limite_validita"
     assert not r.affidabile
     assert r.valore == Decimal(3)
+    assert any("fuori range" in m and "limite di validità" in m for m in r.motivi)
 
 
 def test_errore_durante_la_bisezione():
@@ -121,8 +122,8 @@ def test_verso_forzato_in_contraddizione_con_la_sequenza_cade_in_non_monotona():
 def test_nuovo_avviso_alla_risposta_rende_inaffidabile():
     def v(valore):
         ammissibile = valore >= 6
-        avviso = "Nuovo avviso" if valore == 6 else ""
-        return Campione(valore=valore, esito="ammissibile" if ammissibile else "non_ammissibile", eta_max=0.5, avviso_nuovo=avviso)
+        avvisi = ("Nuovo avviso",) if valore == 6 else ()
+        return Campione(valore=valore, esito="ammissibile" if ammissibile else "non_ammissibile", eta_max=0.5, avvisi_nuovi=avvisi)
 
     r = cerca(_griglia(), v, "auto")
     assert r.esito == "trovato"

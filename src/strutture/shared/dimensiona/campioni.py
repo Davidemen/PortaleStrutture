@@ -17,7 +17,7 @@ class Campione:
     esito: CampioneEsito
     eta_max: float | None = None
     messaggio: str = ""
-    avviso_nuovo: str = ""  # a warning not present at the base run (empty = none)
+    avvisi_nuovi: tuple[str, ...] = ()  # warnings not present at the base run (empty = none)
 
 
 Valuta = Callable[[Decimal], Campione]

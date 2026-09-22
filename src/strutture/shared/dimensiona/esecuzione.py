@@ -75,7 +75,7 @@ def _campione_da_report(
     nuovi = tuple(w for w in report.get("warnings", ()) if w not in avvisi_base)
     return Campione(
         valore=valore, esito="ammissibile" if esito.ammissibile else "non_ammissibile",
-        eta_max=esito.eta_max, avviso_nuovo=nuovi[0] if nuovi else "",
+        eta_max=esito.eta_max, avvisi_nuovi=nuovi,
     )
 
 

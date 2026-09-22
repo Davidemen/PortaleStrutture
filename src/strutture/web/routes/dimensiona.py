@@ -153,7 +153,7 @@ def _risposta_dimensiona(corpo, risultato, report, esito, modalita, correzioni, 
         "verifiche_senza_obiettivo": esito.senza_obiettivo if esito else (),
         "campioni": [
             {"valore": float(c.valore), "esito": c.esito, "eta_max": c.eta_max, "messaggio": c.messaggio,
-             "avvisi_nuovi": (c.avviso_nuovo,) if c.avviso_nuovo else ()}
+             "avvisi_nuovi": c.avvisi_nuovi}
             for c in risultato.campioni
         ],
         "valutazioni": risultato.valutazioni, "durata_s": durata, "modalita": modalita, "correzioni": correzioni,
