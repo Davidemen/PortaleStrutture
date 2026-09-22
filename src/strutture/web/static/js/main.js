@@ -15,6 +15,7 @@ import { initProgettoPicker } from "./progetto-picker.js";
 import { addRecent, siglaChip } from "./nav-state.js";
 import { navigate, onRoute, start as startRouter } from "./router.js";
 import { focusResults, focusFirstError } from "./layout.js";
+import { unmountAnnullaUi } from "./annulla-ui.js";
 import { el, clear } from "./dom.js";
 
 const appEl = document.getElementById("app");
@@ -54,6 +55,7 @@ function updatePicker(title, { close = false } = {}) {
 
 function showHome() {
   if (appEl) appEl.dataset.view = "home";
+  unmountAnnullaUi();
   clear(formRoot);
   toolTitleEl.textContent = "";
   updatePicker("");
@@ -67,6 +69,7 @@ function showHome() {
 // error there must not take the rail/Home/palette down with it.
 function showRegistro(params) {
   if (appEl) appEl.dataset.view = "registro";
+  unmountAnnullaUi();
   clear(formRoot);
   toolTitleEl.textContent = "";
   updatePicker("");
@@ -97,6 +100,7 @@ function showRegistro(params) {
 // touching the DOM if a newer navigation already claimed the root.
 function showProgetti(owner, view) {
   if (appEl) appEl.dataset.view = "progetti";
+  unmountAnnullaUi();
   clear(formRoot);
   toolTitleEl.textContent = "";
   updatePicker("");
@@ -124,6 +128,7 @@ function showProgettoPage(progettoId, params) {
 
 function showUnknownTool(name) {
   if (appEl) appEl.dataset.view = "tool";
+  unmountAnnullaUi();
   clear(formRoot);
   toolTitleEl.textContent = "Strumento sconosciuto";
   updatePicker("");
@@ -168,6 +173,7 @@ async function selectTool(name, params) {
     schema = await fetchSchema(name);
   } catch (error) {
     if (token !== selectToolToken) return;
+    unmountAnnullaUi();
     clear(formRoot);
     formRoot.append(el("p", { text: "Impossibile caricare lo schema dello strumento." }));
     return;

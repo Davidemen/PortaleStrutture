@@ -86,7 +86,10 @@ function applicaValori(valori, verbo, etichetta, campo) {
   applyingHistory = false;
   if (activeRender) activeRender();
   announce(`${verbo}: ${etichetta}`);
-  if (campo) jumpToField(campo);
+  // §21.1 asks only for the section to open and the field to flash, not for the keyboard focus to
+  // move -- someone who reached "Annulla"/"Ripristina" with the keyboard (Enter/Space) would
+  // otherwise lose focus off the button and be unable to press it again right away.
+  if (campo) jumpToField(campo, { focus: false });
 }
 
 function doUndo() {
@@ -128,10 +131,33 @@ function nativeUndoWins() {
   const active = document.activeElement;
   if (!active || (active.tagName !== "INPUT" && active.tagName !== "TEXTAREA")) return false;
   const field = activeFields.find((f) => f.name === active.name);
-  if (!field) return false;
+  // No top-level Dati field matches this control's `name`: either a table cell (no `name` of its
+  // own, §21.1 keeps those app-handled -- see `test_table_paste_is_one_step`) or a free-text
+  // control with no field at all (the "Incolla da Excel" textarea). A table cell always sits
+  // inside a `<table>`; anything else defers to native undo rather than risk hijacking it.
+  if (!field) return active.tagName === "TEXTAREA" || !active.closest("table");
   const form = document.getElementById("tool-form");
   if (!form) return false;
   return !sameValue(lastKnownValues ? lastKnownValues[field.name] : undefined, readValue(form, field));
+}
+
+// A text-editable control (INPUT/TEXTAREA/SELECT) that lives OUTSIDE both the live #tool-form
+// (dialogs and popovers included -- §18 sketch edit, the paste-table dialog) and its action bar
+// (#form-actions: rendered as a SIBLING of `<form id="tool-form">`, associated to it only via the
+// `form=` attribute): Home's search box, Registro/Progetti filters and notes, the project
+// selector, relazione options. The key is left to the browser entirely there, never even
+// inspected for an undo/redo match (§21.1 "native undo first" is not just about mid-edit typing --
+// it is about every text control that is not part of Dati). Anything else -- a BUTTON, the results
+// pane heading a live run moves focus to after Tab, `document.body` with nothing focused -- carries
+// no text-editing risk, so it is left to the normal app-handled path below.
+function isForeignEditable(node) {
+  if (!node) return false;
+  if (node.tagName !== "INPUT" && node.tagName !== "TEXTAREA" && node.tagName !== "SELECT") return false;
+  const form = document.getElementById("tool-form");
+  if (form && form.isConnected && (node === form || form.contains(node))) return false;
+  const actions = document.getElementById("form-actions");
+  if (actions && actions.isConnected && (node === actions || actions.contains(node))) return false;
+  return true;
 }
 
 document.addEventListener("keydown", (event) => {
@@ -140,6 +166,7 @@ document.addEventListener("keydown", (event) => {
   const isUndo = key === "z" && !event.shiftKey;
   const isRedo = (key === "z" && event.shiftKey) || key === "y";
   if (!isUndo && !isRedo) return;
+  if (isForeignEditable(document.activeElement)) return;
   if (overlayOpen() || nativeUndoWins()) return;
   event.preventDefault();
   if (isUndo) doUndo();
@@ -233,6 +260,20 @@ export function mountAnnullaUi({ tool, fields, getApi }) {
 // 409 dialog, "Carica questa revisione" (`?anteprima=1`), a "Usa in…" arrival. Each caller applies
 // its own values via `api.setValues()` first, then calls this -- undoing past a load must never put
 // another element's inputs under the loaded element's header (§21.1 rationale).
+// Called by js/main.js right before it empties #form-root for Home/Registro/Progetti (any
+// destination that is not a tool): without this, `activeTool`/`activeGetApi` kept pointing at the
+// just-unmounted tool's module-level `api`, so a Ctrl+Z pressed from one of those pages (or after
+// returning to the SAME tool later, before its first mount microtask ran) applied a step to a form
+// that no longer exists and silently consumed it from the history.
+export function unmountAnnullaUi() {
+  activeTool = null;
+  activeFields = [];
+  activeGetApi = null;
+  lastKnownValues = null;
+  activeRender = null;
+  liveRegion = null;
+}
+
 export function azzeraStoriaAnnulla() {
   if (!activeTool || !activeGetApi) return;
   const api = activeGetApi();

@@ -5,7 +5,7 @@
 // table-input-events.js; this module only owns the live row state and wires the two together.
 import { el, clear } from "./dom.js";
 import { headerCell, buildDataRow, readCellValue } from "./table-input-render.js";
-import { buildToolbar, setTableValue, refreshUnitHeaders, readTableValue, setCellError } from "./table-input-events.js";
+import { buildToolbar, notifyChange, setTableValue, refreshUnitHeaders, readTableValue, setCellError } from "./table-input-events.js";
 
 function readGridRows(tbody, columns) {
   return Array.from(tbody.querySelectorAll("tr.f-table-row")).map((tr) => rowValuesOf(tr, columns));
@@ -36,12 +36,19 @@ export function buildTableField(field, id, { onMessage } = {}) {
 
   const currentRows = () => (collapsed ? snapshot : readGridRows(body, columns));
 
+  // Duplicate/move/delete change the row array exactly like the toolbar's add/paste/CSV do, but
+  // called straight from a row's own buttons rather than through `buildToolbar`'s `hooks.setRows`
+  // wrapper -- each one used to call the module-local `setRows` (DOM re-render only) directly,
+  // firing no "change" event at all, so js/forms.js never persisted the edit and js/annulla-ui.js
+  // never recorded it as an undoable step. `notifyChange(id)` after `setRows` is that same
+  // synthetic "change" dispatch, done here too.
   function buildRowActions(tbody) {
     return {
       onDuplicate: (tr) => {
         const rows = readGridRows(tbody, columns);
         const index = Array.from(tbody.querySelectorAll("tr.f-table-row")).indexOf(tr);
         setRows([...rows.slice(0, index + 1), rowValuesOf(tr, columns), ...rows.slice(index + 1)]);
+        notifyChange(id);
       },
       onMoveUp: (tr) => moveRow(tr, -1),
       onMoveDown: (tr) => moveRow(tr, 1),
@@ -57,6 +64,7 @@ export function buildTableField(field, id, { onMessage } = {}) {
     const next = rows.slice();
     [next[index], next[target]] = [next[target], next[index]];
     setRows(next);
+    notifyChange(id);
   }
 
   function deleteRow(tr) {
@@ -64,6 +72,7 @@ export function buildTableField(field, id, { onMessage } = {}) {
     if (rows.length <= minItems) return message(`Servono almeno ${minItems} righe.`);
     const index = Array.from(tr.parentElement.querySelectorAll("tr.f-table-row")).indexOf(tr);
     setRows(rows.filter((_, i) => i !== index));
+    notifyChange(id);
   }
 
   function renderGrid(rows) {

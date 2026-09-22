@@ -6,7 +6,11 @@ import { fieldInputId } from "./fields.js";
 const FLASH_MS = 1600;
 const MIN_SYMBOL_LENGTH = 2; // "D" alone would match half the Italian text
 
-export function jumpToField(name) {
+// `focus: false` (js/annulla-ui.js, WORKBENCH_SPEC §21.1: "apre la sezione e fa lampeggiare il
+// campo", not "sposta il fuoco") opens the section and flashes the field without moving the
+// keyboard focus off whatever triggered the jump -- a warning click (the default) still wants the
+// control focused so the reader lands right in it.
+export function jumpToField(name, { focus = true } = {}) {
   const wrapper = document.querySelector(`.f-field[data-field="${name}"]`);
   if (!wrapper) return false;
   const section = wrapper.closest(".f-section");
@@ -15,8 +19,10 @@ export function jumpToField(name) {
   const disclosure = wrapper.closest("details");
   if (disclosure && !disclosure.open) disclosure.open = true;
   wrapper.scrollIntoView({ block: "center" });
-  const control = document.getElementById(fieldInputId(name)) || wrapper.querySelector("input, select, textarea");
-  if (control) control.focus({ preventScroll: true });
+  if (focus) {
+    const control = document.getElementById(fieldInputId(name)) || wrapper.querySelector("input, select, textarea");
+    if (control) control.focus({ preventScroll: true });
+  }
   wrapper.classList.add("f-field--flash");
   setTimeout(() => wrapper.classList.remove("f-field--flash"), FLASH_MS);
   return true;

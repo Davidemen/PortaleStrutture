@@ -13,7 +13,7 @@ import { sourceFor } from "./table-sources.js";
 // up through the `<form>` that forms.js listens on). Firing one synthetic "change" on the table's
 // own wrapper element lets that same, unchanged forms.js listener pick up table edits too, with no
 // new import and no `strutture:*` event of its own needed here.
-function notifyChange(id) {
+export function notifyChange(id) {
   const wrapper = document.getElementById(id);
   if (wrapper) wrapper.dispatchEvent(new Event("change", { bubbles: true }));
 }

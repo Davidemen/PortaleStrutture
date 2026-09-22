@@ -618,8 +618,12 @@ sign-offs, relazione overlay settings.
 
 ### 21.1 Behaviour
 - Keys: **Ctrl+Z / Cmd+Z** annulla; **Ctrl+Shift+Z / Cmd+Shift+Z** and **Ctrl+Y** (Windows habit) ripristina.
-  Buttons in the Dati action bar, after "Carica esempio": "↶ Annulla" and "↷ Ripristina" (icon + word; accessible
-  names "Annulla modifica" / "Ripristina modifica", which contain the visible word). Disabled (`aria-disabled`,
+  Buttons in the Dati action bar: "↶ Annulla" and "↷ Ripristina" (icon + word; accessible
+  names "Annulla modifica" / "Ripristina modifica", which contain the visible word). Implementation note: at
+  1440px the row up to "⋯" already fills the width (`test_dati_action_bar_is_one_row`, a permanent test), so the
+  two buttons sit on their own full-width line below the rest of the bar (`order: 5`, `flex-basis: 100%` in
+  `forms.css`) instead of literally next to "Carica esempio"; still the first thing after the rest of the bar,
+  same reading order. Disabled (`aria-disabled`,
   still focusable, DESIGN_SPEC §3 disabled style) when there is nothing to undo/redo; the tooltip names the step
   ("Annulla: Altezza muro 3,00 → 3,50 m"). After each undo/redo a polite live region says "Annullato: Altezza
   muro" / "Ripristinato: …", the field flashes (`.f-field--flash`, as §17/§18) and its accordion section opens if
