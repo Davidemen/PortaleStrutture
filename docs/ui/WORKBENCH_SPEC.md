@@ -327,3 +327,60 @@ Work in `src/strutture/web/static_next/` (identical to `static/` today). New mod
 CSP: no inline style/script. Tests: `tests/e2e/test_registro.py`, `tests/e2e/test_confronto_excel.py` (the e2e
 server must use a temporary sign-off store — never the real `var/` database), full e2e suite green on
 `STRUTTURE_E2E_STATIC_DIR=src/strutture/web/static_next`.
+
+## 14. Progetti (phase 3 UI, 2026-09-22)
+Purpose: an engineer keeps the elements of a job together, reopens them with their inputs, sees at a glance which
+are verified, and prints one report for the whole job. No accounts: everyone sees every project. Backend done:
+`docs/architecture-phase3.md`; API `GET/POST /api/progetti`, `GET/PUT/DELETE /api/progetti/{id}` (+ `POST …/
+ripristina`), `GET/POST /api/progetti/{id}/elementi`, `GET/PUT/DELETE /api/elementi/{id}`, `POST /api/elementi/{id}/
+duplica {nome}`, `GET /api/elementi/{id}/revisioni`, `GET /api/progetti/{id}/esporta`, `POST /api/progetti/importa`.
+Element body: `{strumento, nome, inputs, sintesi, stato, modalita, provenienza, sigla, nota}` (+ `revisione` on
+PUT/DELETE: optimistic locking — 409 = "Modificato da un altro utente: ricarica e riprova"). `stato` ∈ verificato |
+non_verificato | dati_modificati. Italian error messages come in the standard envelope (`errors[0]`).
+
+### 14.1 Where it lives
+- Rail: fixed entry "Progetti" below "Registro correzioni" (pictogram: the folder path already in §12's table).
+- Header, left of "Calcolo automatico": the **project picker** — a select "Progetto: <nome>" listing active projects
+  plus "Nessun progetto" and "Nuovo progetto…" (inline mini-form: codice, nome, committente). The choice is kept per
+  browser (`localStorage`). Nothing else in the app changes when no project is selected.
+- Tool page, Dati action bar (next to "Carica esempio"): **"Salva in progetto"**. With no project selected it opens
+  the picker first. Dialog: nome elemento (default "<tool title> n"), sigla (optional, ≤ 8), nota (optional).
+  `inputs` = exactly the payload the run sends (`visibleValues`, tables included); `sintesi` = from the LAST
+  successful run: `{ok, eta_max, verifica_governante, evidenze: [{simbolo|label, valore, unita}] (≤ 3 highlights)}`;
+  `stato`: verificato (last run ok, every check passed) · non_verificato (run ok, a check failed) · dati_modificati
+  (inputs changed since the last run, or no run yet); `modalita` from `legacy_compat`. After saving, the header shows
+  "Elemento: <nome> · <progetto>" and the button becomes **"Salva"** (PUT with the last `revisione`) + a small
+  **"Salva come nuovo"**. 409: dialog with "Ricarica" (reload the element, discarding local edits) and "Salva come
+  copia". Opening `#/<tool>?elemento=<id>` loads the element's inputs into the form (tables too), runs it (live) and
+  shows the same header state.
+
+### 14.2 Page `#/progetti`
+Ruled list (no cards): codice, nome, committente, n. elementi, aggiornato; row actions Apri, Rinomina (inline),
+Elimina (soft; confirm), and a "Mostra eliminati" toggle that reveals deleted rows with Ripristina. Top: "Nuovo
+progetto" and **Importa** (file input, `.json`; shows the imported project's name and any elements whose tool is
+unknown, flagged in the list as "strumento non disponibile"). Empty state: one sentence + the button.
+
+### 14.3 Page `#/progetti/<id>`
+Head: codice · nome · committente · note (editable inline, PUT with revisione), **Esporta** (downloads the JSON),
+**Relazione di progetto**. Element list, ruled rows: sigla chip (tool), nome, stato as icon + word (✓ Verificato ·
+✕ Non verificato · ○ Dati modificati — never colour alone), η max (2 decimals), verifica governante, aggiornato;
+actions per row: Apri (→ `#/<tool>?elemento=<id>`), Duplica (name prompt), Rinomina, Storia (disclosure: every
+revision with data · sigla · nota; "Carica questa revisione" opens the tool with THOSE inputs without saving),
+Elimina / Ripristina. Sort by aggiornato desc; filter by tool (select of siglas present).
+**Relazione di progetto** = the personalisation overlay (§11) once for the whole set, then ONE print document:
+project cartiglio (codice, nome, committente, data, n. elementi), then every element in list order as its own
+section with a sub-cartiglio (nome, sigla, tool title, stato, aggiornato) followed by exactly what §10 prints for
+a single tool — built from a FRESH run (`?relazione=1` when "Sviluppo dei calcoli" is on) of the element's stored
+inputs; a run that fails prints its Italian error instead of results; an unknown tool prints "Strumento non
+disponibile in questa versione". Progress line while the runs complete ("Elemento 3 di 12…"); stale never printed.
+
+### 14.4 Files, staging, tests
+Work in `src/strutture/web/static_next/` (identical to `static/` today). New modules ≤ 400 lines each:
+`js/progetti-api.js`, `js/progetti.js` (list page), `js/progetto.js` (project page), `js/progetto-elementi.js`,
+`js/progetto-storia.js`, `js/progetto-relazione.js`, `js/elemento-salva.js` (dialog + header state + 409 flow),
+`js/progetto-picker.js` (header), `css/progetti.css`; small edits to `router.js`, `tool-index.js` (rail entry),
+`main.js`, the Dati action bar, `relazione-print.js`. CSP unchanged (no inline style/script). Tests:
+`tests/e2e/test_progetti.py` (create project via UI, save an element from a tool, reopen it with its tables, 409
+dialog via two saves with a stale revision (drive the second through `page.request` PUT), duplicate, history,
+soft delete + restore, export → import round trip via `page.request`, project report contains every element and the
+per-element sections, unknown-tool element flagged); the e2e server already uses `InMemoryProjectRepository`.
