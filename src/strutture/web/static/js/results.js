@@ -18,6 +18,7 @@ import { readJSON, writeJSON } from "./storage.js";
 import { isApproved } from "./registro-stato.js";
 import { usaInFor } from "./usa-in.js";
 import { mountSketchEditing } from "./schizzo-modifica.js";
+import { isLiveEnabled } from "./live.js";
 
 const PASSAGGI_ID = "r-group-passaggi";
 const LEGACY_ID = "r-group-legacy";
@@ -33,10 +34,24 @@ const LEGACY_LABEL = "Solo modalità Excel";
 // (finding E) still needed a few more rows folded away to clear 900px on muro-sostegno's 16 checks.)
 const CHECKS_FOLD_MIN = 3;
 
+// The placeholder tells the truth about the current mode (owner's finding, 2026-09-22): with live
+// calculation on there is no "Calcola" to press -- the run starts by itself as the data comes in.
+const EMPTY_TEXT_LIVE = "Compila i dati: il calcolo parte da solo. Oppure carica l'esempio.";
+const EMPTY_TEXT_MANUAL = "Compila i dati e premi Calcola. Oppure carica l'esempio.";
+
 function renderEmpty(root) {
   clear(root);
-  root.append(el("p", { class: "r-empty", text: "Compila i dati e premi Calcola. Oppure carica l'esempio." }));
+  root.append(el("p", { class: "r-empty", text: isLiveEnabled({}) ? EMPTY_TEXT_LIVE : EMPTY_TEXT_MANUAL }));
 }
+
+// The header toggle flips the mode while the pane may still be empty: refresh the placeholder
+// AFTER live.js has taken the new setting (its own listener runs in the same tick).
+document.addEventListener("strutture:live-setting", () => {
+  setTimeout(() => {
+    const root = document.getElementById("results-root");
+    if (root && root.querySelector(":scope > .r-empty")) renderEmpty(root);
+  }, 0);
+});
 
 function groupStorageKey(toolName) {
   return `sm.ui.resultGroups.${toolName}`;
