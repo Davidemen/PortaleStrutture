@@ -85,7 +85,10 @@ comandi non sono tutti verdi.
    (`"3,93 >= 3,56 cm²/m"`), altrimenti `test_wall_results_height_budget` fallisce. Ingressi piatti, uscite
    annidate; ogni campo con descrizione italiana, unità, simbolo, gruppo; `advanced: true` sui coefficienti rari.
 9. Schizzi: `tests/shared/test_sketch_layout.py` impone le stesse regole del renderer (testo delle frecce alla
-   coda, quote verticali con testo all'esterno, al massimo 8 testi per vista, nota "Schema non in scala").
+   coda, quote verticali con testo all'esterno, al massimo 8 testi per vista, nota "Schema non in scala");
+   `tests/shared/test_sketch_campi.py` impone che ogni testo con il simbolo di un dato sia modificabile dal disegno
+   (collegamento automatico per simbolo, unità e valore, altrimenti `campo="nome_campo"` sulla forma) e che un
+   testo calcolato non prenda in prestito il simbolo di un dato (spec interfaccia §18).
 10. Test e2e: `get_by_role("button", name="Calcola", exact=True)` (un pulsante di aiuto contiene "calcola");
     i problemi di tempistica si indagano con un file di test temporaneo in `tests/e2e`, non con uno script a
     parte; browser Playwright headless in Python con `window.print` sostituito da una funzione vuota.

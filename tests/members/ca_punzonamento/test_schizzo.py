@@ -160,10 +160,10 @@ def test_quote_a_e_2d_hanno_testo_coerente() -> None:
     report = execute(TOOL, TOOL.example)
     assert report.ok, report.errors
     quote = [f for f in report.data.schizzo.viste[0].forme if f.kind == "dimension"]
-    assert quote[0].testo.startswith("a = ")
+    assert quote[0].testo.startswith("a_gov = ")  # "a" da solo è il lato del pilastro, un dato
     assert quote[1].testo.startswith("2d = ")
     a_governante_mm = report.data.perimetro_critico.a_governante_mm
-    assert quote[0].testo == f"a = {round(a_governante_mm)} mm"
+    assert quote[0].testo == f"a_gov = {round(a_governante_mm)} mm"
 
 
 @pytest.mark.unit

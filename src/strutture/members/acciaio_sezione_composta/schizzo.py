@@ -100,14 +100,14 @@ def _quota_h(h_profilo_mm: float, x_max_mm: float, y_min_mm: float, y_max_mm: fl
     """Altezza del profilo base, quotata sul lato destro dell'ingombro disegnato (fuori dai piatti)."""
     p1 = _punto(x_max_mm, y_min_mm, sx, sy)
     p2 = _punto(x_max_mm, y_max_mm, sx, sy)
-    return Quota(p1=p1, p2=p2, distanza=-scostamento_m, testo=etichetta_quota("h", h_profilo_mm, "mm", 0))
+    return Quota(p1=p1, p2=p2, distanza=-scostamento_m, testo=etichetta_quota("h", h_profilo_mm, "mm", 0), campo="h_profilo_mm")
 
 
 def _quota_b(b_profilo_mm: float, sx: float, sy: float, scostamento_m: float) -> Quota:
     """Larghezza delle ali del profilo base (non l'ingombro dei piatti), quotata sotto la falda inferiore."""
     p1 = _punto(-b_profilo_mm / 2.0, 0.0, sx, sy)
     p2 = _punto(b_profilo_mm / 2.0, 0.0, sx, sy)
-    return Quota(p1=p1, p2=p2, distanza=-scostamento_m, testo=etichetta_quota("b", b_profilo_mm, "mm", 0))
+    return Quota(p1=p1, p2=p2, distanza=-scostamento_m, testo=etichetta_quota("b", b_profilo_mm, "mm", 0), campo="b_profilo_mm")
 
 
 def _quote_spessore_piatti(elementi: tuple[Elemento, ...], sx: float, sy: float, scostamento_m: float) -> tuple[Quota, ...]:

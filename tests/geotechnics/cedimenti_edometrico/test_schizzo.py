@@ -130,7 +130,7 @@ def test_al_massimo_due_strati_etichettati_anche_con_molti_strati() -> None:
     sketch = disegna(inputs, si, profondita)
     forme = sketch.viste[0].forme
     etichette_eed = [f for f in forme if f.kind == "label" and f.testo.startswith("Eed =")]
-    quote_spessore = [f for f in forme if f.kind == "dimension" and f.testo.startswith("Δz =")]
+    quote_spessore = [f for f in forme if f.kind == "dimension" and f.testo.startswith("s =")]
     assert len(etichette_eed) <= 2
     assert len(quote_spessore) <= 2
     assert len(quote_spessore) == len(etichette_eed)

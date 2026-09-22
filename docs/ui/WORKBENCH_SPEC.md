@@ -450,3 +450,7 @@ field's current value at the displayed precision (`valoreCampoCorrente`): a resu
 and unit (`S_stat = 30 kN`) is never linked. `Etichetta.campo`/`Freccia.campo` exist like `Quota.campo`; a computed
 total may point at the input it is driven by (the wall's `H` → `h_muro_m`; the popover names the field, so the edit
 is unambiguous). Composite dimensions with several inputs (`B` = mancia + paramento + tacco) stay plain.
+Permanent rule (`tests/shared/test_sketch_campi.py`, mirrors the JS matching over every tool's example sketch): a text
+carrying the symbol of a numeric input must be linked (automatically or via `campo`), `campo` must name an existing
+numeric input, and a COMPUTED text must not borrow an input's symbol (punching `a` → `a_gov`, settlement layer
+thickness `Δz` → `s`, since `Δz` is the discretisation step input).

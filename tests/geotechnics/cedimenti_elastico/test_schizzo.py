@@ -75,7 +75,7 @@ def test_newmark_spessore_a_sinistra_modulo_a_destra() -> None:
     inputs = NewmarkInput.model_validate(NEWMARK_TOOL.example)
     sketch = disegna_newmark(inputs)
     forme = sketch.viste[0].forme
-    quote_spessore = [f for f in forme if f.kind == "dimension" and f.testo.startswith("Δz")]
+    quote_spessore = [f for f in forme if f.kind == "dimension" and f.testo.startswith("s")]
     etichette_modulo = [f for f in forme if f.kind == "label" and f.testo.startswith("E =")]
     assert len(quote_spessore) == len(etichette_modulo) == 2
     for quota in quote_spessore:

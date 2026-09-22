@@ -172,7 +172,7 @@ def _strati_forme(strati: tuple[SoilLayer, ...], larghezza_terreno: float, profo
                                 testo=etichetta_quota("E", strato.modulo_MPa, "MPa", 1)))
         forme.append(Quota(
             p1=(-larghezza_terreno / 2, y_top), p2=(-larghezza_terreno / 2, y_bot), distanza=-margine_sinistra,
-            testo=etichetta_quota("Δz", y_top - y_bot, "m"), campo="dz",
+            testo=etichetta_quota("s", y_top - y_bot, "m"),  # spessore dello strato (tabella); "Δz" è il passo dz, un dato
         ))
     return tuple(forme)
 

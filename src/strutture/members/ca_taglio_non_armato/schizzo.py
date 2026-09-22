@@ -82,11 +82,11 @@ def _quote(inputs: TaglioNonArmatoInput, geometria: GeometriaOutput, sx: float, 
     c_m = mm_to_m(inputs.c_mm * sy)
     scostamento = _MARGINE_QUOTA * max(b_m, h_m)
     quota_b = Quota(p1=(0.0, 0.0), p2=(b_m, 0.0), distanza=-scostamento,
-                     testo=etichetta_quota("b", inputs.bw_mm, "mm", 0))
+                     testo=etichetta_quota("b", inputs.bw_mm, "mm", 0), campo="bw_mm")
     # d misurato dal lembo compresso (sommita') fino alla riga di barre tese, non l'altezza h intera.
     # p1 -> p2 scende lungo il lato sinistro: la sinistra del segmento e' l'INTERNO della sezione, quindi distanza negativa.
     quota_d = Quota(p1=(0.0, h_m), p2=(0.0, c_m), distanza=-scostamento,
-                     testo=etichetta_quota("d", geometria.d_mm, "mm", 0))
+                     testo=etichetta_quota("d", geometria.d_mm, "mm", 0), campo="h_mm")  # d = h − c: si modifica h
     return quota_b, quota_d
 
 

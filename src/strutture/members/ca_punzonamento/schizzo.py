@@ -101,7 +101,7 @@ def _quote_a_2d(inputs: PunzonamentoInput, geometria: GeometriaOutput, a_governa
     # verso +x la sinistra di p1->p2 è +y: distanza negativa = sotto la pianta (regola dei lati)
     quota_a = Quota(
         p1=(mm_to_m(filo_x_mm), 0.0), p2=(mm_to_m(filo_x_mm + a_governante_mm), 0.0),
-        distanza=-mm_to_m(fuori_y_mm + passo_mm), testo=etichetta_quota("a", a_governante_mm, "mm", 0),
+        distanza=-mm_to_m(fuori_y_mm + passo_mm), testo=etichetta_quota("a_gov", a_governante_mm, "mm", 0),  # non "a": è il lato del pilastro (dato)
     )
     quota_2d = Quota(
         p1=(mm_to_m(filo_x_mm), 0.0), p2=(mm_to_m(filo_x_mm + due_d_mm), 0.0),

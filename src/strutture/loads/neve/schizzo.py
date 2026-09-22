@@ -54,11 +54,11 @@ def _etichetta_mu(colmo: Punto, gronda: Punto, simbolo: str, mu: float) -> Etich
     return Etichetta(punto=punto_medio, simbolo=simbolo, testo=f"{mu:.2f}".replace(".", ","), ancora="middle", stile="asse")
 
 
-def _etichetta_alfa(gronda: Punto, simbolo: str, angolo_deg: float) -> Etichetta:
+def _etichetta_alfa(gronda: Punto, simbolo: str, angolo_deg: float, campo: str) -> Etichetta:
     """Angolo di falda α, etichettato vicino alla gronda (regola 6: le grandezze si etichettano
     dove sono più leggibili, non impilate sul carico)."""
     punto = (gronda[0], gronda[1] + _OFFSET_ETICHETTA_ALFA_M)
-    return Etichetta(punto=punto, simbolo=simbolo, testo=f"{angolo_deg:.0f}°", ancora="middle", stile="asse")
+    return Etichetta(punto=punto, simbolo=simbolo, testo=f"{angolo_deg:.0f}°", ancora="middle", stile="asse", campo=campo)
 
 
 def disegna_carico_falda(inputs: CaricoFaldaInput, output: CaricoFaldaOutput) -> Sketch:
@@ -76,7 +76,7 @@ def disegna_carico_falda(inputs: CaricoFaldaInput, output: CaricoFaldaOutput) ->
         forme.append(Linea(p1=ridge, p2=(ridge[0], y_base_m), stile="quota", tratteggio=True))
         forme.append(_blocco_carico(ridge[0], eave[0], y_base_m, "q_s", output.qs))
         forme.append(_etichetta_mu(ridge, eave, "μ", output.mu))
-        forme.append(_etichetta_alfa(eave, "α", inputs.a))
+        forme.append(_etichetta_alfa(eave, "α", inputs.a, "a"))
     if output.qs1 is not None and output.qs2 is not None:
         assert inputs.a1 is not None and inputs.a2 is not None  # garantito da run_carico_falda
         colmo: Punto = (0.0, _ALTEZZA_COLMO_M)
@@ -90,8 +90,8 @@ def disegna_carico_falda(inputs: CaricoFaldaInput, output: CaricoFaldaOutput) ->
         forme.append(_blocco_carico(colmo[0], gronda2[0], y_base_m, "q_s2", output.qs2))
         forme.append(_etichetta_mu(colmo, gronda1, "μ_1", output.mu1))
         forme.append(_etichetta_mu(colmo, gronda2, "μ_2", output.mu2))
-        forme.append(_etichetta_alfa(gronda1, "α_1", inputs.a1))
-        forme.append(_etichetta_alfa(gronda2, "α_2", inputs.a2))
+        forme.append(_etichetta_alfa(gronda1, "α_1", inputs.a1, "a1"))
+        forme.append(_etichetta_alfa(gronda2, "α_2", inputs.a2, "a2"))
     return Sketch(viste=(Vista(titolo="Sezione copertura", forme=tuple(forme)),), nota=NOTA_SCHEMA)
 
 
