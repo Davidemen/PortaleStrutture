@@ -2,23 +2,19 @@
 against a table of support reactions (docs/architecture-batch2.md §1 `foundations/plinti_isolati`)."""
 import logging
 
-from strutture.shared.load_table import governing
 from strutture.shared.report import Report, success
 from strutture.shared.sketch import Sketch
 from strutture.shared.tool import Tool
 
-from .capacita_portante import AVVISO_BLOCCO_IGNORATO_LEGACY, AVVISO_SISMICO, capacita_portante
+from .calcolo import calcola
+from .capacita_portante import AVVISO_BLOCCO_IGNORATO_LEGACY, AVVISO_SISMICO
 from .capacita_portante_checks import checks_capacita_portante
 from .checks_inviluppo import checks_inviluppo
-from .flessione import flessione
 from .input import PlintoIsolatoInput
-from .inviluppo import eccentricita_globale, inviluppo
-from .materiali import materiali
 from .models import PlintoIsolatoOutput
 from .relazione import relazione
-from .riga_verifica import RigaVerifica, riga_verifica
 from .schizzo import disegna as disegna_schizzo
-from .sle import sle, sle_checks
+from .sle_checks import sle_checks
 
 logger = logging.getLogger(__name__)
 
@@ -43,64 +39,36 @@ ESEMPIO = {
 
 def run(inputs: PlintoIsolatoInput) -> Report[PlintoIsolatoOutput]:
     """Compose the per-row verification, the family envelopes and the reinforcement/SLS design."""
-    righe: tuple[RigaVerifica, ...] = tuple(
-        riga_verifica(
-            row, inputs.ax_m, inputs.by_m, inputs.h_plinto_m, inputs.h_interro_m,
-            inputs.a_pedestal_m, inputs.b_pedestal_m, inputs.h_pedestal_sopra_m, inputs.h_pedestal_sotto_m,
-            inputs.offset_leva_m, inputs.ex_m, inputs.ey_m, inputs.gamma_terreno_kNm3, inputs.phi_terreno_deg,
-            metodo_pressioni=inputs.metodo_pressioni, legacy_compat=inputs.legacy_compat,
-        )
-        for row in inputs.reazioni
-    )
-    inviluppo_righe = inviluppo(righe)
-    eccentricita = eccentricita_globale(righe)
-    materiali_result = materiali(inputs.classe_calcestruzzo, inputs.grado_acciaio, inputs.gamma_s,
-                                  legacy_compat=inputs.legacy_compat)
-    flessione_result = flessione(
-        inviluppo_righe, inputs.ax_m, inputs.by_m, inputs.h_plinto_m, inputs.a_pedestal_m, inputs.b_pedestal_m,
-        inputs.ex_m, inputs.ey_m, inputs.copriferro_cm, inputs.passo_armatura_cm,
-        inputs.diametro_manuale_x_mm, inputs.diametro_manuale_y_mm,
-        materiali_result.acciaio.fyd_MPa, materiali_result.acciaio.fyk_MPa, materiali_result.calcestruzzo.fctm_MPa,
-        legacy_compat=inputs.legacy_compat,
-    )
-    sle_result = sle(inviluppo_righe, flessione_result, inputs.ax_m, inputs.by_m, inputs.h_plinto_m,
-                      inputs.a_pedestal_m, inputs.b_pedestal_m, inputs.ex_m, inputs.ey_m,
-                      copriferro_cm=inputs.copriferro_cm, legacy_compat=inputs.legacy_compat)
-    capacita_portante_result, avvisi_capacita_portante = capacita_portante(righe, inputs)
-
-    governante = governing(righe, lambda r: r.sigma_max_kpa, "max")  # type: ignore[arg-type]
-    if governante is None:
-        raise ValueError("la tabella reazioni non puo' essere vuota")
-    riga_governante = righe[governante.indice]
+    c = calcola(inputs)
 
     checks = (
-        *checks_inviluppo(inviluppo_righe, inputs.resistenze, sistema_unita=inputs.sistema_unita,
+        *checks_inviluppo(c.inviluppo_righe, inputs.resistenze, sistema_unita=inputs.sistema_unita,
                            legacy_compat=inputs.legacy_compat),
-        *sle_checks(sle_result, materiali_result.calcestruzzo.fck_MPa, materiali_result.acciaio.fyk_MPa),
-        *checks_capacita_portante(capacita_portante_result),
+        *sle_checks(c.sle_result, c.materiali_result.calcestruzzo.fck_MPa, c.materiali_result.acciaio.fyk_MPa),
+        *checks_capacita_portante(c.capacita_portante_result),
     )
 
     mu_ribaltamento_candidati = [
-        v for v in (_minimo(inviluppo_righe, "ribaltamento_x_min"), _minimo(inviluppo_righe, "ribaltamento_y_min"))
+        v for v in (_minimo(c.inviluppo_righe, "ribaltamento_x_min"), _minimo(c.inviluppo_righe, "ribaltamento_y_min"))
         if v is not None
     ]
     schizzo: Sketch | None
     try:
-        schizzo = disegna_schizzo(inputs, riga_governante)
+        schizzo = disegna_schizzo(inputs, c.riga_governante)
     except Exception:
         logger.exception("errore nel disegno dello schizzo per fond-plinto-isolato")
         schizzo = None
     data = PlintoIsolatoOutput(
-        materiali=materiali_result, righe=righe, inviluppo=inviluppo_righe, eccentricita=eccentricita,
-        governante=riga_governante, flessione=flessione_result, sle=sle_result,
-        capacita_portante=capacita_portante_result,
-        sigma_max_governante_kpa=riga_governante.sigma_max_kpa,
-        mu_scorrimento_minimo=_minimo(inviluppo_righe, "scorrimento_min"),
+        materiali=c.materiali_result, righe=c.righe, inviluppo=c.inviluppo_righe, eccentricita=c.eccentricita,
+        governante=c.riga_governante, flessione=c.flessione_result, sle=c.sle_result,
+        capacita_portante=c.capacita_portante_result,
+        sigma_max_governante_kpa=c.riga_governante.sigma_max_kpa,
+        mu_scorrimento_minimo=_minimo(c.inviluppo_righe, "scorrimento_min"),
         mu_ribaltamento_minimo=min(mu_ribaltamento_candidati) if mu_ribaltamento_candidati else None,
         schizzo=schizzo,
     )
     return success(
-        data, inputs, checks=checks, warnings=avvisi_capacita_portante,
+        data, inputs, checks=checks, warnings=c.avvisi_capacita_portante,
         avvisi_campi={AVVISO_BLOCCO_IGNORATO_LEGACY: "legacy_compat", AVVISO_SISMICO: "terreno_condizione"},
     )
 

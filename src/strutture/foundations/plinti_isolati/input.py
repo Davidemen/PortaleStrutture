@@ -7,19 +7,17 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from strutture.shared.capacita_portante import Condizione
 from strutture.shared.footing_pressure import Metodo
-from strutture.shared.load_table import ReactionRow, reazioni_table_field, validate_unique_nodo_combo
+from strutture.shared.load_table import ReactionRow, reazioni_table_field
 from strutture.shared.materials.concrete import ConcreteClass
 from strutture.shared.materials.rebar import RebarGrade
 
-from .rows import ResistenzaRow, resistenze_table_field, validate_unique_famiglia
+from .input_validazione import valida
+from .rows import ResistenzaRow, resistenze_table_field
 
 SistemaUnita = Literal["SI", "tecnico"]
 _CONDIZIONE_TERRENO_IMPOSTATA = {"field": "terreno_condizione", "equals": ["drenata", "non_drenata"]}
 _COND_DRENATA = {"field": "terreno_condizione", "equals": ["drenata"]}
 _COND_NON_DRENATA = {"field": "terreno_condizione", "equals": ["non_drenata"]}
-_CAMPI_BLOCCO_TERRENO = (
-    "terreno_phi_k_deg", "terreno_c_k_kpa", "terreno_cu_k_kpa", "terreno_gamma_kn_m3", "terreno_profondita_falda_m",
-)
 
 
 class PlintoIsolatoInput(BaseModel):
@@ -116,44 +114,8 @@ class PlintoIsolatoInput(BaseModel):
 
     @model_validator(mode="after")
     def _valida(self) -> "PlintoIsolatoInput":
-        validate_unique_nodo_combo(self.reazioni)
-        validate_unique_famiglia(self.resistenze)
-        famiglie_reazioni = {row.famiglia for row in self.reazioni}
-        if None in famiglie_reazioni:
-            raise ValueError("ogni riga della tabella reazioni deve specificare una famiglia")
-        famiglie_resistenze = {row.famiglia for row in self.resistenze}
-        mancanti = famiglie_reazioni - famiglie_resistenze
-        if mancanti:
-            raise ValueError(f"manca la resistenza di progetto del terreno per le famiglie: {sorted(mancanti)}")
-        self._valida_blocco_terreno()
+        valida(self)
         return self
-
-    def _valida_blocco_terreno(self) -> None:
-        """Il blocco 'Terreno' è opzionale (`terreno_condizione` assente = non compilato); quando è
-        compilato, i parametri richiesti dalla condizione di drenaggio scelta sono obbligatori.
-
-        HIGH finding: un blocco compilato a metà nel verso opposto (parametri valorizzati ma
-        `terreno_condizione` non selezionata) veniva prima saltato in silenzio da entrambi i rami
-        (`if self.terreno_condizione is None: return`): la verifica di capacità portante restava
-        vuota (`capacita_portante.righe == ()`, nessun avviso) e l'utente credeva di averla
-        attivata. Qui viene invece rifiutato esplicitamente."""
-        campi_valorizzati = tuple(
-            nome for nome in _CAMPI_BLOCCO_TERRENO if getattr(self, nome) is not None
-        )
-        if self.terreno_condizione is None:
-            if campi_valorizzati:
-                raise ValueError(
-                    "blocco 'Terreno': selezionare la condizione di drenaggio (terreno_condizione) "
-                    "per attivare la verifica di capacità portante, oppure svuotare i campi "
-                    f"{', '.join(campi_valorizzati)}"
-                )
-            return
-        if self.terreno_gamma_kn_m3 is None:
-            raise ValueError("terreno_gamma_kn_m3 è obbligatorio quando il blocco Terreno è compilato")
-        if self.terreno_condizione == "drenata" and (self.terreno_phi_k_deg is None or self.terreno_c_k_kpa is None):
-            raise ValueError("terreno_phi_k_deg e terreno_c_k_kpa sono obbligatori in condizione drenata")
-        if self.terreno_condizione == "non_drenata" and self.terreno_cu_k_kpa is None:
-            raise ValueError("terreno_cu_k_kpa è obbligatorio in condizione non drenata")
 
 
 # `table_field()` (shared.tabular) carries no `group` hint; every input needs one

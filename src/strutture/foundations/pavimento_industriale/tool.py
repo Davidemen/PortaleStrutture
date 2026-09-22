@@ -2,23 +2,24 @@
 `carichi_distribuiti_concentrati` sheet (materiali + sottofondo + carico distribuito + carichi
 concentrati + giunti), per architecture-batch2.md §1 `foundations/pavimento_industriale`."""
 import logging
+from typing import NamedTuple
 
 from strutture.shared.report import Report, success
 from strutture.shared.sketch import Sketch
 from strutture.shared.tool import Tool
 
-from .armatura import armatura
+from .armatura import ArmaturaResult, armatura
 from .concentrati import concentrati
 from .distribuiti_carico import carico_distribuito
 from .distribuiti_momenti import momenti_distribuito
 from .distribuiti_verifiche import verifiche_distribuito
 from .giunti import giunti
-from .materiali import materiali
+from .materiali import MaterialiResult, materiali
 from .models import PavimentoIndustrialeInput
 from .output import DistribuitiResult, PavimentoIndustrialeOutput
 from .relazione import relazione
 from .schizzo import disegna as disegna_schizzo
-from .sottofondo import sottofondo
+from .sottofondo import SottofondoResult, sottofondo
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +39,17 @@ ESEMPIO = {
 }
 
 
-def run(inputs: PavimentoIndustrialeInput) -> Report[PavimentoIndustrialeOutput]:
+class _ProgettoDistribuito(NamedTuple):
+    """Materials, subgrade, mesh reinforcement and distributed-load design (private helper: keeps
+    `run()` under the function size limit, regola 12)."""
+
+    mat: MaterialiResult
+    sott: SottofondoResult
+    arm: ArmaturaResult
+    distribuiti: DistribuitiResult
+
+
+def _progetta_distribuito(inputs: PavimentoIndustrialeInput) -> _ProgettoDistribuito:
     mat = materiali(inputs.classe_calcestruzzo, inputs.gamma_c, inputs.gamma_s)
     sott = sottofondo(
         inputs.h_mm, inputs.c_mm, inputs.nu_poisson, mat.ecm_MPa, mat.fck_MPa,
@@ -52,14 +63,18 @@ def run(inputs: PavimentoIndustrialeInput) -> Report[PavimentoIndustrialeOutput]
         momenti.m_slu_sup_Nmm_m, momenti.m_slu_inf_Nmm_m, momenti.m_sle_freq_sup_Nmm_m, momenti.m_sle_freq_inf_Nmm_m,
         sott.w_mm3_m, mat.fcfk_MPa, mat.fcfd_MPa, mat.fctm_MPa, arm.mrd_Nmm_m, legacy_compat=inputs.legacy_compat,
     )
-    distribuiti_result = DistribuitiResult(carico=carico, momenti=momenti, verifiche=verifiche)
+    return _ProgettoDistribuito(mat=mat, sott=sott, arm=arm,
+                                 distribuiti=DistribuitiResult(carico=carico, momenti=momenti, verifiche=verifiche))
+
+
+def run(inputs: PavimentoIndustrialeInput) -> Report[PavimentoIndustrialeOutput]:
+    p = _progetta_distribuito(inputs)
 
     concentrati_result, concentrati_checks = concentrati(
-        inputs.carichi, inputs.h_mm, sott.l_mm, mat.fcfd_MPa, mat.fctm_MPa, arm.mrd_Nmm_m,
-        sott.d_mm, sott.v1, mat.fcd_MPa, sott.v_min_MPa, legacy_compat=inputs.legacy_compat,
+        inputs.carichi, inputs.h_mm, p.sott.l_mm, p.mat.fcfd_MPa, p.mat.fctm_MPa, p.arm.mrd_Nmm_m,
+        p.sott.d_mm, p.sott.v1, p.mat.fcd_MPa, p.sott.v_min_MPa, legacy_compat=inputs.legacy_compat,
         coeff_vrd_max=inputs.coeff_vrd_max,
     )
-
     giunti_result = giunti(
         inputs.a_contrazione_m, inputs.b_contrazione_m, inputs.a_isolamento_m, inputs.b_isolamento_m,
         inputs.alpha_termico, inputs.delta_t_C, inputs.h_mm,
@@ -67,15 +82,16 @@ def run(inputs: PavimentoIndustrialeInput) -> Report[PavimentoIndustrialeOutput]
 
     schizzo: Sketch | None
     try:
-        schizzo = disegna_schizzo(inputs, sott.l_mm)
+        schizzo = disegna_schizzo(inputs, p.sott.l_mm)
     except Exception:
         logger.exception("errore nel disegno dello schizzo per fond-pavimento-industriale")
         schizzo = None
     data = PavimentoIndustrialeOutput(
-        materiali=mat, sottofondo=sott, armatura=arm,
-        distribuiti=distribuiti_result, concentrati=concentrati_result, giunti=giunti_result,
+        materiali=p.mat, sottofondo=p.sott, armatura=p.arm,
+        distribuiti=p.distribuiti, concentrati=concentrati_result, giunti=giunti_result,
         schizzo=schizzo,
     )
+    verifiche = p.distribuiti.verifiche
     checks = (
         verifiche.verifica_tensionale_sup, verifiche.verifica_tensionale_inf,
         verifiche.verifica_fessurazione_sup, verifiche.verifica_fessurazione_inf,
