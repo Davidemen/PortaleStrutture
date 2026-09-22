@@ -5,6 +5,7 @@ from strutture.shared.tables import KeyNotFound
 from strutture.shared.tool import Tool
 
 from .models import ResistenzaIncendioInput, ResistenzaIncendioOutput
+from .relazione import relazione_resistenza
 from .righe import riga_resistenza_incendio
 from .steel_base import materiale_base
 
@@ -44,5 +45,6 @@ TOOLS: tuple[Tool, ...] = (
         run=run,
         example=ESEMPIO,
         summary="Calcola la riduzione di resistenza e rigidezza dell'acciaio non protetto esposto all'incendio secondo la curva standard, per una serie di tempi di esposizione.",
+        relazione=relazione_resistenza,
     ),
 )

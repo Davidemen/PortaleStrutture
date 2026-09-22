@@ -106,7 +106,7 @@ class CapacitaResult(BaseModel):
     prs_kN: float = Field(description="Capacità lato acciaio (tirante)", json_schema_extra={"unit": "kN", "symbol": "P_Rs"})
     prc_kN: float = Field(description="Capacità lato calcestruzzo (puntone)", json_schema_extra={"unit": "kN", "symbol": "P_Rc"})
     dpr_kN: float = Field(description="Contributo dell'armatura inclinata", json_schema_extra={"unit": "kN", "symbol": "ΔP_R"})
-    pr_kN: float = Field(description="Capacità portante globale della mensola", json_schema_extra={"unit": "kN", "symbol": "P_R", "highlight": True})
+    pr_kN: float = Field(description="Capacità portante globale della mensola, min(P_Rs + 0,8·ΔP_R; P_Rc) (modalità Excel: senza il limite del puntone)", json_schema_extra={"unit": "kN", "symbol": "P_R", "highlight": True})
 
 
 class MensolaTozzaOutput(BaseModel):

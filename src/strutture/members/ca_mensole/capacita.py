@@ -7,6 +7,7 @@ reimplements `H30` as a plain number in both `legacy_compat` modes (no numeric i
 """
 import math
 
+from strutture.shared.divergences import legacy
 from strutture.shared.units import kn_to_n, n_to_kn
 
 from .models import CapacitaResult, SiNo
@@ -34,12 +35,20 @@ def capacita(
     fcd_MPa: float,
     c_coeff: float,
     angolo_incl_deg: float,
+    legacy_compat: bool = False,
 ) -> CapacitaResult:
-    """PRS (tie), PRC (strut), ΔPR (inclined bars), PR = PRS + 0.8·ΔPR."""
+    """PRS (tie), PRC (strut), ΔPR (inclined bars), PR = min(PRS + 0.8·ΔPR, PRC).
+
+    The sheet compares PEd with the uncapped sum PRS + 0.8·ΔPR and checks the strut only against
+    PRS: with inclined bars the corbel could pass both while the strut is overloaded (proof-read
+    finding, non-conservative by up to 0.8·ΔPR). Excel mode keeps the sheet (register:
+    ca-mensole/capacita-globale-non-limitata-dal-puntone)."""
     prs_kN = n_to_kn((as_hor_mm2 * fyd_MPa - kn_to_n(hed_kN)) * LEVER_ARM_FACTOR * d_mm / l_mm)
     prc_kN = n_to_kn(
         STRUT_EFFECTIVENESS_COEFF * b_mm * d_mm * fcd_MPa * c_coeff / (1 + (l_mm / (LEVER_ARM_FACTOR * d_mm)) ** 2)
     )
     dpr_kN = n_to_kn(as_incl_mm2 * fyd_MPa * math.sin(math.radians(angolo_incl_deg)))
     pr_kN = prs_kN + INCLINED_CONTRIBUTION_REDUCTION * dpr_kN
+    if not legacy("ca-mensole/capacita-globale-non-limitata-dal-puntone", legacy_compat):
+        pr_kN = min(pr_kN, prc_kN)
     return CapacitaResult(c_coeff=c_coeff, prs_kN=prs_kN, prc_kN=prc_kN, dpr_kN=dpr_kN, pr_kN=pr_kN)

@@ -14,6 +14,7 @@ from .ground_to_base import shift_to_base
 from .integrate import Slice, total_settlement_m
 from .models_newmark import CaricoNewmark, CentroCedimento, NewmarkInput, NewmarkOutput, PuntoCedimento, RigaNewmark
 from .punto import punto_settlement
+from .relazione_newmark import relazione_newmark
 from .schizzo import disegna_newmark
 
 logger = logging.getLogger(__name__)
@@ -97,5 +98,6 @@ TOOLS: tuple[Tool, ...] = (
         run=run_newmark,
         example=ESEMPIO_CENTRO,
         summary="Calcola il cedimento elastico immediato di una fondazione per integrazione numerica di Newmark, al centro o in un punto arbitrario.",
+        relazione=relazione_newmark,
     ),
 )

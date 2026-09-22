@@ -15,6 +15,7 @@ from .ingresso import converti_in_si
 from .models import EdometricoInput, MetodoTensioni
 from .output import EdometricoOutput
 from .profondita_critica import profondita_critica
+from .relazione import relazione
 from .righe import genera_righe
 from .schizzo import disegna as disegna_schizzo
 
@@ -90,5 +91,6 @@ TOOLS = (
         run=run,
         example=ESEMPIO,
         summary="Calcola il cedimento edometrico di una fondazione rettangolare su terreno stratificato, sommando le deformazioni fino alla profondità significativa.",
+        relazione=relazione,
     ),
 )

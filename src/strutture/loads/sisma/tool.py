@@ -33,6 +33,13 @@ from .models import (
     SismaVitaRiferimentoOutput,
 )
 from .models_completo import SismaCompletoInput, SismaCompletoOutput
+from .relazione import (
+    relazione_completo,
+    relazione_fattori_struttura,
+    relazione_parametri_sito,
+    relazione_spettro,
+    relazione_vita_riferimento,
+)
 from .smorzamento import smorzamento_eta
 from .spettro_elastico import se_elastico
 from .spettro_progetto import valore_spettro
@@ -94,6 +101,7 @@ def _punto_spettro(t_s: float, inputs: SismaSpettroInput, *, is_uls: bool) -> Pu
         s=inputs.s,
         f0=inputs.f0,
         tb_s=inputs.tb_s,
+        eta=inputs.eta,
         legacy_compat=inputs.legacy_compat,
     )
     return PuntoSpettro(t_s=t_s, se_g=se_g, sd_g=sd_g)
@@ -123,6 +131,7 @@ TOOLS = (
         run=run_vita_riferimento,
         example={"comune": "Brembate", "vn_anni": 50, "classe_uso": "II"},
         summary="Calcola la vita di riferimento e i periodi di ritorno dell'azione sismica a partire da vita nominale e classe d'uso, individuando opzionalmente comune e zona sismica.",
+        relazione=relazione_vita_riferimento,
     ),
     Tool(
         name="sisma-parametri-sito",
@@ -140,6 +149,7 @@ TOOLS = (
             "ag_g": 0.098,
         },
         summary="Determina i coefficienti di amplificazione stratigrafica e topografica del sito e i periodi caratteristici dello spettro di risposta a partire dalla categoria di sottosuolo, dalla categoria topografica e dai parametri di pericolosità sismica di base.",
+        relazione=relazione_parametri_sito,
     ),
     Tool(
         name="sisma-fattori-struttura",
@@ -151,6 +161,7 @@ TOOLS = (
         run=run_fattori_struttura,
         example={"xi_pct": 5, "q0": 1.5, "regolare_altezza": "SI", "stato_limite": "SLV", "qv": 1.5},
         summary="Calcola il fattore di smorzamento e i fattori di struttura orizzontale e verticale dell'edificio a partire da smorzamento viscoso, regolarità in altezza e fattori di struttura di base.",
+        relazione=relazione_fattori_struttura,
     ),
     Tool(
         name="sisma-spettro",
@@ -172,6 +183,7 @@ TOOLS = (
             "stato_limite": "SLV",
         },
         summary="Genera lo spettro di risposta elastico e di progetto, in termini di accelerazioni campionate su un intervallo di periodi, a partire dai parametri di sito e dai fattori di struttura già determinati.",
+        relazione=relazione_spettro,
     ),
     Tool(
         name="sisma-completo",
@@ -197,5 +209,6 @@ TOOLS = (
             "qv": 1.5,
         },
         summary="Esegue in un unico calcolo l'intera catena sismica, dalla vita di riferimento ai parametri di sito e ai fattori di struttura, fino allo spettro di risposta di progetto.",
+        relazione=relazione_completo,
     ),
 )

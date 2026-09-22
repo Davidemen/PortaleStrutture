@@ -10,6 +10,7 @@ from .cpe_side import cpe_side
 from .cpe_windward import cpe_windward
 from .hd_ratio import hd_ratio
 from .models import DirectionResult, VentoCpeInput, VentoCpeOutput
+from .relazione import relazione
 from .schizzo import disegna as disegna_schizzo
 
 logger = logging.getLogger(__name__)
@@ -49,6 +50,7 @@ TOOLS = (
         input_model=VentoCpeInput,
         output_model=VentoCpeOutput,
         run=run,
+        relazione=relazione,
         example={"b": 15, "d": 12, "h": 9},
         summary="Calcola i coefficienti di pressione esterna del vento su un edificio a pianta rettangolare per entrambe le direzioni.",
     ),

@@ -8,19 +8,19 @@ TB, S, F0 = 0.129398, 1.2, 2.436
 
 @pytest.mark.unit
 def test_sle_states_pass_se_through_unreduced():
-    assert valore_spettro(0.5, 1.5, 1.0, is_uls=False, ag_g=0.1, s=S, f0=F0, tb_s=TB, legacy_compat=True) == pytest.approx(0.5)
-    assert valore_spettro(0.5, 1.5, 1.0, is_uls=False, ag_g=0.1, s=S, f0=F0, tb_s=TB, legacy_compat=False) == pytest.approx(0.5)
+    assert valore_spettro(0.5, 1.5, 1.0, is_uls=False, ag_g=0.1, s=S, f0=F0, tb_s=TB, eta=1.0, legacy_compat=True) == pytest.approx(0.5)
+    assert valore_spettro(0.5, 1.5, 1.0, is_uls=False, ag_g=0.1, s=S, f0=F0, tb_s=TB, eta=1.0, legacy_compat=False) == pytest.approx(0.5)
 
 
 @pytest.mark.unit
 def test_uls_divides_by_q():
-    assert valore_spettro(0.3, 1.5, 1.0, is_uls=True, ag_g=0.05, s=S, f0=F0, tb_s=TB, legacy_compat=True) == pytest.approx(0.2)
+    assert valore_spettro(0.3, 1.5, 1.0, is_uls=True, ag_g=0.05, s=S, f0=F0, tb_s=TB, eta=1.0, legacy_compat=True) == pytest.approx(0.2)
 
 
 @pytest.mark.unit
 def test_legacy_t_zero_skips_the_division_sheet_bug():
     """Sisma!J55 = `=N55` (no IF/division), unlike every other row."""
-    assert valore_spettro(0.3, 1.5, 0.0, is_uls=True, ag_g=0.05, s=S, f0=F0, tb_s=TB, legacy_compat=True) == pytest.approx(0.3)
+    assert valore_spettro(0.3, 1.5, 0.0, is_uls=True, ag_g=0.05, s=S, f0=F0, tb_s=TB, eta=1.0, legacy_compat=True) == pytest.approx(0.3)
 
 
 @pytest.mark.unit
@@ -29,7 +29,7 @@ def test_fixed_does_not_divide_by_q_at_t_zero():
     Se(0)/q. The sheet's undivided T=0 value (Sisma!J55) was code-compliant, not a bug."""
     ag_g = 0.098
     se_at_zero = ag_g * S  # Se(0) = ag*S regardless of eta (see test_spettro_elastico)
-    result = valore_spettro(se_at_zero, 1.5, 0.0, is_uls=True, ag_g=ag_g, s=S, f0=F0, tb_s=TB, legacy_compat=False)
+    result = valore_spettro(se_at_zero, 1.5, 0.0, is_uls=True, ag_g=ag_g, s=S, f0=F0, tb_s=TB, eta=1.0, legacy_compat=False)
     assert result == pytest.approx(ag_g * S, rel=1e-6)
 
 
@@ -41,7 +41,7 @@ def test_fixed_short_period_branch_uses_eta_to_1_over_q_substitution():
     t_s = TB / 2
     se_g = 1.0 * ag_g * S * F0 * (t_s / TB + (1.0 / F0) * (1.0 - t_s / TB))  # Se(T) at eta=1, for contrast
     expected = ag_g * S * F0 / q * (t_s / TB) + ag_g * S * (1.0 - t_s / TB)
-    result = valore_spettro(se_g, q, t_s, is_uls=True, ag_g=ag_g, s=S, f0=F0, tb_s=TB, legacy_compat=False)
+    result = valore_spettro(se_g, q, t_s, is_uls=True, ag_g=ag_g, s=S, f0=F0, tb_s=TB, eta=1.0, legacy_compat=False)
     assert result == pytest.approx(expected, rel=1e-6)
     assert result != pytest.approx(se_g / q, rel=1e-3)
 
@@ -49,11 +49,31 @@ def test_fixed_short_period_branch_uses_eta_to_1_over_q_substitution():
 @pytest.mark.unit
 def test_fixed_applies_0_2ag_floor():
     # se/q = 0.001/1.5 = 0.000667, well below 0.2*ag = 0.02 -- at T=3 >= TB, on the Se/q branch
-    result = valore_spettro(0.001, 1.5, 3.0, is_uls=True, ag_g=0.1, s=S, f0=F0, tb_s=TB, legacy_compat=False)
+    result = valore_spettro(0.001, 1.5, 3.0, is_uls=True, ag_g=0.1, s=S, f0=F0, tb_s=TB, eta=1.0, legacy_compat=False)
     assert result == pytest.approx(DESIGN_SPECTRUM_FLOOR_RATIO * 0.1)
 
 
 @pytest.mark.unit
 def test_legacy_does_not_apply_the_floor():
-    result = valore_spettro(0.001, 1.5, 3.0, is_uls=True, ag_g=0.1, s=S, f0=F0, tb_s=TB, legacy_compat=True)
+    result = valore_spettro(0.001, 1.5, 3.0, is_uls=True, ag_g=0.1, s=S, f0=F0, tb_s=TB, eta=1.0, legacy_compat=True)
     assert result == pytest.approx(0.001 / 1.5)
+
+
+@pytest.mark.unit
+def test_design_spectrum_above_tb_substitutes_eta_with_one_over_q_and_is_continuous_at_tb():
+    """NTC2018 §3.2.3.5: the ULS design spectrum is eq. 3.2.4 with η REPLACED by 1/q — on the
+    plateau S_d = a_g·S·F_0/q whatever the damping. The tool divided the elastic ordinate (which
+    still carried η) by q: identical only at ξ = 5 % (η = 1), −18 % at ξ = 10 %, and its own
+    spectrum stepped down by η at T = T_B because the rising branch did drop η (proof-read)."""
+    from strutture.loads.sisma.spettro_elastico import se_elastico
+
+    ag_g, q, eta, tb, tc, td = 0.25, 3.0, 0.8165, 0.15, 0.45, 2.0
+    se_plateau = se_elastico(0.3, tb, tc, td, ag_g, S, F0, eta, legacy_compat=False)
+    sd_plateau = valore_spettro(se_plateau, q, 0.3, is_uls=True, ag_g=ag_g, s=S, f0=F0, tb_s=tb, eta=eta, legacy_compat=False)
+    assert sd_plateau == pytest.approx(ag_g * S * F0 / q, rel=1e-9)
+    se_tb = se_elastico(tb, tb, tc, td, ag_g, S, F0, eta, legacy_compat=False)
+    sotto = valore_spettro(se_tb, q, tb * (1 - 1e-9), is_uls=True, ag_g=ag_g, s=S, f0=F0, tb_s=tb, eta=eta, legacy_compat=False)
+    sopra = valore_spettro(se_tb, q, tb, is_uls=True, ag_g=ag_g, s=S, f0=F0, tb_s=tb, eta=eta, legacy_compat=False)
+    assert sotto == pytest.approx(sopra, rel=1e-6)
+    # Excel mode keeps the sheet: S_e/q with η inside
+    assert valore_spettro(se_plateau, q, 0.3, is_uls=True, ag_g=ag_g, s=S, f0=F0, tb_s=tb, eta=eta, legacy_compat=True) == pytest.approx(se_plateau / q)

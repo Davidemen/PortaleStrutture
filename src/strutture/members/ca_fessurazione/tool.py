@@ -44,6 +44,9 @@ from .models import (
     VerificaSemplificataSezione,
     VerificaTensioneSezione,
 )
+from .relazione_apertura_fessure import relazione_apertura_fessure
+from .relazione_apertura_fessure_semplificata import relazione_apertura_fessure_semplificata
+from .relazione_limitazione_tensioni import relazione_limitazione_tensioni
 from .sezioni import SEZIONI
 from .spaziatura_fessure import (
     delta_sm_c4_1_7_mm,
@@ -318,6 +321,7 @@ TOOLS = (
         input_model=LimitazioneTensioniInput,
         output_model=LimitazioneTensioniOutput,
         run=run_limitazione_tensioni,
+        relazione=relazione_limitazione_tensioni,
         example=ESEMPIO_LIMITAZIONE_TENSIONI,
         summary="Verifica, per tre sezioni, che le tensioni di esercizio nel calcestruzzo e nell'acciaio nelle combinazioni rara e quasi permanente rispettino i limiti di normativa in funzione delle resistenze caratteristiche dei materiali.",
     ),
@@ -329,6 +333,7 @@ TOOLS = (
         input_model=AperturaFessureInput,
         output_model=AperturaFessureOutput,
         run=run_apertura_fessure,
+        relazione=relazione_apertura_fessure,
         example=ESEMPIO_APERTURA_FESSURE,
         summary="Calcola l'ampiezza caratteristica delle fessure di una sezione in cemento armato a partire da geometria, armatura e tensione nell'acciaio, verificandola rispetto al limite della classe di esposizione scelta.",
     ),
@@ -340,6 +345,7 @@ TOOLS = (
         input_model=AperturaFessureSempInput,
         output_model=AperturaFessureSempOutput,
         run=run_apertura_fessure_semplificata,
+        relazione=relazione_apertura_fessure_semplificata,
         example=ESEMPIO_APERTURA_FESSURE_SEMP,
         summary="Verifica in forma semplificata, per tre sezioni e in funzione del diametro delle barre, che le tensioni nell'acciaio nelle combinazioni frequente e quasi permanente rispettino i limiti tabellari di apertura delle fessure.",
     ),

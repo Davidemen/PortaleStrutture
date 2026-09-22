@@ -35,9 +35,15 @@ def valore_spettro(
     s: float,
     f0: float,
     tb_s: float,
+    eta: float,
     legacy_compat: bool,
 ) -> float:
-    """Sd(T) for ULS states (SLV/SLC), Se(T) unreduced for SLE states (SLO/SLD)."""
+    """Sd(T) for ULS states (SLV/SLC), Se(T) unreduced for SLE states (SLO/SLD).
+
+    `eta` is the damping correction already inside `se_g`: NTC2018 §3.2.3.5 builds the design
+    spectrum by SUBSTITUTING η with 1/q, so every ULS branch must drop it — the sheet divides the
+    elastic ordinate (η included) by q, identical only at ξ = 5 % (register:
+    sisma/spettro-progetto-plateau-eta-non-sostituita)."""
     if not is_uls:
         return se_g
     # This single branch also implements sisma/spettro-progetto-salita-eta-sostituita-da-1-q (the
@@ -47,12 +53,14 @@ def valore_spettro(
         if t_s == 0.0:
             return se_g  # Sisma!J55: the T=0 row skips the SLU division applied everywhere else
         return se_g / q
-    sd_g = _sd_uls(se_g, q, t_s, ag_g=ag_g, s=s, f0=f0, tb_s=tb_s)
+    sd_g = _sd_uls(se_g, q, t_s, ag_g=ag_g, s=s, f0=f0, tb_s=tb_s, eta=eta)
     return max(sd_g, DESIGN_SPECTRUM_FLOOR_RATIO * ag_g)
 
 
-def _sd_uls(se_g: float, q: float, t_s: float, *, ag_g: float, s: float, f0: float, tb_s: float) -> float:
-    """Unfloored Sd(T), NTC18 eq. 3.2.4 with η replaced by 1/q."""
+def _sd_uls(se_g: float, q: float, t_s: float, *, ag_g: float, s: float, f0: float, tb_s: float, eta: float) -> float:
+    """Unfloored Sd(T), NTC18 eqs. 3.2.4-3.2.7 with η replaced by 1/q on EVERY branch: above T_B the
+    elastic ordinate is η·a_g·S·F_0·(…), so dividing it by η·q gives a_g·S·F_0·(…)/q — continuous
+    with the rising branch at T_B (the old `se_g / q` kept η and stepped down by it at T_B)."""
     if t_s < tb_s:
         return ag_g * s * f0 / q * (t_s / tb_s) + ag_g * s * (1.0 - t_s / tb_s)
-    return se_g / q
+    return se_g / eta / q

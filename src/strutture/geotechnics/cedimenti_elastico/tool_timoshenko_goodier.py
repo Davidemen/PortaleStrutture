@@ -12,6 +12,7 @@ from strutture.shared.tool import Tool
 from .boundary import to_kpa, to_m
 from .ground_to_base import shift_to_base
 from .models_tg import CedimentoTG, FattoriTG, GeometriaTG, ModuloTG, TimoshenkoGoodierInput, TimoshenkoGoodierOutput
+from .relazione_timoshenko_goodier import relazione_timoshenko_goodier
 from .schizzo import disegna_timoshenko_goodier
 from .settlement_tg import deltah_bordo_mm, deltah_centro_mm
 from .steinbrenner_factors import aspect_ratio, depth_ratio_bordo, depth_ratio_centro, influence_factors
@@ -75,5 +76,6 @@ TOOLS: tuple[Tool, ...] = (
         run=run_timoshenko_goodier,
         example=ESEMPIO,
         summary="Calcola il cedimento elastico immediato di una fondazione flessibile con il metodo di Timoshenko e Goodier, al centro e al bordo.",
+        relazione=relazione_timoshenko_goodier,
     ),
 )

@@ -15,6 +15,7 @@ from .instabilita_flesso_torsionale import costruisci_ltb
 from .interazione import costruisci_interazione
 from .interazione_semplificata import costruisci_interazione_semplificata
 from .models import ColonnaEc3Input
+from .relazione import relazione as relazione_colonna_ec3
 from .results import (
     ColonnaEc3Output,
     Flessione,
@@ -165,5 +166,6 @@ TOOLS = (
         run=run,
         example={k: v for k, v in ESEMPIO_AUREO.items() if k != "legacy_compat"},
         summary="Verifica la resistenza e la stabilità di una colonna in acciaio a sezione H/I soggetta a sforzo normale e flessione biassiale.",
+        relazione=relazione_colonna_ec3,
     ),
 )

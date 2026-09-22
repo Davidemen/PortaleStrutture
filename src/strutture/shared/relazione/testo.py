@@ -58,7 +58,10 @@ def passo_a_testo(passo: Passo) -> str:
         riga1 = f"{riga1}    {passo.clausola}"
     riga2 = f"= {_con_fattore(sostituzione_a_testo(ast, valori), ast, passo.scala)}"
     riga3 = _riga_risultato(passo, ast, valori)
-    return f"{riga1}\n{riga2}\n{riga3}"
+    righe = f"{riga1}\n{riga2}\n{riga3}"
+    # the nota is part of the equation: a branch-selected formula without its validity condition
+    # is what the proof-read of three waves flagged as invisible in this rendering
+    return f"{righe}\n{passo.nota}" if passo.nota else righe
 
 
 def traccia_a_testo(traccia: Traccia) -> str:

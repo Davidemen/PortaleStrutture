@@ -46,6 +46,7 @@ def test_oracle_case(case: dict):
             s=amp.s,
             f0=inputs["I29"],
             tb_s=periodi.tb,
+            eta=eta,
             legacy_compat=True,
         )
         assert sd_g == pytest.approx(expected_sd, rel=1e-5), f"row {row}"

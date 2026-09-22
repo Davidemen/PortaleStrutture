@@ -5,6 +5,7 @@ from strutture.shared.tool import Tool
 
 from .models import TraviCollegamentoInput
 from .output import TraviCollegamentoOutput
+from .relazione import relazione
 from .tool_en import run_en
 from .tool_ntc import run_ntc
 
@@ -31,5 +32,6 @@ TOOLS = (
         run=run,
         example=ESEMPIO_NTC2018,
         summary="Verifica la trave di collegamento tra due plinti a compressione, trazione, snellezza e staffe minime.",
+        relazione=relazione,
     ),
 )

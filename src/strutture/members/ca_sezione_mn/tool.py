@@ -12,6 +12,7 @@ from strutture.shared.tool import Tool
 from .compose import run
 from .models_input import SezioneMnInput
 from .models_output import SezioneMnOutput
+from .relazione import relazione
 
 # Esempio in modalità standard (nessun legacy_compat): pilastro rettangolare 300x500 mm, armatura
 # perimetrale 3 barre per lato, 3 combinazioni SLU (una uniassiale x, una biassiale, una quasi in
@@ -43,6 +44,7 @@ TOOLS = (
         input_model=SezioneMnInput,
         output_model=SezioneMnOutput,
         run=run,
+        relazione=relazione,
         example=EXAMPLE,
         summary="Traccia il dominio di resistenza N-M di una sezione in c.a. qualsiasi e verifica a "
                 "pressoflessione una tabella di combinazioni di carico.",

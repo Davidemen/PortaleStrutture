@@ -18,6 +18,7 @@ from .models import SezioneHRimpiattataInput
 from .moduli_elastici import wel_mm3
 from .plastico import wpl_x_legacy_mm3, wpl_x_mm3, wpl_y_legacy_mm3, wpl_y_mm3
 from .raggi import raggio_giro_mm
+from .relazione import relazione as relazione_sezione_composta
 from .risultati import MM3_PER_CM3, MM4_PER_CM4, ElementoRisultato, Sezione, SezioneHRimpiattataOutput
 from .schizzo import disegna as disegna_schizzo
 
@@ -100,5 +101,6 @@ TOOLS: tuple[Tool, ...] = (
         run=run,
         example=ESEMPIO_AUREO,
         summary="Proprietà geometriche di un profilo H saldato con piatti di rinforzo alle ali.",
+        relazione=relazione_sezione_composta,
     ),
 )

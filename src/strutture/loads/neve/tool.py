@@ -15,6 +15,7 @@ from .forma_falda import coefficiente_forma
 from .location import resolve_comune, zona_from_provincia_bug
 from .models import AccumuloInput, AccumuloOutput, CaricoFaldaInput, CaricoFaldaOutput
 from .qsk import qsk_accumulo, qsk_falda
+from .relazione import relazione_accumulo, relazione_carico_falda
 from .schizzo import disegna_accumulo as disegna_schizzo_accumulo
 from .schizzo import disegna_carico_falda as disegna_schizzo_falda
 
@@ -140,6 +141,7 @@ TOOLS = (
         input_model=CaricoFaldaInput,
         output_model=CaricoFaldaOutput,
         run=run_carico_falda,
+        relazione=relazione_carico_falda,
         summary="Calcola il carico neve di progetto su una copertura a una o due falde.",
         example={
             "comune": "Mapello",
@@ -163,6 +165,7 @@ TOOLS = (
         input_model=AccumuloInput,
         output_model=AccumuloOutput,
         run=run_accumulo,
+        relazione=relazione_accumulo,
         summary="Calcola l'accumulo di neve sulla copertura più bassa addossata a un edificio più alto.",
         example={
             "comune": "Bergamo",

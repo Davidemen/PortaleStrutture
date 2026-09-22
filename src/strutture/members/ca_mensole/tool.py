@@ -10,6 +10,7 @@ from .capacita import capacita, coefficiente_c
 from .geometria import geometria
 from .materiali import materiali
 from .models import MensolaTozzaInput, MensolaTozzaOutput
+from .relazione import relazione
 from .schizzo import disegna as disegna_schizzo
 from .verifica import verifica_gerarchia, verifica_staffe, verifica_uls
 
@@ -34,6 +35,7 @@ def run(inputs: MensolaTozzaInput) -> Report[MensolaTozzaOutput]:
     cap = capacita(
         arm.as_hor_mm2, arm.as_incl_mm2, mat.fyd_MPa, inputs.hed_kN,
         geo.d_mm, geo.l_mm, inputs.b_mm, mat.fcd_MPa, c_coeff, inputs.angolo_incl_deg,
+        legacy_compat=inputs.legacy_compat,
     )
     checks = (
         verifica_gerarchia(cap.prs_kN, cap.prc_kN),
@@ -58,6 +60,7 @@ TOOLS = (
         input_model=MensolaTozzaInput,
         output_model=MensolaTozzaOutput,
         run=run,
+        relazione=relazione,
         example=ESEMPIO_AUREO,
         summary="Verifica una mensola tozza in calcestruzzo armato con il modello a bielle e tiranti.",
     ),

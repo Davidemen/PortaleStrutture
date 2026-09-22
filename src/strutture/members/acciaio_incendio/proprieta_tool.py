@@ -5,6 +5,7 @@ from strutture.shared.tool import Tool
 
 from .proprieta import proprieta_a_temperatura
 from .proprieta_models import ProprietaTemperaturaInput, ProprietaTemperaturaOutput
+from .relazione import relazione_proprieta
 
 # Golden case: docs/specs/small-units.md §"Golden test case", θ=550°C (interpolated, not on a
 # Table 3.1 node) — default mode, no legacy_compat (DESIGN_SPEC §4).
@@ -27,5 +28,6 @@ TOOLS: tuple[Tool, ...] = (
         run=run,
         example=ESEMPIO,
         summary="Calcola le proprietà meccaniche ridotte dell'acciaio, resistenza e modulo elastico, a una determinata temperatura di esposizione.",
+        relazione=relazione_proprieta,
     ),
 )

@@ -86,5 +86,28 @@
   ],
   "ramo": "nessuno",
   "motivo_senza_ramo": "Il limite inferiore e' un vincolo della formula NTC2018 stessa, non del foglio: smorzamento_eta lo applica incondizionatamente in entrambe le modalita', quindi non esiste un ramo legacy_compat da collegare."
+ },
+ {
+  "id": "sisma/spettro-progetto-plateau-eta-non-sostituita",
+  "titolo": "Lo spettro di progetto sopra T_B divide per q l'ordinata elastica con η dentro, invece di sostituire η con 1/q",
+  "tipo": "errore_foglio",
+  "strumenti": [
+   "sisma-spettro",
+   "sisma-completo"
+  ],
+  "cella": "Sisma!J55:J… (Sd = Se/q)",
+  "foglio": "per T ≥ T_B il foglio calcola S_d = S_e/q con S_e = η·a_g·S·F_0·(…): coincide con la norma solo per ξ = 5 % (η = 1); per ξ = 10 % (η = 0,8165) sottostima del 18 % ogni ordinata da T_B in poi, e lo spettro risulta discontinuo in T_B perché il ramo crescente sostituisce correttamente η",
+  "corretto": "NTC2018 §3.2.3.5: le formule dello spettro elastico con η sostituito da 1/q su tutti i rami, S_d = a_g·S·F_0·(…)/q, continuo in T_B",
+  "clausola": "NTC2018 §3.2.3.5",
+  "impatto": "nessuno sul caso guida (ξ = 5 %); con ξ = 10 %: plateau 0,156 g -> 0,191 g (+22 %)",
+  "uscite": [
+   "punti.sd_g",
+   "spettro.punti.sd_g"
+  ],
+  "ramo": "condiviso",
+  "motivo_senza_ramo": "Stesso ramo legacy() di sisma/spettro-progetto-senza-pavimento-0-2ag in valore_spettro: il foglio non separa i due difetti.",
+  "riprodotta_da": [
+   "sisma/spettro-progetto-senza-pavimento-0-2ag"
+  ]
  }
 ]

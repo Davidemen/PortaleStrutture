@@ -68,3 +68,17 @@ def test_capacita_vertical_stirrups_scale_prc() -> None:
         d_mm=400, l_mm=257, b_mm=800, fcd_MPa=18.8133333333333, c_coeff=1.5, angolo_incl_deg=0,
     )
     assert with_stirrups.prc_kN == pytest.approx(1.5 * without.prc_kN, rel=1e-9)
+
+
+@pytest.mark.unit
+def test_capacita_globale_limitata_dal_puntone_in_modalita_standard() -> None:
+    """P_R = min(P_Rs + 0,8·ΔP_R; P_Rc): the tie term plus the inclined bars can exceed the concrete
+    strut, and the sheet compared P_Ed with the uncapped sum (proof-read finding, non-conservative
+    by up to 0,8·ΔP_R). Excel mode keeps the sheet."""
+    kw = {"as_hor_mm2": 6000.0, "as_incl_mm2": 3000.0, "fyd_MPa": 391.304347826087, "hed_kN": 0,
+          "d_mm": 400, "l_mm": 257, "b_mm": 800, "fcd_MPa": 18.8133333333333, "c_coeff": 1.0, "angolo_incl_deg": 45}
+    standard = capacita(**kw)
+    excel = capacita(**kw, legacy_compat=True)
+    assert standard.prs_kN + 0.8 * standard.dpr_kN > standard.prc_kN  # the cap binds here
+    assert standard.pr_kN == pytest.approx(standard.prc_kN)
+    assert excel.pr_kN == pytest.approx(excel.prs_kN + 0.8 * excel.dpr_kN)

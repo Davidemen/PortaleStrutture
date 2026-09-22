@@ -3,20 +3,24 @@ import pytest
 from strutture.loads.vento.models import VentoPressioneInput
 from strutture.loads.vento.tool import run
 
+# Spec §8 (sheet Vento): comune=Milano, as=120, TR=50, categoria=II, ct=1, H=60. `legacy_compat`
+# deliberately excluded: `tests/loads/vento/test_relazione.py` re-runs this same dict in standard
+# mode (docs/architecture-phase2.md §1: `relazione` never describes legacy mode).
+GOLDEN_KWARGS = {
+    "comune": "Milano",
+    "altitudine_m": 120,
+    "periodo_ritorno_anni": 50,
+    "categoria_esposizione": "II",
+    "ct": 1,
+    "altezza_edificio_m": 60,
+    "n_sezioni": 1000,
+}
+
 
 @pytest.mark.golden
 def test_golden_case():
     """Spec §8 (sheet Vento): comune=Milano, as=120, TR=50, categoria=II, ct=1, H=60."""
-    inputs = VentoPressioneInput(
-        comune="Milano",
-        altitudine_m=120,
-        periodo_ritorno_anni=50,
-        categoria_esposizione="II",
-        ct=1,
-        altezza_edificio_m=60,
-        n_sezioni=1000,
-        legacy_compat=True,
-    )
+    inputs = VentoPressioneInput(legacy_compat=True, **GOLDEN_KWARGS)
     report = run(inputs)
     assert report.ok
     data = report.data

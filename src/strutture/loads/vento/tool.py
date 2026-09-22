@@ -10,6 +10,7 @@ from .models import VentoPressioneInput, VentoPressioneOutput
 from .periodo_ritorno import coefficiente_periodo_ritorno, velocita_riferimento
 from .pressione_cinetica import pressione_cinetica_riferimento
 from .profilo import profilo_pressione
+from .relazione import relazione
 from .tables import categoria_parametri, zona_parametri
 from .vref import velocita_riferimento_suolo
 
@@ -80,6 +81,7 @@ TOOLS = (
         input_model=VentoPressioneInput,
         output_model=VentoPressioneOutput,
         run=run,
+        relazione=relazione,
         example={
             "comune": "Milano",
             "altitudine_m": 120,

@@ -92,6 +92,7 @@ def test_golden_case_sisma_brembate():
             s=sito.amplificazione.s,
             f0=2.436,
             tb_s=sito.periodi.tb,
+            eta=fs.eta,
             legacy_compat=True,
         )
         assert sd_g == pytest.approx(expected_sd, rel=1e-5)

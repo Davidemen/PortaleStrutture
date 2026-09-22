@@ -16,6 +16,7 @@ from .giunti import giunti
 from .materiali import materiali
 from .models import PavimentoIndustrialeInput
 from .output import DistribuitiResult, PavimentoIndustrialeOutput
+from .relazione import relazione
 from .schizzo import disegna as disegna_schizzo
 from .sottofondo import sottofondo
 
@@ -96,5 +97,6 @@ TOOLS = (
         run=run,
         example=ESEMPIO,
         summary="Verifica la piastra industriale su sottofondo elastico per carico distribuito e carichi concentrati, con prescrizioni sui giunti.",
+        relazione=relazione,
     ),
 )

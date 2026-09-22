@@ -173,3 +173,13 @@ def test_unit_exponents_are_typographic() -> None:
 
     assert passo_a_testo(_passo(unita="mm2", scala=1.0, risultato=180000.0)).splitlines()[-1] == "= 180000 mm²"
     assert passo_a_testo(_passo(unita="kN/m3", scala=1.0, risultato=180000.0)).splitlines()[-1] == "= 180000 kN/m³"
+
+
+def test_the_note_of_a_step_is_rendered_as_a_fourth_line() -> None:
+    """A `nota` carries the governing condition of a branch-selected formula (the proof-read of
+    three waves found them invisible in the text rendering): it is part of the equation."""
+    from strutture.shared.relazione.testo import passo_a_testo
+
+    righe = passo_a_testo(_passo(nota="Valido per σ_cp/f_cd < 0,25.")).splitlines()
+    assert righe[-1] == "Valido per σ_cp/f_cd < 0,25."
+    assert len(passo_a_testo(_passo()).splitlines()) == 3  # no note, no fourth line
