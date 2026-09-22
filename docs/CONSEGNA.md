@@ -10,20 +10,18 @@ con agenti, in oltre 60 commit; tutto ciò che conta è nel repository, nulla di
 Gira su macOS (sviluppo) e Windows (scritto per, non ancora provato dall'ufficio: `docs/VERIFICA_WINDOWS.md`).
 
 ## 2. Stato alla consegna
-- Git: remoto `origin` = github.com/Davidemen/PortaleStrutture (pubblico). Branch `main` (release, solo
-  fast-forward) e `develop` (lavoro comune); branch `feat/…`/`fix/…`, worktree e issue come in `docs/GUIDA_SVILUPPO.md`.
-- Suite verdi al 2026-09-22 (sera, dopo il pacchetto "Dimensiona"/"Sensibilità"/"Impostazioni", interfaccia
-  §23/§24/§26): `uv run pytest -q` → 4348 superati · `uv run pytest tests/e2e -m e2e -q` → 283 superati,
-  1 saltato (circa 3 minuti e mezzo) · `node --test tests/e2e/*.mjs` → 67 · `uv run ruff check .` pulito ·
-  `uv run python -m strutture.shared.divergences.check --strict` → 0 errori (26 avvertimenti di clausola vuota,
-  innocui).
+- Git: remoto `origin` = github.com/Davidemen/PortaleStrutture (pubblico). Rami `main` (rilasci, solo avanzamento
+  rapido) e `sviluppo` (lavoro comune); rami di funzione e issue come in `docs/GUIDA_SVILUPPO.md`.
+- Suite verdi al 2026-09-22 (notte, dopo l'unione dei pacchetti §19/§20/§25/§23/§24/§26 e le correzioni di
+  revisione, vedi §3/§4.7): `uv run pytest -q` → 4349 superati · `uv run pytest tests/e2e -m e2e -q` → 297
+  superati, 1 saltato (circa 3 minuti e mezzo) · `node --test tests/e2e/*.mjs` → 92 · `uv run ruff check .`
+  pulito · `uv run python -m strutture.shared.divergences.check --strict` → 0 errori (26 avvertimenti di
+  clausola vuota, innocui).
 - Interfaccia servita: `src/strutture/web/static/`. Copia di lavoro: `src/strutture/web/static_next/` (ignorata da
   git; identica a `static/` dopo la promozione del 2026-09-22). Il flusso di lavoro e di promozione è in `CLAUDE.md`, regola 3.
-- Server: `scripts/server.ps1 avvia|ferma|riavvia|stato` (alias `strutture`), solo branch `main`, porta 8000, tutte le
-  interfacce, in background; log in `var/server.log`. Parte da solo all'accesso a Windows (attività pianificata
-  "StruttureMenni"). Usa `scripts/serve_live.py`, che esiste perché una volta un agente ha fermato il server
-  dell'ufficio con `pkill -f strutture.web`. Controllo: `curl -s http://127.0.0.1:8000/api/tools`.
-  Porte di sviluppo: `CLAUDE.md`, regola 1.
+- Server: `uv run python scripts/serve_live.py --host 127.0.0.1 --port 8000` (il lanciatore esiste perché una volta
+  un agente ha fermato il server dell'ufficio con `pkill -f strutture.web`; la sua riga di comando non contiene
+  il nome del modulo). Controllo: `curl -s http://127.0.0.1:8000/api/tools`.
 - Dati: `var/strutture.db` (SQLite: firme del registro, progetti, elementi, revisioni). Registro delle correzioni:
   209 voci, tutte "da confermare".
 
@@ -33,6 +31,13 @@ Nessun lavoro in corso. Le ultime tre sezioni della specifica dell'interfaccia (
 completate, provate con la suite e2e (`test_usa_in.py`, `test_excel_ritirato.py`, `test_progetti.py`) e promosse in
 `static/` il 2026-09-22. Il server dell'ufficio (porta 8000) è stato riavviato alle 14:54 sull'ultimo commit: serve
 l'interfaccia promossa e il codice corrente (verificato: l'API restituisce i collegamenti `campo` degli schizzi).
+
+Integrati su `main` il 2026-09-22 (sera) tre pacchetti costruiti in parallelo (§19 varianti affiancate, §20/§25
+tabella e stato di progetto, §23/§24/§26 dimensiona/sensibilità/impostazioni) più le correzioni emerse dalla
+revisione di ciascuno (vedi §4.7 sotto). Suite verdi dopo l'unione: `uv run pytest -q` → 4349 superati ·
+`uv run pytest tests/e2e -m e2e -q` → 297 superati, 1 saltato · `node --test tests/e2e/*.mjs` → 92 ·
+`uv run ruff check .` pulito · `uv run python -m strutture.shared.divergences.check --strict` → 0 errori. I calcoli
+non sono cambiati (`build/snapshot_tools.py` confrontato bit a bit con `build/snapshot_before.json`).
 
 ## 4. Lavori aperti, in ordine
 1. In attesa del titolare (non iniziare, ricordarglielo): verifica su Windows (`docs/VERIFICA_WINDOWS.md`,
@@ -70,6 +75,25 @@ l'interfaccia promossa e il codice corrente (verificato: l'API restituisce i col
    per ogni combinazione di campi lunga (solo un controllo di visibilità generico); i test e2e coprono i percorsi
    principali della specifica, non ogni comportamento elencato in §23.6/§24.3/§26.10 (es. campionamento non
    monotono, limite di validità, conflitto 409 con due schede aperte).
+7. Interfaccia §19 (varianti affiancate) e §20/§25 (tabella e stato di progetto) integrate su `main` il
+   2026-09-22 insieme al pacchetto §23/§24/§26 sopra; ogni pacchetto è stato rivisto e le correzioni "blocca"/
+   "correggi" trovate sono state applicate direttamente su `main` (colonne/intestazioni della tabella di
+   progetto disallineate, sintesi persa sugli elementi "dati modificati", "Usa in…" che marcava un'origine
+   modificata come affidabile, azioni di riga "Aggiorna dai dati a monte"/"Apri l'origine" mancanti, filtri di
+   stato non cliccabili, cronologia annulla condivisa fra varianti, "Tieni questa → Aggiorna" che non chiudeva
+   il confronto, colonna Risultati vuota se la variante di riferimento falliva, CSS di stampa/vista stretta
+   mancante per il confronto varianti, perdita del fuoco a ogni tasto in Impostazioni, colonna Esito della
+   sensibilità limitata alle verifiche disegnate, "Enter" che non avviava Cerca/Calcola in Dimensiona/
+   Sensibilità, pulsante Applica mostrato per esiti che non lo prevedono, proposta Da/A di Dimensiona uguale al
+   limite escluso). Restano aperti, deliberatamente rinviati (rischio di toccare percorsi condivisi già ben
+   provati senza una verifica mirata dedicata, oppure lavoro di feature su larga scala più che una correzione):
+   la conferma "Chiudere le varianti aperte?" quando si apre `?elemento=`/`?anteprima=1`/un link "Usa in…" con
+   un confronto varianti già aperto (§19.2); il blocco di navigazione "modifiche non salvate" fuori da
+   `#/impostazioni` (§26.8, richiederebbe un aggancio in `router.js`, condiviso da tutte le pagine); la mappatura
+   completa degli errori 422 di Impostazioni sui singoli campi dei passi per tipo/eccezione (oggi solo il
+   sommario generale, con focus corretto); la spaccatura in funzioni più piccole di
+   `varianti-confronto.js`/`sensibilita.js` oltre al limite di 400 righe già rispettato. Nessuna di queste
+   tocca un calcolo o una verifica: sono rifiniture d'interfaccia.
 
 ## 5. Decisioni che spettano all'ingegnere
 Tutte in `docs/DECISIONI_DA_CONFERMARE.md`. Un agente non le prende: le segnala e chiede.
