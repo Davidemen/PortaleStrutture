@@ -25,24 +25,15 @@ Windows (not yet checked by the user — `docs/WINDOWS_CHECK.md`).
   src/strutture/web/static_next src/strutture/web/static && sed -i '' 's#web/static_next/js/#web/static/js/#'
   tests/e2e/*.mjs`, full e2e on `static/`, commit `src/strutture/web/static tests/e2e`, announce, restart 8000.
 
-## 3. In flight — check this first
-**If the previous session is still alive (ask the user), it owns this section, `static_next/`, `tests/e2e/` and
-port 8000 until it reports the builder done: do not touch those, do not start a server on 8000, and start from
-§4 item 3 instead. Two sessions on the same files or port will collide.**
-
-A Sonnet builder was working in `static_next/` + `tests/e2e/` on WORKBENCH_SPEC §15 ("Usa in…" typed links),
-§16 (Excel mode retires per approved tool) and the element-restore control of the project page (§14.3) when this
-handoff was written. It may have finished, died on a session limit, or been killed with the session.
-1. `diff -rq src/strutture/web/static src/strutture/web/static_next`; `git status --short tests/e2e build/ui-review`.
-2. If `tests/e2e/test_usa_in.py` and `tests/e2e/test_excel_ritirato.py` exist and the full e2e suite passes on
-   staging, review the screenshots (`build/ui-review/usa-in-*.jpg`, `excel-ritirato.jpg`, `elementi-eliminati.jpg`),
-   promote as in §2, commit, announce + restart. The previous builders' reports are in the session transcript only —
-   judge by tests and screenshots.
-3. If half done: finish per the specs, or reset (`rm -rf src/strutture/web/static_next && cp -R
-   src/strutture/web/static src/strutture/web/static_next`, delete the partial test files) and relaunch one Sonnet
-   builder with the §15/§16/restore brief (the brief is the spec text itself; the previous prompt also said: dev
-   port, headless Python Playwright with `window.print` stubbed, TDD, files ≤ 400 lines, no Python edits,
-   `Content-Type: application/json` with `{}` on the bodiless restore POST — the same-origin guard rejects it otherwise).
+## 3. In flight — nothing
+The builder for WORKBENCH_SPEC §15 ("Usa in…"), §16 (Excel mode retires per approved tool) and the element-restore
+control (§14.3) was stopped before it wrote anything: `static_next/` equals `static/`, no partial test files.
+Start it fresh (one Sonnet builder, brief = the three spec sections; dev port 8012–8015 with `--static-dir
+src/strutture/web/static_next --data-dir build/ui-dev-data`, headless Python Playwright with `window.print` stubbed,
+TDD, files ≤ 400 lines, no Python edits, `Content-Type: application/json` with `{}` on the bodiless restore POST —
+the same-origin guard rejects it otherwise; screenshots to `build/ui-review/`; full e2e green on staging before it
+reports). Then promote as in §2. Note: two attempts died on the Sonnet session limit — if it fails at once, wait for
+the reset shown in the error and relaunch.
 
 ## 4. Outstanding work, in order
 1. §15 + §16 + element restore UI (above). After that every phase the user asked for is built.
