@@ -117,3 +117,139 @@ def test_sensibilita_422_punti_fuori_range(client: TestClient) -> None:
         "/api/tools/fake-verifica/sensibilita", json={"inputs": _BASE, "campo": "capacita", "da": 1, "a": 2, "punti": 1},
     )
     assert response.status_code == 422
+    assert "punti" in response.json()["errors"][0].lower()
+
+
+# -- §23.3 point 7: an optional numeric field (`anyOf`, no top-level `type`) -----------------------
+
+
+def test_campo_opzionale_anyof_e_accettato(client: TestClient) -> None:
+    response = client.post(
+        "/api/tools/fake-verifica/dimensiona",
+        json=_corpo(campo="margine", da=1.0, a=40.0, passo=1.0, inputs={**_BASE, "margine": 10.0}),
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["ok"] is True
+
+
+def test_sensibilita_campo_opzionale_anyof_e_accettato(client: TestClient) -> None:
+    response = client.post(
+        "/api/tools/fake-verifica/sensibilita",
+        json={"inputs": {**_BASE, "margine": 10.0}, "campo": "margine", "da": 1.0, "a": 40.0, "punti": 5},
+    )
+    assert response.status_code == 200, response.text
+
+
+# -- §23.3 point 7 / §23.4: da/a outside the field's own schema limits ------------------------------
+
+
+def test_422_a_fuori_dal_limite_dello_schema(client: TestClient) -> None:
+    response = client.post("/api/tools/fake-verifica/dimensiona", json=_corpo(a=2000.0))
+    assert response.status_code == 422
+    assert "1000" in response.json()["errors"][0]
+
+
+def test_sensibilita_422_da_fuori_dal_limite_dello_schema(client: TestClient) -> None:
+    response = client.post(
+        "/api/tools/fake-verifica/sensibilita",
+        json={"inputs": _BASE, "campo": "capacita", "da": -5.0, "a": 100.0, "punti": 5},
+    )
+    assert response.status_code == 422
+
+
+def test_sensibilita_422_da_maggiore_uguale_a(client: TestClient) -> None:
+    response = client.post(
+        "/api/tools/fake-verifica/sensibilita",
+        json={"inputs": _BASE, "campo": "capacita", "da": 100.0, "a": 10.0, "punti": 5},
+    )
+    assert response.status_code == 422
+
+
+# -- §23.3 point 7 / §24.1: the base inputs themselves must be valid before any grid point runs ----
+
+
+def test_422_inputs_di_base_non_validi_da_errore_dello_strumento(client: TestClient) -> None:
+    response = client.post(
+        "/api/tools/fake-verifica/dimensiona", json=_corpo(inputs={"domanda": -5.0, "capacita": 200.0}),
+    )
+    assert response.status_code == 422
+    assert response.json()["errors"]
+
+
+def test_sensibilita_422_inputs_di_base_non_validi(client: TestClient) -> None:
+    response = client.post(
+        "/api/tools/fake-verifica/sensibilita",
+        json={"inputs": {"domanda": -5.0, "capacita": 200.0}, "campo": "capacita", "da": 1, "a": 2, "punti": 3},
+    )
+    assert response.status_code == 422
+
+
+# -- §23.2/§24.1: affidabilità composed from more than the search algorithm's own verdict -----------
+
+
+def test_obiettivo_su_minimi_falso_e_obiettivo_sotto_uno_rende_inaffidabile(client: TestClient) -> None:
+    response = client.post("/api/tools/fake-verifica/dimensiona", json=_corpo(obiettivo=0.5))
+    body = response.json()
+    assert body["affidabile"] is False
+    assert any("limiti massimi di dettaglio" in m for m in body["motivi"])
+
+
+def test_obiettivo_pieno_resta_affidabile(client: TestClient) -> None:
+    response = client.post("/api/tools/fake-verifica/dimensiona", json=_corpo(obiettivo=1.0))
+    body = response.json()
+    assert body["affidabile"] is True
+
+
+def test_modalita_excel_rende_sempre_inaffidabile(client: TestClient) -> None:
+    response = client.post(
+        "/api/tools/fake-verifica/dimensiona", json=_corpo(inputs={**_BASE, "legacy_compat": True}),
+    )
+    body = response.json()
+    assert body["modalita"] == "excel"
+    assert body["affidabile"] is False
+    assert any("Excel" in m for m in body["motivi"])
+
+
+def test_avvisi_nuovi_confrontati_con_gli_inputs_inviati_non_con_griglia_0(settings) -> None:
+    """§23.3 point 2: "nuovi" avvisi are measured against the engineer's OWN submitted `inputs`,
+    not whatever the grid's first sample happens to be. Tool: a warning appears at x >= 50. Grid
+    (multiples of 49 in [1, 199]: 49, 98, 147, 196) starts BELOW the threshold (49, no warning) but
+    the submitted `inputs` (x=100) are ABOVE it (has the warning already) -- the old code compared
+    every sample to griglia[0]=49's run (no warning), wrongly flagging 98/147/196 as "new"."""
+    from pydantic import BaseModel, ConfigDict, Field
+
+    from strutture.shared.report import Check, Report, success
+    from strutture.shared.tool import Tool
+    from strutture.storage.memory import InMemorySignoffRepository
+    from strutture.storage.progetti_memory import InMemoryProjectRepository
+    from strutture.web.app import create_app
+
+    class _In(BaseModel):
+        model_config = ConfigDict(frozen=True)
+
+        x: float = Field(gt=0, lt=1000)
+
+    class _Out(BaseModel):
+        model_config = ConfigDict(frozen=True)
+
+        ok: bool = True
+
+    def _run(inputs: _In) -> Report[_Out]:
+        avvisi = ("Oltre soglia",) if inputs.x >= 50 else ()
+        checks = (Check(name="Sempre ok", passed=True, clause="TEST"),)
+        return success(_Out(), inputs, checks=checks, warnings=avvisi)
+
+    tool = Tool(name="fake-avviso", title="Prova", group="g", norm="n", input_model=_In, output_model=_Out, run=_run)
+    app = create_app(
+        tools={"fake-avviso": tool}, settings=settings, progetti=InMemoryProjectRepository(),
+        signoffs=InMemorySignoffRepository(),
+    )
+    client = TestClient(app)
+    response = client.post(
+        "/api/tools/fake-avviso/dimensiona",
+        json={"inputs": {"x": 100.0}, "campo": "x", "da": 1.0, "a": 199.0, "passo": 49.0, "obiettivo": 1.0},
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert {float(c["valore"]) for c in body["campioni"]} >= {98.0, 147.0, 196.0}
+    assert all(c["avvisi_nuovi"] == [] for c in body["campioni"])

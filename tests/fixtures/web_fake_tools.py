@@ -75,6 +75,10 @@ class VerificaInputs(BaseModel):
     domanda: float = Field(description="Domanda", json_schema_extra={"unit": "kN"}, gt=0)
     capacita: float = Field(description="Capacità", json_schema_extra={"unit": "kN"}, gt=0, le=1000)
     n_barre: int = Field(description="Numero di barre", json_schema_extra={"unit": ""}, ge=1, le=20, default=1)
+    # Optional numeric field (`float | None`): pydantic gives it no top-level `type`, only an
+    # `anyOf` with the numeric branch alongside `{"type": "null"}` -- exercises the "Dimensiona"
+    # `_valida_campo`/`_valida_intervallo` `anyOf` resolution (§23.3 point 7).
+    margine: float | None = Field(default=None, description="Margine opzionale", json_schema_extra={"unit": "kN"}, gt=0, le=50)
     legacy_compat: bool = False
 
 

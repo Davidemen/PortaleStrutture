@@ -6,10 +6,10 @@ from typing import Literal
 
 from .bisezione import bisezione
 from .campioni import Campione, Risultato, Sessione, Valuta, cat, interrotta
+from .esecuzione import N_CAMPIONI
 from .esiti import nessun_valore, non_monotona, tutto_ammissibile
 from .griglia import indici_campionamento
 
-N_CAMPIONI = 17
 VersoRichiesto = Literal["auto", "minimo", "massimo"]
 
 

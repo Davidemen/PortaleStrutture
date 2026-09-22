@@ -7,11 +7,18 @@ falls back to pydantic's own message rather than raising, so a 422 is never itse
 from decimal import Decimal
 from typing import Any
 
+from strutture.shared.dimensiona.serie import MAX_PUNTI
+
 # Exact wording the spec calls out for these fields, regardless of which single bound pydantic
 # happened to report (`greater_than` for 0, `less_than_equal` for the top) -- one sentence stating
 # the whole rule reads better than two different one-sided messages for the same field.
 _MESSAGGI_COMPLETI: dict[str, str] = {
     "obiettivo_sfruttamento": "L'obiettivo di sfruttamento deve essere maggiore di 0 e al massimo 1,00",
+    "obiettivo": "L'obiettivo deve essere maggiore di 0 e al massimo 1,00",
+    "punti": f"Indicare fra 2 e {MAX_PUNTI} punti",
+}
+_MESSAGGI_MANCANTE: dict[str, str] = {
+    "passo": "Indicare il passo di arrotondamento",
 }
 
 _ETICHETTE: dict[str, str] = {
@@ -43,7 +50,7 @@ def messaggio_errore_it(errore: dict[str, Any]) -> str:
     tipo = errore.get("type", "")
     ctx = errore.get("ctx", {})
     if tipo == "missing":
-        return f"Indicare {etichetta}"
+        return _MESSAGGI_MANCANTE.get(campo, f"Indicare {etichetta}")
     if tipo == "greater_than":
         return f"{_maiuscola(etichetta)} deve essere maggiore di {_numero_it(ctx.get('gt'))}"
     if tipo == "greater_than_equal":
