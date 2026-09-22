@@ -26,31 +26,40 @@ def _location_error(comune: str, error: Exception) -> CalcError:
     return CalcError(f"Comune {comune!r} non trovato o ambiguo: {error}")
 
 
-def run_carico_falda(inputs: CaricoFaldaInput) -> Report[CaricoFaldaOutput]:
-    provincia: str | None = None
-    regione: str | None = None
-    zona = inputs.zona
-    if inputs.comune is not None:
-        try:
-            comune = resolve_comune(inputs.comune)
-        except (KeyNotFound, AmbiguousComuneError) as error:
-            raise _location_error(inputs.comune, error) from error
-        provincia, regione, zona = comune.provincia, comune.regione, comune.zona_neve
+def _resolve_carico_falda_location(inputs: CaricoFaldaInput) -> tuple[str | None, str | None, str]:
+    if inputs.comune is None:
+        return None, None, inputs.zona
+    try:
+        comune = resolve_comune(inputs.comune)
+    except (KeyNotFound, AmbiguousComuneError) as error:
+        raise _location_error(inputs.comune, error) from error
+    return comune.provincia, comune.regione, comune.zona_neve
 
+
+def _mu_qs_una_falda(inputs: CaricoFaldaInput, qsk: float, ce: float) -> tuple[float | None, float | None]:
+    if inputs.a is None or inputs.parapetto is None:
+        return None, None
+    mu = coefficiente_forma(inputs.a, inputs.parapetto == "SI", legacy_compat=inputs.legacy_compat)
+    return mu, qsk * ce * inputs.ct * mu
+
+
+def _mu_qs_due_falde(
+    inputs: CaricoFaldaInput, qsk: float, ce: float
+) -> tuple[float | None, float | None, float | None, float | None]:
+    if None in (inputs.a1, inputs.parapetto1, inputs.a2, inputs.parapetto2):
+        return None, None, None, None
+    mu1 = coefficiente_forma(inputs.a1, inputs.parapetto1 == "SI", legacy_compat=inputs.legacy_compat)
+    mu2 = coefficiente_forma(inputs.a2, inputs.parapetto2 == "SI", legacy_compat=inputs.legacy_compat)
+    return mu1, qsk * ce * inputs.ct * mu1, mu2, qsk * ce * inputs.ct * mu2
+
+
+def run_carico_falda(inputs: CaricoFaldaInput) -> Report[CaricoFaldaOutput]:
+    provincia, regione, zona = _resolve_carico_falda_location(inputs)
     qsk = qsk_falda(zona, inputs.as_m, legacy_compat=inputs.legacy_compat)
     ce = coefficiente_esposizione(inputs.topografia)
 
-    mu = qs = None
-    if inputs.a is not None and inputs.parapetto is not None:
-        mu = coefficiente_forma(inputs.a, inputs.parapetto == "SI", legacy_compat=inputs.legacy_compat)
-        qs = qsk * ce * inputs.ct * mu
-
-    mu1 = qs1 = mu2 = qs2 = None
-    if None not in (inputs.a1, inputs.parapetto1, inputs.a2, inputs.parapetto2):
-        mu1 = coefficiente_forma(inputs.a1, inputs.parapetto1 == "SI", legacy_compat=inputs.legacy_compat)
-        mu2 = coefficiente_forma(inputs.a2, inputs.parapetto2 == "SI", legacy_compat=inputs.legacy_compat)
-        qs1 = qsk * ce * inputs.ct * mu1
-        qs2 = qsk * ce * inputs.ct * mu2
+    mu, qs = _mu_qs_una_falda(inputs, qsk, ce)
+    mu1, qs1, mu2, qs2 = _mu_qs_due_falde(inputs, qsk, ce)
 
     tipo_copertura_ignorato = legacy("neve/tipo-copertura-non-filtra-output", inputs.legacy_compat)
     show_una_falda = tipo_copertura_ignorato or inputs.tipo_copertura == "Copertura ad una falda"

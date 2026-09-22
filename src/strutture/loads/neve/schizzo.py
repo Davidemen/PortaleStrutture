@@ -4,6 +4,7 @@ a real span/width input, so geometry is illustrative and `Sketch.nota` says so. 
 the validated inputs + outputs; a drawing failure must never fail the calculation (guarded in
 `tool.py`)."""
 from math import radians, tan
+from typing import NamedTuple
 
 from strutture.shared.sketch import (
     Diagramma,
@@ -110,9 +111,20 @@ def _altezza_edificio_disegnata_m(h_m: float, larghezza_vista_m: float) -> float
     return max(h_m, larghezza_vista_m / _ASPETTO_MAX)
 
 
-def disegna_accumulo(inputs: AccumuloInput, output: AccumuloOutput) -> Sketch:
-    """Sezione: edificio più alto (a sinistra), falda inferiore ritagliata a ~1.4·ls con
-    continuazione "fantasma", profilo di carico (triangolo di accumulo + tratto uniforme oltre `ls`)."""
+class _GeometriaAccumulo(NamedTuple):
+    """Valori derivati per il disegno di `disegna_accumulo`, calcolati una sola volta."""
+
+    ls_m: float
+    larghezza_edificio_m: float
+    crop_m: float
+    fantasma_m: float
+    altezza_m: float
+    scostamento_m: float
+    picco_m: float
+    uniforme_m: float
+
+
+def _geometria_accumulo(inputs: AccumuloInput, output: AccumuloOutput) -> _GeometriaAccumulo:
     ls_m = output.ls_final
     larghezza_edificio_m = _LARGHEZZA_EDIFICIO_SU_LS * ls_m
     crop_m = _CROP_SU_LS * ls_m
@@ -120,33 +132,41 @@ def disegna_accumulo(inputs: AccumuloInput, output: AccumuloOutput) -> Sketch:
     larghezza_vista_m = larghezza_edificio_m + crop_m
     altezza_m = _altezza_edificio_disegnata_m(inputs.h, larghezza_vista_m)
     scostamento_m = _OFFSET_QUOTA_FRAZIONE * max(larghezza_vista_m, altezza_m)
-
     picco_m = _CARICO_SU_ALTEZZA * altezza_m
     uniforme_m = picco_m * (output.qs1_final / output.qs2_final) if output.qs2_final > 0 else 0.0
+    return _GeometriaAccumulo(
+        ls_m=ls_m, larghezza_edificio_m=larghezza_edificio_m, crop_m=crop_m, fantasma_m=fantasma_m,
+        altezza_m=altezza_m, scostamento_m=scostamento_m, picco_m=picco_m, uniforme_m=uniforme_m,
+    )
 
-    edificio = Rettangolo(x=-larghezza_edificio_m, y=0.0, w=larghezza_edificio_m, h=altezza_m, stile="calcestruzzo")
-    falda = Linea(p1=(0.0, 0.0), p2=(crop_m, 0.0), stile="calcestruzzo")
-    fantasma = Linea(p1=(crop_m, 0.0), p2=(crop_m + fantasma_m, 0.0), stile="fantasma", tratteggio=True)
+
+def disegna_accumulo(inputs: AccumuloInput, output: AccumuloOutput) -> Sketch:
+    """Sezione: edificio più alto (a sinistra), falda inferiore ritagliata a ~1.4·ls con
+    continuazione "fantasma", profilo di carico (triangolo di accumulo + tratto uniforme oltre `ls`)."""
+    g = _geometria_accumulo(inputs, output)
+    edificio = Rettangolo(x=-g.larghezza_edificio_m, y=0.0, w=g.larghezza_edificio_m, h=g.altezza_m, stile="calcestruzzo")
+    falda = Linea(p1=(0.0, 0.0), p2=(g.crop_m, 0.0), stile="calcestruzzo")
+    fantasma = Linea(p1=(g.crop_m, 0.0), p2=(g.crop_m + g.fantasma_m, 0.0), stile="fantasma", tratteggio=True)
     profilo_carico = Poligono(
-        punti=((0.0, 0.0), (0.0, picco_m), (ls_m, uniforme_m), (crop_m, uniforme_m), (crop_m, 0.0)),
+        punti=((0.0, 0.0), (0.0, g.picco_m), (g.ls_m, g.uniforme_m), (g.crop_m, g.uniforme_m), (g.crop_m, 0.0)),
         stile="pressione",
     )
     quota_h = Quota(
-        p1=(-larghezza_edificio_m, 0.0), p2=(-larghezza_edificio_m, altezza_m), distanza=scostamento_m,
+        p1=(-g.larghezza_edificio_m, 0.0), p2=(-g.larghezza_edificio_m, g.altezza_m), distanza=g.scostamento_m,
         testo=etichetta_quota("h", inputs.h, "m"),
     )
     quota_ls = Quota(
-        p1=(0.0, 0.0), p2=(ls_m, 0.0), distanza=-scostamento_m, testo=etichetta_quota("l_s", ls_m, "m"),
+        p1=(0.0, 0.0), p2=(g.ls_m, 0.0), distanza=-g.scostamento_m, testo=etichetta_quota("l_s", g.ls_m, "m"),
     )
     # Le etichette stanno SOPRA il proprio vertice, staccate dal contorno (il testo cresce verso
     # l'alto dal suo punto): sul vertice stesso il lato inclinato del triangolo tagliava il testo.
-    stacco_m = _STACCO_ETICHETTA_FRAZIONE * altezza_m
+    stacco_m = _STACCO_ETICHETTA_FRAZIONE * g.altezza_m
     etichetta_picco = Etichetta(
-        punto=(stacco_m, picco_m + stacco_m), simbolo="q_s2", testo=f"{output.qs2_final:.2f}".replace(".", ",") + " kN/m²",
+        punto=(stacco_m, g.picco_m + stacco_m), simbolo="q_s2", testo=f"{output.qs2_final:.2f}".replace(".", ",") + " kN/m²",
         ancora="start", stile="asse",
     )
     etichetta_uniforme = Etichetta(
-        punto=(crop_m, uniforme_m + stacco_m), simbolo="q_s1", testo=f"{output.qs1_final:.2f}".replace(".", ",") + " kN/m²",
+        punto=(g.crop_m, g.uniforme_m + stacco_m), simbolo="q_s1", testo=f"{output.qs1_final:.2f}".replace(".", ",") + " kN/m²",
         ancora="end", stile="asse",
     )
     forme = (edificio, falda, fantasma, profilo_carico, quota_h, quota_ls, etichetta_picco, etichetta_uniforme)

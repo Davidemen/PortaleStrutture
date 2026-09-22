@@ -41,6 +41,43 @@ class RigaResult(BaseModel):
     cumulativo_cm: float = Field(description="Cedimento cumulato ΣΔH,i fino a questa profondità", json_schema_extra={"unit": "cm"})
 
 
+def _riga_e_cumulativo(
+    q_prime_kPa: float,
+    b_m: float,
+    l_m: float,
+    gamma_kN_m3: float,
+    layers: tuple[SoilLayer, ...],
+    metodo: MetodoTensioni,
+    legacy_compat: bool,
+    d_m: float,
+    water_table_m: float | None,
+    z_m: float,
+    z_precedente_m: float | None,
+    cumulativo_m: float,
+) -> tuple[RigaResult, float]:
+    """Una fetta della griglia: Δσ, σ'v0, Eed, il suo ΔH,i e il cumulato aggiornato."""
+    tensione = tensione_indotta(q_prime_kPa, b_m, l_m, z_m, metodo=metodo)
+    if legacy("geo-cedimenti-edometrico/tensione-verticale-sempre-sommersa", legacy_compat):
+        sigma_v0_kPa = effective_overburden(gamma_kN_m3, z_m)
+    else:
+        falda_di_riferimento_m = water_table_m if water_table_m is not None else float("inf")
+        sigma_v0_kPa = effective_overburden(gamma_kN_m3, d_m + z_m, water_table_m=falda_di_riferimento_m)
+    eed = eed_kpa(layers, z_m, legacy=legacy_compat)
+    delta_h_m = _incremento_m(eed, tensione.utilizzato_kPa, z_m, z_precedente_m)
+    nuovo_cumulativo_m = cumulativo_m + delta_h_m
+    riga = RigaResult(
+        z_m=z_m,
+        delta_sigma_approssimato_kPa=tensione.approssimato_kPa,
+        delta_sigma_newmark_kPa=tensione.newmark_kPa,
+        delta_sigma_kPa=tensione.utilizzato_kPa,
+        sigma_v0_kPa=sigma_v0_kPa,
+        eed_kPa=eed,
+        delta_h_cm=m_to_cm(delta_h_m),
+        cumulativo_cm=m_to_cm(nuovo_cumulativo_m),
+    )
+    return riga, nuovo_cumulativo_m
+
+
 def genera_righe(
     q_prime_kPa: float,
     b_m: float,
@@ -69,28 +106,11 @@ def genera_righe(
     righe: tuple[RigaResult, ...] = ()
     cumulativo_m = 0.0
     for indice, z_m in enumerate(griglia):
-        tensione = tensione_indotta(q_prime_kPa, b_m, l_m, z_m, metodo=metodo)
-        if legacy("geo-cedimenti-edometrico/tensione-verticale-sempre-sommersa", legacy_compat):
-            sigma_v0_kPa = effective_overburden(gamma_kN_m3, z_m)
-        else:
-            falda_di_riferimento_m = water_table_m if water_table_m is not None else float("inf")
-            sigma_v0_kPa = effective_overburden(gamma_kN_m3, d_m + z_m, water_table_m=falda_di_riferimento_m)
-        eed = eed_kpa(layers, z_m, legacy=legacy_compat)
-        delta_h_m = _incremento_m(eed, tensione.utilizzato_kPa, z_m, griglia[indice - 1] if indice else None)
-        cumulativo_m += delta_h_m
-        righe = (
-            *righe,
-            RigaResult(
-                z_m=z_m,
-                delta_sigma_approssimato_kPa=tensione.approssimato_kPa,
-                delta_sigma_newmark_kPa=tensione.newmark_kPa,
-                delta_sigma_kPa=tensione.utilizzato_kPa,
-                sigma_v0_kPa=sigma_v0_kPa,
-                eed_kPa=eed,
-                delta_h_cm=m_to_cm(delta_h_m),
-                cumulativo_cm=m_to_cm(cumulativo_m),
-            ),
+        riga, cumulativo_m = _riga_e_cumulativo(
+            q_prime_kPa, b_m, l_m, gamma_kN_m3, layers, metodo, legacy_compat, d_m, water_table_m,
+            z_m, griglia[indice - 1] if indice else None, cumulativo_m,
         )
+        righe = (*righe, riga)
     return righe
 
 

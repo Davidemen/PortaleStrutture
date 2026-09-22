@@ -17,10 +17,10 @@ from .models import (
 from .models_completo import SismaCompletoInput, SismaCompletoOutput
 
 
-def run_completo(inputs: SismaCompletoInput) -> Report[SismaCompletoOutput]:
-    from .tool import run_fattori_struttura, run_parametri_sito, run_spettro, run_vita_riferimento
+def _run_vita(inputs: SismaCompletoInput):
+    from .tool import run_vita_riferimento
 
-    vita = run_vita_riferimento(
+    return run_vita_riferimento(
         SismaVitaRiferimentoInput(
             comune=inputs.comune,
             provincia=inputs.provincia,
@@ -30,7 +30,11 @@ def run_completo(inputs: SismaCompletoInput) -> Report[SismaCompletoOutput]:
         )
     ).data
 
-    parametri_sito = run_parametri_sito(
+
+def _run_parametri_sito(inputs: SismaCompletoInput):
+    from .tool import run_parametri_sito
+
+    return run_parametri_sito(
         SismaParametriSitoInput(
             categoria_sottosuolo=inputs.categoria_sottosuolo,
             categoria_topografica=inputs.categoria_topografica,
@@ -41,7 +45,11 @@ def run_completo(inputs: SismaCompletoInput) -> Report[SismaCompletoOutput]:
         )
     ).data
 
-    fattori_struttura = run_fattori_struttura(
+
+def _run_fattori_struttura(inputs: SismaCompletoInput):
+    from .tool import run_fattori_struttura
+
+    return run_fattori_struttura(
         SismaFattoriStrutturaInput(
             xi_pct=inputs.xi_pct,
             q0=inputs.q0,
@@ -52,7 +60,11 @@ def run_completo(inputs: SismaCompletoInput) -> Report[SismaCompletoOutput]:
         )
     ).data
 
-    spettro = run_spettro(
+
+def _run_spettro(inputs: SismaCompletoInput, parametri_sito, fattori_struttura):
+    from .tool import run_spettro
+
+    return run_spettro(
         SismaSpettroInput(
             s=parametri_sito.amplificazione.s,
             eta=fattori_struttura.eta,
@@ -69,6 +81,13 @@ def run_completo(inputs: SismaCompletoInput) -> Report[SismaCompletoOutput]:
             legacy_compat=inputs.legacy_compat,
         )
     ).data
+
+
+def run_completo(inputs: SismaCompletoInput) -> Report[SismaCompletoOutput]:
+    vita = _run_vita(inputs)
+    parametri_sito = _run_parametri_sito(inputs)
+    fattori_struttura = _run_fattori_struttura(inputs)
+    spettro = _run_spettro(inputs, parametri_sito, fattori_struttura)
 
     data = SismaCompletoOutput(
         vita_riferimento=vita,
