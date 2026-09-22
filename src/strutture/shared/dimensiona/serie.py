@@ -46,7 +46,7 @@ def calcola_serie(
     riporti: list[tuple[float, dict[str, Any]]] = []
     completa = True
     for valore in valori:
-        if time.monotonic() > scadenza:
+        if time.monotonic() >= scadenza:
             completa = False
             break
         riporti.append((valore, esegui(tool, inputs, campo, Decimal(str(valore)))))

@@ -47,7 +47,7 @@ class Sessione:
         self.esaurita = False
 
     def prova(self, valore: Decimal) -> Campione | None:
-        if self.valutazioni >= self._max or time.monotonic() > self._scadenza:
+        if self.valutazioni >= self._max or time.monotonic() >= self._scadenza:
             self.esaurita = True
             return None
         self.valutazioni += 1
