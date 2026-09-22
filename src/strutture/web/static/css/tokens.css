@@ -241,6 +241,11 @@ body {
   /* `.app-header`'s own rendered height (layout.css): declared once here -- previously only ever
      referenced through a `var(--head-h, 2.9rem)` fallback, never an actual custom property, at
      every one of its several call sites (the `#tool-index`/`#form-pane`/etc. `calc(100dvh - …)`
-     height, and now the rail flyout's own `top`, review finding 23). */
-  --head-h: 2.9rem;
+     height, and now the rail flyout's own `top`, review finding 23). Derived from what the
+     header actually contains (a 44px control, 12px padding above and below, 1px border) and
+     pinned back onto `.app-header` as its `height`, so the two can never drift apart again:
+     as a hard-coded 2.9rem it was 23px short of the real 69px, every column overflowed the
+     viewport by that much and the rail's own expand/collapse button sat below the fold
+     (owner's finding, 2026-09-22). */
+  --head-h: calc(var(--control-h) + 2 * var(--s3) + 1px);
 }

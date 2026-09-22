@@ -40,9 +40,7 @@ export function symbolNode(symbol) {
   wrap.append(baseEl);
 
   if (sub) {
-    const subEl = document.createElement("sub");
-    subEl.textContent = sub;
-    wrap.append(subEl);
+    wrap.append(subscriptNode(sub));
   }
 
   if (trailing) {
@@ -53,6 +51,19 @@ export function symbolNode(symbol) {
   }
 
   return wrap;
+}
+
+// A long subscript ("pe,sopravento", "c,rara/σ_c,rara,lim") may only break AFTER a comma or a
+// slash: a <wbr> at each such point lets a narrow cell (the results' symbol column) wrap it as
+// "c_pe," / "sopravento" instead of at an arbitrary letter (owner's finding, 2026-09-22).
+function subscriptNode(sub) {
+  const subEl = document.createElement("sub");
+  const parts = sub.split(/(?<=[,/])/);
+  parts.forEach((part, index) => {
+    if (index > 0) subEl.append(document.createElement("wbr"));
+    subEl.append(document.createTextNode(part));
+  });
+  return subEl;
 }
 
 // Plain-text form for `title`/CSV headers -- the hint is already in this canonical notation.

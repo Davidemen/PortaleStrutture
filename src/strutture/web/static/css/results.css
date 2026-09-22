@@ -781,9 +781,12 @@
   margin: 0 0 var(--s2, 0.5rem);
 }
 
+/* Symbol column: wide enough for a base letter with a ~8-character subscript ("σ_c,rara,lim");
+   the few longer ones (c_pe,sopravento, utilisation ratios) WRAP inside the cell instead of
+   running over the label -- owner's finding, 2026-09-22, seen first on vento-cpe. */
 .r-row {
   display: grid;
-  grid-template-columns: 2.75rem minmax(6rem, 1fr) 6rem 3.5rem minmax(0, 8rem);
+  grid-template-columns: 4.5rem minmax(6rem, 1fr) 6rem 3.5rem minmax(0, 8rem);
   align-items: baseline;
   gap: var(--s3, 0.75rem);
   padding: var(--s2, 0.5rem) 0;
@@ -806,6 +809,8 @@
 
 .r-cell-symbol {
   font-style: italic;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .r-sym {
@@ -834,7 +839,7 @@
 
 @media (max-width: 719.98px) {
   .r-row {
-    grid-template-columns: 2.25rem 1fr 5rem 3rem;
+    grid-template-columns: 3.5rem 1fr 5rem 3rem;
     grid-template-areas:
       "symbol label value unit"
       "clause clause clause clause";

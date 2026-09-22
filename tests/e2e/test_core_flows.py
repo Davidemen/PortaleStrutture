@@ -46,8 +46,9 @@ def test_deep_link_boot(page: Page, base_url: str) -> None:
 
 def _assert_deep_link_state(page: Page) -> None:
     page.locator("#tool-title").wait_for(state="visible")
-    fields = page.locator("#form-root .f-field").count()
-    assert fields > 0, "deep link boot must render the form fields on cold load and reload"
+    # The title lands before the fields (js/forms.js renders them right after): a bare `count()`
+    # here raced that gap and failed once in three runs -- `expect` retries until they exist.
+    expect(page.locator("#form-root .f-field").first).to_be_visible()
     # WORKBENCH_SPEC §6: the rail can show the same tool twice at once (its category AND, once
     # visited, "Recenti") -- js/tool-index.js's `applyCurrent()` deliberately marks every button
     # for the selected tool, not just one, so `aria-current` is expected on >=1 element rather

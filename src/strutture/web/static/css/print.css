@@ -245,7 +245,7 @@
 
   .r-row {
     padding: 1mm 0;
-    grid-template-columns: 8mm minmax(0, 1fr) max-content 8mm;
+    grid-template-columns: 14mm minmax(0, 1fr) max-content 8mm;
     border-bottom: 0.5pt solid #ccc;
   }
 

@@ -24,12 +24,19 @@
 }
 
 /* -- Rail (#tool-index), redesigned -- WORKBENCH_SPEC.md #12 --------------------------------- */
+/* The LIST scrolls, not the rail: the expand/collapse toggle (last child, `margin-top: auto`)
+   stays on screen as a fixed footer whatever the list's height (owner's finding, 2026-09-22:
+   on a 900px screen the toggle sat below the fold of a 1100px scrolling rail). */
 .rail {
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 .rail-list {
   flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .rail-item {

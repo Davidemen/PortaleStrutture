@@ -23,6 +23,8 @@ textarea {
   display: flex;
   align-items: center;
   gap: var(--s3);
+  box-sizing: border-box;
+  height: var(--head-h); /* the token the column heights subtract (tokens.css) */
   padding: var(--s3) var(--s4);
   border-bottom: 1px solid var(--hairline);
 }
