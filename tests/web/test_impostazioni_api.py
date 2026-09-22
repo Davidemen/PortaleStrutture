@@ -26,6 +26,33 @@ def client(settings) -> TestClient:
 
 
 @pytest.mark.unit
+def test_get_via_default_sqlite_repository_warns_on_corrupted_row(tmp_path) -> None:
+    """§26.6 "mai in silenzio": a real deployment (`create_app` with no `impostazioni=` override,
+    the default `_LazySqliteImpostazioniRepository`) must still surface the corrupted-row avviso,
+    not just the in-memory fake the other tests inject directly."""
+    from strutture.storage.database import write_session
+    from strutture.storage.impostazioni_sqlite import open_impostazioni_repository
+
+    db_path = tmp_path / "strutture.db"
+    open_impostazioni_repository(tmp_path)  # runs the migrations, creates the tables
+    with write_session(db_path) as connection:
+        connection.execute(
+            "INSERT INTO impostazioni (id, valori, revisione, sigla, aggiornato_il) "
+            "VALUES (1, :valori, 1, 'ab', '2026-01-01T00:00:00Z')",
+            {"valori": "{not valid json"},
+        )
+
+    app = create_app(
+        tools=FAKE_TOOLS, settings=config.Settings(
+            rate_limit_per_minute=600, max_body_bytes=1_000_000, host="127.0.0.1", port=8000, data_dir=tmp_path,
+        ),
+        progetti=InMemoryProjectRepository(), signoffs=InMemorySignoffRepository(),
+    )
+    body = TestClient(app).get("/api/impostazioni").json()
+    assert body["avvisi"], body
+
+
+@pytest.mark.unit
 def test_get_returns_factory_shape(client: TestClient) -> None:
     body = client.get("/api/impostazioni").json()
     assert body["ok"] is True

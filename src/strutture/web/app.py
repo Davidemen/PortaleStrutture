@@ -199,6 +199,9 @@ class _LazySqliteImpostazioniRepository:
     def leggi(self) -> ImpostazioniSalvate:
         return self._resolved().leggi()
 
+    def leggi_con_avvisi(self) -> tuple[ImpostazioniSalvate, tuple[str, ...]]:
+        return self._resolved().leggi_con_avvisi()
+
     def salva(self, valori: Impostazioni, revisione_attesa: int, sigla: str) -> ImpostazioniSalvate:
         return self._resolved().salva(valori, revisione_attesa, sigla)
 

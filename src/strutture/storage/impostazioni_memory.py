@@ -25,6 +25,11 @@ class InMemoryImpostazioniRepository:
         with self._lock:
             return self._current
 
+    def leggi_con_avvisi(self) -> tuple[ImpostazioniSalvate, tuple[str, ...]]:
+        """Nothing is ever stored malformed in memory (no JSON round trip): no avviso possible."""
+        with self._lock:
+            return self._current, ()
+
     def salva(self, valori: Impostazioni, revisione_attesa: int, sigla: str) -> ImpostazioniSalvate:
         with self._lock:
             if self._current.revisione != revisione_attesa:

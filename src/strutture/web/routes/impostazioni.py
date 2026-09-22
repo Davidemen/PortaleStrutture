@@ -123,10 +123,7 @@ def _stato_attuale(repository: ImpostazioniRepository, tools: dict[str, Tool]) -
 
 
 def _avvisi_lettura(repository: ImpostazioniRepository) -> tuple[str, ...]:
-    leggi_con_avvisi = getattr(repository, "leggi_con_avvisi", None)
-    if leggi_con_avvisi is None:
-        return ()
-    _, avvisi = leggi_con_avvisi()
+    _, avvisi = repository.leggi_con_avvisi()
     return avvisi
 
 
