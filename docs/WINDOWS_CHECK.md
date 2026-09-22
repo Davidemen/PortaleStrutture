@@ -22,7 +22,7 @@ uv run ruff check src tests            # optional: lint
 Browser tests:
 ```powershell
 uv run playwright install chromium     # once, ~150 MB
-uv run pytest tests/e2e -m e2e -q      # 227 tests (about 3 minutes)
+uv run pytest tests/e2e -m e2e -q      # 230 tests (about 3 minutes)
 ```
 
 ## 3. Run the app
@@ -42,8 +42,8 @@ uv run python -m strutture.web --host 127.0.0.1,100.112.1.85    # localhost + a 
 ## 4. What to look at
 | Check | Expected |
 |---|---|
-| `uv run pytest -q` | **4121 passed** (macOS reference, 2026-09-22), 0 failures — the browser tests are deselected by default |
-| `uv run pytest tests/e2e -m e2e -q` | **226 passed, 1 skipped** |
+| `uv run pytest -q` | **4123 passed** (macOS reference, 2026-09-22), 0 failures — the browser tests are deselected by default |
+| `uv run pytest tests/e2e -m e2e -q` | **229 passed, 1 skipped** |
 | `node --test tests/e2e/list_input_parse.test.mjs` | **34 passed** (optional, needs Node ≥ 20; `node --test tests/e2e/*.mjs`) |
 | Accented text (à è ù § φ γ) in labels, errors and results | rendered correctly — every file is read as UTF-8 explicitly |
 | Comune search ("Forlì", "Castro") | suggestions appear; homonyms show the province |
