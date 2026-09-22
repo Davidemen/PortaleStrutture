@@ -9,7 +9,13 @@ function etaCell(value) {
   return formatNumber(value);
 }
 
-export function buildTabella({ valori, checks, soloEsito, errori, onUsa }) {
+// `tutteVerifiche` (default `[...checks, ...soloEsito]`, unchanged for a caller that never
+// restricts which columns are DRAWN): the Esito column and "Usa questo valore" must reflect EVERY
+// verifica the run actually produced, not just the <=5 columns js/sensibilita.js's own chart
+// caps itself to (WORKBENCH_SPEC's MAX_SERIE) -- a 6th, unselected, failing verifica must still
+// turn "Tutte passano" into "N non passano" on the very row that offers to apply that value.
+export function buildTabella({ valori, checks, soloEsito, errori, onUsa, tutteVerifiche }) {
+  const perEsito = tutteVerifiche || [...checks, ...soloEsito];
   const erroriByValore = new Map((errori || []).map((e) => [e.valore, e.messaggio]));
   const details = el("details", { class: "sv-tabella", open: true });
   details.append(el("summary", { text: `Tabella (${valori.length} punti)` }));
@@ -31,8 +37,8 @@ export function buildTabella({ valori, checks, soloEsito, errori, onUsa }) {
     if (errore) {
       row.append(el("td", { class: "sv-errore", text: errore }));
     } else {
-      const tutte = [...checks, ...soloEsito].every((c) => c.esito[i] !== false);
-      const nonPassano = [...checks, ...soloEsito].filter((c) => c.esito[i] === false).length;
+      const tutte = perEsito.every((c) => c.esito[i] !== false);
+      const nonPassano = perEsito.filter((c) => c.esito[i] === false).length;
       row.append(
         el("td", {}, [checkMark(tutte), ` ${tutte ? "Tutte passano" : `${nonPassano} non passano`}`]),
       );

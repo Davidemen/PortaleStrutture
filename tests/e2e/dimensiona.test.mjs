@@ -32,6 +32,16 @@ test("prefillRange: exclusive bound never becomes the prefilled value itself", (
   assert.equal(da, 5);
 });
 
+test("prefillRange: an exclusive bound the proposal falls short of is left empty, never the bound itself", () => {
+  // gt=10, current=15 -> proposalHalf=7.5, which is BELOW the exclusive bound: the old
+  // `Math.max(10, 7.5)` rule proposed exactly 10, which a 422 always rejects as `da`.
+  const field = { exclusiveMin: 10 };
+  assert.deepEqual(prefillRange(field, 15), { da: null, a: 30 });
+
+  const fieldMax = { exclusiveMax: 100 };
+  assert.deepEqual(prefillRange(fieldMax, 60), { da: 30, a: null }); // double(60)=120 > 100
+});
+
 test("prefillRange: current value <= 0 leaves both sides empty and required", () => {
   assert.deepEqual(prefillRange({}, 0), { da: null, a: null });
   assert.deepEqual(prefillRange({}, -3), { da: null, a: null });

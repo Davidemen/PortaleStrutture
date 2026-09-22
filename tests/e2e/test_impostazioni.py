@@ -77,3 +77,26 @@ def test_invalid_obiettivo_shows_message_next_to_field_and_in_summary(isolated_p
 def test_mobile_layout_reaches_page(isolated_mobile_page: Page, isolated_base_url: str) -> None:
     _goto_impostazioni(isolated_mobile_page, isolated_base_url)
     expect(isolated_mobile_page.locator("#im-obiettivo")).to_be_visible()
+
+
+def test_typing_the_obiettivo_character_by_character_keeps_focus(isolated_page: Page, isolated_base_url: str) -> None:
+    """§26.8: `renderSections()` used to rebuild every control (and lose focus/caret) on the FIRST
+    keystroke of a text field -- `.fill()` above never catches this (one "input" event for the
+    whole value); real keystrokes do."""
+    page = isolated_page
+    _goto_impostazioni(page, isolated_base_url)
+    field = page.locator("#im-obiettivo")
+    field.fill("")
+    field.click()
+    page.keyboard.type("0,90")
+    expect(field).to_have_value("0,90")
+    assert page.evaluate("document.activeElement.id") == "im-obiettivo"
+
+
+def test_aggiungi_eccezione_focuses_the_new_row_strumento_select(isolated_page: Page, isolated_base_url: str) -> None:
+    page = isolated_page
+    _goto_impostazioni(page, isolated_base_url)
+    page.get_by_role("button", name="+ Aggiungi eccezione", exact=True).click()
+    focused = page.evaluate("document.activeElement.tagName")
+    assert focused == "SELECT"
+    assert page.evaluate("document.activeElement.getAttribute('aria-label')") == "Strumento"

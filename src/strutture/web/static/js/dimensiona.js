@@ -14,6 +14,9 @@ import { passiStrumento } from "./impostazioni-api.js";
 import { lastFocusedNumericField } from "./dimensiona-focus.js";
 
 const session = { name: null, fields: [], lastValues: null, lastReport: null };
+// §23.5: only these two outcomes offer "Applica" -- every other outcome shows the best sample
+// instead (buildEsito's own `evidenziaMigliore`).
+const APPLICA_ESITI = new Set(["trovato", "estremo_sufficiente"]);
 
 document.addEventListener("strutture:tool-schema", (event) => {
   const { name, input } = event.detail || {};
@@ -210,12 +213,21 @@ export function openDimensiona(preselected) {
       obiettivo: parseDecimal(obiettivoInput.value) ?? 1,
       verso: versoSelect.value,
     };
+    // A second Cerca while one is already running (double-click, repeated Ctrl+Enter) must cancel
+    // the FIRST request, never run both -- two in flight could resolve out of order and leave a
+    // stale result on screen after the newer one, or double up on the visible result blocks below.
+    if (controller) controller.abort();
     controller = new AbortController();
+    const myController = controller; // settle handlers below only act if still THIS request
+    cercaBtn.setAttribute("aria-disabled", "true");
     busyEl.hidden = false;
     liveRegion.textContent = "Ricerca in corso…";
     clear(resultHost);
-    postDimensiona(session.name, body, controller.signal)
+    postDimensiona(session.name, body, myController.signal)
       .then((result) => {
+        if (controller !== myController) return; // superseded by a later Cerca before this settled
+        controller = null;
+        updateReason(); // restores aria-disabled to whatever Da/A/Passo actually allow
         busyEl.hidden = true;
         if (!result.ok) {
           const message = (result.body && result.body.errors && result.body.errors[0]) || "Impossibile completare la ricerca.";
@@ -224,8 +236,12 @@ export function openDimensiona(preselected) {
           return;
         }
         const esito = result.body;
-        resultHost.append(buildEsito(field, esito));
-        if (esito.valore !== null && esito.valore !== undefined) {
+        resultHost.append(buildEsito(field, esito, { evidenziaMigliore: !APPLICA_ESITI.has(esito.esito) }));
+        // §23.5: Applica only for "trovato"/"estremo_sufficiente" -- "nessun_valore"/"interrotta"/
+        // "limite_validita" show the best sample instead (buildEsito, above), never a value to
+        // apply outright (a "limite_validita" `valore` IS the method's own validity boundary, not
+        // a value the calculation actually endorses).
+        if (APPLICA_ESITI.has(esito.esito) && esito.valore !== null && esito.valore !== undefined) {
           const applicaBtn = el("button", { type: "button", class: "dm-btn-primary", text: "Applica" });
           applicaBtn.onclick = () => applyValue(field.name, esito.valore);
           resultHost.append(applicaBtn);
@@ -241,6 +257,9 @@ export function openDimensiona(preselected) {
         liveRegion.textContent = `${field.symbol || field.label} = ${esito.valore ?? "—"}, ${esito.affidabile ? "affidabile" : "da controllare"}`;
       })
       .catch((error) => {
+        if (controller !== myController) return; // this one was already superseded/aborted-and-replaced
+        controller = null;
+        updateReason();
         busyEl.hidden = true;
         if (error && error.name === "AbortError") {
           liveRegion.textContent = "Ricerca annullata.";
@@ -253,16 +272,24 @@ export function openDimensiona(preselected) {
   cercaBtn.onclick = () => {
     if (cercaBtn.getAttribute("aria-disabled") !== "true") runSearch();
   };
+  // §23.5: "Cerca (Enter inside the dialog)" -- plain Enter anywhere in the form, not just
+  // Ctrl+Enter (kept too, for muscle memory with the rest of the app's own shortcuts). Excludes a
+  // focused <button>/<select>: Enter already activates/does nothing useful on those natively, so
+  // triggering Cerca there too would fire it twice for a button (once native, once here) or
+  // hijack a <select>'s own Enter-to-close behaviour.
   form.addEventListener("keydown", (event) => {
-    if (event.ctrlKey && event.key === "Enter") {
-      event.preventDefault();
-      event.stopPropagation();
-      if (cercaBtn.getAttribute("aria-disabled") !== "true") runSearch();
-    }
+    if (event.key !== "Enter") return;
+    const tag = event.target.tagName;
+    if (tag === "BUTTON" || tag === "SELECT") return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (cercaBtn.getAttribute("aria-disabled") !== "true") runSearch();
   });
 
   updateReason();
   document.body.classList.add("dm-open");
-  release = trapFocus(panel, { onEscape: close });
+  // §23.5: Esc DURING a search only cancels that search (the dialog stays open, exactly like
+  // Annulla); a plain close is still Esc's job the rest of the time.
+  release = trapFocus(panel, { onEscape: () => (controller ? controller.abort() : close()) });
   campoSelect.focus();
 }

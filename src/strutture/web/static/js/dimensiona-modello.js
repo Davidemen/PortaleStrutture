@@ -18,7 +18,11 @@ function proposalDouble(value) {
 }
 
 // §23.5: "da"/"a" prefill from the field's own schema bounds and its current value. Returns
-// `{da, a}` with `null` where the dialog should start empty and required.
+// `{da, a}` with `null` where the dialog should start empty and required -- including when an
+// EXCLUSIVE bound is the only one available and current×0,5 (or ×2) is not strictly past it: a
+// server 422 always rejects the bound itself as a `da`/`a`, so proposing it (the previous
+// `Math.max(exclusiveMin, proposta)`/`Math.min` rule, which can equal the bound exactly whenever
+// the proposed half/double falls short of it) is worse than leaving the field empty and required.
 export function prefillRange(field, currentValue) {
   const current = typeof currentValue === "number" && Number.isFinite(currentValue) ? currentValue : null;
   if (current === null || current <= 0) return { da: null, a: null };
@@ -27,22 +31,21 @@ export function prefillRange(field, currentValue) {
   if (typeof field.minimum === "number") {
     da = field.minimum;
   } else if (typeof field.exclusiveMin === "number") {
-    da = Math.max(field.exclusiveMin, proposalHalf(current));
+    const proposta = proposalHalf(current);
+    da = proposta > field.exclusiveMin ? proposta : null;
   } else {
     da = proposalHalf(current);
   }
-  // Never exactly the exclusive bound itself.
-  if (typeof field.exclusiveMin === "number" && da <= field.exclusiveMin) da = Math.max(field.exclusiveMin, proposalHalf(current));
 
   let a = null;
   if (typeof field.maximum === "number") {
     a = field.maximum;
   } else if (typeof field.exclusiveMax === "number") {
-    a = Math.min(field.exclusiveMax, proposalDouble(current));
+    const proposta = proposalDouble(current);
+    a = proposta < field.exclusiveMax ? proposta : null;
   } else {
     a = proposalDouble(current);
   }
-  if (typeof field.exclusiveMax === "number" && a >= field.exclusiveMax) a = Math.min(field.exclusiveMax, proposalDouble(current));
 
   return { da, a };
 }

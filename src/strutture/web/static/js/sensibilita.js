@@ -182,6 +182,7 @@ export function openSensibilita(preselected, range) {
         valori: lastResponse.valori,
         checks: top,
         soloEsito,
+        tutteVerifiche: [...conEta, ...soloEsito],
         errori: lastResponse.errori,
         onUsa: (valore) => applyValue(field.name, valore),
       }),

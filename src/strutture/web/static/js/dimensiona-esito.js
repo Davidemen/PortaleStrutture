@@ -44,10 +44,28 @@ function modeCaveat(esito) {
   return box;
 }
 
-// `field` = the chosen Campo descriptor (symbol/unit); `esito` = the `/dimensiona` response body.
-export function buildEsito(field, esito) {
+// The campione with the smallest η max (closest to actually passing) -- §23.5's "best sample" for
+// an outcome with no usable `valore` to offer (`nessun_valore`/`interrotta`) or one that must not
+// be applied outright (`limite_validita`, the method's own validity boundary, not an endorsed
+// value).
+function migliorCampione(campioni) {
+  const conEta = (campioni || []).filter((c) => c.eta_max !== null && c.eta_max !== undefined);
+  if (conEta.length === 0) return null;
+  return conEta.reduce((best, c) => (c.eta_max < best.eta_max ? c : best));
+}
+
+// `field` = the chosen Campo descriptor (symbol/unit); `esito` = the `/dimensiona` response body;
+// `evidenziaMigliore` (§23.5): true for every outcome OTHER than "trovato"/"estremo_sufficiente"
+// -- js/dimensiona.js's own `APPLICA_ESITI` is the single source of truth for which ones those are.
+export function buildEsito(field, esito, { evidenziaMigliore = false } = {}) {
   const wrap = el("div", { class: "dm-esito" });
   wrap.append(el("p", { class: "dm-esito-titolo", text: ESITO_LABEL[esito.esito] || esito.esito }));
+
+  const migliore = evidenziaMigliore ? migliorCampione(esito.campioni) : null;
+  if (migliore) {
+    const unit = field && field.unit && field.unit !== "-" ? ` ${formatUnit(field.unit)}` : "";
+    wrap.append(el("p", { class: "dm-migliore", text: `Campione migliore: ${formatNumber(migliore.valore)}${unit} (η max ${formatNumber(migliore.eta_max)})` }));
+  }
 
   if (esito.valore !== null && esito.valore !== undefined) {
     const headline = el("p", { class: "dm-headline" });
@@ -81,11 +99,11 @@ export function buildEsito(field, esito) {
     );
   }
 
-  wrap.append(buildCampioniTable(esito.campioni || []));
+  wrap.append(buildCampioniTable(esito.campioni || [], migliore));
   return wrap;
 }
 
-function buildCampioniTable(campioni) {
+function buildCampioniTable(campioni, migliore) {
   const details = el("details", { class: "dm-campioni" });
   details.append(el("summary", { text: `Campioni (${campioni.length})` }));
   const table = el("table", {}, [
@@ -95,7 +113,7 @@ function buildCampioniTable(campioni) {
   const tbody = el("tbody");
   for (const campione of campioni) {
     tbody.append(
-      el("tr", {}, [
+      el("tr", { class: migliore && campione === migliore ? "dm-campione-migliore" : "" }, [
         el("td", { text: formatNumber(campione.valore) }),
         el("td", { text: campione.esito }),
         el("td", { text: campione.eta_max != null ? formatNumber(campione.eta_max) : "—" }),

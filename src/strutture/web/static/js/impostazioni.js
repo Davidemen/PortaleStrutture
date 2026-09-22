@@ -35,6 +35,10 @@ function renderLoaded(root, initialBody, tipiBody, tools) {
   const mappaCampi = campiPerStrumento(tipiBody);
   let revisione = initialBody.revisione;
   let sigla = "";
+  // Never mutate `initialBody` in place (rule 12): a save/409-reload replaces these instead of
+  // writing back into the object GET returned.
+  let aggiornatoIl = initialBody.aggiornato_il;
+  let siglaRevisione = initialBody.sigla;
 
   clear(root);
   root.append(el("h2", { tabindex: "-1", text: "Impostazioni" }));
@@ -50,7 +54,8 @@ function renderLoaded(root, initialBody, tipiBody, tools) {
   const liveRegion = el("div", { class: "sr-only", role: "status", "aria-live": "polite" });
   root.append(liveRegion);
 
-  const summaryHost = el("div", { class: "im-summary", role: "alert", hidden: true });
+  // `tabindex="-1"`: `.focus()` below is a no-op on a plain, non-interactive `<div>` without it.
+  const summaryHost = el("div", { class: "im-summary", role: "alert", tabindex: "-1", hidden: true });
   root.append(summaryHost);
 
   const dirtyChip = el("p", { class: "im-dirty", hidden: true, text: "○ Modifiche non salvate" });
@@ -77,7 +82,7 @@ function renderLoaded(root, initialBody, tipiBody, tools) {
 
   function updateRevisioneLine() {
     revisioneLine.textContent = revisione > 0
-      ? `Revisione ${revisione} · modificata il ${formatData(initialBody.aggiornato_il)} da ${initialBody.sigla}`
+      ? `Revisione ${revisione} · modificata il ${formatData(aggiornatoIl)} da ${siglaRevisione}`
       : "Valori di fabbrica, mai modificati";
   }
   updateRevisioneLine();
@@ -92,17 +97,22 @@ function renderLoaded(root, initialBody, tipiBody, tools) {
     dirtyChip.hidden = !isDirty(loadedState, state);
   }
 
-  function setState(patch) {
+  // `rerender = false` for a plain text-field keystroke ("input" events): `renderSections()`
+  // below does `clear(sectionsHost)` and rebuilds every control from scratch, which destroyed
+  // the field being typed into (and its focus/caret) after the FIRST character. Only a change
+  // that can alter which controls exist at all (a select's own "change", add/remove eccezione,
+  // Annulla/Ripristina, a fresh load) still needs the full rebuild.
+  function setState(patch, { rerender = true } = {}) {
     state = { ...state, ...patch };
     updateDirty();
-    renderSections();
+    if (rerender) renderSections();
   }
 
   function renderSections() {
     clear(sectionsHost);
 
     const obiettivoInput = el("input", { type: "text", id: "im-obiettivo", inputmode: "decimal", value: formatForInput(state.obiettivo_sfruttamento) });
-    obiettivoInput.addEventListener("input", () => setState({ obiettivo_sfruttamento: parseDecimal(obiettivoInput.value) }));
+    obiettivoInput.addEventListener("input", () => setState({ obiettivo_sfruttamento: parseDecimal(obiettivoInput.value) }, { rerender: false }));
     const minimoCheckbox = el("input", { type: "checkbox", id: "im-minimo", checked: state.obiettivo_su_verifiche_minimo });
     minimoCheckbox.addEventListener("change", () => setState({ obiettivo_su_verifiche_minimo: minimoCheckbox.checked }));
 
@@ -119,19 +129,31 @@ function renderLoaded(root, initialBody, tipiBody, tools) {
     );
 
     sectionsHost.append(
-      buildTipiTable(tipiBody, state, (tipo, passo) => setState({ passi_per_tipo: { ...state.passi_per_tipo, [tipo]: passo } })),
+      // A passo cell is a plain text field ("input" events, one per keystroke) -- its value
+      // changing never alters which controls exist, so never rerender for it either.
+      buildTipiTable(tipiBody, state, (tipo, passo) => setState({ passi_per_tipo: { ...state.passi_per_tipo, [tipo]: passo } }, { rerender: false })),
     );
 
     sectionsHost.append(
       buildEccezioniSection(state, {
         campiPerStrumento: mappaCampi,
         tools,
-        onChange: (index, patch) => {
+        // `strutturaChanged`: true for the strumento/campo <select> "change" (the campo options
+        // and the cross-row duplicate check both depend on it) -- passo's own "input" never
+        // needs it, same reasoning as the tipi table above.
+        onChange: (index, patch, strutturaChanged = false) => {
           const next = state.passi_per_campo.map((e, i) => (i === index ? { ...e, ...patch } : e));
-          setState({ passi_per_campo: next });
+          setState({ passi_per_campo: next }, { rerender: strutturaChanged });
         },
         onRemove: (index) => setState({ passi_per_campo: state.passi_per_campo.filter((_, i) => i !== index) }),
-        onAdd: () => setState({ passi_per_campo: [...state.passi_per_campo, { strumento: "", campo: "", passo: null }] }),
+        onAdd: () => {
+          setState({ passi_per_campo: [...state.passi_per_campo, { strumento: "", campo: "", passo: null }] });
+          // §26.8: focus lands on the NEW row's own strumento select, not lost to the button
+          // that "Aggiungi" itself was (the rebuild above just replaced it).
+          const selects = sectionsHost.querySelectorAll(".im-eccezione-row select");
+          const last = selects[selects.length - 2]; // the new row's FIRST select (strumento)
+          if (last) last.focus();
+        },
       }),
     );
   }
@@ -171,14 +193,15 @@ function renderLoaded(root, initialBody, tipiBody, tools) {
         loadedState = cloneState(result.body.impostazioni);
         state = cloneState(result.body.impostazioni);
         revisione = result.body.revisione;
-        initialBody.aggiornato_il = result.body.aggiornato_il;
-        initialBody.sigla = result.body.sigla;
+        aggiornatoIl = result.body.aggiornato_il;
+        siglaRevisione = result.body.sigla;
         updateRevisioneLine();
         renderAvvisi(result.body.avvisi);
         showSummary(null);
         updateDirty();
         renderSections();
         liveRegion.textContent = `Impostazioni salvate: revisione ${revisione}`;
+        aggiornaStoria(); // §26.8: the new revision belongs in "Storia delle modifiche" too
         return;
       }
       if (result.status === 409) {
@@ -206,13 +229,13 @@ function renderLoaded(root, initialBody, tipiBody, tools) {
     },
   );
 
-  function showConfirmDialog(message, onYes) {
+  function showConfirmDialog(message, onYes, yesLabel = "Ripristina") {
     const dialog = el("div", { class: "im-dialog", role: "alertdialog", "aria-modal": "true" }, [
       el("p", { text: message }),
       el("div", { class: "im-dialog-actions" }),
     ]);
     const actions = dialog.querySelector(".im-dialog-actions");
-    const yes = el("button", { type: "button", class: "im-btn-primary", text: "Ripristina" });
+    const yes = el("button", { type: "button", class: "im-btn-primary", text: yesLabel });
     const no = el("button", { type: "button", class: "im-btn", text: "Annulla" });
     actions.append(yes, no);
     const overlay = el("div", { class: "im-overlay" }, [dialog]);
@@ -246,16 +269,26 @@ function renderLoaded(root, initialBody, tipiBody, tools) {
       overlay.remove();
       release();
     }
-    ricarica.onclick = () => {
-      close();
+    function applyRicarica() {
       loadedState = cloneState(attuale.impostazioni);
       state = cloneState(attuale.impostazioni);
       revisione = attuale.revisione;
-      initialBody.aggiornato_il = attuale.aggiornato_il;
-      initialBody.sigla = attuale.sigla;
+      aggiornatoIl = attuale.aggiornato_il;
+      siglaRevisione = attuale.sigla;
       updateRevisioneLine();
       updateDirty();
       renderSections();
+    }
+    ricarica.onclick = () => {
+      close();
+      // §26.8: a second confirmation before discarding the LOCAL edits that just failed to save
+      // (they were dirty enough to attempt a save at all) -- "Ricarica" here means "someone else's
+      // revision wins", never a silent no-op the engineer might mistake for "my Salva went through".
+      if (isDirty(loadedState, state)) {
+        showConfirmDialog("Ricaricare scarta le modifiche locali non salvate. Continuare?", applyRicarica, "Ricarica");
+      } else {
+        applyRicarica();
+      }
     };
     chiudi.onclick = close;
     ricarica.focus();
@@ -287,11 +320,22 @@ function renderLoaded(root, initialBody, tipiBody, tools) {
     details.append(table);
     storiaHost.append(details);
   }
-  leggiStoria().then(renderStoria).catch(() => {});
+  function aggiornaStoria() {
+    leggiStoria().then(renderStoria).catch(() => {});
+  }
+  aggiornaStoria();
 
-  window.addEventListener("beforeunload", (event) => {
-    if (!isDirty(loadedState, state)) return;
-    event.preventDefault();
-    event.returnValue = "";
-  });
+  // Module-level "current dirty check" (same "last mount wins" pattern as js/annulla-ui.js's own
+  // `activeTool`) -- the actual `beforeunload` listener is registered ONCE at module load
+  // (further down), never once per visit to this page: adding a new one here every time without
+  // ever removing the old kept every past visit's closure alive AND asking the browser to confirm
+  // once per accumulated listener.
+  currentIsDirty = () => isDirty(loadedState, state);
 }
+
+let currentIsDirty = () => false;
+window.addEventListener("beforeunload", (event) => {
+  if (!currentIsDirty()) return;
+  event.preventDefault();
+  event.returnValue = "";
+});

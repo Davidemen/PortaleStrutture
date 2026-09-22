@@ -133,6 +133,13 @@
   padding: var(--s2);
   text-align: left;
 }
+.dm-migliore {
+  font-weight: 600;
+}
+.dm-campione-migliore {
+  font-weight: 600;
+  background: var(--film);
+}
 
 body.dm-open {
   overflow: hidden;

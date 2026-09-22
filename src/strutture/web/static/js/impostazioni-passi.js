@@ -72,8 +72,8 @@ function buildEccezioneRow(eccezione, index, { campiPerStrumento, tools, onChang
   const passoInput = el("input", { type: "text", inputmode: "decimal", "aria-label": "Passo", value: formatForInput(eccezione.passo ?? ""), placeholder: "nessun passo: chiedi ogni volta" });
   const removeBtn = el("button", { type: "button", class: "im-rimuovi", text: "✕ Rimuovi" });
 
-  strumentoSelect.addEventListener("change", () => onChange(index, { strumento: strumentoSelect.value, campo: "" }));
-  campoSelect.addEventListener("change", () => onChange(index, { campo: campoSelect.value }));
+  strumentoSelect.addEventListener("change", () => onChange(index, { strumento: strumentoSelect.value, campo: "" }, true));
+  campoSelect.addEventListener("change", () => onChange(index, { campo: campoSelect.value }, true));
   passoInput.addEventListener("input", () => {
     const value = passoInput.value.trim();
     onChange(index, { passo: value === "" ? null : parseDecimal(value) });
