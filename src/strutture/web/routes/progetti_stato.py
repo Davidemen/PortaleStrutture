@@ -1,7 +1,10 @@
 """`GET /api/progetti/{id}/stato` (WORKBENCH_SPEC.md §25.3): "da ricalcolare" propagated along the
 usage chain, "provvisorio" per decisions 21-22. `routes/progetti.py` is already 358 lines, hence a
 router of its own, wired in `web/app.py` next to it."""
+import hashlib
+import json
 import logging
+import threading
 from typing import Any
 
 from fastapi import APIRouter
@@ -21,6 +24,29 @@ from ..envelope import error_envelope
 
 logger = logging.getLogger(__name__)
 MAX_RICALCOLI_ORIGINI = 50
+_CACHE_MAX_VOCI = 5_000  # a very large office would still be well under this per process lifetime
+
+# Cross-REQUEST cache (§25.3/§25.5): re-running every provider on each `GET .../stato` for a large
+# project is the expensive part (`valore_attuale_a_percorso`, one tool `execute()` per collegamento).
+# Keyed by (elemento_id, elemento.revisione, impronta) -- `impronta` folds in everything that could
+# change the answer WITHOUT bumping the element's own revisione: the register's signoff states for
+# its tool (a correction approved/rejected changes `provvisorio`/`modalita` downstream) and the
+# element's own `modalita`. Process-local, never persisted; a restart (a new deploy) starts empty.
+_cache_lock = threading.Lock()
+_cache_stato_proprio: dict[tuple[str, int, str], tuple[Any, Any]] = {}
+
+
+def _impronta(riepilogo_strumento: dict | None, modalita: str, fornitori: tuple[tuple[str, Any], ...]) -> str:
+    """Folds in everything `stato_origini` reads besides the element's OWN revisione: the register's
+    signoff states for its tool, its own `modalita`, and -- since `stato_origini` reads each DIRECT
+    collegamento's CURRENT value, one hop, no recursion (`propaga()` handles further hops from
+    already-computed `OwnState`s) -- every direct fornitore's own `(revisione, eliminato)`. A
+    provider's output changing without its OWN revisione moving is out of scope here exactly like
+    everywhere else in this module (§25.1's whole premise is "the same revisione, the same output")."""
+    testo = json.dumps(
+        {"riepilogo": riepilogo_strumento, "modalita": modalita, "fornitori": fornitori}, sort_keys=True,
+    )
+    return hashlib.sha256(testo.encode("utf-8")).hexdigest()
 
 
 def build_progetti_stato_router(
@@ -142,10 +168,43 @@ class _ContestoValutazione:
     def stato_proprio_completo(self, elemento: Any) -> tuple:
         if elemento.id in self._cache_completo:
             return self._cache_completo[elemento.id]
+        fornitori = tuple(sorted(self._fornitori_diretti(elemento)))
+        impronta = _impronta(self._riepilogo.get(elemento.strumento), elemento.modalita, fornitori)
+        chiave = (elemento.id, elemento.revisione, impronta)
+        with _cache_lock:
+            in_cache = _cache_stato_proprio.get(chiave)
+        if in_cache is not None:
+            self._cache_completo[elemento.id] = in_cache
+            return in_cache
         origini = stato_origini(_collegamenti_di(elemento), self._get_elemento, self._valore_attuale)
         provvisorio = stato_provvisorio(_per_provvisorio(self._riepilogo.get(elemento.strumento)), elemento.modalita)
         risultato = (origini, provvisorio)
         self._cache_completo[elemento.id] = risultato
+        # A "controllo_rinviato" motivo is an artifact of THIS request's own MAX_RICALCOLI_ORIGINI
+        # budget (shared across every element of the project), not a stable fact of this element --
+        # a later request with a smaller project (more budget to spare) could resolve it. Never
+        # cached across requests, or it would wrongly stick forever.
+        if not any(m.causa == "controllo_rinviato" for m in origini.motivi):
+            with _cache_lock:
+                if len(_cache_stato_proprio) >= _CACHE_MAX_VOCI:
+                    _cache_stato_proprio.clear()  # simple bound: a full reset costs one slow request
+                _cache_stato_proprio[chiave] = risultato
+        return risultato
+
+    def _fornitori_diretti(self, elemento: Any) -> list[tuple[str, int, bool]]:
+        """`(fornitore_id, revisione, eliminato)` for every DIRECT collegamento, `revisione=-1`
+        when the fornitore no longer exists at all (deleted outright, not soft-deleted)."""
+        risultato = []
+        for item in _collegamenti_di(elemento):
+            fornitore_id = item.get("elemento_id") if isinstance(item, dict) else None
+            if not fornitore_id:
+                continue
+            try:
+                fornitore = self._progetti.get_elemento(fornitore_id)
+            except NotFoundError:
+                risultato.append((fornitore_id, -1, True))
+                continue
+            risultato.append((fornitore_id, fornitore.revisione, fornitore.eliminato))
         return risultato
 
     def _get_elemento(self, elemento_id: str) -> Any | None:

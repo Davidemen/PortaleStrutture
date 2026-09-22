@@ -172,6 +172,41 @@ def test_chain_propagation_a_to_b_to_c(client: TestClient) -> None:
 
 
 @pytest.mark.unit
+def test_stato_caches_provider_runs_across_requests_until_revision_or_impronta_changes(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """§25.3/§25.5: re-running every provider on each GET for an unchanged (revisione, impronta) is
+    the exact cost the cross-request cache exists to avoid."""
+    import strutture.shared.stato_progetto.valutazione as valutazione_module
+
+    calls = []
+    original = valutazione_module.valore_attuale_a_percorso
+
+    def _counting(*args, **kwargs):
+        calls.append(1)
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr("strutture.web.routes.progetti_stato.valore_attuale_a_percorso", _counting)
+
+    progetto_id = _crea_progetto(client)
+    a = _crea_elemento(client, progetto_id, a=1, b=2)
+    _crea_elemento(client, progetto_id, a=0, provenienza=_collegamento(a["id"], 3))
+
+    client.get(f"/api/progetti/{progetto_id}/stato")
+    prima = len(calls)
+    assert prima > 0
+
+    client.get(f"/api/progetti/{progetto_id}/stato")
+    assert len(calls) == prima  # unchanged revisione/impronta: zero new provider runs
+
+    client.put(f"/api/elementi/{a['id']}", json={
+        "strumento": "fake-sum", "nome": "E", "inputs": {"a": 9, "b": 2}, "revisione": a["revisione"],
+    })
+    client.get(f"/api/progetti/{progetto_id}/stato")
+    assert len(calls) > prima  # a's own revisione changed: a fresh provider run for it
+
+
+@pytest.mark.unit
 def test_provvisorio_standard_mode_da_confermare(client: TestClient) -> None:
     progetto_id = _crea_progetto(client)
     elemento = _crea_elemento(client, progetto_id, a=1)
