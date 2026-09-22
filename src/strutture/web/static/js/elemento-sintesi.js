@@ -8,9 +8,23 @@ import { isStaleOnScreen } from "./relazione-print.js";
 import { governingCheck, effectiveUtilisation } from "./verdict.js";
 import { extractByPredicate, readPath, rowsHighlightPairs } from "./output-schema.js";
 
+// WORKBENCH_SPEC §20.1: `Report.warnings` verbatim strings a failing trace appends -- not a real
+// avviso of the calculation itself (the mode is already shown by `modalita`), so it never counts
+// towards the table's "Avvisi" cell. Kept in sync by hand with `strutture.shared.tool` (frontend
+// has no import path into the Python package).
+const AVVISI_ESCLUSI_DALLA_TRACCIA = new Set([
+  "Sviluppo dei calcoli non disponibile per questi dati.",
+  "Lo sviluppo dei calcoli descrive la modalità standard: non è disponibile in modalità Excel.",
+]);
+
 export function computeSintesiEStato(toolName) {
   const { tool: reportTool, report } = getReportState();
   if (!reportTool || reportTool.name !== toolName || !report) return { sintesi: {}, stato: "dati_modificati" };
+  if (isStaleOnScreen()) return { sintesi: {}, stato: "dati_modificati" };
+  if (!report.ok) {
+    const errore = (report.errors && report.errors[0]) || "Errore di calcolo.";
+    return { sintesi: { ok: false, errore }, stato: "non_verificato" };
+  }
   const checks = report.checks || [];
   const data = report.data || {};
   const outputNodes = reportTool.outputNodes || [];
@@ -28,13 +42,15 @@ export function computeSintesiEStato(toolName) {
   }));
   const governing = governingCheck(checks);
   const ratio = governing ? effectiveUtilisation(governing) : null;
+  const avvisiContati = (report.warnings || []).filter((testo) => !AVVISI_ESCLUSI_DALLA_TRACCIA.has(testo));
   const sintesi = {
     ok: Boolean(report.ok),
     ...(ratio === null ? {} : { eta_max: ratio }),
     ...(governing ? { verifica_governante: governing.name } : {}),
     evidenze,
+    avvisi: { n: avvisiContati.length, primo: avvisiContati[0] || "" },
   };
   const allPassed = checks.length === 0 || checks.every((check) => check.passed);
-  const stato = isStaleOnScreen() ? "dati_modificati" : sintesi.ok && allPassed ? "verificato" : "non_verificato";
+  const stato = sintesi.ok && allPassed ? "verificato" : "non_verificato";
   return { sintesi, stato };
 }

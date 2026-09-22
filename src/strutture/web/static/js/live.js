@@ -69,6 +69,23 @@ export function isLiveEnabled(values) {
   return isLiveOn(values || {});
 }
 
+// WORKBENCH_SPEC §20.1: "Salva" waits for a pending/in-flight live run (at most the debounce +
+// one run) so the saved summary belongs to the saved inputs. Resolves once neither a debounce
+// timer nor an in-flight/queued run remains for the CURRENT tool; resolves immediately when there
+// is nothing to wait for (live off, or no session at all).
+export function whenSettled() {
+  return new Promise((resolve) => {
+    function poll() {
+      if (session.debounceTimer == null && !session.inFlight && !session.pending) {
+        resolve();
+        return;
+      }
+      setTimeout(poll, 20);
+    }
+    poll();
+  });
+}
+
 function clearDebounce() {
   if (session.debounceTimer != null) clearTimeout(session.debounceTimer);
   session = { ...session, debounceTimer: null };

@@ -8,12 +8,13 @@ import { el, clear } from "./dom.js";
 import { trapFocus } from "./nav-state.js";
 import { visibleValues } from "./forms-sections.js";
 import { save } from "./form-state.js";
-import { requestRun } from "./live.js";
+import { requestRun, whenSettled } from "./live.js";
 import { getCurrentProgetto, setCurrentProgetto } from "./progetto-picker.js";
 import { takeAnteprimaStash } from "./progetto-anteprima.js";
 import { computeSintesiEStato } from "./elemento-sintesi.js";
-import { activeProvenienza } from "./provenienza.js";
+import { activeProvenienza, reconstructProvenienza } from "./provenienza.js";
 import { azzeraStoriaAnnulla } from "./annulla-ui.js";
+import { openConflictDialog } from "./elemento-conflitto.js";
 import {
   fetchProgetti,
   fetchProgetto,
@@ -26,7 +27,7 @@ import {
 
 const NEW_PROJECT_VALUE = "__nuovo__";
 
-export function mountElementoSalva({ toolForm, tool, title, fields, params, getApi }) {
+export function mountElementoSalva({ toolForm, tool, title, fields, params, input, getApi }) {
   const wrap = el("div", { class: "es-widget" });
   const stateText = el("span", { class: "es-state-text" });
   stateText.hidden = true;
@@ -104,10 +105,11 @@ export function mountElementoSalva({ toolForm, tool, title, fields, params, getA
     if (!loaded) return;
     saveBtn.disabled = true;
     try {
+      await whenSettled(); // §20.1: the saved sintesi belongs to the saved inputs
       const body = { ...currentPayload(loaded.nome, loaded.sigla, loaded.nota), revisione: loaded.revisione };
       const result = await updateElemento(loaded.id, body);
       if (result.conflict) {
-        openConflictDialog(result.attuale);
+        showConflictDialog(result.attuale);
         return;
       }
       loaded = { ...loaded, revisione: result.data.revisione };
@@ -243,6 +245,7 @@ export function mountElementoSalva({ toolForm, tool, title, fields, params, getA
 
       saveButton.disabled = true;
       try {
+        await whenSettled(); // §20.1: the saved sintesi belongs to the saved inputs
         const created = await createElemento(targetId, currentPayload(nome, siglaInput.value.trim(), notaInput.value.trim()));
         if (!targetNome) {
           const found = progetti.find((progetto) => progetto.id === targetId);
@@ -287,31 +290,21 @@ export function mountElementoSalva({ toolForm, tool, title, fields, params, getA
     showStatus("Elemento ricaricato: le modifiche locali sono state scartate.");
   }
 
-  function openConflictDialog(attuale) {
+  function showConflictDialog(attuale) {
     closeDialog();
-    const titleId = "es-conflict-title";
-    dialogEl = el("dialog", { class: "es-dialog", role: "dialog", "aria-modal": "true", "aria-labelledby": titleId }, [
-      el("h2", { id: titleId, text: "Conflitto di salvataggio" }),
-      el("p", { text: "Modificato da un altro utente: ricarica e riprova." }),
-      el("div", { class: "es-dialog-actions" }, [
-        el("button", { type: "button", class: "es-dialog-save", text: "Ricarica", onclick: () => applyReload(attuale) }),
-        el("button", {
-          type: "button",
-          class: "es-dialog-cancel",
-          text: "Salva come copia",
-          onclick: () => {
-            const nome = loaded ? `${loaded.nome} (copia)` : "";
-            const progettoId = loaded && loaded.progettoId;
-            closeDialog();
-            openCreateDialog({ progettoId, defaultNome: nome });
-          },
-        }),
-      ]),
-    ]);
-    document.body.append(dialogEl);
-    dialogEl.addEventListener("close", closeDialog);
-    releaseTrap = trapFocus(dialogEl, { onEscape: closeDialog });
-    dialogEl.showModal();
+    const mounted = openConflictDialog({
+      attuale,
+      applyReload,
+      closeDialog,
+      onSaveAsCopy: () => {
+        const nome = loaded ? `${loaded.nome} (copia)` : "";
+        const progettoId = loaded && loaded.progettoId;
+        closeDialog();
+        openCreateDialog({ progettoId, defaultNome: nome });
+      },
+    });
+    dialogEl = mounted.dialogEl;
+    releaseTrap = mounted.releaseTrap;
   }
 
   saveBtn.addEventListener("click", () => {
@@ -354,6 +347,9 @@ export function mountElementoSalva({ toolForm, tool, title, fields, params, getA
       if (api) api.setValues(elemento.inputs || {});
       azzeraStoriaAnnulla(); // WORKBENCH_SPEC §21.1: "?elemento=" load is a history boundary
       const values = visibleValues(toolForm, fields);
+      // §25.1: rebuild the "da <sigla>" chips AFTER the history reset above, so this restoration
+      // is never itself an undoable step (undo cannot bring a chip back, by design).
+      await reconstructProvenienza({ toolForm, tool, fields, input, values, provenienza: elemento.provenienza });
       save(tool, values, fields);
       requestRun(tool, values, "manual");
       let progettoNome = "";
@@ -373,5 +369,24 @@ export function mountElementoSalva({ toolForm, tool, title, fields, params, getA
   renderWidgetState();
   loadElementoFromParams();
 
+  // WORKBENCH_SPEC §25.1: js/usa-in.js reads `loadedElementState()` (below) BEFORE adding
+  // `&da_elemento=&da_revisione=` to a "Usa in..." link -- only a SAVED, currently-loaded element
+  // (never the transient state of an unsaved `?anteprima=1` preview, which never sets `loaded`)
+  // is eligible. `tool` closes over this mount's own tool name so a stale reference from a
+  // previous page can never answer for the wrong tool.
+  currentTool = tool;
+  currentLoaded = () => loaded;
+
   return wrap;
+}
+
+// Module-level, like js/provenienza.js's own `session`: only one tool page is ever mounted at a
+// time, so the LATEST `mountElementoSalva` call always wins.
+let currentTool = null;
+let currentLoaded = () => null;
+
+export function loadedElementState(tool) {
+  if (currentTool !== tool) return null;
+  const loaded = currentLoaded();
+  return loaded ? { id: loaded.id, revisione: loaded.revisione } : null;
 }
