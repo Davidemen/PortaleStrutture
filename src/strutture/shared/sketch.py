@@ -99,6 +99,11 @@ class Quota(_Forma):
     p2: Punto
     distanza: float
     testo: str
+    # Name of the INPUT field this dimension stands for, when the UI cannot infer it from the text
+    # (js/schizzo-modifica.js matches "<symbol> = <value> <unit>" against the fields' symbol and
+    # unit; set this where the sketch prints another symbol or unit than the field carries). The
+    # UI then lets the user edit that field from the drawing.
+    campo: str | None = None
 
 
 class Etichetta(_Forma):

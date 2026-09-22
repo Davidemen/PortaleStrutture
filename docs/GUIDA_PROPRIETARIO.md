@@ -79,7 +79,9 @@ uv run playwright install chromium
   nell'intestazione e usare "Calcola" (Ctrl+Invio).
 - **Sintesi e risultati**: in alto il verdetto e le tre grandezze principali, poi lo schizzo dell'elemento, poi i
   gruppi di risultati (espandibili), le verifiche con clausola e utilizzo, gli avvisi. Un avviso che riguarda un
-  dato è un collegamento: cliccandolo si va al campo.
+  dato è un collegamento: cliccandolo si va al campo. Le quote del disegno sottolineate a puntini (b, d, B…)
+  si possono modificare sul posto: clic (o Invio da tastiera) apre una casella, Invio applica e il calcolo
+  si aggiorna; le quote calcolate (non un dato) restano semplice testo.
 - **Stampa relazione**: apre una finestra per scegliere cosa includere (relazione completa, sintetica o
   personalizzata, con o senza "Sviluppo dei calcoli" cioè le formule) e stampa in PDF dal browser. La relazione
   è sempre costruita da un calcolo fresco e contiene tutto, anche ciò che sullo schermo era chiuso.

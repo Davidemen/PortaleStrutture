@@ -29,8 +29,8 @@ def _sezione(inputs: TraviCollegamentoInput) -> Vista:
         Rettangolo(x=-b / 2, y=-h / 2, w=b, h=h, stile="calcestruzzo"),
         _staffa(inputs),
         _barre(inputs),
-        Quota(p1=(-b / 2, -h / 2), p2=(b / 2, -h / 2), distanza=-scostamento, testo=etichetta_quota("B", b, "m")),
-        Quota(p1=(-b / 2, -h / 2), p2=(-b / 2, h / 2), distanza=scostamento, testo=etichetta_quota("H", h, "m")),
+        Quota(p1=(-b / 2, -h / 2), p2=(b / 2, -h / 2), distanza=-scostamento, testo=etichetta_quota("B", b, "m"), campo="b_mm"),
+        Quota(p1=(-b / 2, -h / 2), p2=(-b / 2, h / 2), distanza=scostamento, testo=etichetta_quota("H", h, "m"), campo="h_mm"),
     ]
     return Vista(titolo="Sezione", forme=tuple(forme))
 

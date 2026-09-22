@@ -428,3 +428,18 @@ word in the text; a warning with no field stays plain text. Also from the same f
 collapse has hysteresis (collapse past 200 px, expand back under 40 px) and gives the removed height back as
 bottom padding on the results pane (`--sm-collapse-spacer`) so the scroll range never shrinks — no flicker, no
 jump; the Dati action bar wraps its live-status text instead of overlapping the save widget.
+
+## 18. Editable dimensions in the sketch (owner's request 2026-09-22)
+A dimension in the Sintesi sketch whose text reads `<symbol> = <value> <unit>` and matches a NUMBER input field by
+symbol AND unit (or that the Python sketch names explicitly with `Quota.campo`, when the drawing prints another
+symbol or unit than the field carries — geo cedimenti `B`/`Δz`, trave di collegamento in m vs mm) is rendered
+as a button: dotted underline, `role="button"`, `tabindex="0"`, tooltip "Modifica b = 15,00 m (Invio)". Click or
+Enter/Space opens a popover next to it (`form.sk-edit`, `role="dialog"`, `position: fixed`, one text input with
+`inputmode="decimal"`, the field's unit, Applica/Annulla). Enter applies, Esc or a click outside cancels and
+focus returns to the dimension. Applying writes the Dati control and dispatches a native `input` event, so
+js/forms.js's own `handleChange` runs unchanged (validation, persistence, live run, redraw) and the field flashes
+(`.f-field--flash`); a non-number is refused in place ("Inserire un numero"). The printed relazione renders the
+same sketch WITHOUT the fields, so nothing is editable on paper. Computed dimensions (wall base `B`, `2d`) never
+match and stay plain. Modules: `js/schizzo-modifica.js` (matching + popover), `sketch.js`/`sketch-shapes.js`
+(`campi` option → `data-campo` on the text group), `results.js` (passes `tool.fields`, mounts the editor on
+`#sintesi`). Tests: `tests/e2e/test_schizzo_modifica.py`, `tests/e2e/schizzo_modifica.test.mjs`.

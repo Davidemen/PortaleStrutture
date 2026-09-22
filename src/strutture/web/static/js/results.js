@@ -17,6 +17,7 @@ import { diffScalarPaths, diffChecks, markChanged, captureViewState, restoreView
 import { readJSON, writeJSON } from "./storage.js";
 import { isApproved } from "./registro-stato.js";
 import { usaInFor } from "./usa-in.js";
+import { mountSketchEditing } from "./schizzo-modifica.js";
 
 const PASSAGGI_ID = "r-group-passaggi";
 const LEGACY_ID = "r-group-legacy";
@@ -211,7 +212,9 @@ export function renderReport(root, { report, outputNodes, tool, previous }) {
   const sintesiRoot = document.getElementById("sintesi");
   if (sintesiRoot) {
     sintesiRoot.removeAttribute("aria-busy");
-    renderSintesi(sintesiRoot, { report, highlightPairs, sketchPairs, chartFallback, previousData: hasPrevious ? previous.data : undefined });
+    const campi = (tool && tool.fields) || [];
+    renderSintesi(sintesiRoot, { report, highlightPairs, sketchPairs, chartFallback, previousData: hasPrevious ? previous.data : undefined, campi });
+    mountSketchEditing(sintesiRoot, { fields: campi });
     for (const path of changedPaths) {
       const figureValue = sintesiRoot.querySelector(`.r-si-figure[data-field="${CSS.escape(path)}"] .r-si-figure-value`);
       if (figureValue) markChanged(figureValue);

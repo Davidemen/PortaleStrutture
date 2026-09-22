@@ -95,7 +95,7 @@ function buildWarningsButton(count) {
 
 // `token` guards against a slow dynamic import resolving after a NEWER renderSintesi() call
 // already cleared/rebuilt `root` (live calculation can fire several runs in a row).
-async function appendSketches(container, sketchPairs, previousData, token) {
+async function appendSketches(container, sketchPairs, previousData, token, campi) {
   if (sketchPairs.length === 0) return;
   let renderSketch;
   try {
@@ -112,7 +112,7 @@ async function appendSketches(container, sketchPairs, previousData, token) {
     wrap.append(holder);
     const previous = previousData ? readPath(previousData, node.path) : undefined;
     try {
-      renderSketch(holder, value, { previous });
+      renderSketch(holder, value, { previous, campi });
     } catch (error) {
       holder.remove(); // a broken sketch must never break the Sintesi
     }
@@ -145,7 +145,7 @@ function buildEmptyFallback(chartFallback) {
   return el("p", { class: "r-si-empty", text: "Calcolo eseguito" });
 }
 
-export function renderSintesi(root, { report, highlightPairs = [], sketchPairs = [], chartFallback = null, previousData, options = {} } = {}) {
+export function renderSintesi(root, { report, highlightPairs = [], sketchPairs = [], chartFallback = null, previousData, options = {}, campi = null } = {}) {
   const showCopy = options.copy !== false;
   const showSketches = options.sketches !== false;
   const showWarnings = options.warnings !== false;
@@ -193,7 +193,7 @@ export function renderSintesi(root, { report, highlightPairs = [], sketchPairs =
 
   if (warnings.length > 0 && showWarnings) main.append(buildWarningsButton(warnings.length));
 
-  if (showSketches) appendSketches(side, sketchPairs, previousData, token);
+  if (showSketches) appendSketches(side, sketchPairs, previousData, token, campi);
 
   if (suppressAnnounce) {
     // Restore politeness on the next frame, once this render's mutations have already landed --

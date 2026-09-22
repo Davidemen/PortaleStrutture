@@ -104,7 +104,7 @@ def _sezione(d_m: float, larghezza_plinto: float, strati: tuple[SoilLayer, ...],
         # B sopra il plinto (non sotto): resta cosi' sempre distinta dalle quote di spessore strato,
         # che stanno sotto e a sinistra.
         Quota(p1=(-larghezza_plinto / 2, y_sommo_plinto), p2=(larghezza_plinto / 2, y_sommo_plinto),
-              distanza=margine, testo=etichetta_quota("B", larghezza_plinto, "m")),
+              distanza=margine, testo=etichetta_quota("B", larghezza_plinto, "m"), campo="b"),
     ]
     if ritagliato:
         forme.append(_fantasma_profondita(profondita_visibile))
@@ -172,7 +172,7 @@ def _strati_forme(strati: tuple[SoilLayer, ...], larghezza_terreno: float, profo
                                 testo=etichetta_quota("E", strato.modulo_MPa, "MPa", 1)))
         forme.append(Quota(
             p1=(-larghezza_terreno / 2, y_top), p2=(-larghezza_terreno / 2, y_bot), distanza=-margine_sinistra,
-            testo=etichetta_quota("Δz", y_top - y_bot, "m"),
+            testo=etichetta_quota("Δz", y_top - y_bot, "m"), campo="dz",
         ))
     return tuple(forme)
 

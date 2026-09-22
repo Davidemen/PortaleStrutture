@@ -9,6 +9,7 @@ import { fitVista, uniformScale, applyDimensionOffsets } from "./sketch-fit.js";
 import { svgNode, buildShape, buildArrowMarkers, buildTerrenoPattern } from "./sketch-shapes.js";
 import { resolveLabelCollisions } from "./sketch-labels.js";
 import { measureTextOverhang, hasClippedText } from "./sketch-measure.js";
+import { campoPerQuota } from "./schizzo-modifica.js";
 
 const FALLBACK_BOX_PX = 320;
 const MAX_VIEWS = 4;
@@ -65,20 +66,20 @@ function refit(vista, options) {
 //     with exactly that -- typically a much larger drawing (neve-accumulo: margins went from 56%
 //     of the figure's width to what its one left-hand dimension text needs).
 //  3. Safety net: if the tight fit clipped any text after all, the heuristic drawing comes back.
-function renderVista(svg, vista, firstView, viewIndex, idPrefix) {
+function renderVista(svg, vista, firstView, viewIndex, opts) {
   applyView(svg, firstView);
   const boxPx = realBox(svg, firstView);
   const loose = (boxPx && refit(vista, { boxPx })) || firstView;
-  drawVistaAt(svg, vista, loose, viewIndex, idPrefix);
+  drawVistaAt(svg, vista, loose, viewIndex, opts);
   if (!boxPx) return;
   const marginsPx = measureTextOverhang(svg, loose);
   const tight = marginsPx ? refit(vista, { boxPx, marginsPx }) : null;
   if (!tight) return;
-  drawVistaAt(svg, vista, tight, viewIndex, idPrefix);
-  if (hasClippedText(svg)) drawVistaAt(svg, vista, loose, viewIndex, idPrefix);
+  drawVistaAt(svg, vista, tight, viewIndex, opts);
+  if (hasClippedText(svg)) drawVistaAt(svg, vista, loose, viewIndex, opts);
 }
 
-function drawVistaAt(svg, vista, view, viewIndex, idPrefix) {
+function drawVistaAt(svg, vista, view, viewIndex, opts) {
   applyView(svg, view);
   // Measured on the svg itself (already attached to the document at this point), not on the
   // caller's container: a CSS max-width on .sk-figure (or any ancestor) can make the two differ,
@@ -106,11 +107,17 @@ function drawVistaAt(svg, vista, view, viewIndex, idPrefix) {
   const hasTerreno = forme.some((f) => f?.stile === "terreno");
   if (hasArrow || hasTerreno) {
     const defs = svgNode("defs");
-    if (hasArrow) defs.append(...buildArrowMarkers(viewIndex, s, idPrefix));
-    if (hasTerreno) defs.append(buildTerrenoPattern(viewIndex, s, idPrefix));
+    if (hasArrow) defs.append(...buildArrowMarkers(viewIndex, s, opts.idPrefix));
+    if (hasTerreno) defs.append(buildTerrenoPattern(viewIndex, s, opts.idPrefix));
     svg.append(defs);
   }
-  const ctx = { s, side: view.side, viewIndex, idPrefix };
+  // `campi` (the Dati fields, Sintesi only -- never the printed relazione) turns a matching
+  // dimension into an editable one (js/schizzo-modifica.js).
+  const campi = opts.campi;
+  const ctx = {
+    s, side: view.side, viewIndex, idPrefix: opts.idPrefix,
+    campoPerQuota: campi ? (testo, campo) => (campoPerQuota(testo, campi, campo) || {}).name || null : null,
+  };
   for (const shape of forme) {
     try {
       const node = buildShape(shape, ctx);
@@ -129,7 +136,8 @@ function drawVistaAt(svg, vista, view, viewIndex, idPrefix) {
   }
 }
 
-export function renderSketch(container, sketch, { previous, idPrefix = "" } = {}) {
+export function renderSketch(container, sketch, { previous, idPrefix = "", campi = null } = {}) {
+  const opts = { idPrefix, campi };
   if (!container) return;
   // M6: `Sketch.nota` ("Schema non in scala") as a small caption under the views -- pulled out
   // before the per-view diffing below (which assumes every child of `container` is a view
@@ -185,14 +193,14 @@ export function renderSketch(container, sketch, { previous, idPrefix = "" } = {}
 
   if (sketch.nota) container.append(el("p", { class: "sk-nota", text: sketch.nota }));
 
-  const draw = () => mounted.forEach(({ svg, vista, view, index }) => drawVista(svg, vista, view, index, idPrefix));
+  const draw = () => mounted.forEach(({ svg, vista, view, index }) => drawVista(svg, vista, view, index, opts));
   draw();
   redrawOnResize(container, draw);
 }
 
-function drawVista(svg, vista, view, index, idPrefix) {
+function drawVista(svg, vista, view, index, opts) {
   try {
-    renderVista(svg, vista, view, index, idPrefix);
+    renderVista(svg, vista, view, index, opts);
   } catch {
     clear(svg);
   }

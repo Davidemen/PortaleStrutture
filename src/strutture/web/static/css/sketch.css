@@ -259,6 +259,98 @@ circle.sk-reazione {
   font-variant-numeric: tabular-nums lining-nums;
 }
 
+/* Editable dimension (js/schizzo-modifica.js): a dotted underline says "this one you can change",
+   the same text gets a visible focus ring when reached by keyboard. */
+.sk-quota-text--modificabile {
+  cursor: pointer;
+}
+.sk-quota-text--modificabile text {
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
+}
+.sk-quota-text--modificabile:hover text {
+  fill: var(--ink);
+  text-decoration-style: solid;
+}
+.sk-quota-text--modificabile:focus {
+  outline: none;
+}
+.sk-quota-text--modificabile:focus-visible text {
+  stroke: var(--ink);
+  stroke-width: 0.5;
+  paint-order: stroke fill;
+}
+
+/* The popover next to the dimension: one input, apply/cancel. `position: fixed` (placed by JS
+   from the text's own on-screen rect) so it never shifts the Sintesi grid. */
+.sk-edit {
+  position: fixed;
+  z-index: var(--z-palette);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  padding: var(--s3);
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.15);
+  font-size: var(--t-s);
+}
+.sk-edit-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+.sk-edit-label {
+  font-family: var(--font-label);
+  min-width: 2rem;
+}
+.sk-edit-input {
+  width: 7rem;
+  min-height: var(--control-h);
+  padding: 0 var(--s2);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  font-variant-numeric: tabular-nums lining-nums;
+  text-align: right;
+}
+.sk-edit-unit {
+  color: var(--graphite);
+  font-size: var(--t-xs);
+}
+.sk-edit-error {
+  margin: 0;
+  color: var(--ko);
+  font-size: var(--t-xs);
+}
+.sk-edit-error[hidden] {
+  display: none;
+}
+.sk-edit-actions {
+  display: flex;
+  gap: var(--s2);
+  justify-content: flex-end;
+}
+.sk-edit-apply,
+.sk-edit-cancel {
+  min-height: var(--control-h);
+  padding: 0 var(--s3);
+  border-radius: var(--radius);
+  font-family: var(--font-label);
+  font-size: var(--t-s);
+  cursor: pointer;
+}
+.sk-edit-apply {
+  color: var(--paper);
+  background: var(--ink);
+  border: 1px solid var(--ink);
+}
+.sk-edit-cancel {
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+}
+
 /* -- axis / highlight / ghost ----------------------------------------------------------------- */
 
 .sk-asse {

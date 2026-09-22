@@ -155,6 +155,18 @@ export function buildDimension(shape, ctx) {
   const text = svgNode("text", { ...textAttrs, "font-size": TEXT_PX });
   text.append(...symbolAwareTspans(shape.testo));
   textGroup.append(text);
+  // Editable dimension (js/schizzo-modifica.js): the text group becomes a keyboard-reachable
+  // button carrying the Dati field it stands for; the popover itself lives outside the SVG.
+  const campo = ctx.campoPerQuota ? ctx.campoPerQuota(shape.testo, shape.campo || null) : null;
+  if (campo) {
+    textGroup.setAttribute("data-campo", campo);
+    textGroup.setAttribute("role", "button");
+    textGroup.setAttribute("tabindex", "0");
+    textGroup.classList.add("sk-quota-text--modificabile");
+    const title = svgNode("title", {});
+    title.textContent = `Modifica ${shape.testo} (Invio)`;
+    textGroup.prepend(title);
+  }
   g.append(textGroup);
   return g;
 }

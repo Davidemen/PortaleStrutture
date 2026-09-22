@@ -141,7 +141,7 @@ def _strati(inputs: EdometricoInput, si: IngressoSI, larghezza_terreno: float,
         ))
         forme.append(Quota(
             p1=(-larghezza_terreno / 2, y_top), p2=(-larghezza_terreno / 2, y_bot), distanza=-margine_sinistra,
-            testo=etichetta_quota("Δz", y_top - y_bot, "m"),
+            testo=etichetta_quota("Δz", y_top - y_bot, "m"), campo="dz",
         ))
     return tuple(forme)
 
@@ -199,7 +199,7 @@ def _quote(si: IngressoSI, spessore_plinto: float, larghezza_terreno: float, pro
     return (
         Quota(
             p1=(-si.b_m / 2, y_sommo_plinto), p2=(si.b_m / 2, y_sommo_plinto), distanza=margine,
-            testo=etichetta_quota("B", si.b_m, "m"),
+            testo=etichetta_quota("B", si.b_m, "m"), campo="b",
         ),
     )
 
