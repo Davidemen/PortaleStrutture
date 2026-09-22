@@ -384,3 +384,23 @@ Work in `src/strutture/web/static_next/` (identical to `static/` today). New mod
 dialog via two saves with a stale revision (drive the second through `page.request` PUT), duplicate, history,
 soft delete + restore, export → import round trip via `page.request`, project report contains every element and the
 per-element sections, unknown-tool element flagged); the e2e server already uses `InMemoryProjectRepository`.
+
+## 15. "Usa in…" — typed links between tools (phase 5 UI, 2026-09-22)
+Backend done: fields carry `provides: "<chiave>"` / `accepts: "<chiave>"` in their UI hints (already in the
+`/schema` payloads); `GET /api/tools/collegamenti` -> `{chiavi: {chiave: {fornitori: [{strumento, percorso, ingresso}],
+consumatori: [{strumento, campo}]}}, per_strumento: {tool: {fornisce: [chiave], accetta: {campo: chiave}, usa_in: [tool]}}}`.
+A key's value is copied as it is (the key names the unit); the registry test already guarantees compatibility.
+- Results toolbar: a button **"Usa in…"** (only when `per_strumento[tool].usa_in` is non-empty and a successful run
+  exists). It opens a small menu listing the consumer tools (sigla chip + title). Choosing one navigates to
+  `#/<consumer>?da=<tool>&<chiave>=<valore>&…` with every key the current run provides (`inputs_echo` for forwarded
+  inputs, `data` paths for outputs — resolve the paths client-side from the registry).
+- Consumer page: on load, fields whose `accepts` key is in the query are prefilled and marked with a provenance chip
+  "da <sigla fornitore>" next to the label (tooltip: "Valore preso da <tool title>: <chiave> = <valore>"); the run
+  starts live as usual. Editing a prefilled field clears its chip. A note under the tool title: "Dati ricevuti da
+  <tool>: N campi" with a link back (`#/<fornitore>`), dismissible.
+- Inside a project (§14): when the consumer element is saved, `provenienza` records `{"collegamenti": [{chiave,
+  strumento, elemento_id?}]}`; nothing else in this phase (the "dati a monte modificati" marking is a later step).
+- Tests: `tests/e2e/test_usa_in.py` — run sisma-parametri-sito's example, "Usa in…" lists muro-sostegno and
+  fond-trave-collegamento, choosing muro-sostegno prefills ag_g/f0/categorie with chips, editing ag_g clears its chip;
+  a tool without consumers shows no button. Files: `js/usa-in.js`, `js/provenienza.js`, `css/usa-in.css`; small edits
+  to `results-toolbar.js`, `router.js`, `forms.js`. Staging + full suite green as in §13.4.

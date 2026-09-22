@@ -94,7 +94,10 @@ Effort ≈ 2 M.
 ## Phase 7 — Housekeeping
 - **Local install [U: both]:** `Avvia StruttureMenni.bat` / `.command` (checks uv, syncs, starts the server on
   localhost, opens the browser) + a short guide for running the central instance as a Windows service.
-- Move `muro` onto `shared.footing_pressure` and `ca_mensole` onto `shared.ec2_strut_tie`; highlights for the seismic
+- ~~Move `muro` onto `shared.footing_pressure` and `ca_mensole` onto `shared.ec2_strut_tie`~~ — NOT done (2026-09-22):
+  both would replace the sheet's own formulas (the wall's per-metre triangular diagram with B* = 3(B/2−|e|); the corbel's
+  P_Rc = 0,4·b·d·f_cd·c/(1+(l/0,9d)²) of unknown provenance, register `ca-mensole/costanti-formule-tirante-puntone`) with
+  different models and change results: an engineering decision for the sign-off, not housekeeping; highlights for the seismic
   step tools; split the few modules over 150 lines; tidy `pyproject.toml`.
 - **Excel mode stays in the code** as the regression oracle; once all corrections of a tool are approved its switch
   is hidden from the UI (not deleted).
