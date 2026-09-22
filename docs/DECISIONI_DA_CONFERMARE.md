@@ -91,11 +91,22 @@ Dimensiona e studio di sensibilità (`docs/ui/WORKBENCH_SPEC.md` §23-24):
     propongono 1). Decidere se e quali passi predefiniti dare per tipo di dato (dimensioni, spessori, diametri) o
     campo per campo; il programma non ne sceglie nessuno da solo.
 19. Verifiche senza rapporto numerico (valore e limite): nella ricerca contano solo come "passa / non passa", senza
-    obiettivo. Decidere se è accettabile o se quelle verifiche vanno completate (modifica del contratto condiviso
-    `Check`, da concordare).
+    obiettivo. Oggi riguarda 20 verifiche di pilastri e travi (dettagli costruttivi, percentuali di armatura):
+    ca-pilastro-rettangolare 7, ca-pilastro-circolare 7, ca-trave-rettangolare 6 (esempio: percentuale di armatura
+    longitudinale, verifica di snellezza, passo massimo staffe, duttilità sezione). Decidere se è accettabile o se
+    quelle verifiche vanno completate (modifica del contratto condiviso `Check`, da concordare).
+19-bis. L'obiettivo di sfruttamento < 1 vale anche per le verifiche di minimo o di dettaglio (armatura minima,
+    passo, copriferro, rapporto massimo di armatura)? Proposta: no, per quelle conta solo l'esito passa/non passa,
+    finché il programma non distingue automaticamente le verifiche di resistenza dalle altre (manca un campo
+    `verso` e una categoria nel contratto `Check`).
 
 Stato del progetto (§25):
 20. "Provvisorio" nella relazione stampata: oggi l'indicatore compare solo nella pagina del progetto; decidere se
     deve comparire anche nella relazione del singolo strumento e in quella di progetto, e con quale frase.
 21. Una correzione del registro respinta (ancora applicata in modalità standard finché un agente non adegua il
-    codice) rende l'elemento "provvisorio" come una da confermare? La specifica propone di sì.
+    codice) rende l'elemento "provvisorio" come una da confermare? La specifica propone di sì (in attesa della
+    risposta, il conteggio la considera provvisoria).
+22. "Da ricalcolare" e "provvisorio" si devono propagare lungo la catena "Usa in…" (se A cambia e B viene segnato,
+    anche C che usa B dovrebbe segnalarlo, e un elemento che usa un fornitore provvisorio o in modalità Excel
+    dovrebbe risultare a sua volta "provvisorio per origine")? Non ancora implementato: la specifica propone di sì
+    e descrive la regola in `docs/ui/WORKBENCH_SPEC.md` §25.1, ma non la applica finché non rispondete.

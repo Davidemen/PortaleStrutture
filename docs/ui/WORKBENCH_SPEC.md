@@ -711,24 +711,39 @@ and required, except (a) integer fields (bar counts), where 1 is the only meanin
 editable, e.g. 2 for symmetric layouts), and (b) fields whose model declares a step hint
 `json_schema_extra={"passo": <number>}` (no field declares one today; adding one is an owner decision,
 `docs/DECISIONI_DA_CONFERMARE.md` items 17–18). The hint lives in the tool's own `models.py`, not in the shared
-contract; `_ui_schema` forwards it with the other UI hints.
+contract; pydantic copies `json_schema_extra` into the field's schema, so the hint reaches the UI through
+`GET /api/tools/{name}/schema` unchanged (no change to `_ui_schema`, which only strips class-level descriptions).
 
 ### 23.2 How η is read from a Report (no contract change)
-`Check` carries `passed` plus optional `value`/`limit` (`shared/report.py`). Every calculation module that builds
-checks sets `value=`/`limit=` today, but the pair is optional and its orientation is not declared: most checks are
-demand/capacity (`V_Ed ≤ V_Rd`, safe when the ratio is ≤ 1), some are capacity/demand or "minimum" checks
-(`As = 3,93 ≥ As,min = 3,56`, ratio ≥ 1 when safe; `js/verdict.js` `effectiveUtilisation` already flips those in the
-UI). Server rule, pure function in `shared/dimensiona/sfruttamento.py`:
+`Check` carries `passed` plus optional `value`/`limit` (`shared/report.py`). Most checks set `value=`/`limit=`;
+today 20 of the 124 checks produced by the tools' examples do not (ca-pilastro-rettangolare 7, ca-pilastro-circolare
+7, ca-trave-rettangolare 6: detailing rules such as bar spacing, minimum diameters, reinforcement percentages,
+ductility, crack class — precisely the tools where "Dimensiona" is most wanted). The frozen list of
+`test_copertura_rapporti.py` starts from exactly these 20. When the pair IS set, its orientation is not declared:
+most checks are demand/capacity (`V_Ed ≤ V_Rd`, safe when the ratio is ≤ 1), some are capacity/demand or "minimum"
+checks (`As = 3,93 ≥ As,min = 3,56`, ratio ≥ 1 when safe; `js/verdict.js` `effectiveUtilisation` already flips those
+in the UI), and some are "ceiling" checks that the calculation also treats as a validity limit (`ρl ≤ ρl,max` in
+ca-taglio-non-armato). Server rule, pure function in `shared/dimensiona/sfruttamento.py`:
 - Raw ratio r = value/limit when both are finite, limit ≠ 0 and they have the same sign; otherwise the check has
   no ratio. The `detail` text is never parsed on the server (it is written for people).
-- Orientation is learned per check NAME from the evaluations of the same search (probing, not hand tables):
-  "diretto" when `passed ⇔ r ≤ 1` holds on every evaluation where the check has a ratio, "inverso" when
-  `passed ⇔ r ≥ 1` holds; η = r or 1/r accordingly. A check whose samples contradict both (or that sits exactly
-  on r = 1 in every sample) is demoted to outcome-only for that search.
+- Orientation is learned per check NAME only from the `N_CAMPIONI` initial samples of §23.3 point 2 (probing, not
+  hand tables), then stays fixed for bisection and confirmation: "diretto" when `passed ⇔ r ≤ 1` holds on every
+  initial sample where the check has a ratio, "inverso" when `passed ⇔ r ≥ 1` holds; η = r or 1/r accordingly. A
+  check whose initial samples contradict both (or that sits exactly on r = 1 in every sample) is demoted to
+  outcome-only for that search. If a LATER evaluation (bisection, confirmation) contradicts the fixed orientation,
+  the check keeps that orientation anyway, `affidabile = false`, and `motivi` gets "Orientamento della verifica
+  <nome> incoerente".
 - Outcome-only checks (no ratio, or orientation undecidable) still take part: a sample is admissible only if every
   check passes AND every check with η has η ≤ obiettivo. The search therefore bisects on a boolean outcome and works
   with outcome-only checks too; the response lists them in `verifiche_solo_esito` and the UI says so ("Considerate
   solo come esito, senza obiettivo: …"). Whether that is acceptable is decision 19.
+- **The target applies only to resistance/demand-capacity checks.** For minimum, detailing or ceiling checks
+  (minimum reinforcement, bar spacing, cover, maximum reinforcement ratio) only pass/fail counts, until the owner
+  decides otherwise (decision 19-bis) — an `obiettivo < 1` turning `As ≥ As,min` into `As ≥ 1,25·As,min`, or a
+  ceiling check into `ρl ≤ 0,80·ρl,max`, is an engineering margin the program must not invent. The program has no
+  `verso`/category contract yet to make this distinction automatically: until it does, whenever `obiettivo < 1` the
+  response is always `affidabile = false` with a `motivo` "Obiettivo applicato anche a verifiche di minimo/dettaglio:
+  controllare", and the response separately lists the checks the target was NOT applied to.
 - Contract proposal, NOT done (rule 15, needs the owner's go-ahead): an optional `Check.verso: "max" | "min"`
   ("value must stay below / above limit") would make the orientation explicit and remove the learning step. Until
   then a permanent test (`tests/shared/dimensiona/test_copertura_rapporti.py`) runs every tool's example and
@@ -741,17 +756,38 @@ grid so that 0,05 steps never drift:
    Integer fields: integer multiples only.
 2. **Sampling**: `N_CAMPIONI = 17` grid points evenly spread, both ends included (fewer when the grid is smaller).
    Each evaluation = `execute(tool, {**inputs, campo: v})` in the request's mode (`legacy_compat` as sent; forced
-   off for an approved tool, §16). Outcome per sample: `ammissibile`, `non_ammissibile`, or `errore` (`ok=false`:
-   the value is outside the method's validity range; the Italian error is kept).
-3. **Direction** (`verso.py`): `verso: "auto"` by default, or `"minimo"`/`"massimo"` forced by the user. Auto reads
-   the admissibility pattern of the samples (errors ignored): N…N A…A → search the minimum; A…A N…N → the maximum;
-   all A → the η_max trend over the samples decides which end is the answer and `esito = "estremo_sufficiente"`
-   ("Già il valore <da|a> soddisfa le verifiche: allargare l'intervallo"); all N → `esito = "nessun_valore"` with the
-   best sample (lowest η_max) reported; more than one change of admissibility → not monotone, see 5.
+   off for an approved tool, §16 and §23.4). For each
+   sample the `warnings` are compared to the base run's (§23.4 `inputs`): a warning that was not there before is
+   remembered against that grid value. Outcome per sample: `ammissibile`, `non_ammissibile`, or `errore` (`ok=false`:
+   the value is outside the method's validity range; the Italian error is kept). An `errore` sample counts as a
+   BOUNDARY, never as `ammissibile`: it separates whatever lies on each side, exactly like an admissibility change.
+3. **Direction** (`verso.py`): `verso: "auto"` by default, or `"minimo"`/`"massimo"` forced by the user.
+   - Auto reads the admissibility pattern of the samples, with `errore` treated as a boundary (not ignored): N…N
+     A…A → search the minimum; A…A N…N → the maximum; all A → see below; all N → `esito = "nessun_valore"` with the
+     best sample (lowest η_max) reported; more than one change (of admissibility OR into/out of `errore`) → not
+     monotone, see 5. When the response lands exactly on the boundary between an `errore` band and an `A` band, that
+     boundary is refined by bisection (`errore` treated as `N` for the interval only), `esito = "limite_validita"`,
+     `affidabile = false`, motivo "Il valore trovato è il limite di validità del metodo (<messaggio d'errore>), non
+     il limite delle verifiche". `estremo_sufficiente` (below) is only returned when the sample AT the extreme is
+     `ammissibile`, never when it is `errore`.
+   - All A (and the extreme sample admissible): the η_max trend over the samples decides which end is the answer
+     and `esito = "estremo_sufficiente"` ("Già il valore <da|a> soddisfa le verifiche: allargare l'intervallo"). If
+     every check in play is outcome-only (no η at all), or η_max is constant or changes direction between samples,
+     the trend does not exist: the program does not guess an end — `esito = "estremo_sufficiente"`, `valore = null`,
+     motivo "Tutto l'intervallo soddisfa le verifiche: scegliere Valore minimo o Valore massimo".
+   - Forced `verso`: with `"minimo"` forced, if `da` is admissible, `esito = "estremo_sufficiente"` at `da`; if no
+     sample is admissible, `esito = "nessun_valore"`; otherwise bisect between the last N and first A in that
+     direction; a sequence that contradicts the forced direction (e.g. A…A N…N with `"minimo"` forced) falls into
+     the not-monotone case 5. Symmetric for `"massimo"` (`a`, N…N A…A).
 4. **Bisection** (`ricerca.py`) on grid indices between the bracketing samples (last N, first A in the search
-   direction) until they are adjacent; the answer is the admissible grid value. Then a **confirmation**: the next
-   `N_CONFERMA = 3` grid values beyond the answer (towards "safer") are evaluated; any non-admissible one sets
-   `affidabile = false`.
+   direction) until they are adjacent; the answer is the admissible grid value. If a bisection point itself returns
+   `errore` (a validity gap invisible to the initial sampling), the bisection stops there: the adjacent grid values
+   are evaluated outward on both sides up to `MAX_VALUTAZIONI` looking for the nearest non-`errore` point; the
+   answer is the last `A` found near that gap, `affidabile = false`, and `motivi` gets "Fra <v1> e <v2> il metodo
+   non è applicabile: <messaggio>". An `errore` point never counts as `A`. Then a **confirmation**: the next
+   `N_CONFERMA = 3` grid values beyond the answer (towards "safer") are evaluated; any non-admissible one, or any
+   new warning appearing at the answer or at a confirmation point (see point 2), sets `affidabile = false` and adds
+   the warning text to `motivi`.
 5. **Not monotone** (several admissibility changes, confirmation failed, or an `errore` sample inside the bracket):
    every admissible window found by sampling is refined at its near edge, the answer is the best edge in the
    requested direction, `affidabile = false` and `motivi` lists the windows ("Ammissibile per b in [0,30; 0,45] e
@@ -759,58 +795,112 @@ grid so that 0,05 steps never drift:
    windows narrower than one sampling interval, and the response says so ("Campionamento: 17 punti su 181 valori").
 6. **Limits**: `MAX_VALUTAZIONI = 80` tool runs and `TEMPO_MAX_S = 10` s (wall clock, checked between runs); when
    hit, `esito = "interrotta"`, the best bracket found so far and `affidabile = false`. Runs are off the event loop
-   (`run_in_threadpool`); at most `MAX_RICERCHE_CONTEMPORANEE = 2` searches per process (semaphore): a third gets
-   429 "Un'altra ricerca è in corso: riprovare fra qualche secondo." The global rate limit counts one request.
+   (`run_in_threadpool`); at most `MAX_RICERCHE_CONTEMPORANEE = 2` searches per process (semaphore). Semaphore and
+   clock live in `app.state.dimensiona` (built in `create_app`, replaceable in tests); `TEMPO_MAX_S` and
+   `MAX_VALUTAZIONI` are parameters passed to the pure search functions, not module constants, so a test does not
+   have to wait 10 s to see "interrotta". A third concurrent search gets 429 "Un'altra ricerca è in corso: riprovare
+   fra qualche secondo." The global rate limit counts one request. The dialog's "Annulla" only aborts the browser's
+   request (`AbortController`); the server-side search still runs to completion or to its own limits and keeps the
+   semaphore until then — a search restarted immediately after Annulla can still get 429.
+7. **Grid and validation edge cases**: an empty grid (`passo` has no multiple strictly between `da` and `a`) is 422
+   "Nessun multiplo del passo fra da e a"; a non-integer `passo` on an integer field is 422 "Il passo deve essere
+   intero"; `gt`/`lt` schema bounds are exclusive (`da`/`a` must be strictly inside), `ge`/`le` are inclusive — the
+   422 in §23.4 for "range outside the field's schema bounds" is checked accordingly (`da > exclusiveMinimum`,
+   `a < exclusiveMaximum`). A field that is `null` in the base `inputs` (an alternative input group, e.g.
+   `asl_mm2` vs `n_barre`+`diametro`) is accepted for `campo`: the trial value is substituted for it and the other
+   alternative fields are left as sent, with the tool's own validation errors surfacing as `errore` samples.
+   `report` in the response is `null` when `valore` is `null` (`nessun_valore`, or `estremo_sufficiente` with
+   `valore = null`).
 
 ### 23.4 API
 New router `src/strutture/web/routes/dimensiona.py` (keeps `routes/tools.py` small), mounted under `/api/tools`:
 `POST /api/tools/{name}/dimensiona`, body
 `{inputs: {…the run payload…}, campo, da, a, passo, obiettivo, verso?: "auto"|"minimo"|"massimo"}`.
-Response 200: `{ok: true, campo, verso, esito: "trovato"|"estremo_sufficiente"|"nessun_valore"|"interrotta",
+`build_dimensiona_router(tools, signoffs, register=None)` is wired in `web/app.py` next to `build_tools_router`;
+"approved" (for the "forced off" legacy_compat rule of §16/§23.3 point 2) is computed with the same
+`riepilogo_per_strumento` of §25.2 (approvato = register entries present, `da_confermare == 0` and `respinto == 0`).
+An element saved in Excel mode for a tool that later becomes approved recalculates in standard mode, as §16.
+Response 200: `{ok: true, campo, verso, esito:
+"trovato"|"estremo_sufficiente"|"nessun_valore"|"interrotta"|"limite_validita",
 valore: number|null, affidabile, motivi: [str], governante: {nome, eta}|null, verifiche_solo_esito: [str],
-campioni: [{valore, esito, eta_max, messaggio?}], valutazioni, durata_s, report: <run envelope at `valore`>}`.
+verifiche_senza_obiettivo: [str], campioni: [{valore, esito, eta_max, messaggio?, avvisi_nuovi: [str]}], valutazioni,
+durata_s, modalita, correzioni: {da_confermare, respinto}, report: <run envelope at `valore`>}`.
+`verifiche_senza_obiettivo` lists the resistance checks the target was NOT applied to under the §23.2 rule (minimum,
+detailing, ceiling checks); `modalita`/`correzioni` are read the same way as §25.2 so the UI can show the same
+"⚠ riproduce il foglio Excel" / "◐ Provvisorio" caveats as a saved element (§23.5).
 Errors (standard envelope, Italian `errors[0]`, `error_details.loc` naming the body key): 404 unknown tool; 422
 unknown or non-numeric `campo` (tables, enums, booleans and `legacy_compat` are refused: "Il campo … non è
 numerico"), missing or non-positive `passo` ("Indicare il passo di arrotondamento"), `obiettivo` outside (0; 1],
-`da ≥ a`, range outside the field's schema bounds, too many steps, invalid base `inputs` (the run's own messages);
-429 as above; 500 envelope on an unexpected exception (logged with the tool name, never the inputs). Frozen pydantic
-models for body and response in `shared/dimensiona/modelli.py`.
+`da ≥ a`, range outside the field's schema bounds (§23.3 point 7: exclusive bounds enforced strictly), empty grid,
+non-integer `passo` on an integer field, too many steps, invalid base `inputs` (the run's own messages); 429 as
+above; 500 envelope on an unexpected exception (logged with the tool name, never the inputs). Frozen pydantic models
+for body and response in `shared/dimensiona/modelli.py`.
 
 ### 23.5 UI
 - Entry points: a results toolbar button **"⌖ Dimensiona…"** (icon + word) when the last run succeeded, and a
   "Dimensiona" link in §18's sketch popover for the field being edited. Keyboard: `g d` opens the dialog on the
-  focused (or last focused) numeric field; the shortcut sheet lists it.
-- Dialog (`role="dialog"`, non-modal side panel so the Dati stay readable): Campo (select of numeric inputs grouped
-  like the Dati sections, symbol + label + unit), Da / A (prefilled with the field's schema bounds when finite, else
-  current value ×0,5 and ×2; always visible and editable), **Passo** (empty and required, see 23.1), **Obiettivo di
-  sfruttamento** (1,00), Verso (Automatico · Valore minimo · Valore massimo), "Cerca" (Enter or `Ctrl+Enter`),
-  disabled with the reason shown until Passo is valid. While running: "Ricerca in corso…" and "Annulla" (Esc;
-  `AbortController`).
+  focused (or last focused) numeric field, chosen outside text fields only — `shortcuts.js` ignores every key while
+  the target is editable (`isEditableTarget`), so `g d` cannot fire from inside a field. A `focusin` listener on the
+  Dati form remembers the last numeric field that had focus; `g d` opens the dialog preselected on that field (or
+  the first numeric field if none had focus yet); the shortcut sheet lists it.
+- Da / A prefill, per side: `da` = the field's `minimum` when it is inclusive (`ge`); otherwise
+  `max(minimum, current × 0,5)` if a `minimum`/`exclusiveMinimum` exists, else empty. Symmetrically `a` = `maximum`
+  when inclusive (`le`); otherwise `min(maximum, current × 2)` if a bound exists, else empty. If the current value is
+  ≤ 0, both sides start empty and required (×0,5/×2 of a non-positive number is not a useful proposal). Both remain
+  always visible and editable; the field is never prefilled with an exclusive bound itself (h `gt=0`: Da starts at
+  `min(current × 0,5, …)`, never 0).
+- Dialog (`role="dialog"`, non-modal side panel so the Dati stay readable, `aria-labelledby` on the title): Campo
+  (select of numeric inputs grouped like the Dati sections, symbol + label + unit; focus starts here on open), Da /
+  A (above), **Passo** (empty and required, see 23.1), **Obiettivo di sfruttamento** (1,00), Verso (Automatico ·
+  Valore minimo · Valore massimo), "Cerca" (Enter inside the dialog; `Ctrl+Enter` inside the dialog is handled by
+  the dialog's own handler, which calls `preventDefault()` + `stopPropagation()` so the global "Calcola" shortcut of
+  §6 does not also fire), disabled with `aria-disabled` + `aria-describedby` pointing at the reason text (still
+  reachable by Tab) until Passo is valid. While running: "Ricerca in corso…" announced in an `aria-live="polite"`
+  region, and "Annulla" (Esc while running = abort via `AbortController`; the search on the server is not
+  cancelled, see §23.3 point 6). Esc at rest closes the dialog and returns focus to whichever control opened it.
+  Below 720 px width (§9) the panel becomes a full-width sheet under the Dati instead of a side panel.
 - Result block: `<symbol> = <valore> <unit>` in large type, η max and governing check, then the reliability line as
-  icon + word: "✓ Affidabile" or "⚠ Da controllare" + every `motivo`; outcome-only checks listed. Disclosure
-  "Campioni" = accessible table (valore · esito · η max). Buttons **"Applica"** (writes the Dati control and
-  dispatches `input` exactly like §18, one undo step in §21; the field flashes) and **"Studia la sensibilità"**
-  (opens §24 with the same field and range). "Nessun valore" and "interrotta" show the best sample and no Applica.
+  icon + word: "✓ Affidabile" or "⚠ Da controllare" + every `motivo`; outcome-only checks listed separately from
+  `verifiche_senza_obiettivo` (§23.4). With `modalita = "excel"`: "⚠ Valore trovato riproducendo il foglio Excel,
+  errori inclusi" and `affidabile = false`; with pending register corrections on the tool (§25.2 rule): "◐
+  Provvisorio" with the same text and register link as §25.2. The same `aria-live` region announces the result once
+  ready: "<simbolo> = <valore> <unit>, affidabile" or "…, da controllare". Disclosure "Campioni" = accessible table
+  (valore · esito · η max · avvisi nuovi). Buttons **"Applica"** (writes the Dati control and dispatches `input`
+  then `change`, as §18 after §21, so it is exactly one undo step in §21 labelled "Dimensiona: <simbolo> <vecchio> →
+  <nuovo>"; the field flashes) and **"Studia la sensibilità"** (opens §24 with the same field and range). "Nessun
+  valore", "interrotta" and "limite_validita" show the best sample and no Applica.
 - Modules: `js/dimensiona.js` (dialog, ≤ 400 lines), `js/dimensiona-api.js`, `js/dimensiona-esito.js`,
   `css/dimensiona.css`; small edits to `results-toolbar.js`, `shortcuts.js`, `schizzo-modifica.js`. CSP (rule 4):
   no inline style or script, no `innerHTML`, geometry via classes or `style.setProperty`.
 
 ### 23.6 Acceptance
-- Unit (`tests/shared/dimensiona/`): `test_griglia.py` (Decimal multiples, integer fields, MAX_GRADINI),
-  `test_sfruttamento.py` (direct, inverse, contradictory → outcome-only, sign mismatch, limit 0),
-  `test_ricerca.py` with synthetic `valuta` callables: monotone increasing and decreasing, all admissible, none,
-  two windows (→ `affidabile=false`, both windows in `motivi`), an `errore` band, evaluation and time limits;
-  `test_copertura_rapporti.py` (23.2).
-- Golden: on `ca-taglio-non-armato`'s example, searching the section depth returns a grid value v such that v is
-  admissible and v − passo is not (checked by two direct `execute` calls); target 0,80 gives a value ≥ the 1,00 one.
-- API (`tests/web/test_dimensiona_api.py`): 404, each 422 message, 429 with a held semaphore, response shape.
-- E2E (`tests/e2e/test_dimensiona.py`): open a tool, "Dimensiona…", Cerca disabled until Passo is filled, result
-  shown with the reliability word, Applica updates the field and the live run, `g d` opens the dialog, Esc cancels;
-  `tests/e2e/dimensiona.test.mjs` for the pure formatting helpers.
+- Unit (`tests/shared/dimensiona/`): `test_griglia.py` (Decimal multiples, integer fields, MAX_GRADINI, empty grid,
+  non-integer passo on an integer field), `test_sfruttamento.py` (direct, inverse, contradictory → outcome-only,
+  sign mismatch, limit 0, target not applied to a minimum/detailing check), `test_ricerca.py` with synthetic
+  `valuta` callables: monotone increasing and decreasing, all admissible (with and without an η trend), none, two
+  windows (→ `affidabile=false`, both windows in `motivi`), an `errore` band at a sampling point, an `errore` at a
+  bisection point (§23.3 point 4), forced `verso` in and against the sequence, a new warning appearing at the
+  answer, orientation contradicted after being fixed, evaluation and time limits; `test_copertura_rapporti.py`
+  (23.2).
+- Golden: on `muro-sostegno`'s example (has both demand/capacity and minimum checks), searching a stated field
+  `campo=<nome>` over an explicit `da=<x>, a=<y>, passo=<p>` with `obiettivo=1,00` returns `esito = "trovato"` with a
+  grid value v such that v is admissible and v − passo is not (checked by two direct `execute` calls); target 0,80
+  gives a value v' ≥ v. `ca-taglio-non-armato` (a single minimum/ceiling check, no demand/capacity action) is kept
+  only as a `estremo_sufficiente` case, not as the main golden example.
+- API (`tests/web/test_dimensiona_api.py`): 404, each 422 message (including empty grid and non-integer passo),
+  429 with a held semaphore (via the injectable `app.state.dimensiona`), response shape including `modalita` and
+  `correzioni`.
+- E2E (`tests/e2e/test_dimensiona.py`): open a tool, "Dimensiona…", Cerca disabled until Passo is filled with the
+  reason reachable by Tab, result shown with the reliability word, Applica updates the field and the live run,
+  focus a numeric field then `g d` preselects it, Esc cancels and returns focus, `Ctrl+Enter` inside the dialog
+  starts the search and does not also trigger the global "Calcola"; repeated at 390×844 for the mobile layout;
+  `tests/e2e/dimensiona.test.mjs` for the pure formatting helpers (Da/A prefill rule).
 
 ### 23.7 Open engineering decisions
 Default `obiettivo` (decision 17); default `passo` per kind of field and any per-field `passo` hint (18); whether
-outcome-only checks are acceptable in a sizing (19). Until decided: no default step, target proposed 1,00.
+outcome-only checks are acceptable in a sizing (19); whether the target also applies to minimum/detailing/ceiling
+checks (19-bis, proposed: no). Until decided: no default step, target proposed 1,00, target applies only to
+resistance checks.
 
 ## 24. Studio di sensibilità (owner's request 2026-09-22)
 Purpose: see how every check reacts to one input over a range, before or after §23.
@@ -820,27 +910,37 @@ Purpose: see how every check reacts to one input over a range, before or after �
 and time limit), body `{inputs, campo, da, a, punti}` with `2 ≤ punti ≤ MAX_PUNTI = 41`, evenly spaced, ends
 included, no rounding step (a study, not a choice); `TEMPO_MAX_S = 10`. Pure function `shared/dimensiona/serie.py`.
 Response: `{ok, campo, valori: [number], verifiche: [{nome, clausola, eta: [number|null], esito: [bool|null]}],
-errori: [{valore, messaggio}], verifiche_solo_esito: [str], completa: bool}` — `completa=false` when the time limit
-cut the series (the points evaluated so far are returned). 422s as §23.4 (`punti` out of range: "Indicare fra 2 e
-41 punti"); no `obiettivo` in the body: the target line is drawn client-side from the dialog value (prefilled 1,00,
-same rule as 23.1).
+errori: [{valore, messaggio}], verifiche_solo_esito: [str], modalita, correzioni: {da_confermare, respinto},
+completa: bool}` — `completa=false` when the time limit cut the series (the points evaluated so far are returned).
+`modalita`/`correzioni` are read the same way as §23.4/§25.2, for the same caveats in the UI. 422s as §23.4 (`punti`
+out of range: "Indicare fra 2 e 41 punti"); no `obiettivo` in the body: the target line is drawn client-side from
+the dialog value (prefilled 1,00, same rule as 23.1).
 
 ### 24.2 UI
-- Entry: results toolbar **"∿ Sensibilità…"**, `g s`, or "Studia la sensibilità" from §23. Dialog: Campo, Da / A,
-  Punti (proposed 21), Obiettivo (1,00, only draws the line), "Calcola" (Enter).
+- Entry: results toolbar **"∿ Sensibilità…"**, `g s` (outside text fields, same preselection rule as `g d` in
+  §23.5), or "Studia la sensibilità" from §23. Dialog (`role="dialog"`, `aria-labelledby`, focus on Campo at open,
+  Esc at rest closes and returns focus, full-width sheet below 720 px, `aria-live="polite"` announcing "Ricerca in
+  corso…" and then the result — all as §23.5): Campo, Da / A, Punti (proposed 21), Obiettivo (1,00, only draws the
+  line), "Calcola" (Enter inside the dialog; `Ctrl+Enter` inside the dialog is handled locally with
+  `stopPropagation()` so it does not also trigger the global "Calcola").
 - Chart: `renderChart` from `js/chart.js`, rows `[{x: valore, s1: η, …, s5: η}]`, `chart = {x: "x", x_label:
   "<symbol> [<unit>]", y_label: "η"}`. Series = the 5 most critical checks over the range (failed somewhere first,
-  then by max η); checkboxes under the chart swap which checks are drawn (at most 5 at a time). Guides: a vertical
-  guide "attuale" at the field's current value (existing `guides`) and a HORIZONTAL target line "obiettivo 1,00".
-  Today `chart.js` draws only vertical guides and `css/chart.css` styles only 2 series: small edits, both JS files
-  stay far under 400 lines — `renderChart(…, {hGuides: [{value, label}]})` drawn by a new `buildHGuide` in
-  `chart-axis.js` and included in the y domain; `c-series-3..5` added to `chart.css`, each with its own dash pattern
-  and end marker so series are told apart without colour. Points with an error or without η are gaps (`toFinite` →
-  null, already handled).
+  then by max η); checkboxes under the chart swap which checks are drawn (at most 5 at a time; with 5 already
+  checked, the remaining checkboxes get `aria-disabled` and their label says "massimo 5 verifiche"). Guides: a
+  vertical guide "attuale" at the field's current value (existing `guides`) and a HORIZONTAL target line "obiettivo
+  1,00". The y domain is `[0, min(max η in the series, ETA_MAX_GRAFICO = 3)]`: a point above `ETA_MAX_GRAFICO` is
+  drawn clipped to the top edge with a "▲" marker (the accessible table below always shows the true value), so a
+  field with a small denominator cannot flatten the useful part of the curve. Today `chart.js` draws only vertical
+  guides and `css/chart.css` styles only 2 series: small edits, both JS files stay far under 400 lines —
+  `renderChart(…, {hGuides: [{value, label}]})` drawn by a new `buildHGuide` in `chart-axis.js` and included in the
+  (now capped) y domain; `c-series-3..5` added to `chart.css`, each with its own dash pattern and end marker so
+  series are told apart without colour. Points with an error or without η are gaps (`toFinite` → null, already
+  handled).
 - Accessible equivalent, always rendered (DESIGN_SPEC §3): a table with caption, one row per point: valore · η of each
-  drawn check (2 decimals, "—" when none) · "Esito" as icon + word (✓ Tutte passano / ✕ N non passano) ·
-  outcome-only checks as ✓/✕ columns · a row button "Usa questo valore" (applies like §23, one undo step §21). Error
-  points show the Italian message in the row. The chart wrapper keeps its arrow-key crosshair.
+  drawn check (2 decimals, true value even above `ETA_MAX_GRAFICO`, "—" when none) · "Esito" as icon + word (✓ Tutte
+  passano / ✕ N non passano) · outcome-only checks as ✓/✕ columns · a row button "Usa questo valore" (writes the Dati
+  control and dispatches `input` then `change`, as §18 after §21, one undo step §21). Error points show the Italian
+  message in the row. The chart wrapper keeps its arrow-key crosshair.
 - Modules: `js/sensibilita.js` (dialog and orchestration), `js/sensibilita-grafico.js` (pure rows/series/guides
   mapping), `js/sensibilita-tabella.js`, `css/sensibilita.css`; edits to `chart.js`, `chart-axis.js`, `chart.css`,
   `results-toolbar.js`, `shortcuts.js`. CSP as §23.5.
@@ -858,31 +958,74 @@ whether its results rest on register corrections the owner has not signed yet.
 
 ### 25.1 "Da ricalcolare": what must be saved (today it is not)
 §15 saves `provenienza = {collegamenti: [{chiave, strumento}]}` (`js/provenienza.js` `activeProvenienza`): neither the
-provider element nor the copied value, so an upstream change cannot be detected. New shape of each item (additive;
-old elements keep working and simply show no marker):
+provider element nor the copied value, so an upstream change cannot be detected. Worse, `activeProvenienza(tool)`
+returns `{}` whenever the current session was not opened with `?da=…` (`session.provider` unset) — see
+`provenienza.js` lines 140-143 — and `elemento-salva.js` sends that empty object on EVERY save, unconditionally
+(`currentPayload`). So today, reopening a saved element with `?elemento=<id>` and saving again for any reason (a
+renamed note, an unrelated field) silently wipes ALL of its `collegamenti`: the "da ricalcolare" marker becomes
+permanently impossible for that element, exactly when it should still work. New shape of each item (additive; old
+elements keep working and simply show no marker):
 `{chiave, strumento, percorso, ingresso, valore, elemento_id?, revisione_fornitore?}` — `percorso`/`ingresso` as in
-`shared/collegamenti.py`'s `Fornitore`, `valore` the exact value copied into the consumer field. `elemento_id` and
-`revisione_fornitore` exist only when "Usa in…" starts from a SAVED element (header state of §14.1): `js/usa-in.js`
-adds `&da_elemento=<id>&da_revisione=<n>` to the query, `provenienza.js` keeps them in its session and
-`elemento-salva.js` stores them. Editing a prefilled field clears its chip and drops its item (as today), so a
-hand-typed value is never "stale". A link without `elemento_id` shows "origine non salvata" in the tooltip and is
-never marked.
+`shared/collegamenti.py`'s `Fornitore`, `valore` the exact value copied into the consumer field.
+- **Reconstruction on open**: opening `?elemento=<id>` makes `provenienza.js` rebuild its session from the saved
+  `provenienza.collegamenti`: each item whose consumer field still holds exactly `valore` gets its "da <sigla>" chip
+  restored (same rendering as a fresh "Usa in…"); an item whose field was hand-edited since the save is dropped, as
+  today. `activeProvenienza(tool)` then returns the union of the still-valid restored items and any new ones added in
+  this session. **No save ever clears the provenance of an item the user did not touch.** The same reconstruction
+  feeds "Aggiorna dai dati a monte" below.
+- `elemento_id` and `revisione_fornitore` are added only when the on-screen provider EXACTLY matches a saved
+  element: no unsaved changes ("dati modificati" state of §14.1) and the same `modalita`. `js/usa-in.js` reads that
+  state before adding `&da_elemento=<id>&da_revisione=<n>` to the query; when it does not match, the link is saved
+  WITHOUT `elemento_id` ("origine non salvata" in the tooltip, never marked) — the value-based comparison below
+  would otherwise flag an origin whose revision never changes even though the copied value does not match what
+  that revision actually produces.
+- Editing a prefilled field clears its chip and drops its item (as today), so a hand-typed value is never "stale".
 Rule (pure, `shared/stato_progetto/origini.py`): an element is **da ricalcolare** when, for at least one item with
-`elemento_id`, the provider element is deleted ("origine eliminata"), or its `revisione` differs from
-`revisione_fornitore` AND the value at `percorso` of a FRESH run of its stored inputs (`execute`, the provider's
-stored `modalita`) differs from `valore` (numbers: relative difference > 1e-9; enums: not equal) — a rename or a note
-never marks anything. A provider run that fails gives "origine non calcolabile" (marked, message kept). The marker
-clears when the consumer is saved again with current values (new "Usa in…" or the row action below).
+`elemento_id`, the provider element is deleted ("origine eliminata"), or the value at `percorso` of a FRESH run of
+the provider's CURRENT stored inputs (`execute`, the provider's current `modalita`) differs from `valore` (numbers:
+relative difference > 1e-9; enums: not equal) — **regardless of whether `revisione` changed**: a code fix after a
+rejected register entry, a register entry applied or withdrawn, or a shared table changed all change the provider's
+output at a fixed revision, and the consumer must be marked too (`causa: "valore_cambiato"`). The comparison result
+is cached per `(elemento_id, revisione, impronta)`, where `impronta` combines the register signoffs' fingerprint and
+the installed package/commit fingerprint, so the cache itself is invalidated by exactly the same changes that must
+be detected — `revisione` alone is kept in the cache key only to make the "Aggiorna" message readable, not as the
+trigger. A provider run that fails gives "origine non calcolabile" (marked, message kept); a rename or a note alone
+never marks anything, because the value at `percorso` is unchanged. The marker clears when the consumer is saved
+again with current values (new "Usa in…" or the row action below).
+Propagation along the chain (proposal, NOT implemented — decision 22): neither "da ricalcolare" nor "provvisorio"
+propagate today. If A changes, B is marked, but B's saved inputs do not change until the owner acts on it; when C
+uses B, a fresh run of B's stored inputs still returns the OLD value (nothing in B's own data changed yet), so C is
+never marked even though it rests on a stale B. Symmetrically, a standard-mode element with no pending corrections
+that consumes a value from a provvisorio or Excel-mode provider looks fully "definitivo" even though it rests on
+unapproved corrections or on the sheet's own errors. Proposed rule, pending decision 22: propagate via `elemento_id`
+(cycle-checked, capped by `MAX_RICALCOLI_ORIGINI`) with `causa: "origine_da_ricalcolare"` when the provider is da
+ricalcolare, and a "provvisorio per origine" state when the provider is provvisorio or in Excel mode ("Usa valori di
+<sigla>, che applica correzioni non approvate / riproduce il foglio Excel"). Not applied before the owner answers.
+"Aggiorna dai dati a monte" (row action, §25.4) reads the CURRENT values through `GET /api/progetti/{id}/stato`
+(the same `valore_attuale` already carried in each `motivo`), fills the linked fields, and `provenienza.js` updates
+each item's `valore`/`revisione_fornitore` to the provider's current value/revision (read again via `GET` on the
+provider element) so the next "Salva" stores a provenance that matches what was actually applied.
 
 ### 25.2 "Provvisorio"
 From the same data as `GET /api/divergences/riepilogo`: the per-tool count is factored into a pure function
 `riepilogo_per_strumento(divergences, signoffs)` in `shared/divergences/`, reused by the existing route (no
-behaviour change). An element is **provvisorio** when its `modalita` is standard and its tool has
-`da_confermare > 0` or `respinto > 0` (a rejected entry stays applied in standard mode until an agent adapts the
-code, see DECISIONI "Come si conferma"). Granularity is the tool, as in the register: the program does not know which
-entries a given run traversed; the tooltip says "Il calcolo applica correzioni del registro non ancora approvate
-(N da confermare, M respinte)" and links to the register filtered on the tool. Excel-mode elements are not provvisori
-(they reproduce the sheet; §14 already shows `modalita`). Whether `respinto` counts is decision 21.
+behaviour change). `Divergence.ramo` is `"nessuno"` for 62 of the 209 register entries today: those are corrections
+applied in BOTH modes (or not reproduced in Excel at all), so an Excel-mode element is not automatically clear of
+pending corrections either. An element is **provvisorio** when its tool has register entries that affect its mode
+and are not approved:
+- standard mode: every entry with `stato` `da_confermare`/`respinto` counts (a rejected entry stays applied in
+  standard mode until an agent adapts the code, see DECISIONI "Come si conferma");
+- Excel mode: only entries with `ramo == "nessuno"` count (applied in both modes).
+`riepilogo_per_strumento` returns, alongside the existing per-`stato` counts, the same counts restricted to
+`ramo == "nessuno"` so the Excel-mode rule above can be computed. Entries with `tipo == "da_verificare"` (30 today)
+are open doubts, not applied corrections: they are counted SEPARATELY and never make an element provvisorio; the
+tooltip names them "N dubbi da verificare" rather than listing them as corrections applied. Granularity is the
+tool, as in the register: the program does not know which entries a given run traversed; the tooltip says "Il
+calcolo applica correzioni del registro non ancora approvate (N da confermare, M respinte)", plus "N dubbi da
+verificare" when non-zero, and links to the register filtered on the tool. Whether `respinto` counts towards
+provvisorio is decision 21 — proposal in the meantime: yes, it counts; the rule lives in a single place
+(`shared/stato_progetto/provvisorio.py`, constant `RESPINTO_RENDE_PROVVISORIO = True`) so it flips with one edit
+once the owner answers, and the tooltip always reports the two counts (`da_confermare`, `respinto`) separately.
 **The printed relazione is unchanged** (single tool §10 and project §14.3): whether "provvisorio" must appear on
 paper is the owner's decision 20; until then nothing is printed.
 
@@ -890,37 +1033,55 @@ paper is the owner's decision 20; until then nothing is printed.
 `GET /api/progetti/{id}/stato` (new router `routes/progetti_stato.py`; `routes/progetti.py` is already 358 lines) →
 `{elementi: {<id>: {da_ricalcolare: bool, motivi: [{chiave, strumento, elemento_id, causa:
 "valore_cambiato"|"origine_eliminata"|"origine_non_calcolabile"|"controllo_rinviato", valore_salvato,
-valore_attuale|null, messaggio?}], provvisorio: bool, correzioni: {da_confermare, respinto}}}, conteggi: {elementi,
-verificati, non_verificati, dati_modificati, da_ricalcolare, provvisori, controllo_rinviato}}`. 404 unknown or deleted
-project (Italian envelope). Provider runs are off the event loop, cached in memory per `(elemento_id, revisione)`,
-at most `MAX_RICALCOLI_ORIGINI = 50` per request (beyond: `causa: "controllo_rinviato"`, not marked, counted). The
-page fetches the state after the element list, again after every save/duplicate/delete/restore on the page and after
-a register sign-off (the rail badge's refresh event already exists).
+valore_attuale|null, messaggio?}], provvisorio: bool, correzioni: {da_confermare, respinto, ramo_nessuno,
+da_verificare}}}, conteggi: {elementi, verificati, non_verificati, dati_modificati, da_ricalcolare, provvisori,
+controllo_rinviato}}`. `build_progetti_stato_router(progetti, tools, signoffs, register=None)` needs the project,
+tool and register/signoff repositories together (same dependency shape as `build_dimensiona_router`, §23.4), wired
+in `web/app.py`. 404 unknown or deleted project (Italian envelope). Provider runs are off the event loop, cached in
+memory per `(elemento_id, revisione, impronta)` per §25.1, at most `MAX_RICALCOLI_ORIGINI = 50` per request (beyond:
+`causa: "controllo_rinviato"`, not marked, counted). The page fetches the state after the element list, again after
+every save/duplicate/delete/restore on the page and after a register sign-off (the rail badge's refresh event
+already exists).
 Modules: `src/strutture/shared/stato_progetto/{origini.py, provvisorio.py, conteggi.py}` (pure, ≤ 150 lines each).
 
 ### 25.4 UI
 - Element row (§14.3 list and the state column of the §20 table): next to the stato, chips as icon + word, never
   colour alone: **"↻ Da ricalcolare"** (tooltip: each motivo, e.g. "ag da SPS: 0,150 → 0,180 g") and
   **"◐ Provvisorio"** (tooltip + register link, 25.2). Row action **"Aggiorna dai dati a monte"** (only when da
-  ricalcolare) opens `#/<tool>?elemento=<id>&aggiorna_origini=1`: the linked fields are refilled with the current
-  provider values, with §15's "da <sigla>" chips and the old value in the chip tooltip; nothing is saved until "Salva".
+  ricalcolare) opens `#/<tool>?elemento=<id>&aggiorna_origini=1`: the page calls `GET /api/progetti/{id}/stato`,
+  reads `valore_attuale` from the element's motivi and fills the linked fields, with §15's "da <sigla>" chips and
+  the old value in the chip tooltip; the fill happens AFTER §21's history reset on `?elemento=` load and is itself
+  one undoable step "Aggiorna dai dati a monte"; nothing is saved until "Salva", which then stores the refreshed
+  `valore`/`revisione_fornitore` per §25.1.
 - Project head: one line of counts, each a button that filters the list/table (Tab + Enter; Esc clears the filter):
   "12 elementi · ✓ 9 verificati · ✕ 1 non verificato · ○ 2 dati modificati · ↻ 3 da ricalcolare · ◐ 5 provvisori".
   "Controllo rinviato" appears only when non-zero.
 - Modules: `js/progetto-stato.js` (fetch, chips, counts; ≤ 400 lines), `css/progetto-stato.css`; small edits to
-  `progetto.js`, `progetto-elementi.js` (and the §20 table module), `usa-in.js`, `provenienza.js`,
-  `elemento-salva.js`. CSP as §23.5.
+  `progetto.js`, `progetto-elementi.js` (and the §20 table module), `usa-in.js`, `provenienza.js`. The provenance
+  payload (`collegamenti` with `elemento_id`/`revisione_fornitore`, and the §25.1 reconstruction-on-open) is built
+  and owned entirely by `provenienza.js`; `elemento-salva.js` (already 373 of its 400 lines, and also touched by
+  §21) only calls `activeProvenienza(tool)` as it does today — no new logic added there. If a further need arises
+  that would push it over 400 lines, the 409-conflict dialog is split out first into a new `js/elemento-conflitto.js`.
+  CSP as §23.5.
 
 ### 25.5 Acceptance
-Unit (`tests/shared/stato_progetto/`): unchanged revision → not marked; new revision, same value → not marked;
+Unit (`tests/shared/stato_progetto/`): unchanged revision, unchanged value → not marked; new revision, same value →
+not marked; SAME revision, output changed by a code/register change → marked `causa: "valore_cambiato"` (25.1);
 changed value, deleted provider, failing provider run → marked with the right `causa`; old-shape provenienza → no
-marker; provvisorio for standard/Excel modes and for da_confermare/respinto counts; counts. API
-(`tests/web/test_progetti_stato_api.py`, in-memory repository): 404, shape, cache hit on unchanged revision,
-`MAX_RICALCOLI_ORIGINI`. E2E (`tests/e2e/test_progetto_stato.py`): save sisma-parametri-sito as an element, "Usa in…"
-muro-sostegno from it and save; change ag_g in the provider and save → the wall shows "↻ Da ricalcolare" and the head
-count is 1; "Aggiorna dai dati a monte" + Salva clears it; approve every register entry of the wall via
-`signoff-multiplo` → "◐ Provvisorio" disappears; the printed project relazione contains no "Provvisorio".
+marker; reopening and resaving an element without touching a linked field keeps its `collegamenti` (25.1); "Usa
+in…" from an unsaved/modified provider saves without `elemento_id`; provvisorio for standard mode
+(da_confermare/respinto) and Excel mode (`ramo == "nessuno"` entries only); `da_verificare` entries counted
+separately, never provvisorio; counts. API (`tests/web/test_progetti_stato_api.py`, in-memory repository): 404,
+shape, cache hit on unchanged revision AND unchanged impronta, `MAX_RICALCOLI_ORIGINI`. E2E
+(`tests/e2e/test_progetto_stato.py`): save sisma-parametri-sito as an element, "Usa in…" muro-sostegno from it and
+save; change ag_g in the provider and save → the wall shows "↻ Da ricalcolare" and the head count is 1; reopen the
+wall, rename it only, Salva → the provenance and "↻ Da ricalcolare" survive; "Aggiorna dai dati a monte" + Salva
+clears it; sign off every register entry of the wall via `signoff-multiplo` with sigla "E2E" on a fresh temporary
+data-dir fixture (so other tests' "da confermare" expectations are not disturbed), reload the project page →
+"◐ Provvisorio" disappears; the printed project relazione contains no "Provvisorio".
 
 ### 25.6 Open engineering decisions
 Printing "provvisorio" in the relazione (decision 20); whether rejected entries make an element provvisorio
-(decision 21). The comparison tolerance (1e-9 relative) is a guard against numeric noise, not an engineering threshold.
+(decision 21 — proposal until decided: yes, respinto counts); whether "da ricalcolare"/"provvisorio" propagate
+along the usage chain (decision 22, §25.1 — not implemented before the owner answers). The comparison tolerance
+(1e-9 relative) is a guard against numeric noise, not an engineering threshold.
