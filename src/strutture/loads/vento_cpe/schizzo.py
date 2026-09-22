@@ -8,13 +8,16 @@ Side walls are split into zones A/B/C at e/5 and e (e = min(crosswind, 2h)) with
 each limit; since this tool computes a single `cpe_side` for the whole face (no per-zone values),
 every zone shows that same value, labelled "A"/"B"/"C" — only on ONE of the two side faces (the
 other keeps its division lines, unlabelled: the two faces are symmetric and the 8-text-per-view
-budget, rule 4, does not allow labelling both)."""
+budget, rule 4, does not allow labelling both).
+
+Both views share ONE composition (owner's finding, 2026-09-22): wind always blows from below, the
+dimension of the horizontal side sits above the plan, the vertical one on its left, the zone
+labels stack to the right — direction 2 is the plan rotated by 90° (d horizontal, b vertical),
+not a different drawing."""
 from strutture.shared.sketch import Etichetta, Freccia, Linea, Punto, Quota, Rettangolo, Sketch, Vista, etichetta_quota
 
 from .models import DirectionResult, VentoCpeInput
 
-_FRAZIONE_ETICHETTA = 0.22  # posizione dell'etichetta lungo il lato (non al centro: libera il centro
-# per la freccia del vento e per il testo, centrato, della quota sullo stesso lato — regola 5)
 _FRAZIONE_ETICHETTA_ORIZZONTALE = 0.06  # inizio del testo lungo una faccia orizzontale (ancora "start")
 _STACCO_SOTTO_FACCIA_ALTA = 2.4  # il testo cresce verso l'alto: sotto la faccia y=d serve ~1 riga in più
 _SCOSTAMENTO_ETICHETTA = 0.09  # frazione di max(b,d): distanza delle etichette c_pe dalla propria faccia, verso l'interno
@@ -60,46 +63,39 @@ def disegna(inputs: VentoCpeInput, dir1: DirectionResult, dir2: DirectionResult)
     zone_dir2 = _confini_zona_frazione(d, b, h)
     return Sketch(
         viste=(
-            _vista_direzione1(b_dis, d_dis, b, d, dir1, zone_dir1),
-            _vista_direzione2(b_dis, d_dis, b, d, dir2, zone_dir2),
+            _vista_vento_dal_basso("Pianta — direzione 1", (b_dis, d_dis), (b, d), ("b", "d"), dir1, zone_dir1),
+            _vista_vento_dal_basso("Pianta — direzione 2", (d_dis, b_dis), (d, b), ("d", "b"), dir2, zone_dir2),
         ),
         nota=nota,
     )
 
 
-def _vista_direzione1(b: float, d: float, b_vero: float, d_vero: float, direzione: DirectionResult,
-                       zone: tuple[float, float]) -> Vista:
-    """Vento in +y: sopravento il lato y=0 (lungo b), laterali x=0/x=b, sottovento y=d.
-    `b`/`d` sono le dimensioni disegnate (eventualmente compresse); `b_vero`/`d_vero` i valori
-    reali, riportati nelle quote. Le pareti laterali corrono lungo y (profondità = d)."""
-    fb = _FRAZIONE_ETICHETTA_ORIZZONTALE * b
+def _vista_vento_dal_basso(titolo: str, disegnate: tuple[float, float], vere: tuple[float, float],
+                           nomi: tuple[str, str], direzione: DirectionResult, zone: tuple[float, float]) -> Vista:
+    """Vento in +y: sopravento il lato y=0 (lungo `larghezza`), laterali x=0/x=larghezza,
+    sottovento y=profondita. `disegnate` = (larghezza, profondità) eventualmente compresse;
+    `vere` i valori reali, riportati nelle quote con i `nomi` ("b"/"d") del lato orizzontale e di
+    quello verticale. Le pareti laterali corrono lungo y (profondità)."""
+    larghezza, profondita = disegnate
+    larghezza_vera, profondita_vera = vere
+    nome_larghezza, nome_profondita = nomi
+    riferimento = max(larghezza, profondita)
+    fb = _FRAZIONE_ETICHETTA_ORIZZONTALE * larghezza
     bordi: _Bordi = (
         ((fb, 0.0), (0.0, -1.0)),
-        ((b - fb, d), (0.0, 1.0)),
+        ((larghezza - fb, profondita), (0.0, 1.0)),
     )
-    freccia = Freccia(coda=(b / 2.0, -_FRAZIONE_FRECCIA * d), punta=(b / 2.0, 0.0), stile="carico", testo="vento")
-    # Quota di b sul lato SOTTOVENTO (y=d): sul lato sopravento la freccia del vento e il suo testo
-    # (sotto la coda) occupano la stessa fascia centrale della quota. Verso +x la sinistra è +y = fuori.
-    quota_b = Quota(p1=(0.0, d), p2=(b, d), distanza=_MARGINE_QUOTA * max(b, d), testo=etichetta_quota("b", b_vero, "m"))
-    quota_d = Quota(p1=(0.0, 0.0), p2=(0.0, d), distanza=_MARGINE_QUOTA * max(b, d), testo=etichetta_quota("d", d_vero, "m"))
-    zone_forme = _zone_laterali_verticali(0.0, b, d, zone, max(b, d))
-    return _vista("Pianta — direzione 1", b, d, direzione, bordi, freccia, quota_b, quota_d, zone_forme)
-
-
-def _vista_direzione2(b: float, d: float, b_vero: float, d_vero: float, direzione: DirectionResult,
-                       zone: tuple[float, float]) -> Vista:
-    """Vento in +x: sopravento il lato x=0 (lungo d), laterali y=0/y=d, sottovento x=b.
-    Le pareti laterali corrono lungo x (profondità = b)."""
-    fd = _FRAZIONE_ETICHETTA * d
-    bordi: _Bordi = (
-        ((0.0, d - fd), (-1.0, 0.0)),
-        ((b, fd), (1.0, 0.0)),
-    )
-    freccia = Freccia(coda=(-_FRAZIONE_FRECCIA * b, d / 2.0), punta=(0.0, d / 2.0), stile="carico", testo="vento")
-    quota_b = Quota(p1=(0.0, 0.0), p2=(b, 0.0), distanza=-_MARGINE_QUOTA * max(b, d), testo=etichetta_quota("b", b_vero, "m"))
-    quota_d = Quota(p1=(b, 0.0), p2=(b, d), distanza=-_MARGINE_QUOTA * max(b, d), testo=etichetta_quota("d", d_vero, "m"))
-    zone_forme = _zone_laterali_orizzontali(0.0, d, b, zone, max(b, d))
-    return _vista("Pianta — direzione 2", b, d, direzione, bordi, freccia, quota_b, quota_d, zone_forme)
+    freccia = Freccia(coda=(larghezza / 2.0, -_FRAZIONE_FRECCIA * profondita), punta=(larghezza / 2.0, 0.0),
+                      stile="carico", testo="vento")
+    # Quota del lato orizzontale sul lato SOTTOVENTO (y=profondità): sul lato sopravento la freccia
+    # del vento e il suo testo (sotto la coda) occupano la stessa fascia centrale della quota.
+    # Verso +x la sinistra è +y = fuori.
+    quota_orizzontale = Quota(p1=(0.0, profondita), p2=(larghezza, profondita), distanza=_MARGINE_QUOTA * riferimento,
+                              testo=etichetta_quota(nome_larghezza, larghezza_vera, "m"))
+    quota_verticale = Quota(p1=(0.0, 0.0), p2=(0.0, profondita), distanza=_MARGINE_QUOTA * riferimento,
+                            testo=etichetta_quota(nome_profondita, profondita_vera, "m"))
+    zone_forme = _zone_laterali_verticali(0.0, larghezza, profondita, zone, riferimento)
+    return _vista(titolo, larghezza, profondita, direzione, bordi, freccia, quota_orizzontale, quota_verticale, zone_forme)
 
 
 def _valore_con_segno(valore: float, decimali: int = 2) -> str:
@@ -140,27 +136,6 @@ def _zone_laterali_verticali(x0_m: float, x1_m: float, profondita_m: float, zone
     etichette = [
         Etichetta(punto=(x1_m + tick_m * 2.0 + i * passo_m, profondita_m / 2.0), simbolo=lettera, testo="", ancora="middle")
         for i, lettera in enumerate(_lettere_zona(y1_m, y2_m, profondita_m))
-    ]
-    return linee, etichette
-
-
-def _zone_laterali_orizzontali(y0_m: float, y1_m: float, profondita_m: float, zone: tuple[float, float],
-                                riferimento_m: float) -> tuple[list[Linea], list[Etichetta]]:
-    """Come `_zone_laterali_verticali`, per pareti laterali ORIZZONTALI (y=y0, y=y1) — le
-    etichette compaiono sulla parete y=y1, libera dalla quota `b`, ancorata su y0."""
-    tick_m = _TICK_ZONA_FRAZIONE * riferimento_m
-    f1, f2 = zone
-    x1_m, x2_m = f1 * profondita_m, f2 * profondita_m
-    linee: list[Linea] = []
-    for y_m in (y0_m, y1_m):
-        if 0.0 < x1_m < profondita_m:
-            linee.append(_tick_zona(x1_m, y_m - tick_m, x1_m, y_m + tick_m))
-        if x1_m < x2_m < profondita_m:
-            linee.append(_tick_zona(x2_m, y_m - tick_m, x2_m, y_m + tick_m))
-    passo_m = _PASSO_ETICHETTA_ZONA_FRAZIONE * riferimento_m
-    etichette = [
-        Etichetta(punto=(profondita_m / 2.0, y1_m + tick_m * 2.0 + i * passo_m), simbolo=lettera, testo="", ancora="middle")
-        for i, lettera in enumerate(_lettere_zona(x1_m, x2_m, profondita_m))
     ]
     return linee, etichette
 
