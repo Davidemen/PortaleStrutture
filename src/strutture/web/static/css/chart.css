@@ -58,12 +58,82 @@
   stroke-dasharray: 6 3;
 }
 
-/* Direct end-of-line labels wear text tokens, never the series colour: colour alone is not a
-   reliable channel (CVD, b/w print) and the legend swatch already carries it. */
+/* Direct end-of-line labels wear text tokens, never the series colour (further down): colour
+   alone is not a reliable channel (CVD, b/w print) and the legend swatch already carries it. */
+.c-series-3 {
+  color: var(--series-3);
+}
+
+.c-series-3 path {
+  stroke-dasharray: 2 2;
+}
+
+.c-series-4 {
+  color: var(--series-4);
+}
+
+.c-series-4 path {
+  stroke-dasharray: 8 2 2 2;
+}
+
+.c-series-5 {
+  color: var(--series-5);
+}
+
+.c-series-5 path {
+  stroke-dasharray: 1 3;
+}
+
 .c-series-1 text,
-.c-series-2 text {
+.c-series-2 text,
+.c-series-3 text,
+.c-series-4 text,
+.c-series-5 text {
   fill: var(--ink);
   font-family: var(--font-label);
+  font-size: var(--t-xs);
+}
+
+.c-series-1 .c-legend-swatch {
+  background: var(--series-1);
+}
+
+.c-series-3 .c-legend-swatch {
+  background: none;
+  border-top: 2px dotted var(--series-3);
+  height: 0;
+}
+
+.c-series-4 .c-legend-swatch {
+  background: none;
+  border-top: 2px dashed var(--series-4);
+  height: 0;
+}
+
+.c-series-5 .c-legend-swatch {
+  background: none;
+  border-top: 2px dotted var(--series-5);
+  height: 0;
+}
+
+/* Horizontal guide (sensibilita.js's utilisation target): same dashed style as the vertical
+   guide, drawn full-width across the plot instead of full-height. */
+.c-guide--h line {
+  stroke: var(--graphite);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+}
+
+.c-guide--h text {
+  fill: var(--graphite);
+  font-family: var(--font-label);
+  font-size: var(--t-xs);
+}
+
+/* A point clipped to the top edge of a capped y domain (chart.js's `yMax`) still marks its true
+   position with a triangle -- colour alone would be lost in b/w print. */
+.c-clip-marker {
+  fill: var(--graphite);
   font-size: var(--t-xs);
 }
 
@@ -139,8 +209,12 @@
 
   .c-axis text,
   .c-guide text,
+  .c-guide--h text,
   .c-series-1 text,
-  .c-series-2 text {
+  .c-series-2 text,
+  .c-series-3 text,
+  .c-series-4 text,
+  .c-series-5 text {
     font-size: 12px;
   }
 }

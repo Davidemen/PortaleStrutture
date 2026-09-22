@@ -255,6 +255,16 @@ export function renderIndex(root, { onSelect }) {
         current: currentName === "progetti",
       })
     );
+    // "Rail: fixed entry 'Impostazioni' below 'Registro correzioni'" (WORKBENCH_SPEC §26.8), the
+    // same plain-destination pattern as Registro/Progetti above.
+    list.append(
+      buildNavButton({
+        title: "Impostazioni",
+        icon: "impostazioni",
+        onClick: () => onSelect("impostazioni"),
+        current: currentName === "impostazioni",
+      })
+    );
 
     const categoryKinds = [...groupByCategory(allTools)].map(([level1]) => ({ type: "category", title: level1, icon: CATEGORY_ICONS[level1] || "progetti" }));
     categoryKinds.forEach((kind, index) => {

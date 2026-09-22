@@ -103,3 +103,40 @@ def tablet_page(tablet_context: BrowserContext) -> Iterator[tuple[Page, PageColl
 def page(desktop_page: tuple[Page, PageCollectors]) -> Page:
     """Default page for flows that don't care about viewport: desktop, contract-typical size."""
     return desktop_page[0]
+
+
+# WORKBENCH_SPEC §26.10: the office settings e2e ("on a fresh temporary data-dir fixture so the
+# settings never leak into other tests, which expect factory values") need a server of their OWN,
+# not the session-scoped `live_server` every other e2e test shares -- a settings PUT in one test
+# would otherwise still be there ("revisione 1") for the next test in the same session that
+# expects factory values. A fresh `start_live_server` per test gets a fresh, in-memory
+# `InMemoryImpostazioniRepository` (see `_server.py`) each time, function-scoped like the fixtures
+# below it -- cheap (in-process uvicorn) and never touches `var/`.
+@pytest.fixture
+def isolated_base_url() -> Iterator[str]:
+    from ._server import start_live_server
+
+    server = start_live_server(STATIC_DIR)
+    yield server.base_url
+    server.stop()
+
+
+def _isolated_page(browser: Browser, viewport: dict[str, int]) -> Iterator[Page]:
+    from ._collectors import attach
+
+    context = browser.new_context(viewport=viewport)
+    page = context.new_page()
+    page.set_default_timeout(4_000)
+    attach(page)
+    yield page
+    context.close()
+
+
+@pytest.fixture
+def isolated_page(browser: Browser, isolated_base_url: str) -> Iterator[Page]:
+    yield from _isolated_page(browser, DESKTOP_VIEWPORT)
+
+
+@pytest.fixture
+def isolated_mobile_page(browser: Browser, isolated_base_url: str) -> Iterator[Page]:
+    yield from _isolated_page(browser, MOBILE_VIEWPORT)

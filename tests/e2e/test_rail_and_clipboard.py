@@ -16,11 +16,12 @@ from ._actions import field_id, goto_tool, load_example
 pytestmark = pytest.mark.e2e
 
 RAIL_DESTINATIONS = [
-    "Home", "Cerca", "Preferiti", "Recenti", "Registro correzioni", "Progetti",
+    "Home", "Cerca", "Preferiti", "Recenti", "Registro correzioni", "Progetti", "Impostazioni",
     "Carichi", "Calcestruzzo armato", "Acciaio", "Geotecnica", "Fondazioni",
 ]
-# Home, Cerca, Preferiti, Recenti, Registro correzioni, Progetti (WORKBENCH_SPEC §13.1/§14.1)
-FIXED_DESTINATIONS = 6
+# Home, Cerca, Preferiti, Recenti, Registro correzioni, Progetti, Impostazioni (WORKBENCH_SPEC
+# §13.1/§14.1/§26.8)
+FIXED_DESTINATIONS = 7
 
 
 def _class_regex(fragment: str) -> re.Pattern[str]:

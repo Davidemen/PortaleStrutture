@@ -120,3 +120,14 @@ export function buildGuide(guide, x, plot) {
   g.append(text);
   return g;
 }
+
+// Horizontal guide (sensibilita.js's utilisation target, WORKBENCH_SPEC §24.2): same dashed style
+// as `buildGuide`'s vertical line, `y` already scaled by the caller (clamped to the plot area).
+export function buildHGuide(guide, y, plot) {
+  const g = svgEl("g", { class: "c-guide c-guide--h" });
+  g.append(svgEl("line", { x1: plot.x0, x2: plot.x1, y1: y, y2: y }));
+  const text = svgEl("text", { x: plot.x1 - 4, y: y - 4, "text-anchor": "end" });
+  text.textContent = guide.label ?? "";
+  g.append(text);
+  return g;
+}

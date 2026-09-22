@@ -44,6 +44,16 @@ const SHAPES = {
   fondazioni: () => [path("M10 3h4v9h-4zM4 12h16v5H4zM3 20h18")],
   registro: () => [path("M5 6l1.5 1.5L9 5M5 12l1.5 1.5L9 11M5 18l1.5 1.5L9 17M12 6h7M12 12h7M12 18h7")],
   progetti: () => [path("M3 7h6l2 2h10v10H3z")],
+  // Gear with a ruler tick (WORKBENCH_SPEC §26.8): distinct from "registro"'s ledger checkmarks
+  // and from every category pictogram above.
+  impostazioni: () => [
+    shape("circle", { cx: "12", cy: "12", r: "3.2" }),
+    path(
+      "M12 4.5v2.2M12 17.3v2.2M4.5 12h2.2M17.3 12h2.2" +
+        "M6.9 6.9l1.6 1.6M15.5 15.5l1.6 1.6M17.1 6.9l-1.6 1.6M8.5 15.5l-1.6 1.6"
+    ),
+    path("M19 4v3M17.5 5.5h3", { "stroke-width": "1" }),
+  ],
   espandi: () => [path("M9 6l6 6-6 6")],
   comprimi: () => [path("M15 6l-6 6 6 6")],
 };

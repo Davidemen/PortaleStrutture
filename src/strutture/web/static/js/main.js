@@ -24,6 +24,7 @@ const homeRoot = document.getElementById("home-pane");
 const registroRoot = document.getElementById("registro-pane");
 const progettiRoot = document.getElementById("progetti-pane");
 const variantiRoot = document.getElementById("varianti-pane");
+const impostazioniRoot = document.getElementById("impostazioni-pane");
 const progettoPickerRoot = document.getElementById("progetto-picker-root");
 const formRoot = document.getElementById("form-root");
 const toolTitleEl = document.getElementById("tool-title");
@@ -81,6 +82,24 @@ function showRegistro(params) {
     .catch(() => {
       clear(registroRoot);
       registroRoot.append(el("p", { text: "Impossibile caricare il registro delle correzioni." }));
+    });
+}
+
+// #/impostazioni (WORKBENCH_SPEC §26.8): a fixed rail destination like #/registro just above --
+// full-width page, no Dati/Sintesi split.
+function showImpostazioni(params) {
+  if (appEl) appEl.dataset.view = "impostazioni";
+  unmountAnnullaUi();
+  clear(formRoot);
+  toolTitleEl.textContent = "";
+  updatePicker("");
+  if (bottomBarEl) bottomBarEl.hidden = true;
+  indexApi.setActive("impostazioni");
+  import("./impostazioni.js")
+    .then(({ renderImpostazioni }) => renderImpostazioni(impostazioniRoot, { params }))
+    .catch(() => {
+      clear(impostazioniRoot);
+      impostazioniRoot.append(el("p", { text: "Impossibile caricare la pagina delle impostazioni." }));
     });
 }
 
@@ -220,6 +239,10 @@ function onRouteChange({ tool, params }) {
     showProgettiList();
     return;
   }
+  if (tool === "impostazioni") {
+    showImpostazioni(params);
+    return;
+  }
   if (tool.startsWith("progetti/")) {
     showProgettoPage(tool.slice("progetti/".length), params);
     return;
@@ -277,6 +300,8 @@ async function loadSideEffectModules() {
     import("./relazione-overlay.js"),
     import("./confronto.js"),
     import("./registro-indicator.js"),
+    import("./dimensiona.js"),
+    import("./sensibilita.js"),
   ]);
 }
 
@@ -299,7 +324,7 @@ async function boot() {
   await loadSideEffectModules();
   indexApi = renderIndex(indexRoot, { onSelect: (name) => navigate(name) });
   initPalette({ onNavigate: (name) => navigate(name) });
-  initShortcuts({ onHome: () => navigate("") });
+  initShortcuts({ onHome: () => navigate(""), onImpostazioni: () => navigate("impostazioni") });
   initProgettoPicker(progettoPickerRoot);
   document.addEventListener("strutture:run-request", handleRunRequest);
   document.addEventListener("strutture:results-rendered", handleResultsRendered);

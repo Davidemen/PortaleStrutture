@@ -4,7 +4,7 @@
 // No inline style attribute is ever set on the SVG: colour comes from CSS classes + currentColor,
 // geometry from SVG presentation attributes. The pointer/keyboard tooltip is a plain HTML overlay.
 
-import { svgEl, niceTicks, scale, formatTick, buildYAxis, buildXAxis, buildGuide } from "./chart-axis.js";
+import { svgEl, niceTicks, scale, formatTick, buildYAxis, buildXAxis, buildGuide, buildHGuide } from "./chart-axis.js";
 import { symbolTspans } from "./symbols.js";
 
 // Below 720px (layout.css breakpoint) a narrower, shorter viewBox keeps the SVG-to-viewport
@@ -23,7 +23,12 @@ function isNarrowViewport() {
   return typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia(NARROW_MEDIA_QUERY).matches;
 }
 
-export function renderChart(container, { rows, chart, series, labels, guides } = {}) {
+// `yMax` (sensibilita.js's ETA_MAX_GRAFICO, WORKBENCH_SPEC §24.2): caps the y domain so one huge
+// utilisation cannot flatten the rest of the curve -- points above it are clipped to the top edge
+// and marked with a "▲" (the accessible table below always shows the true value). `hGuides`
+// (`[{value, label}]`) draws a horizontal guide (the utilisation target) the same dashed style as
+// the existing vertical `guides`, included in the (now possibly capped) y domain like a data value.
+export function renderChart(container, { rows, chart, series, labels, guides, hGuides, yMax } = {}) {
   container.replaceChildren();
   if (!chart || !Array.isArray(rows) || !Array.isArray(series) || series.length === 0) {
     return null;
@@ -44,9 +49,13 @@ export function renderChart(container, { rows, chart, series, labels, guides } =
   const plot = { x0: margin.left, x1: vbW - margin.right, y0: vbH - margin.bottom, y1: margin.top };
   const xDomain = xInfo.numeric ? niceTicks(xInfo.min, xInfo.max, 5) : [0, xInfo.values.length - 1];
   const xScale = scale([xDomain[0], xDomain[xDomain.length - 1]], [plot.x0, plot.x1]);
-  const yValues = seriesData.flatMap((s) => s.points.map((p) => p.y)).filter((v) => v !== null);
-  const yTicks = niceTicks(Math.min(...yValues), Math.max(...yValues), 5);
+  const rawYValues = seriesData.flatMap((s) => s.points.map((p) => p.y)).filter((v) => v !== null);
+  const hGuideValues = (hGuides ?? []).map((g) => g.value).filter((v) => Number.isFinite(v));
+  const yValues = [...rawYValues, ...hGuideValues];
+  const yCeiling = Number.isFinite(yMax) ? Math.min(Math.max(...yValues), yMax) : Math.max(...yValues);
+  const yTicks = niceTicks(Math.min(...yValues), yCeiling, 5);
   const yScale = scale([yTicks[0], yTicks[yTicks.length - 1]], [plot.y0, plot.y1]);
+  const yTop = yTicks[yTicks.length - 1];
 
   const svg = svgEl("svg", {
     class: "c-svg",
@@ -59,7 +68,10 @@ export function renderChart(container, { rows, chart, series, labels, guides } =
   for (const guide of guides ?? []) {
     if (Number.isFinite(guide.value)) svg.append(buildGuide(guide, xScale(guide.value), plot));
   }
-  const built = seriesData.map((s) => buildSeriesPath(s, xScale, yScale));
+  for (const guide of hGuides ?? []) {
+    if (Number.isFinite(guide.value)) svg.append(buildHGuide(guide, Math.min(yScale(guide.value), plot.y0), plot));
+  }
+  const built = seriesData.map((s) => buildSeriesPath(s, xScale, yScale, yTop, plot.y1));
   appendDirectLabels(built);
   for (const b of built) svg.append(b.group);
   const crosshair = svgEl("line", { class: "c-crosshair", x1: plot.x0, x2: plot.x0, y1: plot.y1, y2: plot.y0, display: "none" });
@@ -103,7 +115,9 @@ function buildXValues(rows, xKey) {
 
 // Builds the path only; the direct end-of-line label is decided afterwards, once every series'
 // endpoint is known, so two converging curves can agree to fall back to the legend instead.
-function buildSeriesPath(s, xScale, yScale) {
+// `yTop`/`plotY1` (sensibilita.js's ETA_MAX_GRAFICO clip): a point whose y falls above the domain
+// (its SVG y coordinate above `plotY1`) is drawn clipped to the top edge with a "▲" marker.
+function buildSeriesPath(s, xScale, yScale, yTop, plotY1) {
   const g = svgEl("g", { class: s.className });
   let d = "";
   let drawing = false;
@@ -114,10 +128,16 @@ function buildSeriesPath(s, xScale, yScale) {
       continue;
     }
     const x = xScale(p.x);
-    const y = yScale(p.y);
+    const clipped = Number.isFinite(yTop) && p.y > yTop;
+    const y = clipped ? plotY1 : yScale(p.y);
     d += `${drawing ? "L" : "M"}${x.toFixed(2)},${y.toFixed(2)} `;
     drawing = true;
     last = { x, y };
+    if (clipped) {
+      const marker = svgEl("text", { class: "c-clip-marker", x, y: plotY1 + 4, "text-anchor": "middle" });
+      marker.textContent = "▲";
+      g.append(marker);
+    }
   }
   g.append(svgEl("path", { d: d.trim(), fill: "none", stroke: "currentColor", "stroke-width": "2", "data-series": s.key }));
   return { group: g, series: s, last };

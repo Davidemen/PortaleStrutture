@@ -101,6 +101,17 @@ textarea {
   display: block;
 }
 
+/* #/impostazioni (WORKBENCH_SPEC §26.8): same "full width, no Dati/Sintesi split" slot as
+   #/registro and #/progetti above. */
+#impostazioni-pane {
+  grid-area: pane;
+  background: var(--paper);
+  display: none;
+}
+#app[data-view="impostazioni"] #impostazioni-pane {
+  display: block;
+}
+
 #form-pane {
   grid-area: pane;
   background: var(--film);
@@ -132,7 +143,8 @@ textarea {
   #home-pane,
   #registro-pane,
   #progetti-pane,
-  #varianti-pane {
+  #varianti-pane,
+  #impostazioni-pane {
     grid-area: unset;
     grid-row: 2;
     grid-column: 2 / -1;
@@ -150,7 +162,8 @@ textarea {
   #home-pane,
   #registro-pane,
   #progetti-pane,
-  #varianti-pane {
+  #varianti-pane,
+  #impostazioni-pane {
     height: calc(100dvh - var(--head-h, 2.9rem));
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -173,7 +186,9 @@ textarea {
   #app[data-view="progetti"] #form-pane,
   #app[data-view="progetti"] #results-pane,
   #app[data-view="varianti"] #form-pane,
-  #app[data-view="varianti"] #results-pane {
+  #app[data-view="varianti"] #results-pane,
+  #app[data-view="impostazioni"] #form-pane,
+  #app[data-view="impostazioni"] #results-pane {
     display: none;
   }
 }
@@ -221,7 +236,8 @@ textarea {
   #results-pane,
   #registro-pane,
   #progetti-pane,
-  #varianti-pane {
+  #varianti-pane,
+  #impostazioni-pane {
     grid-area: pane;
   }
   #home-pane[hidden],
@@ -240,7 +256,10 @@ textarea {
   #app[data-view="progetti"] .app-tablist,
   #app[data-view="varianti"] #form-pane,
   #app[data-view="varianti"] #results-pane,
-  #app[data-view="varianti"] .app-tablist {
+  #app[data-view="varianti"] .app-tablist,
+  #app[data-view="impostazioni"] #form-pane,
+  #app[data-view="impostazioni"] #results-pane,
+  #app[data-view="impostazioni"] .app-tablist {
     display: none;
   }
   #app[data-view="tool"] #home-pane {

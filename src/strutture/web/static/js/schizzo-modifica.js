@@ -87,10 +87,18 @@ function openPopover(state, anchor, field, control) {
   const error = el("p", { class: "sk-edit-error", hidden: true });
   const apply = el("button", { type: "submit", class: "sk-edit-apply", text: "Applica" });
   const cancel = el("button", { type: "button", class: "sk-edit-cancel", text: "Annulla" });
+  // WORKBENCH_SPEC §23.5: "a 'Dimensiona' link in §18's sketch popover for the field being
+  // edited" -- dynamic import, same reasoning as js/dimensiona.js's own "Studia la sensibilità"
+  // button: this popover must not pull the whole search dialog graph in on every sketch click.
+  const dimensiona = el("button", { type: "button", class: "sk-edit-dimensiona", text: "Dimensiona" });
+  dimensiona.addEventListener("click", () => {
+    closePopover(state);
+    import("./dimensiona.js").then(({ openDimensiona }) => openDimensiona(field.name));
+  });
   const popover = el("form", { class: "sk-edit", role: "dialog", "aria-label": `Modifica ${field.symbol || field.name}` }, [
     el("div", { class: "sk-edit-row" }, [label, input, unit]),
     error,
-    el("div", { class: "sk-edit-actions" }, [apply, cancel]),
+    el("div", { class: "sk-edit-actions" }, [apply, cancel, dimensiona]),
   ]);
   popover.addEventListener("submit", (event) => {
     event.preventDefault();

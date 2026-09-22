@@ -8,6 +8,9 @@ import { focusResults, focusDati } from "./layout.js";
 
 const SHORTCUTS = [
   { keys: "g h", desc: "Vai alla Home" },
+  { keys: "g d", desc: "Apri Dimensiona sul campo selezionato" },
+  { keys: "g s", desc: "Apri Sensibilità sul campo selezionato" },
+  { keys: "g i", desc: "Vai a Impostazioni" },
   { keys: "Ctrl+Invio", desc: "Esegui il calcolo" },
   { keys: "[ / ]", desc: "Sezione dati precedente/successiva" },
   { keys: "Alt+1", desc: "Vai a Dati" },
@@ -55,7 +58,7 @@ function runForm() {
   if (form) form.requestSubmit();
 }
 
-export function initShortcuts({ onHome }) {
+export function initShortcuts({ onHome, onImpostazioni }) {
   const root = document.getElementById("shortcuts-root");
   if (!root) return;
 
@@ -124,6 +127,20 @@ export function initShortcuts({ onHome }) {
       pendingG = false;
       event.preventDefault();
       onHome();
+    } else if (event.key === "d" && pendingG) {
+      // WORKBENCH_SPEC §23.5: opens the dialog on the focused (or last focused) numeric field --
+      // js/dimensiona.js listens for this event and does the actual preselection/opening.
+      pendingG = false;
+      event.preventDefault();
+      document.dispatchEvent(new CustomEvent("strutture:shortcut-dimensiona"));
+    } else if (event.key === "s" && pendingG) {
+      pendingG = false;
+      event.preventDefault();
+      document.dispatchEvent(new CustomEvent("strutture:shortcut-sensibilita"));
+    } else if (event.key === "i" && pendingG) {
+      pendingG = false;
+      event.preventDefault();
+      if (onImpostazioni) onImpostazioni();
     } else if (event.key === "[") {
       event.preventDefault();
       moveSection(-1);

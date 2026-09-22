@@ -332,13 +332,19 @@ circle.sk-reazione {
   justify-content: flex-end;
 }
 .sk-edit-apply,
-.sk-edit-cancel {
+.sk-edit-cancel,
+.sk-edit-dimensiona {
   min-height: var(--control-h);
   padding: 0 var(--s3);
   border-radius: var(--radius);
   font-family: var(--font-label);
   font-size: var(--t-s);
   cursor: pointer;
+}
+.sk-edit-dimensiona {
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
 }
 .sk-edit-apply {
   color: var(--paper);

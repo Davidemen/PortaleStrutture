@@ -145,6 +145,9 @@
   --warn-bg: #FBF0DA;
   --series-1: #1B5FA8;
   --series-2: #B4451A;
+  --series-3: #2E8B57;
+  --series-4: #7A4FB5;
+  --series-5: #C9971F;
   --focus: var(--ink);
 
   /* Type */
@@ -196,6 +199,9 @@
     --warn-bg: #2C2312;
     --series-1: #7FB3F0;
     --series-2: #F0A070;
+    --series-3: #7FD9A6;
+    --series-4: #C4A6F2;
+    --series-5: #F0CE7C;
   }
 }
 

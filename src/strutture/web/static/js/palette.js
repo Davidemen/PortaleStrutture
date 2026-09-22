@@ -20,13 +20,21 @@ function fuzzyScore(text, query) {
   return score;
 }
 
+// WORKBENCH_SPEC §26.8: "a palette entry 'Impostazioni' (keywords: passo, arrotondamento,
+// obiettivo, sfruttamento, predefiniti)" -- a fixed destination, not a tool, so it is appended
+// alongside `tools` rather than fetched; `select()` below routes it the same way as a real tool.
+const DESTINATIONS = [
+  { name: "impostazioni", title: "Impostazioni", sigla: "IM", norm: "", summary: "passo arrotondamento obiettivo sfruttamento predefiniti" },
+];
+
 function rankTools(tools, query, recentNames) {
+  const all = [...tools, ...DESTINATIONS];
   if (!query) {
-    const recents = recentNames.map((name) => tools.find((tool) => tool.name === name)).filter(Boolean);
-    const rest = tools.filter((tool) => !recentNames.includes(tool.name));
+    const recents = recentNames.map((name) => all.find((tool) => tool.name === name)).filter(Boolean);
+    const rest = all.filter((tool) => !recentNames.includes(tool.name));
     return [...recents, ...rest];
   }
-  return tools
+  return all
     .map((tool) => ({ tool, score: fuzzyScore(`${tool.title} ${tool.summary || ""} ${tool.norm || ""} ${tool.group || ""}`, query) }))
     .filter((entry) => entry.score >= 0)
     .sort((a, b) => b.score - a.score)

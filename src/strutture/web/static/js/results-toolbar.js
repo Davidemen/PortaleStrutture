@@ -202,7 +202,7 @@ export function wireValueCopy(cellEl, copyValue, announce) {
 // js/relazione-overlay.js). `usaIn` (WORKBENCH_SPEC §15: the run succeeded and the tool has at
 // least one consumer, js/usa-in.js's own registry) adds the "Usa in…" menu button the SAME way --
 // js/usa-in.js finds `.ui-toggle` after every render and wires its menu/keyboard behaviour there.
-export function buildToolbar({ groups, onFilterChange, hasChecks, printBtn, canCompare, usaIn }) {
+export function buildToolbar({ groups, onFilterChange, hasChecks, printBtn, canCompare, usaIn, canSize }) {
   const bar = el("div", { class: "r-toolbar" });
 
   if (printBtn) bar.append(printBtn);
@@ -213,6 +213,15 @@ export function buildToolbar({ groups, onFilterChange, hasChecks, printBtn, canC
 
   if (usaIn) {
     bar.append(el("button", { type: "button", class: "r-action ui-toggle", "aria-haspopup": "menu", "aria-expanded": "false", text: "Usa in…" }));
+  }
+
+  // "Dimensiona…" / "Sensibilità…" (WORKBENCH_SPEC §23.5/§24.2): the run succeeded and the
+  // tool's input schema has at least one numeric field -- js/dimensiona.js/js/sensibilita.js wire
+  // the click handler on every `strutture:results-rendered`, the SAME delegated-rebuild pattern
+  // `usaIn`/`canCompare` already use above.
+  if (canSize) {
+    bar.append(el("button", { type: "button", class: "r-action dm-toggle", text: "⌖ Dimensiona…" }));
+    bar.append(el("button", { type: "button", class: "r-action sv-toggle", text: "∿ Sensibilità…" }));
   }
 
   if (hasChecks) {

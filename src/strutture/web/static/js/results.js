@@ -2,8 +2,7 @@
 // `strutture:tool-schema`, `strutture:run-start`/`run-result`/`results-stale`, dispatches
 // `strutture:results-rendered`. On every run after the first, the SAME group DOM nodes are reused
 // (results-groups.js/results-rows.js via results-toolbar.js's `mountGroup`) instead of clearing
-// `#results-root` -- so scroll position, open/closed groups and focus survive, and only the value
-// cells that actually changed get `data-changed` (results-diff.js).
+// `#results-root` -- scroll position/open groups/focus survive, only changed cells get `data-changed`.
 import { fieldForWarning, jumpToField } from "./campo-salto.js";
 import { el, clear } from "./dom.js";
 import { describeOutput, extractByPredicate, readPath, rowsHighlightPairs, firstChartNode } from "./output-schema.js";
@@ -77,8 +76,7 @@ function makeRegisterGroup(toolName, groups) {
 }
 
 // Finding E: the WARNING COUNT is spoken once, in the Sintesi's own button ("1 avviso" / "2
-// avvisi", sintesi.js) -- this is the detail list it opens, so its own summary names the content
-// rather than repeating the count a second time.
+// avvisi", sintesi.js) -- its summary names the content instead of repeating the count.
 // A warning about one input is a button that jumps to that input (campo-salto.js); the rest stay text.
 function buildWarningsPanel(warnings, avvisiCampi, fields) {
   const details = el("details", { class: "r-warnings-details", id: WARNINGS_ID });
@@ -308,6 +306,8 @@ export function renderReport(root, { report, outputNodes, tool, previous }) {
     printBtn,
     canCompare: Boolean(tool && tool.canCompare) && !isApproved(toolName),
     usaIn: Boolean(report.ok) && usaInFor(toolName).length > 0,
+    // §23.5/§24.2: "Dimensiona…"/"Sensibilità…", gated on the run, like `usaIn` above.
+    canSize: Boolean(report.ok) && (tool.fields || []).some((f) => f.kind === "number" && f.name !== "legacy_compat"),
     onFilterChange: (only) => {
       const body = document.getElementById(`${VERIFICHE_ID}-body`);
       if (body) body.dataset.filter = only ? "failed" : "all";

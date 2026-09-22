@@ -1,0 +1,165 @@
+/* #/impostazioni page (WORKBENCH_SPEC §26.8). Tokens only, same table/section conventions as
+   css/registro.css. */
+
+.im-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s6);
+  margin: var(--s5) 0;
+}
+
+.im-section {
+  padding: var(--s4);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+}
+
+.im-section h3 {
+  margin: 0 0 var(--s3);
+  font-family: var(--font-label);
+}
+
+.im-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  margin: var(--s2) 0;
+}
+
+.im-hint {
+  font-size: var(--t-xs);
+  color: var(--graphite);
+}
+
+.im-revisione {
+  color: var(--graphite);
+  font-size: var(--t-s);
+}
+
+.im-avviso {
+  color: var(--warn);
+  padding: var(--s2);
+  background: var(--warn-bg);
+  border-radius: var(--radius);
+}
+
+.im-dirty {
+  color: var(--warn);
+}
+
+.im-summary {
+  padding: var(--s3);
+  background: var(--ko-bg);
+  color: var(--ko);
+  border-radius: var(--radius);
+}
+
+.im-tipi table,
+.im-eccezione-row {
+  width: 100%;
+}
+
+.im-tipi table {
+  border-collapse: collapse;
+  font-size: var(--t-s);
+}
+
+.im-tipi th,
+.im-tipi td {
+  border-bottom: 1px solid var(--hairline);
+  padding: var(--s2);
+  text-align: left;
+}
+
+.im-eccezioni-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  margin: var(--s3) 0;
+}
+
+.im-eccezione-row {
+  display: flex;
+  gap: var(--s2);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.im-rimuovi,
+.im-aggiungi,
+.im-btn,
+.im-btn-primary {
+  font-family: var(--font-ui);
+  font-size: var(--t-s);
+  padding: var(--s2) var(--s3);
+  border-radius: var(--radius);
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.im-btn-primary {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+
+.im-errore {
+  color: var(--ko);
+  font-size: var(--t-xs);
+  width: 100%;
+}
+
+.im-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s4) 0;
+  border-top: 1px solid var(--hairline);
+}
+
+.im-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(21, 32, 43, 0.55);
+}
+
+.im-dialog {
+  width: min(28rem, calc(100vw - var(--s5)));
+  padding: var(--s5);
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: var(--radius);
+  border: 1px solid var(--rule);
+}
+
+.im-dialog-actions {
+  display: flex;
+  gap: var(--s3);
+  margin-top: var(--s4);
+}
+
+.im-storia table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--t-xs);
+}
+
+.im-storia th,
+.im-storia td {
+  border-bottom: 1px solid var(--hairline);
+  padding: var(--s2);
+  text-align: left;
+}
+
+@media (max-width: 719.98px) {
+  .im-eccezione-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
