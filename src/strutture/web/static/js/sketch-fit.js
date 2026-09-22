@@ -1,11 +1,15 @@
-// Pure geometry for the sketch renderer (WORKBENCH_SPEC.md #5, findings C1/C3): bounding box of a
-// Vista incl. dimension offsets and diagram ordinates; uniform scale; y flip; padding.
-// No DOM, no globals -- unit-testable with `node --test`. Model space: metres, y UP
-// (src/strutture/shared/sketch.py). Screen/SVG space: y DOWN.
+// Fits a sketch Vista into a screen-space (y-down) viewBox (WORKBENCH_SPEC.md #5, findings
+// C1/C3). No DOM, no globals -- unit-testable with `node --test`. Model space: metres, y UP
+// (src/strutture/shared/sketch.py). Screen/SVG space: y DOWN. Split from a single 459-line file
+// into three (WORKBENCH_SPEC.md §22, module cap): geometry helpers live in sketch-geometry.js, the
+// M2 dimension-offset/stacking block in sketch-dimensions.js; this file keeps only the two-pass
+// fitting algorithm and the render scale helper -- code moved verbatim, no behaviour change.
+import {
+  PADDING, MIN_EXTENT, isFinitePoint, toScreen, dimensionOffset, boundsPoints, extend,
+  boundsOfShapes, sizeOf, referenceSide, round6,
+} from "./sketch-geometry.js";
+import { applyDimensionOffsets } from "./sketch-dimensions.js";
 import { TEXT_PX, LABEL_GAP_PX, longestTextPx } from "./sketch-text.js";
-
-export const PADDING = 0.08;
-const MIN_EXTENT = 1e-6;
 
 // Finding C1: "the fitted bounding box must be driven by the GEOMETRY (solid shapes, lines,
 // diagrams, dimension lines)" -- these kinds always drive the box outright. `arrow`/`label` are
@@ -23,116 +27,6 @@ const MIN_ELEMENT_SHARE = 0.6;
 // M5: the slice of finding C1's OWN per-side annotation budget that re-centring (below) may
 // additionally spend -- see the comment at its call site in `fitVista`.
 const CENTER_BUDGET_SHARE = 0.05;
-
-export function isFiniteNumber(n) {
-  return typeof n === "number" && Number.isFinite(n);
-}
-
-function isFinitePoint(p) {
-  return Array.isArray(p) && p.length === 2 && isFiniteNumber(p[0]) && isFiniteNumber(p[1]);
-}
-
-// The one place the model (y up) -> screen (y down) flip happens.
-export function toScreen(point) {
-  return [point[0], -point[1]];
-}
-
-// `distanza` metres, + = left of p1->p2 (model space, y up -> left is +90deg CCW of travel).
-export function dimensionOffset(shape) {
-  const [x1, y1] = shape.p1;
-  const [x2, y2] = shape.p2;
-  const dx = x2 - x1, dy = y2 - y1;
-  const len = Math.hypot(dx, dy);
-  if (!(len > MIN_EXTENT)) return { o1: shape.p1, o2: shape.p2 };
-  const nx = -dy / len, ny = dx / len;
-  const d = shape.distanza;
-  return { o1: [x1 + nx * d, y1 + ny * d], o2: [x2 + nx * d, y2 + ny * d] };
-}
-
-// Diagram polygon vertices (model space): base start, one point per ordinate, base end --
-// closing this path draws the pressure/moment envelope against the baseline. `side` is the
-// view's reference (smaller-side) length; amplitude = shape.altezza_relativa * side, largest
-// |valore| reaching it (sketch.py: "the renderer scales the largest |valore| to altezza_relativa
-// of the view's smaller side").
-export function diagramPolygon(shape, side) {
-  const [x1, y1] = shape.base[0];
-  const [x2, y2] = shape.base[1];
-  const dx = x2 - x1, dy = y2 - y1;
-  const len = Math.hypot(dx, dy);
-  if (!(len > MIN_EXTENT) || !(side > 0)) return [shape.base[0], shape.base[1]];
-  const nx = -dy / len, ny = dx / len;
-  const n = shape.valori.length;
-  const maxAbs = Math.max(...shape.valori.map((v) => Math.abs(v)), MIN_EXTENT);
-  const amplitude = shape.altezza_relativa * side;
-  const ordinates = shape.valori.map((v, i) => {
-    const t = n === 1 ? 0 : i / (n - 1);
-    const off = (v / maxAbs) * amplitude;
-    return [x1 + dx * t + nx * off, y1 + dy * t + ny * off];
-  });
-  return [shape.base[0], ...ordinates, shape.base[1]];
-}
-
-// Model-space points a shape contributes to the bounding box. `side` sizes diagram ordinates --
-// undefined on the preliminary pass (see fitVista), base points only then.
-export function boundsPoints(shape, side) {
-  switch (shape.kind) {
-    case "rect":
-      return [[shape.x, shape.y], [shape.x + shape.w, shape.y + shape.h]];
-    case "polygon":
-      return shape.punti;
-    case "circle":
-      return [[shape.centro[0] - shape.r, shape.centro[1] - shape.r], [shape.centro[0] + shape.r, shape.centro[1] + shape.r]];
-    case "line":
-      return [shape.p1, shape.p2];
-    case "arrow":
-      return [shape.coda, shape.punta];
-    case "dimension": {
-      const { o1, o2 } = dimensionOffset(shape);
-      return [shape.p1, shape.p2, o1, o2];
-    }
-    case "label":
-      return [shape.punto];
-    case "bars": {
-      const r = shape.diametro / 2;
-      return shape.centri.flatMap(([x, y]) => [[x - r, y - r], [x + r, y + r]]);
-    }
-    case "diagram":
-      return side === undefined ? [shape.base[0], shape.base[1]] : diagramPolygon(shape, side);
-    default:
-      return [];
-  }
-}
-
-function extend(bounds, points) {
-  let b = bounds;
-  for (const p of points) {
-    if (!isFinitePoint(p)) continue;
-    const [x, y] = p;
-    b = b
-      ? { minX: Math.min(b.minX, x), maxX: Math.max(b.maxX, x), minY: Math.min(b.minY, y), maxY: Math.max(b.maxY, y) }
-      : { minX: x, maxX: x, minY: y, maxY: y };
-  }
-  return b;
-}
-
-function boundsOfShapes(forme, side) {
-  let b = null;
-  for (const shape of forme) b = extend(b, boundsPoints(shape, side));
-  return b;
-}
-
-function sizeOf(b) {
-  return b ? { w: b.maxX - b.minX, h: b.maxY - b.minY } : { w: 0, h: 0 };
-}
-
-function referenceSide(size) {
-  if (size.w > MIN_EXTENT && size.h > MIN_EXTENT) return Math.min(size.w, size.h);
-  return Math.max(size.w, size.h, MIN_EXTENT);
-}
-
-function round6(n) {
-  return Number(n.toFixed(6));
-}
 
 // A point outside [lo, hi] is pulled back to at most `maxExtra` past the edge it crossed --
 // finding C1's fixed cap on how far an annotation point may push the box open.
@@ -337,116 +231,6 @@ export function fitVista(vista, { padding = PADDING, boxPx = null, marginsPx = n
     side, // kept in sync with the diagram's own render-time amplitude (sketch-shapes.js buildDiagram)
     viewBox: `${round6(minX)} ${round6(minY)} ${round6(width)} ${round6(height)}`,
   };
-}
-
-// -- M2: dimension-line minimum offset + stacking ------------------------------------------
-// Authors give `Quota.distanza` in MODEL METRES (sketch.py COMPOSITION RULE 3: "6-8% of the
-// view's larger side"); at a small enough scale that can still land only a few SCREEN px from the
-// segment it measures, or two unrelated quotas can end up close enough to visually merge into one
-// line. Both are renderer-side safety nets, not an authoring contract change -- they only ever
-// GROW an offset that was already too small, never shrink one that was fine.
-export const MIN_DIMENSION_OFFSET_PX = 22;
-export const DIMENSION_STACK_PX = 18;
-const PARALLEL_TOLERANCE = 0.05; // sin of the angle between two "parallel enough" directions
-// Finding C1 caps how far an ANNOTATION may push the box open (`maxExtra`, MIN_ELEMENT_SHARE);
-// the minimum-offset enforcement needs the same kind of ceiling -- otherwise a small element
-// rendered at a small scale could have its 22px minimum expand to dominate the whole figure,
-// undoing C1's "the element keeps >=60% of the frame" guarantee from the other direction. Well-
-// authored offsets (sketch.py COMPOSITION RULE 3: "6-8% of the view's larger side") never get
-// close to this; it only ever bites the pathological case the enforcement itself targets.
-const MAX_DIMENSION_OFFSET_SHARE = 0.35;
-
-function direction(p1, p2) {
-  const dx = p2[0] - p1[0], dy = p2[1] - p1[1];
-  const len = Math.hypot(dx, dy);
-  return len > MIN_EXTENT ? { ux: dx / len, uy: dy / len, len } : null;
-}
-
-// True when two dimension lines run parallel (or anti-parallel) within `PARALLEL_TOLERANCE` AND
-// their spans overlap once `b` is projected onto `a`'s own direction -- e.g. two quotas placed
-// along the same footing edge, not two unrelated dimensions that merely happen to share a side.
-function parallelAndOverlapping(a, b) {
-  const da = direction(a.p1, a.p2);
-  const db = direction(b.p1, b.p2);
-  if (!da || !db) return false;
-  if (Math.abs(da.ux * db.uy - da.uy * db.ux) > PARALLEL_TOLERANCE) return false;
-  const proj = (p) => (p[0] - a.p1[0]) * da.ux + (p[1] - a.p1[1]) * da.uy;
-  const lo = Math.min(proj(b.p1), proj(b.p2));
-  const hi = Math.max(proj(b.p1), proj(b.p2));
-  return lo < da.len && hi > 0;
-}
-
-// A dimension measured along a diagram's own base, on the side the diagram hangs from (the width B
-// of a wall footing under its base-pressure diagram), must clear the WHOLE envelope plus the
-// diagram's own end labels -- and only the renderer knows the envelope's depth (`altezza_relativa`
-// of the view's reference side, not of anything a sketch author can compute: muro-sostegno's author
-// estimated it from min(B, H) and the dimension landed inside the hatching). 0 when no diagram is
-// in the way. Deliberately NOT subject to the C1 share cap: drawing over the diagram is worse.
-const DIAGRAM_LABEL_PX = TEXT_PX * 1.3 + LABEL_GAP_PX;
-
-function leftNormal(p1, p2) {
-  const d = direction(p1, p2);
-  return d ? [-d.uy, d.ux] : null;
-}
-
-function diagramClearance(quota, diagrams, referenceSide, scale) {
-  const quotaNormal = leftNormal(quota.p1, quota.p2);
-  if (!quotaNormal || !(referenceSide > 0)) return 0;
-  const quotaSign = quota.distanza < 0 ? -1 : 1;
-  return diagrams.reduce((needed, diagram) => {
-    const base = { p1: diagram.base[0], p2: diagram.base[1] };
-    const baseNormal = leftNormal(base.p1, base.p2);
-    if (!baseNormal || !parallelAndOverlapping(quota, base)) return needed;
-    const peak = diagram.valori.reduce((best, v) => (Math.abs(v) > Math.abs(best) ? v : best), 0);
-    const sameSide = (quotaNormal[0] * baseNormal[0] + quotaNormal[1] * baseNormal[1]) * quotaSign * Math.sign(peak) > 0;
-    if (!sameSide) return needed;
-    const hasLabels = (diagram.etichette ?? []).some(Boolean);
-    const clearance = diagram.altezza_relativa * referenceSide + (MIN_DIMENSION_OFFSET_PX + (hasLabels ? DIAGRAM_LABEL_PX : 0)) / scale;
-    return Math.max(needed, clearance);
-  }, 0);
-}
-
-// Returns a NEW array of `Quota`-shaped objects (never mutates the input): first every offset is
-// grown, sign kept, to at least `MIN_DIMENSION_OFFSET_PX` screen px (converted to model units via
-// `scale`, capped at `MAX_DIMENSION_OFFSET_SHARE` of `referenceSide` so it can never swamp a small
-// element); then any pair left coincident (same side, overlapping spans, offsets still within one
-// stacking step of each other) is pushed `DIMENSION_STACK_PX` further apart, later shapes
-// stacking outward past earlier ones already resolved.
-export function resolveDimensionOffsets(quotas, scale, referenceSide, diagrams = []) {
-  const s = Math.max(scale, MIN_EXTENT);
-  const cap = referenceSide > 0 ? referenceSide * MAX_DIMENSION_OFFSET_SHARE : Infinity;
-  const minOffset = Math.min(MIN_DIMENSION_OFFSET_PX / s, cap);
-  const stackStep = Math.min(DIMENSION_STACK_PX / s, cap);
-  const resolved = quotas.map((shape) => {
-    const sign = shape.distanza < 0 ? -1 : 1;
-    const beyondDiagram = diagramClearance(shape, diagrams, referenceSide, s);
-    return { ...shape, distanza: sign * Math.max(Math.abs(shape.distanza), minOffset, beyondDiagram) };
-  });
-  for (let i = 0; i < resolved.length; i++) {
-    for (let j = 0; j < i; j++) {
-      const a = resolved[i], b = resolved[j];
-      if (Math.sign(a.distanza) !== Math.sign(b.distanza)) continue;
-      if (Math.abs(Math.abs(a.distanza) - Math.abs(b.distanza)) >= stackStep) continue;
-      if (!parallelAndOverlapping(a, b)) continue;
-      const sign = a.distanza < 0 ? -1 : 1;
-      resolved[i] = { ...a, distanza: sign * (Math.abs(b.distanza) + stackStep) };
-    }
-  }
-  return resolved;
-}
-
-// Replaces every `dimension` shape in `forme` with its M2-adjusted counterpart at the given
-// scale (`referenceSide`: the view's own reference side, for the C1 share cap above); every other
-// shape passes through unchanged. Pure -- called twice on purpose (an approximate scale while
-// fitting the viewBox, the real render scale while drawing), so the fitted box and the drawn
-// geometry can never disagree about how big an enforced offset is.
-export function applyDimensionOffsets(forme, scale, referenceSide) {
-  const quotas = forme.filter((s) => s && s.kind === "dimension");
-  if (quotas.length === 0) return forme;
-  const diagrams = forme.filter((s) => s && s.kind === "diagram" && Array.isArray(s.base) && Array.isArray(s.valori));
-  const resolved = resolveDimensionOffsets(quotas, scale, referenceSide, diagrams);
-  const byShape = new Map(quotas.map((shape, i) => [shape, resolved[i]]));
-  return forme.map((s) => (s && s.kind === "dimension" ? byShape.get(s) : s));
 }
 
 // Uniform px-per-model-unit for a fitted view rendered into a boxPx {width,height} container

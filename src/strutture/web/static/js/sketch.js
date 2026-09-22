@@ -5,7 +5,8 @@
 // per view index when `previous` has the same title + shape-kind sequence, so a live re-render
 // never removes/re-inserts the figure the user is looking at (no flicker, no re-mount).
 import { el, clear } from "./dom.js";
-import { fitVista, uniformScale, applyDimensionOffsets } from "./sketch-fit.js";
+import { fitVista, uniformScale } from "./sketch-fit.js";
+import { applyDimensionOffsets } from "./sketch-dimensions.js";
 import { svgNode, buildShape, buildArrowMarkers, buildTerrenoPattern } from "./sketch-shapes.js";
 import { resolveLabelCollisions } from "./sketch-labels.js";
 import { measureTextOverhang, hasClippedText } from "./sketch-measure.js";

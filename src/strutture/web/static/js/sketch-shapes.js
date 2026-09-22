@@ -2,7 +2,7 @@
 // Element creation goes only through `svgNode` (document.createElementNS), never innerHTML.
 // Colour/fill/line-weight live in CSS classes `sk-<stile>` (css/sketch.css); everything here is
 // SVG presentation attributes only (CSP `default-src 'self'`: no style="").
-import { toScreen, dimensionOffset, diagramPolygon } from "./sketch-fit.js";
+import { toScreen, dimensionOffset, diagramPolygon } from "./sketch-geometry.js";
 import { symbolTspans, symbolAwareTspans, splitSymbolPrefix } from "./symbols.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";

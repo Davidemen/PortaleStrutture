@@ -1,0 +1,5878 @@
+{
+ "acciaio-colonna-h-ec3#excel": [
+  {
+   "forme": [
+    {
+     "h": 0.017249999999999998,
+     "kind": "rect",
+     "stile": "acciaio",
+     "w": 0.28,
+     "x": -0.14,
+     "y": 0.23275
+    },
+    {
+     "h": 0.017249999999999998,
+     "kind": "rect",
+     "stile": "acciaio",
+     "w": 0.28,
+     "x": -0.14,
+     "y": -0.25
+    },
+    {
+     "h": 0.4655,
+     "kind": "rect",
+     "stile": "acciaio",
+     "w": 0.017249999999999998,
+     "x": -0.008624999999999999,
+     "y": -0.23275
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -0.161,
+      0.0
+     ],
+     "p2": [
+      0.161,
+      0.0
+     ],
+     "stile": "asse",
+     "tratteggio": false
+    },
+    {
+     "ancora": "end",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      -0.161,
+      0.0
+     ],
+     "simbolo": "y",
+     "stile": "asse",
+     "testo": ""
+    },
+    {
+     "kind": "line",
+     "p1": [
+      0.0,
+      -0.2875
+     ],
+     "p2": [
+      0.0,
+      0.2875
+     ],
+     "stile": "asse",
+     "tratteggio": false
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      0.14,
+      0.2875
+     ],
+     "simbolo": "z",
+     "stile": "asse",
+     "testo": ""
+    },
+    {
+     "campo": null,
+     "distanza": -0.042,
+     "kind": "dimension",
+     "p1": [
+      0.14,
+      -0.25
+     ],
+     "p2": [
+      0.14,
+      0.25
+     ],
+     "testo": "h = 500 mm"
+    },
+    {
+     "campo": null,
+     "distanza": 0.042,
+     "kind": "dimension",
+     "p1": [
+      -0.14,
+      0.23275
+     ],
+     "p2": [
+      -0.14,
+      0.25
+     ],
+     "testo": "t_f = 12 mm"
+    },
+    {
+     "campo": null,
+     "distanza": -0.075,
+     "kind": "dimension",
+     "p1": [
+      -0.14,
+      -0.25
+     ],
+     "p2": [
+      0.14,
+      -0.25
+     ],
+     "testo": "b = 280 mm"
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      0.042225000000000006,
+      0.1
+     ],
+     "simbolo": "t_w",
+     "stile": "asse",
+     "testo": "8 mm"
+    }
+   ],
+   "titolo": "Sezione"
+  }
+ ],
+ "acciaio-colonna-h-ec3#standard": [
+  {
+   "forme": [
+    {
+     "h": 0.017249999999999998,
+     "kind": "rect",
+     "stile": "acciaio",
+     "w": 0.28,
+     "x": -0.14,
+     "y": 0.23275
+    },
+    {
+     "h": 0.017249999999999998,
+     "kind": "rect",
+     "stile": "acciaio",
+     "w": 0.28,
+     "x": -0.14,
+     "y": -0.25
+    },
+    {
+     "h": 0.4655,
+     "kind": "rect",
+     "stile": "acciaio",
+     "w": 0.017249999999999998,
+     "x": -0.008624999999999999,
+     "y": -0.23275
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -0.161,
+      0.0
+     ],
+     "p2": [
+      0.161,
+      0.0
+     ],
+     "stile": "asse",
+     "tratteggio": false
+    },
+    {
+     "ancora": "end",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      -0.161,
+      0.0
+     ],
+     "simbolo": "y",
+     "stile": "asse",
+     "testo": ""
+    },
+    {
+     "kind": "line",
+     "p1": [
+      0.0,
+      -0.2875
+     ],
+     "p2": [
+      0.0,
+      0.2875
+     ],
+     "stile": "asse",
+     "tratteggio": false
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      0.14,
+      0.2875
+     ],
+     "simbolo": "z",
+     "stile": "asse",
+     "testo": ""
+    },
+    {
+     "campo": null,
+     "distanza": -0.042,
+     "kind": "dimension",
+     "p1": [
+      0.14,
+      -0.25
+     ],
+     "p2": [
+      0.14,
+      0.25
+     ],
+     "testo": "h = 500 mm"
+    },
+    {
+     "campo": null,
+     "distanza": 0.042,
+     "kind": "dimension",
+     "p1": [
+      -0.14,
+      0.23275
+     ],
+     "p2": [
+      -0.14,
+      0.25
+     ],
+     "testo": "t_f = 12 mm"
+    },
+    {
+     "campo": null,
+     "distanza": -0.075,
+     "kind": "dimension",
+     "p1": [
+      -0.14,
+      -0.25
+     ],
+     "p2": [
+      0.14,
+      -0.25
+     ],
+     "testo": "b = 280 mm"
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      0.042225000000000006,
+      0.1
+     ],
+     "simbolo": "t_w",
+     "stile": "asse",
+     "testo": "8 mm"
+    }
+   ],
+   "titolo": "Sezione"
+  }
+ ],
+ "acciaio-sezione-h-rimpiattata#excel": [
+  {
+   "forme": [
+    {
+     "h": 0.008,
+     "kind": "rect",
+     "stile": "acciaio",
+     "w": 0.12,
+     "x": -0.06,
+     "y": 0.106
+    },
+    {
+     "h": 0.098,
+     "kind": "rect",
+     "stile": "acciaio",
+     "w": 0.005,
+     "x": -0.0025,
+     "y": 0.008
+    },
+    {
+     "h": 0.008,
+     "kind": "rect",
+     "stile": "acciaio",
+     "w": 0.12,
+     "x": -0.06,
+     "y": 0.0
+    },
+    {
+     "h": 0.105,
+     "kind": "rect",
+     "stile": "acciaio",
+     "w": 0.008,
+     "x": 0.06,
+     "y": 0.004500000000000004
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -0.0772,
+      0.057
+     ],
+     "p2": [
+      0.08120000000000001,
+      0.057
+     ],
+     "stile": "asse",
+     "tratteggio": false
+    },
+    {
+     "kind": "line",
+     "p1": [
+      0.01654153846153846,
+      -0.0114
+     ],
+     "p2": [
+      0.01654153846153846,
+      0.1254
+     ],
+     "stile": "asse",
+     "tratteggio": false
+    },
+    {
+     "centro": [
+      0.01654153846153846,
+      0.057
+     ],
+     "kind": "circle",
+     "r": 0.003,
+     "stile": "asse",
+     "tratteggio": false
+    },
+    {
+     "campo": "h_profilo_mm",
+     "distanza": -0.01584,
+     "kind": "dimension",
+     "p1": [
+      0.068,
+      0.0
+     ],
+     "p2": [
+      0.068,
+      0.114
+     ],
+     "testo": "h = 114 mm"
+    },
+    {
+     "campo": "b_profilo_mm",
+     "distanza": -0.01584,
+     "kind": "dimension",
+     "p1": [
+      -0.06,
+      0.0
+     ],
+     "p2": [
+      0.06,
+      0.0
+     ],
+     "testo": "b = 120 mm"
+    },
+    {
+     "campo": null,
+     "distanza": 0.01584,
+     "kind": "dimension",
+     "p1": [
+      0.06,
+      0.1095
+     ],
+     "p2": [
+      0.068,
+      0.1095
+     ],
+     "testo": "t_p = 8 mm"
+    }
+   ],
+   "titolo": "Sezione"
+  }
+ ],
+ "acciaio-sezione-h-rimpiattata#standard": [
+  {
+   "forme": [
+    {
+     "h": 0.008,
+     "kind": "rect",
+     "stile": "acciaio",
+     "w": 0.12,
+     "x": -0.06,
+     "y": 0.106
+    },
+    {
+     "h": 0.098,
+     "kind": "rect",
+     "stile": "acciaio",
+     "w": 0.005,
+     "x": -0.0025,
+     "y": 0.008
+    },
+    {
+     "h": 0.008,
+     "kind": "rect",
+     "stile": "acciaio",
+     "w": 0.12,
+     "x": -0.06,
+     "y": 0.0
+    },
+    {
+     "h": 0.105,
+     "kind": "rect",
+     "stile": "acciaio",
+     "w": 0.008,
+     "x": 0.06,
+     "y": 0.004500000000000004
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -0.0728,
+      0.057
+     ],
+     "p2": [
+      0.0808,
+      0.057
+     ],
+     "stile": "asse",
+     "tratteggio": false
+    },
+    {
+     "kind": "line",
+     "p1": [
+      0.01654153846153846,
+      -0.0114
+     ],
+     "p2": [
+      0.01654153846153846,
+      0.1254
+     ],
+     "stile": "asse",
+     "tratteggio": false
+    },
+    {
+     "centro": [
+      0.01654153846153846,
+      0.057
+     ],
+     "kind": "circle",
+     "r": 0.003,
+     "stile": "asse",
+     "tratteggio": false
+    },
+    {
+     "campo": "h_profilo_mm",
+     "distanza": -0.01536,
+     "kind": "dimension",
+     "p1": [
+      0.068,
+      0.0
+     ],
+     "p2": [
+      0.068,
+      0.114
+     ],
+     "testo": "h = 114 mm"
+    },
+    {
+     "campo": "b_profilo_mm",
+     "distanza": -0.01536,
+     "kind": "dimension",
+     "p1": [
+      -0.06,
+      0.0
+     ],
+     "p2": [
+      0.06,
+      0.0
+     ],
+     "testo": "b = 120 mm"
+    },
+    {
+     "campo": null,
+     "distanza": 0.01536,
+     "kind": "dimension",
+     "p1": [
+      0.06,
+      0.1095
+     ],
+     "p2": [
+      0.068,
+      0.1095
+     ],
+     "testo": "t_p = 8 mm"
+    }
+   ],
+   "titolo": "Sezione"
+  }
+ ],
+ "ca-mensola-tozza#excel": [
+  {
+   "forme": [
+    {
+     "h": 0.45,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 0.225,
+     "x": -0.225,
+     "y": -0.18
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -0.1125,
+      -0.18
+     ],
+     "p2": [
+      -0.1125,
+      -0.27
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -0.1125,
+      0.27
+     ],
+     "p2": [
+      -0.1125,
+      0.36000000000000004
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    },
+    {
+     "kind": "polygon",
+     "punti": [
+      [
+       0.0,
+       0.0
+      ],
+      [
+       0.27,
+       0.0
+      ],
+      [
+       0.27,
+       0.4
+      ],
+      [
+       0.0,
+       0.45
+      ]
+     ],
+     "stile": "calcestruzzo"
+    },
+    {
+     "campo": null,
+     "coda": [
+      0.27,
+      0.5800000000000001
+     ],
+     "kind": "arrow",
+     "punta": [
+      0.27,
+      0.4
+     ],
+     "stile": "carico",
+     "testo": ""
+    },
+    {
+     "ancora": "middle",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      0.27,
+      0.6340000000000001
+     ],
+     "simbolo": "P_Ed",
+     "stile": "asse",
+     "testo": "136 kN"
+    },
+    {
+     "kind": "line",
+     "p1": [
+      0.27,
+      0.4
+     ],
+     "p2": [
+      0.0,
+      0.05
+     ],
+     "stile": "puntone",
+     "tratteggio": false
+    },
+    {
+     "kind": "line",
+     "p1": [
+      0.27,
+      0.4
+     ],
+     "p2": [
+      0.0,
+      0.4
+     ],
+     "stile": "tirante",
+     "tratteggio": false
+    },
+    {
+     "campo": null,
+     "distanza": -0.0675,
+     "kind": "dimension",
+     "p1": [
+      0.0,
+      0.0
+     ],
+     "p2": [
+      0.27,
+      0.0
+     ],
+     "testo": "a = 177 mm"
+    },
+    {
+     "campo": null,
+     "distanza": -0.3375,
+     "kind": "dimension",
+     "p1": [
+      0.0,
+      0.0
+     ],
+     "p2": [
+      0.0,
+      0.45
+     ],
+     "testo": "h = 450 mm"
+    }
+   ],
+   "titolo": "Prospetto"
+  }
+ ],
+ "ca-mensola-tozza#standard": [
+  {
+   "forme": [
+    {
+     "h": 0.45,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 0.225,
+     "x": -0.225,
+     "y": -0.18
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -0.1125,
+      -0.18
+     ],
+     "p2": [
+      -0.1125,
+      -0.27
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -0.1125,
+      0.27
+     ],
+     "p2": [
+      -0.1125,
+      0.36000000000000004
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    },
+    {
+     "kind": "polygon",
+     "punti": [
+      [
+       0.0,
+       0.0
+      ],
+      [
+       0.27,
+       0.0
+      ],
+      [
+       0.27,
+       0.4
+      ],
+      [
+       0.0,
+       0.45
+      ]
+     ],
+     "stile": "calcestruzzo"
+    },
+    {
+     "campo": null,
+     "coda": [
+      0.27,
+      0.5800000000000001
+     ],
+     "kind": "arrow",
+     "punta": [
+      0.27,
+      0.4
+     ],
+     "stile": "carico",
+     "testo": ""
+    },
+    {
+     "ancora": "middle",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      0.27,
+      0.6340000000000001
+     ],
+     "simbolo": "P_Ed",
+     "stile": "asse",
+     "testo": "136 kN"
+    },
+    {
+     "kind": "line",
+     "p1": [
+      0.27,
+      0.4
+     ],
+     "p2": [
+      0.0,
+      0.05
+     ],
+     "stile": "puntone",
+     "tratteggio": false
+    },
+    {
+     "kind": "line",
+     "p1": [
+      0.27,
+      0.4
+     ],
+     "p2": [
+      0.0,
+      0.4
+     ],
+     "stile": "tirante",
+     "tratteggio": false
+    },
+    {
+     "campo": null,
+     "distanza": -0.0675,
+     "kind": "dimension",
+     "p1": [
+      0.0,
+      0.0
+     ],
+     "p2": [
+      0.27,
+      0.0
+     ],
+     "testo": "a = 177 mm"
+    },
+    {
+     "campo": null,
+     "distanza": -0.3375,
+     "kind": "dimension",
+     "p1": [
+      0.0,
+      0.0
+     ],
+     "p2": [
+      0.0,
+      0.45
+     ],
+     "testo": "h = 450 mm"
+    }
+   ],
+   "titolo": "Prospetto"
+  }
+ ],
+ "ca-pilastro-circolare#excel": [
+  {
+   "forme": [
+    {
+     "centro": [
+      0.0,
+      0.0
+     ],
+     "kind": "circle",
+     "r": 0.2,
+     "stile": "calcestruzzo",
+     "tratteggio": false
+    },
+    {
+     "centro": [
+      0.0,
+      0.0
+     ],
+     "kind": "circle",
+     "r": 0.155,
+     "stile": "armatura",
+     "tratteggio": false
+    },
+    {
+     "centri": [
+      [
+       0.15,
+       0.0
+      ],
+      [
+       0.14528747416929466,
+       0.03730348307472822
+      ],
+      [
+       0.13144600200657952,
+       0.0722630511152573
+      ],
+      [
+       0.10934529411321174,
+       0.10268206588930329
+      ],
+      [
+       0.08037401924684949,
+       0.12664918882530227
+      ],
+      [
+       0.046352549156242116,
+       0.142658477444273
+      ],
+      [
+       0.009418577929397029,
+       0.14970400926424074
+      ],
+      [
+       -0.02810719718785869,
+       0.14734308760930329
+      ],
+      [
+       -0.06386689373476091,
+       0.1357240578699029
+      ],
+      [
+       -0.09561359846230345,
+       0.11557698641636839
+      ],
+      [
+       -0.1213525491562421,
+       0.08816778784387098
+      ],
+      [
+       -0.1394664728832377,
+       0.055218682902701724
+      ],
+      [
+       -0.14881720519717165,
+       0.01879998503464568
+      ],
+      [
+       -0.14881720519717168,
+       -0.018799985034645646
+      ],
+      [
+       -0.1394664728832377,
+       -0.05521868290270169
+      ],
+      [
+       -0.12135254915624216,
+       -0.0881677878438709
+      ],
+      [
+       -0.09561359846230343,
+       -0.1155769864163684
+      ],
+      [
+       -0.06386689373476082,
+       -0.13572405786990296
+      ],
+      [
+       -0.028107197187858694,
+       -0.14734308760930329
+      ],
+      [
+       0.009418577929396925,
+       -0.14970400926424074
+      ],
+      [
+       0.04635254915624208,
+       -0.14265847744427304
+      ],
+      [
+       0.08037401924684952,
+       -0.12664918882530224
+      ],
+      [
+       0.1093452941132117,
+       -0.10268206588930334
+      ],
+      [
+       0.13144600200657947,
+       -0.07226305111525741
+      ],
+      [
+       0.14528747416929466,
+       -0.037303483074728305
+      ]
+     ],
+     "diametro": 0.016,
+     "kind": "bars",
+     "stile": "armatura"
+    },
+    {
+     "campo": null,
+     "distanza": -0.26,
+     "kind": "dimension",
+     "p1": [
+      -0.2,
+      0.0
+     ],
+     "p2": [
+      0.2,
+      0.0
+     ],
+     "testo": "D = 400 mm"
+    }
+   ],
+   "titolo": "Sezione"
+  }
+ ],
+ "ca-pilastro-circolare#standard": [
+  {
+   "forme": [
+    {
+     "centro": [
+      0.0,
+      0.0
+     ],
+     "kind": "circle",
+     "r": 0.2,
+     "stile": "calcestruzzo",
+     "tratteggio": false
+    },
+    {
+     "centro": [
+      0.0,
+      0.0
+     ],
+     "kind": "circle",
+     "r": 0.155,
+     "stile": "armatura",
+     "tratteggio": false
+    },
+    {
+     "centri": [
+      [
+       0.15,
+       0.0
+      ],
+      [
+       0.14528747416929466,
+       0.03730348307472822
+      ],
+      [
+       0.13144600200657952,
+       0.0722630511152573
+      ],
+      [
+       0.10934529411321174,
+       0.10268206588930329
+      ],
+      [
+       0.08037401924684949,
+       0.12664918882530227
+      ],
+      [
+       0.046352549156242116,
+       0.142658477444273
+      ],
+      [
+       0.009418577929397029,
+       0.14970400926424074
+      ],
+      [
+       -0.02810719718785869,
+       0.14734308760930329
+      ],
+      [
+       -0.06386689373476091,
+       0.1357240578699029
+      ],
+      [
+       -0.09561359846230345,
+       0.11557698641636839
+      ],
+      [
+       -0.1213525491562421,
+       0.08816778784387098
+      ],
+      [
+       -0.1394664728832377,
+       0.055218682902701724
+      ],
+      [
+       -0.14881720519717165,
+       0.01879998503464568
+      ],
+      [
+       -0.14881720519717168,
+       -0.018799985034645646
+      ],
+      [
+       -0.1394664728832377,
+       -0.05521868290270169
+      ],
+      [
+       -0.12135254915624216,
+       -0.0881677878438709
+      ],
+      [
+       -0.09561359846230343,
+       -0.1155769864163684
+      ],
+      [
+       -0.06386689373476082,
+       -0.13572405786990296
+      ],
+      [
+       -0.028107197187858694,
+       -0.14734308760930329
+      ],
+      [
+       0.009418577929396925,
+       -0.14970400926424074
+      ],
+      [
+       0.04635254915624208,
+       -0.14265847744427304
+      ],
+      [
+       0.08037401924684952,
+       -0.12664918882530224
+      ],
+      [
+       0.1093452941132117,
+       -0.10268206588930334
+      ],
+      [
+       0.13144600200657947,
+       -0.07226305111525741
+      ],
+      [
+       0.14528747416929466,
+       -0.037303483074728305
+      ]
+     ],
+     "diametro": 0.016,
+     "kind": "bars",
+     "stile": "armatura"
+    },
+    {
+     "campo": null,
+     "distanza": -0.26,
+     "kind": "dimension",
+     "p1": [
+      -0.2,
+      0.0
+     ],
+     "p2": [
+      0.2,
+      0.0
+     ],
+     "testo": "D = 400 mm"
+    }
+   ],
+   "titolo": "Sezione"
+  }
+ ],
+ "ca-pilastro-rettangolare#excel": [
+  {
+   "forme": [
+    {
+     "h": 0.4,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 0.4,
+     "x": 0.0,
+     "y": 0.0
+    },
+    {
+     "kind": "polygon",
+     "punti": [
+      [
+       0.045,
+       0.045
+      ],
+      [
+       0.355,
+       0.045
+      ],
+      [
+       0.355,
+       0.355
+      ],
+      [
+       0.045,
+       0.355
+      ]
+     ],
+     "stile": "armatura"
+    },
+    {
+     "centri": [
+      [
+       0.05,
+       0.05
+      ],
+      [
+       0.2,
+       0.05
+      ],
+      [
+       0.35,
+       0.05
+      ],
+      [
+       0.05,
+       0.35
+      ],
+      [
+       0.2,
+       0.35
+      ],
+      [
+       0.35,
+       0.35
+      ],
+      [
+       0.05,
+       0.2
+      ],
+      [
+       0.35,
+       0.2
+      ]
+     ],
+     "diametro": 0.016,
+     "kind": "bars",
+     "stile": "armatura"
+    },
+    {
+     "campo": null,
+     "distanza": -0.06,
+     "kind": "dimension",
+     "p1": [
+      0.0,
+      0.0
+     ],
+     "p2": [
+      0.4,
+      0.0
+     ],
+     "testo": "L_1 = 400 mm"
+    },
+    {
+     "campo": null,
+     "distanza": 0.06,
+     "kind": "dimension",
+     "p1": [
+      0.0,
+      0.0
+     ],
+     "p2": [
+      0.0,
+      0.4
+     ],
+     "testo": "L_2 = 400 mm"
+    }
+   ],
+   "titolo": "Sezione"
+  }
+ ],
+ "ca-pilastro-rettangolare#standard": [
+  {
+   "forme": [
+    {
+     "h": 0.4,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 0.4,
+     "x": 0.0,
+     "y": 0.0
+    },
+    {
+     "kind": "polygon",
+     "punti": [
+      [
+       0.045,
+       0.045
+      ],
+      [
+       0.355,
+       0.045
+      ],
+      [
+       0.355,
+       0.355
+      ],
+      [
+       0.045,
+       0.355
+      ]
+     ],
+     "stile": "armatura"
+    },
+    {
+     "centri": [
+      [
+       0.05,
+       0.05
+      ],
+      [
+       0.2,
+       0.05
+      ],
+      [
+       0.35,
+       0.05
+      ],
+      [
+       0.05,
+       0.35
+      ],
+      [
+       0.2,
+       0.35
+      ],
+      [
+       0.35,
+       0.35
+      ],
+      [
+       0.05,
+       0.2
+      ],
+      [
+       0.35,
+       0.2
+      ]
+     ],
+     "diametro": 0.016,
+     "kind": "bars",
+     "stile": "armatura"
+    },
+    {
+     "campo": null,
+     "distanza": -0.06,
+     "kind": "dimension",
+     "p1": [
+      0.0,
+      0.0
+     ],
+     "p2": [
+      0.4,
+      0.0
+     ],
+     "testo": "L_1 = 400 mm"
+    },
+    {
+     "campo": null,
+     "distanza": 0.06,
+     "kind": "dimension",
+     "p1": [
+      0.0,
+      0.0
+     ],
+     "p2": [
+      0.0,
+      0.4
+     ],
+     "testo": "L_2 = 400 mm"
+    }
+   ],
+   "titolo": "Sezione"
+  }
+ ],
+ "ca-punzonamento#excel": [
+  {
+   "forme": [
+    {
+     "kind": "polygon",
+     "punti": [
+      [
+       0.2,
+       0.2
+      ],
+      [
+       -0.2,
+       0.2
+      ],
+      [
+       -0.2,
+       -0.2
+      ],
+      [
+       0.2,
+       -0.2
+      ]
+     ],
+     "stile": "quota"
+    },
+    {
+     "kind": "polygon",
+     "punti": [
+      [
+       1.06,
+       0.2
+      ],
+      [
+       0.9945363979597066,
+       0.5291077518339772
+      ],
+      [
+       0.8081118318204309,
+       0.8081118318204308
+      ],
+      [
+       0.5291077518339773,
+       0.9945363979597066
+      ],
+      [
+       0.20000000000000007,
+       1.06
+      ],
+      [
+       -0.19999999999999996,
+       1.06
+      ],
+      [
+       -0.5291077518339771,
+       0.9945363979597066
+      ],
+      [
+       -0.8081118318204308,
+       0.8081118318204309
+      ],
+      [
+       -0.9945363979597066,
+       0.5291077518339773
+      ],
+      [
+       -1.06,
+       0.20000000000000012
+      ],
+      [
+       -1.06,
+       -0.1999999999999999
+      ],
+      [
+       -0.9945363979597067,
+       -0.5291077518339771
+      ],
+      [
+       -0.808111831820431,
+       -0.8081118318204308
+      ],
+      [
+       -0.529107751833977,
+       -0.9945363979597067
+      ],
+      [
+       -0.20000000000000018,
+       -1.06
+      ],
+      [
+       0.19999999999999982,
+       -1.06
+      ],
+      [
+       0.5291077518339774,
+       -0.9945363979597065
+      ],
+      [
+       0.8081118318204307,
+       -0.808111831820431
+      ],
+      [
+       0.9945363979597067,
+       -0.5291077518339771
+      ],
+      [
+       1.06,
+       -0.2000000000000002
+      ]
+     ],
+     "stile": "evidenza"
+    },
+    {
+     "kind": "polygon",
+     "punti": [
+      [
+       0.2,
+       0.2
+      ],
+      [
+       -0.2,
+       0.2
+      ],
+      [
+       -0.2,
+       -0.2
+      ],
+      [
+       0.2,
+       -0.2
+      ]
+     ],
+     "stile": "quota"
+    },
+    {
+     "h": 0.4,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 0.4,
+     "x": -0.2,
+     "y": -0.2
+    },
+    {
+     "campo": null,
+     "distanza": -1.2932000000000001,
+     "kind": "dimension",
+     "p1": [
+      0.2,
+      0.0
+     ],
+     "p2": [
+      1.06,
+      0.0
+     ],
+     "testo": "a_gov = 860 mm"
+    },
+    {
+     "campo": null,
+     "distanza": -1.5264000000000002,
+     "kind": "dimension",
+     "p1": [
+      0.2,
+      0.0
+     ],
+     "p2": [
+      1.06,
+      0.0
+     ],
+     "testo": "2d = 860 mm"
+    }
+   ],
+   "titolo": "Pianta"
+  }
+ ],
+ "ca-punzonamento#standard": [
+  {
+   "forme": [
+    {
+     "kind": "polygon",
+     "punti": [
+      [
+       0.2,
+       0.2
+      ],
+      [
+       -0.2,
+       0.2
+      ],
+      [
+       -0.2,
+       -0.2
+      ],
+      [
+       0.2,
+       -0.2
+      ]
+     ],
+     "stile": "quota"
+    },
+    {
+     "kind": "polygon",
+     "punti": [
+      [
+       1.06,
+       0.2
+      ],
+      [
+       0.9945363979597066,
+       0.5291077518339772
+      ],
+      [
+       0.8081118318204309,
+       0.8081118318204308
+      ],
+      [
+       0.5291077518339773,
+       0.9945363979597066
+      ],
+      [
+       0.20000000000000007,
+       1.06
+      ],
+      [
+       -0.19999999999999996,
+       1.06
+      ],
+      [
+       -0.5291077518339771,
+       0.9945363979597066
+      ],
+      [
+       -0.8081118318204308,
+       0.8081118318204309
+      ],
+      [
+       -0.9945363979597066,
+       0.5291077518339773
+      ],
+      [
+       -1.06,
+       0.20000000000000012
+      ],
+      [
+       -1.06,
+       -0.1999999999999999
+      ],
+      [
+       -0.9945363979597067,
+       -0.5291077518339771
+      ],
+      [
+       -0.808111831820431,
+       -0.8081118318204308
+      ],
+      [
+       -0.529107751833977,
+       -0.9945363979597067
+      ],
+      [
+       -0.20000000000000018,
+       -1.06
+      ],
+      [
+       0.19999999999999982,
+       -1.06
+      ],
+      [
+       0.5291077518339774,
+       -0.9945363979597065
+      ],
+      [
+       0.8081118318204307,
+       -0.808111831820431
+      ],
+      [
+       0.9945363979597067,
+       -0.5291077518339771
+      ],
+      [
+       1.06,
+       -0.2000000000000002
+      ]
+     ],
+     "stile": "evidenza"
+    },
+    {
+     "h": 0.4,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 0.4,
+     "x": -0.2,
+     "y": -0.2
+    },
+    {
+     "campo": null,
+     "distanza": -1.2932000000000001,
+     "kind": "dimension",
+     "p1": [
+      0.2,
+      0.0
+     ],
+     "p2": [
+      1.06,
+      0.0
+     ],
+     "testo": "a_gov = 860 mm"
+    },
+    {
+     "campo": null,
+     "distanza": -1.5264000000000002,
+     "kind": "dimension",
+     "p1": [
+      0.2,
+      0.0
+     ],
+     "p2": [
+      1.06,
+      0.0
+     ],
+     "testo": "2d = 860 mm"
+    }
+   ],
+   "titolo": "Pianta"
+  }
+ ],
+ "ca-sezione-dominio-mn#standard": [
+  {
+   "forme": [
+    {
+     "kind": "polygon",
+     "punti": [
+      [
+       -0.15,
+       -0.25
+      ],
+      [
+       0.15,
+       -0.25
+      ],
+      [
+       0.15,
+       0.25
+      ],
+      [
+       -0.15,
+       0.25
+      ]
+     ],
+     "stile": "calcestruzzo"
+    },
+    {
+     "centri": [
+      [
+       -0.11,
+       0.21
+      ],
+      [
+       0.0,
+       0.21
+      ],
+      [
+       0.11,
+       0.21
+      ],
+      [
+       -0.11,
+       -0.21
+      ],
+      [
+       0.0,
+       -0.21
+      ],
+      [
+       0.11,
+       -0.21
+      ],
+      [
+       0.11,
+       0.0
+      ],
+      [
+       -0.11,
+       0.0
+      ]
+     ],
+     "diametro": 0.02,
+     "kind": "bars",
+     "stile": "armatura"
+    },
+    {
+     "kind": "line",
+     "p1": [
+      0.15,
+      0.14078731550193646
+     ],
+     "p2": [
+      -0.15,
+      -0.009212684498063553
+     ],
+     "stile": "asse",
+     "tratteggio": true
+    },
+    {
+     "ancora": "end",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      -0.15,
+      0.020787315501936444
+     ],
+     "simbolo": null,
+     "stile": "asse",
+     "testo": "Asse neutro"
+    }
+   ],
+   "titolo": "Sezione"
+  }
+ ],
+ "ca-taglio-non-armato#excel": [
+  {
+   "forme": [
+    {
+     "h": 0.5,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 1.0,
+     "x": 0.0,
+     "y": 0.0
+    },
+    {
+     "centri": [
+      [
+       0.05,
+       0.05
+      ],
+      [
+       0.275,
+       0.05
+      ],
+      [
+       0.5,
+       0.05
+      ],
+      [
+       0.725,
+       0.05
+      ],
+      [
+       0.95,
+       0.05
+      ]
+     ],
+     "diametro": 0.016,
+     "kind": "bars",
+     "stile": "fantasma"
+    },
+    {
+     "campo": "bw_mm",
+     "distanza": -0.15,
+     "kind": "dimension",
+     "p1": [
+      0.0,
+      0.0
+     ],
+     "p2": [
+      1.0,
+      0.0
+     ],
+     "testo": "b = 1000 mm"
+    },
+    {
+     "campo": "h_mm",
+     "distanza": -0.15,
+     "kind": "dimension",
+     "p1": [
+      0.0,
+      0.5
+     ],
+     "p2": [
+      0.0,
+      0.05
+     ],
+     "testo": "d = 450 mm"
+    }
+   ],
+   "titolo": "Sezione"
+  }
+ ],
+ "ca-taglio-non-armato#standard": [
+  {
+   "forme": [
+    {
+     "h": 0.5,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 1.0,
+     "x": 0.0,
+     "y": 0.0
+    },
+    {
+     "centri": [
+      [
+       0.05,
+       0.05
+      ],
+      [
+       0.275,
+       0.05
+      ],
+      [
+       0.5,
+       0.05
+      ],
+      [
+       0.725,
+       0.05
+      ],
+      [
+       0.95,
+       0.05
+      ]
+     ],
+     "diametro": 0.016,
+     "kind": "bars",
+     "stile": "fantasma"
+    },
+    {
+     "campo": "bw_mm",
+     "distanza": -0.15,
+     "kind": "dimension",
+     "p1": [
+      0.0,
+      0.0
+     ],
+     "p2": [
+      1.0,
+      0.0
+     ],
+     "testo": "b = 1000 mm"
+    },
+    {
+     "campo": "h_mm",
+     "distanza": -0.15,
+     "kind": "dimension",
+     "p1": [
+      0.0,
+      0.5
+     ],
+     "p2": [
+      0.0,
+      0.05
+     ],
+     "testo": "d = 450 mm"
+    }
+   ],
+   "titolo": "Sezione"
+  }
+ ],
+ "ca-trave-rettangolare#excel": [
+  {
+   "forme": [
+    {
+     "h": 0.4,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 0.6,
+     "x": 0.0,
+     "y": 0.0
+    },
+    {
+     "kind": "polygon",
+     "punti": [
+      [
+       0.064,
+       0.064
+      ],
+      [
+       0.536,
+       0.064
+      ],
+      [
+       0.536,
+       0.336
+      ],
+      [
+       0.064,
+       0.336
+      ]
+     ],
+     "stile": "armatura"
+    },
+    {
+     "centri": [
+      [
+       0.07,
+       0.07
+      ],
+      [
+       0.185,
+       0.07
+      ],
+      [
+       0.3,
+       0.07
+      ],
+      [
+       0.415,
+       0.07
+      ],
+      [
+       0.53,
+       0.07
+      ]
+     ],
+     "diametro": 0.02,
+     "kind": "bars",
+     "stile": "armatura"
+    },
+    {
+     "kind": "line",
+     "p1": [
+      0.0,
+      0.3336046753274601
+     ],
+     "p2": [
+      0.6,
+      0.3336046753274601
+     ],
+     "stile": "evidenza",
+     "tratteggio": true
+    },
+    {
+     "campo": null,
+     "distanza": -0.09,
+     "kind": "dimension",
+     "p1": [
+      0.0,
+      0.0
+     ],
+     "p2": [
+      0.6,
+      0.0
+     ],
+     "testo": "b = 600 mm"
+    },
+    {
+     "campo": null,
+     "distanza": 0.09,
+     "kind": "dimension",
+     "p1": [
+      0.0,
+      0.0
+     ],
+     "p2": [
+      0.0,
+      0.4
+     ],
+     "testo": "h = 400 mm"
+    }
+   ],
+   "titolo": "Sezione"
+  }
+ ],
+ "ca-trave-rettangolare#standard": [
+  {
+   "forme": [
+    {
+     "h": 0.4,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 0.6,
+     "x": 0.0,
+     "y": 0.0
+    },
+    {
+     "kind": "polygon",
+     "punti": [
+      [
+       0.064,
+       0.064
+      ],
+      [
+       0.536,
+       0.064
+      ],
+      [
+       0.536,
+       0.336
+      ],
+      [
+       0.064,
+       0.336
+      ]
+     ],
+     "stile": "armatura"
+    },
+    {
+     "centri": [
+      [
+       0.07,
+       0.07
+      ],
+      [
+       0.185,
+       0.07
+      ],
+      [
+       0.3,
+       0.07
+      ],
+      [
+       0.415,
+       0.07
+      ],
+      [
+       0.53,
+       0.07
+      ]
+     ],
+     "diametro": 0.02,
+     "kind": "bars",
+     "stile": "armatura"
+    },
+    {
+     "kind": "line",
+     "p1": [
+      0.0,
+      0.32826103732211837
+     ],
+     "p2": [
+      0.6,
+      0.32826103732211837
+     ],
+     "stile": "evidenza",
+     "tratteggio": true
+    },
+    {
+     "campo": null,
+     "distanza": -0.09,
+     "kind": "dimension",
+     "p1": [
+      0.0,
+      0.0
+     ],
+     "p2": [
+      0.6,
+      0.0
+     ],
+     "testo": "b = 600 mm"
+    },
+    {
+     "campo": null,
+     "distanza": 0.09,
+     "kind": "dimension",
+     "p1": [
+      0.0,
+      0.0
+     ],
+     "p2": [
+      0.0,
+      0.4
+     ],
+     "testo": "h = 400 mm"
+    }
+   ],
+   "titolo": "Sezione"
+  }
+ ],
+ "fond-pavimento-industriale#excel": [
+  {
+   "forme": [
+    {
+     "h": 18.0,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 20.0,
+     "x": -10.0,
+     "y": -9.0
+    },
+    {
+     "campo": null,
+     "distanza": 1.4000000000000001,
+     "kind": "dimension",
+     "p1": [
+      -10.0,
+      9.0
+     ],
+     "p2": [
+      10.0,
+      9.0
+     ],
+     "testo": "a' = 20,00 m"
+    },
+    {
+     "campo": null,
+     "distanza": -1.4000000000000001,
+     "kind": "dimension",
+     "p1": [
+      10.0,
+      -9.0
+     ],
+     "p2": [
+      10.0,
+      9.0
+     ],
+     "testo": "b' = 18,00 m"
+    },
+    {
+     "centro": [
+      0.0,
+      0.0
+     ],
+     "kind": "circle",
+     "r": 0.7769011782072451,
+     "stile": "quota",
+     "tratteggio": true
+    },
+    {
+     "h": 0.6,
+     "kind": "rect",
+     "stile": "carico",
+     "w": 0.6,
+     "x": -0.3,
+     "y": -0.3
+    },
+    {
+     "h": 0.6,
+     "kind": "rect",
+     "stile": "carico",
+     "w": 0.6,
+     "x": -0.3,
+     "y": -9.3
+    },
+    {
+     "h": 0.6,
+     "kind": "rect",
+     "stile": "carico",
+     "w": 0.6,
+     "x": -10.3,
+     "y": -9.3
+    },
+    {
+     "h": 0.6,
+     "kind": "rect",
+     "stile": "carico",
+     "w": 0.6,
+     "x": -0.3,
+     "y": -0.3
+    },
+    {
+     "ancora": "end",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      -10.5,
+      8.0
+     ],
+     "simbolo": null,
+     "stile": "carico",
+     "testo": "ruota motrice, P = 16 kN"
+    },
+    {
+     "ancora": "end",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      -10.5,
+      6.0
+     ],
+     "simbolo": null,
+     "stile": "carico",
+     "testo": "ruota motrice, P = 16 kN"
+    },
+    {
+     "ancora": "end",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      -10.5,
+      4.0
+     ],
+     "simbolo": null,
+     "stile": "carico",
+     "testo": "ruota motrice, P = 16 kN"
+    },
+    {
+     "ancora": "end",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      -10.5,
+      2.0
+     ],
+     "simbolo": null,
+     "stile": "carico",
+     "testo": "ruote anteriori, P = 8 kN"
+    }
+   ],
+   "titolo": "Pianta"
+  }
+ ],
+ "fond-pavimento-industriale#standard": [
+  {
+   "forme": [
+    {
+     "h": 18.0,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 20.0,
+     "x": -10.0,
+     "y": -9.0
+    },
+    {
+     "campo": null,
+     "distanza": 1.4000000000000001,
+     "kind": "dimension",
+     "p1": [
+      -10.0,
+      9.0
+     ],
+     "p2": [
+      10.0,
+      9.0
+     ],
+     "testo": "a' = 20,00 m"
+    },
+    {
+     "campo": null,
+     "distanza": -1.4000000000000001,
+     "kind": "dimension",
+     "p1": [
+      10.0,
+      -9.0
+     ],
+     "p2": [
+      10.0,
+      9.0
+     ],
+     "testo": "b' = 18,00 m"
+    },
+    {
+     "centro": [
+      0.0,
+      0.0
+     ],
+     "kind": "circle",
+     "r": 0.7769011782072451,
+     "stile": "quota",
+     "tratteggio": true
+    },
+    {
+     "h": 0.6,
+     "kind": "rect",
+     "stile": "carico",
+     "w": 0.6,
+     "x": -0.3,
+     "y": -0.3
+    },
+    {
+     "h": 0.6,
+     "kind": "rect",
+     "stile": "carico",
+     "w": 0.6,
+     "x": -0.3,
+     "y": -9.3
+    },
+    {
+     "h": 0.6,
+     "kind": "rect",
+     "stile": "carico",
+     "w": 0.6,
+     "x": -10.3,
+     "y": -9.3
+    },
+    {
+     "h": 0.6,
+     "kind": "rect",
+     "stile": "carico",
+     "w": 0.6,
+     "x": -0.3,
+     "y": -0.3
+    },
+    {
+     "ancora": "end",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      -10.5,
+      8.0
+     ],
+     "simbolo": null,
+     "stile": "carico",
+     "testo": "ruota motrice, P = 16 kN"
+    },
+    {
+     "ancora": "end",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      -10.5,
+      6.0
+     ],
+     "simbolo": null,
+     "stile": "carico",
+     "testo": "ruota motrice, P = 16 kN"
+    },
+    {
+     "ancora": "end",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      -10.5,
+      4.0
+     ],
+     "simbolo": null,
+     "stile": "carico",
+     "testo": "ruota motrice, P = 16 kN"
+    },
+    {
+     "ancora": "end",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      -10.5,
+      2.0
+     ],
+     "simbolo": null,
+     "stile": "carico",
+     "testo": "ruote anteriori, P = 8 kN"
+    }
+   ],
+   "titolo": "Pianta"
+  }
+ ],
+ "fond-plinto-isolato#excel": [
+  {
+   "forme": [
+    {
+     "h": 4.0,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 4.0,
+     "x": -2.0,
+     "y": -2.0
+    },
+    {
+     "h": 1.0,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 1.0,
+     "x": -0.5,
+     "y": -0.5
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -2.3,
+      0.0
+     ],
+     "p2": [
+      2.3,
+      0.0
+     ],
+     "stile": "asse",
+     "tratteggio": false
+    },
+    {
+     "kind": "line",
+     "p1": [
+      0.0,
+      -2.3
+     ],
+     "p2": [
+      0.0,
+      2.3
+     ],
+     "stile": "asse",
+     "tratteggio": false
+    },
+    {
+     "centro": [
+      0.0005503370907229967,
+      0.015775738979185782
+     ],
+     "kind": "circle",
+     "r": 0.08,
+     "stile": "evidenza",
+     "tratteggio": false
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      0.240550337090723,
+      0.25577573897918576
+     ],
+     "simbolo": "e_x",
+     "stile": "evidenza",
+     "testo": "0,00 m"
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      0.240550337090723,
+      -0.22422426102081422
+     ],
+     "simbolo": "e_y",
+     "stile": "evidenza",
+     "testo": "0,02 m"
+    },
+    {
+     "campo": null,
+     "distanza": -0.28,
+     "kind": "dimension",
+     "p1": [
+      -2.0,
+      -2.0
+     ],
+     "p2": [
+      2.0,
+      -2.0
+     ],
+     "testo": "A_X = 4,00 m"
+    },
+    {
+     "campo": null,
+     "distanza": 0.28,
+     "kind": "dimension",
+     "p1": [
+      -2.0,
+      -2.0
+     ],
+     "p2": [
+      -2.0,
+      2.0
+     ],
+     "testo": "B_Y = 4,00 m"
+    }
+   ],
+   "titolo": "Pianta"
+  },
+  {
+   "forme": [
+    {
+     "h": 0.8,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 4.0,
+     "x": -2.0,
+     "y": 0.0
+    },
+    {
+     "h": 0.5333333333333332,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 1.0,
+     "x": -0.5,
+     "y": 0.8
+    },
+    {
+     "campo": null,
+     "coda": [
+      0.0,
+      2.0
+     ],
+     "kind": "arrow",
+     "punta": [
+      0.0,
+      1.3333333333333333
+     ],
+     "stile": "carico",
+     "testo": "N = 2597 kN"
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      0.12,
+      1.6666666666666665
+     ],
+     "simbolo": "M",
+     "stile": "carico",
+     "testo": "1 kNm"
+    },
+    {
+     "campo": null,
+     "distanza": -0.28,
+     "kind": "dimension",
+     "p1": [
+      2.0,
+      0.0
+     ],
+     "p2": [
+      2.0,
+      0.8
+     ],
+     "testo": "H = 0,80 m"
+    },
+    {
+     "altezza_relativa": 0.35,
+     "base": [
+      [
+       2.0,
+       0.0
+      ],
+      [
+       -2.0,
+       0.0
+      ]
+     ],
+     "etichette": [
+      "σmax = 166 kPa",
+      "σmin = 158 kPa"
+     ],
+     "kind": "diagram",
+     "stile": "pressione",
+     "valori": [
+      166.2827151015625,
+      158.33315989843751
+     ]
+    },
+    {
+     "campo": null,
+     "coda": [
+      -2.3,
+      0.4
+     ],
+     "kind": "arrow",
+     "punta": [
+      -2.0,
+      0.4
+     ],
+     "stile": "carico",
+     "testo": "V"
+    }
+   ],
+   "titolo": "Sezione"
+  }
+ ],
+ "fond-plinto-isolato#standard": [
+  {
+   "forme": [
+    {
+     "h": 4.0,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 4.0,
+     "x": -2.0,
+     "y": -2.0
+    },
+    {
+     "h": 1.0,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 1.0,
+     "x": -0.5,
+     "y": -0.5
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -2.3,
+      0.0
+     ],
+     "p2": [
+      2.3,
+      0.0
+     ],
+     "stile": "asse",
+     "tratteggio": false
+    },
+    {
+     "kind": "line",
+     "p1": [
+      0.0,
+      -2.3
+     ],
+     "p2": [
+      0.0,
+      2.3
+     ],
+     "stile": "asse",
+     "tratteggio": false
+    },
+    {
+     "centro": [
+      0.0005503370907229967,
+      0.015775738979185782
+     ],
+     "kind": "circle",
+     "r": 0.08,
+     "stile": "evidenza",
+     "tratteggio": false
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      0.240550337090723,
+      0.25577573897918576
+     ],
+     "simbolo": "e_x",
+     "stile": "evidenza",
+     "testo": "0,00 m"
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      0.240550337090723,
+      -0.22422426102081422
+     ],
+     "simbolo": "e_y",
+     "stile": "evidenza",
+     "testo": "0,02 m"
+    },
+    {
+     "campo": null,
+     "distanza": -0.28,
+     "kind": "dimension",
+     "p1": [
+      -2.0,
+      -2.0
+     ],
+     "p2": [
+      2.0,
+      -2.0
+     ],
+     "testo": "A_X = 4,00 m"
+    },
+    {
+     "campo": null,
+     "distanza": 0.28,
+     "kind": "dimension",
+     "p1": [
+      -2.0,
+      -2.0
+     ],
+     "p2": [
+      -2.0,
+      2.0
+     ],
+     "testo": "B_Y = 4,00 m"
+    }
+   ],
+   "titolo": "Pianta"
+  },
+  {
+   "forme": [
+    {
+     "h": 0.8,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 4.0,
+     "x": -2.0,
+     "y": 0.0
+    },
+    {
+     "h": 0.5333333333333332,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 1.0,
+     "x": -0.5,
+     "y": 0.8
+    },
+    {
+     "campo": null,
+     "coda": [
+      0.0,
+      2.0
+     ],
+     "kind": "arrow",
+     "punta": [
+      0.0,
+      1.3333333333333333
+     ],
+     "stile": "carico",
+     "testo": "N = 2597 kN"
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      0.12,
+      1.6666666666666665
+     ],
+     "simbolo": "M",
+     "stile": "carico",
+     "testo": "1 kNm"
+    },
+    {
+     "campo": null,
+     "distanza": -0.28,
+     "kind": "dimension",
+     "p1": [
+      2.0,
+      0.0
+     ],
+     "p2": [
+      2.0,
+      0.8
+     ],
+     "testo": "H = 0,80 m"
+    },
+    {
+     "altezza_relativa": 0.35,
+     "base": [
+      [
+       2.0,
+       0.0
+      ],
+      [
+       -2.0,
+       0.0
+      ]
+     ],
+     "etichette": [
+      "σmax = 166 kPa",
+      "σmin = 158 kPa"
+     ],
+     "kind": "diagram",
+     "stile": "pressione",
+     "valori": [
+      166.2827151015625,
+      158.33315989843751
+     ]
+    },
+    {
+     "campo": null,
+     "coda": [
+      -2.3,
+      0.4
+     ],
+     "kind": "arrow",
+     "punta": [
+      -2.0,
+      0.4
+     ],
+     "stile": "carico",
+     "testo": "V"
+    }
+   ],
+   "titolo": "Sezione"
+  }
+ ],
+ "fond-plinto-su-pali#excel": [
+  {
+   "forme": [
+    {
+     "h": 4.0,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 4.0,
+     "x": -2.0,
+     "y": -2.0
+    },
+    {
+     "h": 0.7,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 0.7,
+     "x": -0.35,
+     "y": -0.35
+    },
+    {
+     "centri": [
+      [
+       -1.0,
+       -1.0
+      ],
+      [
+       1.0,
+       -1.0
+      ],
+      [
+       -1.0,
+       1.0
+      ],
+      [
+       1.0,
+       1.0
+      ]
+     ],
+     "diametro": 0.6,
+     "kind": "bars",
+     "stile": "palo"
+    },
+    {
+     "campo": null,
+     "distanza": -0.28,
+     "kind": "dimension",
+     "p1": [
+      -2.0,
+      -2.0
+     ],
+     "p2": [
+      2.0,
+      -2.0
+     ],
+     "testo": "A_X = 4,00 m"
+    },
+    {
+     "campo": null,
+     "distanza": 0.28,
+     "kind": "dimension",
+     "p1": [
+      -2.0,
+      -2.0
+     ],
+     "p2": [
+      -2.0,
+      2.0
+     ],
+     "testo": "B_Y = 4,00 m"
+    },
+    {
+     "campo": null,
+     "distanza": 0.28,
+     "kind": "dimension",
+     "p1": [
+      -1.0,
+      2.0
+     ],
+     "p2": [
+      1.0,
+      2.0
+     ],
+     "testo": "L_X = 2,00 m"
+    },
+    {
+     "campo": null,
+     "distanza": -0.28,
+     "kind": "dimension",
+     "p1": [
+      2.0,
+      -1.0
+     ],
+     "p2": [
+      2.0,
+      1.0
+     ],
+     "testo": "L_Y = 2,00 m"
+    }
+   ],
+   "titolo": "Pianta"
+  },
+  {
+   "forme": [
+    {
+     "h": 1.2,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 3.4284271247461904,
+     "x": -1.7142135623730952,
+     "y": 0.0
+    },
+    {
+     "h": 0.48,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 0.7,
+     "x": -0.35,
+     "y": 1.2
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -1.4142135623730951,
+      0.0
+     ],
+     "p2": [
+      0.0,
+      1.1099999999999999
+     ],
+     "stile": "puntone",
+     "tratteggio": false
+    },
+    {
+     "h": 0.36,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 0.6,
+     "x": -1.7142135623730952,
+     "y": -0.36
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -1.4142135623730951,
+      -0.36
+     ],
+     "p2": [
+      -1.4142135623730951,
+      -0.432
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    },
+    {
+     "campo": null,
+     "coda": [
+      -1.4142135623730951,
+      -0.9319999999999999
+     ],
+     "kind": "arrow",
+     "punta": [
+      -1.4142135623730951,
+      -0.432
+     ],
+     "stile": "reazione",
+     "testo": "N = 758 kN"
+    },
+    {
+     "kind": "line",
+     "p1": [
+      1.4142135623730951,
+      0.0
+     ],
+     "p2": [
+      0.0,
+      1.1099999999999999
+     ],
+     "stile": "puntone",
+     "tratteggio": false
+    },
+    {
+     "h": 0.36,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 0.6,
+     "x": 1.114213562373095,
+     "y": -0.36
+    },
+    {
+     "kind": "line",
+     "p1": [
+      1.4142135623730951,
+      -0.36
+     ],
+     "p2": [
+      1.4142135623730951,
+      -0.432
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    },
+    {
+     "campo": null,
+     "coda": [
+      1.4142135623730951,
+      -0.9319999999999999
+     ],
+     "kind": "arrow",
+     "punta": [
+      1.4142135623730951,
+      -0.432
+     ],
+     "stile": "reazione",
+     "testo": "N = 758 kN"
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -1.4142135623730951,
+      0.062
+     ],
+     "p2": [
+      1.4142135623730951,
+      0.062
+     ],
+     "stile": "tirante",
+     "tratteggio": false
+    }
+   ],
+   "titolo": "Prospetto S&T"
+  }
+ ],
+ "fond-plinto-su-pali#standard": [
+  {
+   "forme": [
+    {
+     "h": 4.0,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 4.0,
+     "x": -2.0,
+     "y": -2.0
+    },
+    {
+     "h": 0.7,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 0.7,
+     "x": -0.35,
+     "y": -0.35
+    },
+    {
+     "centri": [
+      [
+       -1.0,
+       -1.0
+      ],
+      [
+       1.0,
+       -1.0
+      ],
+      [
+       -1.0,
+       1.0
+      ],
+      [
+       1.0,
+       1.0
+      ]
+     ],
+     "diametro": 0.6,
+     "kind": "bars",
+     "stile": "palo"
+    },
+    {
+     "campo": null,
+     "distanza": -0.28,
+     "kind": "dimension",
+     "p1": [
+      -2.0,
+      -2.0
+     ],
+     "p2": [
+      2.0,
+      -2.0
+     ],
+     "testo": "A_X = 4,00 m"
+    },
+    {
+     "campo": null,
+     "distanza": 0.28,
+     "kind": "dimension",
+     "p1": [
+      -2.0,
+      -2.0
+     ],
+     "p2": [
+      -2.0,
+      2.0
+     ],
+     "testo": "B_Y = 4,00 m"
+    },
+    {
+     "campo": null,
+     "distanza": 0.28,
+     "kind": "dimension",
+     "p1": [
+      -1.0,
+      2.0
+     ],
+     "p2": [
+      1.0,
+      2.0
+     ],
+     "testo": "L_X = 2,00 m"
+    },
+    {
+     "campo": null,
+     "distanza": -0.28,
+     "kind": "dimension",
+     "p1": [
+      2.0,
+      -1.0
+     ],
+     "p2": [
+      2.0,
+      1.0
+     ],
+     "testo": "L_Y = 2,00 m"
+    }
+   ],
+   "titolo": "Pianta"
+  },
+  {
+   "forme": [
+    {
+     "h": 1.2,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 3.4284271247461904,
+     "x": -1.7142135623730952,
+     "y": 0.0
+    },
+    {
+     "h": 0.48,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 0.7,
+     "x": -0.35,
+     "y": 1.2
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -1.4142135623730951,
+      0.0
+     ],
+     "p2": [
+      0.0,
+      1.1099999999999999
+     ],
+     "stile": "puntone",
+     "tratteggio": false
+    },
+    {
+     "h": 0.36,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 0.6,
+     "x": -1.7142135623730952,
+     "y": -0.36
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -1.4142135623730951,
+      -0.36
+     ],
+     "p2": [
+      -1.4142135623730951,
+      -0.432
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    },
+    {
+     "campo": null,
+     "coda": [
+      -1.4142135623730951,
+      -0.9319999999999999
+     ],
+     "kind": "arrow",
+     "punta": [
+      -1.4142135623730951,
+      -0.432
+     ],
+     "stile": "reazione",
+     "testo": "N = 758 kN"
+    },
+    {
+     "kind": "line",
+     "p1": [
+      1.4142135623730951,
+      0.0
+     ],
+     "p2": [
+      0.0,
+      1.1099999999999999
+     ],
+     "stile": "puntone",
+     "tratteggio": false
+    },
+    {
+     "h": 0.36,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 0.6,
+     "x": 1.114213562373095,
+     "y": -0.36
+    },
+    {
+     "kind": "line",
+     "p1": [
+      1.4142135623730951,
+      -0.36
+     ],
+     "p2": [
+      1.4142135623730951,
+      -0.432
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    },
+    {
+     "campo": null,
+     "coda": [
+      1.4142135623730951,
+      -0.9319999999999999
+     ],
+     "kind": "arrow",
+     "punta": [
+      1.4142135623730951,
+      -0.432
+     ],
+     "stile": "reazione",
+     "testo": "N = 758 kN"
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -1.4142135623730951,
+      0.062
+     ],
+     "p2": [
+      1.4142135623730951,
+      0.062
+     ],
+     "stile": "tirante",
+     "tratteggio": false
+    }
+   ],
+   "titolo": "Prospetto S&T"
+  }
+ ],
+ "fond-trave-collegamento#excel": [
+  {
+   "forme": [
+    {
+     "h": 0.4,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 0.4,
+     "x": -0.2,
+     "y": -0.2
+    },
+    {
+     "h": 0.32,
+     "kind": "rect",
+     "stile": "armatura",
+     "w": 0.32,
+     "x": -0.16,
+     "y": -0.16
+    },
+    {
+     "centri": [
+      [
+       0.14200000000000002,
+       0.14200000000000002
+      ],
+      [
+       -0.04733333333333334,
+       0.14200000000000002
+      ],
+      [
+       -0.14200000000000002,
+       0.04733333333333334
+      ],
+      [
+       -0.14200000000000002,
+       -0.14200000000000002
+      ],
+      [
+       0.04733333333333334,
+       -0.14200000000000002
+      ],
+      [
+       0.14200000000000002,
+       -0.04733333333333334
+      ]
+     ],
+     "diametro": 0.016,
+     "kind": "bars",
+     "stile": "armatura"
+    },
+    {
+     "campo": "b_mm",
+     "distanza": -0.028000000000000004,
+     "kind": "dimension",
+     "p1": [
+      -0.2,
+      -0.2
+     ],
+     "p2": [
+      0.2,
+      -0.2
+     ],
+     "testo": "B = 0,40 m"
+    },
+    {
+     "campo": "h_mm",
+     "distanza": 0.028000000000000004,
+     "kind": "dimension",
+     "p1": [
+      -0.2,
+      -0.2
+     ],
+     "p2": [
+      -0.2,
+      0.2
+     ],
+     "testo": "H = 0,40 m"
+    }
+   ],
+   "titolo": "Sezione"
+  }
+ ],
+ "fond-trave-collegamento#standard": [
+  {
+   "forme": [
+    {
+     "h": 0.4,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 0.4,
+     "x": -0.2,
+     "y": -0.2
+    },
+    {
+     "h": 0.32,
+     "kind": "rect",
+     "stile": "armatura",
+     "w": 0.32,
+     "x": -0.16,
+     "y": -0.16
+    },
+    {
+     "centri": [
+      [
+       0.14200000000000002,
+       0.14200000000000002
+      ],
+      [
+       -0.04733333333333334,
+       0.14200000000000002
+      ],
+      [
+       -0.14200000000000002,
+       0.04733333333333334
+      ],
+      [
+       -0.14200000000000002,
+       -0.14200000000000002
+      ],
+      [
+       0.04733333333333334,
+       -0.14200000000000002
+      ],
+      [
+       0.14200000000000002,
+       -0.04733333333333334
+      ]
+     ],
+     "diametro": 0.016,
+     "kind": "bars",
+     "stile": "armatura"
+    },
+    {
+     "campo": "b_mm",
+     "distanza": -0.028000000000000004,
+     "kind": "dimension",
+     "p1": [
+      -0.2,
+      -0.2
+     ],
+     "p2": [
+      0.2,
+      -0.2
+     ],
+     "testo": "B = 0,40 m"
+    },
+    {
+     "campo": "h_mm",
+     "distanza": 0.028000000000000004,
+     "kind": "dimension",
+     "p1": [
+      -0.2,
+      -0.2
+     ],
+     "p2": [
+      -0.2,
+      0.2
+     ],
+     "testo": "H = 0,40 m"
+    }
+   ],
+   "titolo": "Sezione"
+  }
+ ],
+ "geo-cedimento-edometrico#excel": [
+  {
+   "forme": [
+    {
+     "h": 0.6930000000000001,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 3.5,
+     "x": -1.75,
+     "y": -0.0
+    },
+    {
+     "h": 3.7,
+     "kind": "rect",
+     "stile": "terreno",
+     "w": 10.5,
+     "x": -5.25,
+     "y": -3.7
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      5.65,
+      -1.85
+     ],
+     "simbolo": null,
+     "stile": "asse",
+     "testo": "Eed = 5,5 MPa"
+    },
+    {
+     "campo": null,
+     "distanza": -0.7350000000000001,
+     "kind": "dimension",
+     "p1": [
+      -5.25,
+      -0.0
+     ],
+     "p2": [
+      -5.25,
+      -3.7
+     ],
+     "testo": "s = 3,70 m"
+    },
+    {
+     "h": 1.0,
+     "kind": "rect",
+     "stile": "terreno",
+     "w": 10.5,
+     "x": -5.25,
+     "y": -4.7
+    },
+    {
+     "h": 0.7999999999999998,
+     "kind": "rect",
+     "stile": "terreno",
+     "w": 10.5,
+     "x": -5.25,
+     "y": -5.5
+    },
+    {
+     "h": 17.6,
+     "kind": "rect",
+     "stile": "terreno",
+     "w": 10.5,
+     "x": -5.25,
+     "y": -23.1
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      5.65,
+      -14.3
+     ],
+     "simbolo": null,
+     "stile": "asse",
+     "testo": "Eed = 7,0 MPa"
+    },
+    {
+     "campo": null,
+     "distanza": -0.7350000000000001,
+     "kind": "dimension",
+     "p1": [
+      -5.25,
+      -5.5
+     ],
+     "p2": [
+      -5.25,
+      -23.1
+     ],
+     "testo": "s = 17,60 m"
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -1.75,
+      -0.0
+     ],
+     "p2": [
+      -13.3,
+      -23.1
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    },
+    {
+     "kind": "line",
+     "p1": [
+      1.75,
+      -0.0
+     ],
+     "p2": [
+      13.3,
+      -23.1
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -5.25,
+      -23.1
+     ],
+     "p2": [
+      5.25,
+      -23.1
+     ],
+     "stile": "evidenza",
+     "tratteggio": false
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      5.65,
+      -23.1
+     ],
+     "simbolo": null,
+     "stile": "evidenza",
+     "testo": "Z_crit = 100,00 m"
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -5.25,
+      -11.55
+     ],
+     "p2": [
+      -5.55,
+      -11.55
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    },
+    {
+     "kind": "line",
+     "p1": [
+      5.25,
+      -11.55
+     ],
+     "p2": [
+      5.55,
+      -11.55
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    },
+    {
+     "campo": "b",
+     "distanza": 1.6170000000000002,
+     "kind": "dimension",
+     "p1": [
+      -1.75,
+      0.6930000000000001
+     ],
+     "p2": [
+      1.75,
+      0.6930000000000001
+     ],
+     "testo": "B = 3,50 m"
+    },
+    {
+     "kind": "line",
+     "p1": [
+      0.0,
+      -23.1
+     ],
+     "p2": [
+      0.0,
+      -24.948
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    }
+   ],
+   "titolo": "Sezione"
+  }
+ ],
+ "geo-cedimento-edometrico#standard": [
+  {
+   "forme": [
+    {
+     "h": 0.6930000000000001,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 3.5,
+     "x": -1.75,
+     "y": -0.0
+    },
+    {
+     "h": 3.7,
+     "kind": "rect",
+     "stile": "terreno",
+     "w": 10.5,
+     "x": -5.25,
+     "y": -3.7
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      5.65,
+      -1.85
+     ],
+     "simbolo": null,
+     "stile": "asse",
+     "testo": "Eed = 5,5 MPa"
+    },
+    {
+     "campo": null,
+     "distanza": -0.7350000000000001,
+     "kind": "dimension",
+     "p1": [
+      -5.25,
+      -0.0
+     ],
+     "p2": [
+      -5.25,
+      -3.7
+     ],
+     "testo": "s = 3,70 m"
+    },
+    {
+     "h": 1.0,
+     "kind": "rect",
+     "stile": "terreno",
+     "w": 10.5,
+     "x": -5.25,
+     "y": -4.7
+    },
+    {
+     "h": 0.7999999999999998,
+     "kind": "rect",
+     "stile": "terreno",
+     "w": 10.5,
+     "x": -5.25,
+     "y": -5.5
+    },
+    {
+     "h": 17.6,
+     "kind": "rect",
+     "stile": "terreno",
+     "w": 10.5,
+     "x": -5.25,
+     "y": -23.1
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      5.65,
+      -14.3
+     ],
+     "simbolo": null,
+     "stile": "asse",
+     "testo": "Eed = 7,0 MPa"
+    },
+    {
+     "campo": null,
+     "distanza": -0.7350000000000001,
+     "kind": "dimension",
+     "p1": [
+      -5.25,
+      -5.5
+     ],
+     "p2": [
+      -5.25,
+      -23.1
+     ],
+     "testo": "s = 17,60 m"
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -1.75,
+      -0.0
+     ],
+     "p2": [
+      -13.3,
+      -23.1
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    },
+    {
+     "kind": "line",
+     "p1": [
+      1.75,
+      -0.0
+     ],
+     "p2": [
+      13.3,
+      -23.1
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -5.25,
+      -23.1
+     ],
+     "p2": [
+      5.25,
+      -23.1
+     ],
+     "stile": "evidenza",
+     "tratteggio": false
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      5.65,
+      -23.1
+     ],
+     "simbolo": null,
+     "stile": "evidenza",
+     "testo": "Z_crit = 100,00 m"
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -5.25,
+      -11.55
+     ],
+     "p2": [
+      -5.55,
+      -11.55
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    },
+    {
+     "kind": "line",
+     "p1": [
+      5.25,
+      -11.55
+     ],
+     "p2": [
+      5.55,
+      -11.55
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    },
+    {
+     "campo": "b",
+     "distanza": 1.6170000000000002,
+     "kind": "dimension",
+     "p1": [
+      -1.75,
+      0.6930000000000001
+     ],
+     "p2": [
+      1.75,
+      0.6930000000000001
+     ],
+     "testo": "B = 3,50 m"
+    },
+    {
+     "kind": "line",
+     "p1": [
+      0.0,
+      -23.1
+     ],
+     "p2": [
+      0.0,
+      -24.948
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    }
+   ],
+   "titolo": "Sezione"
+  }
+ ],
+ "geo-cedimento-elastico-newmark#excel": [
+  {
+   "forme": [
+    {
+     "h": 0.6930000000000001,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 3.5,
+     "x": -1.75,
+     "y": -1.1
+    },
+    {
+     "h": 4.0,
+     "kind": "rect",
+     "stile": "terreno",
+     "w": 10.5,
+     "x": -5.25,
+     "y": -4.8
+    },
+    {
+     "h": 1.0,
+     "kind": "rect",
+     "stile": "terreno",
+     "w": 10.5,
+     "x": -5.25,
+     "y": -5.8
+    },
+    {
+     "h": 0.7999999999999998,
+     "kind": "rect",
+     "stile": "terreno",
+     "w": 10.5,
+     "x": -5.25,
+     "y": -6.6
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      5.65,
+      -6.199999999999999
+     ],
+     "simbolo": null,
+     "stile": "asse",
+     "testo": "E = 9,0 MPa"
+    },
+    {
+     "campo": null,
+     "distanza": -0.7350000000000001,
+     "kind": "dimension",
+     "p1": [
+      -5.25,
+      -5.8
+     ],
+     "p2": [
+      -5.25,
+      -6.6
+     ],
+     "testo": "s = 0,80 m"
+    },
+    {
+     "h": 16.5,
+     "kind": "rect",
+     "stile": "terreno",
+     "w": 10.5,
+     "x": -5.25,
+     "y": -23.1
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      5.65,
+      -14.850000000000001
+     ],
+     "simbolo": null,
+     "stile": "asse",
+     "testo": "E = 7,0 MPa"
+    },
+    {
+     "campo": null,
+     "distanza": -0.7350000000000001,
+     "kind": "dimension",
+     "p1": [
+      -5.25,
+      -6.6
+     ],
+     "p2": [
+      -5.25,
+      -23.1
+     ],
+     "testo": "s = 16,50 m"
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -5.25,
+      -10.2
+     ],
+     "p2": [
+      5.25,
+      -10.2
+     ],
+     "stile": "evidenza",
+     "tratteggio": false
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      5.65,
+      -10.2
+     ],
+     "simbolo": null,
+     "stile": "evidenza",
+     "testo": "z_max = 10,20 m"
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -5.25,
+      -11.55
+     ],
+     "p2": [
+      -5.55,
+      -11.55
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    },
+    {
+     "kind": "line",
+     "p1": [
+      5.25,
+      -11.55
+     ],
+     "p2": [
+      5.55,
+      -11.55
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    },
+    {
+     "campo": "b",
+     "distanza": 1.6170000000000002,
+     "kind": "dimension",
+     "p1": [
+      -1.75,
+      -0.40700000000000003
+     ],
+     "p2": [
+      1.75,
+      -0.40700000000000003
+     ],
+     "testo": "B = 3,50 m"
+    },
+    {
+     "kind": "line",
+     "p1": [
+      0.0,
+      -23.1
+     ],
+     "p2": [
+      0.0,
+      -24.948
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    }
+   ],
+   "titolo": "Sezione"
+  }
+ ],
+ "geo-cedimento-elastico-newmark#standard": [
+  {
+   "forme": [
+    {
+     "h": 0.6930000000000001,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 3.5,
+     "x": -1.75,
+     "y": -1.1
+    },
+    {
+     "h": 4.0,
+     "kind": "rect",
+     "stile": "terreno",
+     "w": 10.5,
+     "x": -5.25,
+     "y": -4.8
+    },
+    {
+     "h": 1.0,
+     "kind": "rect",
+     "stile": "terreno",
+     "w": 10.5,
+     "x": -5.25,
+     "y": -5.8
+    },
+    {
+     "h": 0.7999999999999998,
+     "kind": "rect",
+     "stile": "terreno",
+     "w": 10.5,
+     "x": -5.25,
+     "y": -6.6
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      5.65,
+      -6.199999999999999
+     ],
+     "simbolo": null,
+     "stile": "asse",
+     "testo": "E = 9,0 MPa"
+    },
+    {
+     "campo": null,
+     "distanza": -0.7350000000000001,
+     "kind": "dimension",
+     "p1": [
+      -5.25,
+      -5.8
+     ],
+     "p2": [
+      -5.25,
+      -6.6
+     ],
+     "testo": "s = 0,80 m"
+    },
+    {
+     "h": 16.5,
+     "kind": "rect",
+     "stile": "terreno",
+     "w": 10.5,
+     "x": -5.25,
+     "y": -23.1
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      5.65,
+      -14.850000000000001
+     ],
+     "simbolo": null,
+     "stile": "asse",
+     "testo": "E = 7,0 MPa"
+    },
+    {
+     "campo": null,
+     "distanza": -0.7350000000000001,
+     "kind": "dimension",
+     "p1": [
+      -5.25,
+      -6.6
+     ],
+     "p2": [
+      -5.25,
+      -23.1
+     ],
+     "testo": "s = 16,50 m"
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -5.25,
+      -10.2
+     ],
+     "p2": [
+      5.25,
+      -10.2
+     ],
+     "stile": "evidenza",
+     "tratteggio": false
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      5.65,
+      -10.2
+     ],
+     "simbolo": null,
+     "stile": "evidenza",
+     "testo": "z_max = 10,20 m"
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -5.25,
+      -11.55
+     ],
+     "p2": [
+      -5.55,
+      -11.55
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    },
+    {
+     "kind": "line",
+     "p1": [
+      5.25,
+      -11.55
+     ],
+     "p2": [
+      5.55,
+      -11.55
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    },
+    {
+     "campo": "b",
+     "distanza": 1.6170000000000002,
+     "kind": "dimension",
+     "p1": [
+      -1.75,
+      -0.40700000000000003
+     ],
+     "p2": [
+      1.75,
+      -0.40700000000000003
+     ],
+     "testo": "B = 3,50 m"
+    },
+    {
+     "kind": "line",
+     "p1": [
+      0.0,
+      -23.1
+     ],
+     "p2": [
+      0.0,
+      -24.948
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    }
+   ],
+   "titolo": "Sezione"
+  }
+ ],
+ "geo-cedimento-elastico-timoshenko-goodier#excel": [
+  {
+   "forme": [
+    {
+     "h": 0.3,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 1.0,
+     "x": -0.5,
+     "y": -0.5
+    },
+    {
+     "h": 2.1,
+     "kind": "rect",
+     "stile": "terreno",
+     "w": 3.0,
+     "x": -1.5,
+     "y": -2.1
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      1.9,
+      -1.05
+     ],
+     "simbolo": null,
+     "stile": "asse",
+     "testo": "E = 17,7 MPa"
+    },
+    {
+     "campo": null,
+     "distanza": -0.21000000000000002,
+     "kind": "dimension",
+     "p1": [
+      -1.5,
+      -0.0
+     ],
+     "p2": [
+      -1.5,
+      -2.1
+     ],
+     "testo": "s = 2,10 m"
+    },
+    {
+     "h": 4.5,
+     "kind": "rect",
+     "stile": "terreno",
+     "w": 3.0,
+     "x": -1.5,
+     "y": -6.6000000000000005
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      1.9,
+      -4.3500000000000005
+     ],
+     "simbolo": null,
+     "stile": "asse",
+     "testo": "E = 27,5 MPa"
+    },
+    {
+     "campo": null,
+     "distanza": -0.21000000000000002,
+     "kind": "dimension",
+     "p1": [
+      -1.5,
+      -2.1
+     ],
+     "p2": [
+      -1.5,
+      -6.6000000000000005
+     ],
+     "testo": "s = 4,50 m"
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -1.5,
+      -5.5
+     ],
+     "p2": [
+      1.5,
+      -5.5
+     ],
+     "stile": "evidenza",
+     "tratteggio": false
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      1.9,
+      -5.5
+     ],
+     "simbolo": null,
+     "stile": "evidenza",
+     "testo": "H = 5,50 m"
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -1.5,
+      -3.3000000000000003
+     ],
+     "p2": [
+      -1.8,
+      -3.3000000000000003
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    },
+    {
+     "kind": "line",
+     "p1": [
+      1.5,
+      -3.3000000000000003
+     ],
+     "p2": [
+      1.8,
+      -3.3000000000000003
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    },
+    {
+     "campo": "b",
+     "distanza": 0.4620000000000001,
+     "kind": "dimension",
+     "p1": [
+      -0.5,
+      -0.2
+     ],
+     "p2": [
+      0.5,
+      -0.2
+     ],
+     "testo": "B = 1,00 m"
+    },
+    {
+     "kind": "line",
+     "p1": [
+      0.0,
+      -6.6000000000000005
+     ],
+     "p2": [
+      0.0,
+      -7.128
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    }
+   ],
+   "titolo": "Sezione"
+  }
+ ],
+ "geo-cedimento-elastico-timoshenko-goodier#standard": [
+  {
+   "forme": [
+    {
+     "h": 0.3,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 1.0,
+     "x": -0.5,
+     "y": -0.5
+    },
+    {
+     "h": 2.1,
+     "kind": "rect",
+     "stile": "terreno",
+     "w": 3.0,
+     "x": -1.5,
+     "y": -2.1
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      1.9,
+      -1.05
+     ],
+     "simbolo": null,
+     "stile": "asse",
+     "testo": "E = 17,7 MPa"
+    },
+    {
+     "campo": null,
+     "distanza": -0.21000000000000002,
+     "kind": "dimension",
+     "p1": [
+      -1.5,
+      -0.0
+     ],
+     "p2": [
+      -1.5,
+      -2.1
+     ],
+     "testo": "s = 2,10 m"
+    },
+    {
+     "h": 4.5,
+     "kind": "rect",
+     "stile": "terreno",
+     "w": 3.0,
+     "x": -1.5,
+     "y": -6.6000000000000005
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      1.9,
+      -4.3500000000000005
+     ],
+     "simbolo": null,
+     "stile": "asse",
+     "testo": "E = 27,5 MPa"
+    },
+    {
+     "campo": null,
+     "distanza": -0.21000000000000002,
+     "kind": "dimension",
+     "p1": [
+      -1.5,
+      -2.1
+     ],
+     "p2": [
+      -1.5,
+      -6.6000000000000005
+     ],
+     "testo": "s = 4,50 m"
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -1.5,
+      -5.5
+     ],
+     "p2": [
+      1.5,
+      -5.5
+     ],
+     "stile": "evidenza",
+     "tratteggio": false
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      1.9,
+      -5.5
+     ],
+     "simbolo": null,
+     "stile": "evidenza",
+     "testo": "H = 5,50 m"
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -1.5,
+      -3.3000000000000003
+     ],
+     "p2": [
+      -1.8,
+      -3.3000000000000003
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    },
+    {
+     "kind": "line",
+     "p1": [
+      1.5,
+      -3.3000000000000003
+     ],
+     "p2": [
+      1.8,
+      -3.3000000000000003
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    },
+    {
+     "campo": "b",
+     "distanza": 0.4620000000000001,
+     "kind": "dimension",
+     "p1": [
+      -0.5,
+      -0.2
+     ],
+     "p2": [
+      0.5,
+      -0.2
+     ],
+     "testo": "B = 1,00 m"
+    },
+    {
+     "kind": "line",
+     "p1": [
+      0.0,
+      -6.6000000000000005
+     ],
+     "p2": [
+      0.0,
+      -7.128
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    }
+   ],
+   "titolo": "Sezione"
+  }
+ ],
+ "muro-sostegno#excel": [
+  {
+   "forme": [
+    {
+     "h": 0.3,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 1.9,
+     "x": 0.0,
+     "y": 0.0
+    },
+    {
+     "kind": "polygon",
+     "punti": [
+      [
+       0.26,
+       0.3
+      ],
+      [
+       0.75,
+       0.3
+      ],
+      [
+       0.75,
+       2.6999999999999997
+      ],
+      [
+       0.51,
+       2.6999999999999997
+      ]
+     ],
+     "stile": "calcestruzzo"
+    },
+    {
+     "kind": "polygon",
+     "punti": [
+      [
+       0.75,
+       0.3
+      ],
+      [
+       1.9,
+       0.3
+      ],
+      [
+       1.9,
+       2.6999999999999997
+      ],
+      [
+       0.51,
+       2.6999999999999997
+      ]
+     ],
+     "stile": "terreno"
+    },
+    {
+     "altezza_relativa": 0.12,
+     "base": [
+      [
+       0.51,
+       2.6999999999999997
+      ],
+      [
+       1.9,
+       2.6999999999999997
+      ]
+     ],
+     "etichette": [
+      "q = 2 kN/m²",
+      ""
+     ],
+     "kind": "diagram",
+     "stile": "carico",
+     "valori": [
+      2.0,
+      2.0
+     ]
+    },
+    {
+     "altezza_relativa": 0.25,
+     "base": [
+      [
+       1.9,
+       0.0
+      ],
+      [
+       0.0,
+       0.0
+      ]
+     ],
+     "etichette": [
+      "",
+      "p_valle = 110 kPa"
+     ],
+     "kind": "diagram",
+     "stile": "pressione",
+     "valori": [
+      0.0,
+      110.06910233431626
+     ]
+    },
+    {
+     "campo": null,
+     "distanza": -0.608,
+     "kind": "dimension",
+     "p1": [
+      0.0,
+      0.0
+     ],
+     "p2": [
+      1.9,
+      0.0
+     ],
+     "testo": "B = 1,90 m"
+    },
+    {
+     "campo": "h_muro_m",
+     "distanza": 0.189,
+     "kind": "dimension",
+     "p1": [
+      0.0,
+      0.0
+     ],
+     "p2": [
+      0.0,
+      2.6999999999999997
+     ],
+     "testo": "H = 2,70 m"
+    },
+    {
+     "campo": null,
+     "coda": [
+      2.1,
+      0.8999999999999999
+     ],
+     "kind": "arrow",
+     "punta": [
+      0.6900000000000001,
+      0.8999999999999999
+     ],
+     "stile": "carico",
+     "testo": ""
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      2.1,
+      0.8999999999999999
+     ],
+     "simbolo": "S_stat",
+     "stile": "carico",
+     "testo": "30 kN"
+    },
+    {
+     "campo": null,
+     "coda": [
+      2.1,
+      1.3499999999999999
+     ],
+     "kind": "arrow",
+     "punta": [
+      0.645,
+      1.3499999999999999
+     ],
+     "stile": "carico",
+     "testo": ""
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      2.1,
+      1.3499999999999999
+     ],
+     "simbolo": "S_sism",
+     "stile": "carico",
+     "testo": "33 kN"
+    }
+   ],
+   "titolo": "Sezione"
+  }
+ ],
+ "muro-sostegno#standard": [
+  {
+   "forme": [
+    {
+     "h": 0.3,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 1.9,
+     "x": 0.0,
+     "y": 0.0
+    },
+    {
+     "kind": "polygon",
+     "punti": [
+      [
+       0.26,
+       0.3
+      ],
+      [
+       0.75,
+       0.3
+      ],
+      [
+       0.75,
+       2.6999999999999997
+      ],
+      [
+       0.51,
+       2.6999999999999997
+      ]
+     ],
+     "stile": "calcestruzzo"
+    },
+    {
+     "kind": "polygon",
+     "punti": [
+      [
+       0.75,
+       0.3
+      ],
+      [
+       1.9,
+       0.3
+      ],
+      [
+       1.9,
+       2.6999999999999997
+      ],
+      [
+       0.51,
+       2.6999999999999997
+      ]
+     ],
+     "stile": "terreno"
+    },
+    {
+     "altezza_relativa": 0.12,
+     "base": [
+      [
+       0.51,
+       2.6999999999999997
+      ],
+      [
+       1.9,
+       2.6999999999999997
+      ]
+     ],
+     "etichette": [
+      "q = 2 kN/m²",
+      ""
+     ],
+     "kind": "diagram",
+     "stile": "carico",
+     "valori": [
+      2.0,
+      2.0
+     ]
+    },
+    {
+     "altezza_relativa": 0.25,
+     "base": [
+      [
+       1.9,
+       0.0
+      ],
+      [
+       0.0,
+       0.0
+      ]
+     ],
+     "etichette": [
+      "",
+      "p_valle = 120 kPa"
+     ],
+     "kind": "diagram",
+     "stile": "pressione",
+     "valori": [
+      0.0,
+      120.1858926813665
+     ]
+    },
+    {
+     "campo": null,
+     "distanza": -0.608,
+     "kind": "dimension",
+     "p1": [
+      0.0,
+      0.0
+     ],
+     "p2": [
+      1.9,
+      0.0
+     ],
+     "testo": "B = 1,90 m"
+    },
+    {
+     "campo": "h_muro_m",
+     "distanza": 0.189,
+     "kind": "dimension",
+     "p1": [
+      0.0,
+      0.0
+     ],
+     "p2": [
+      0.0,
+      2.6999999999999997
+     ],
+     "testo": "H = 2,70 m"
+    },
+    {
+     "campo": null,
+     "coda": [
+      2.1,
+      0.8999999999999999
+     ],
+     "kind": "arrow",
+     "punta": [
+      0.6900000000000001,
+      0.8999999999999999
+     ],
+     "stile": "carico",
+     "testo": ""
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      2.1,
+      0.8999999999999999
+     ],
+     "simbolo": "S_stat",
+     "stile": "carico",
+     "testo": "30 kN"
+    },
+    {
+     "campo": null,
+     "coda": [
+      2.1,
+      1.3499999999999999
+     ],
+     "kind": "arrow",
+     "punta": [
+      0.645,
+      1.3499999999999999
+     ],
+     "stile": "carico",
+     "testo": ""
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      2.1,
+      1.3499999999999999
+     ],
+     "simbolo": "S_sism",
+     "stile": "carico",
+     "testo": "32 kN"
+    }
+   ],
+   "titolo": "Sezione"
+  }
+ ],
+ "neve-accumulo#excel": [
+  {
+   "forme": [
+    {
+     "h": 10.0,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 5.25,
+     "x": -5.25,
+     "y": 0.0
+    },
+    {
+     "kind": "line",
+     "p1": [
+      0.0,
+      0.0
+     ],
+     "p2": [
+      21.0,
+      0.0
+     ],
+     "stile": "calcestruzzo",
+     "tratteggio": false
+    },
+    {
+     "kind": "line",
+     "p1": [
+      21.0,
+      0.0
+     ],
+     "p2": [
+      24.15,
+      0.0
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    },
+    {
+     "kind": "polygon",
+     "punti": [
+      [
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       3.5
+      ],
+      [
+       15.0,
+       0.7057340894770007
+      ],
+      [
+       21.0,
+       0.7057340894770007
+      ],
+      [
+       21.0,
+       0.0
+      ]
+     ],
+     "stile": "pressione"
+    },
+    {
+     "campo": null,
+     "distanza": 1.8375000000000001,
+     "kind": "dimension",
+     "p1": [
+      -5.25,
+      0.0
+     ],
+     "p2": [
+      -5.25,
+      10.0
+     ],
+     "testo": "h = 10,00 m"
+    },
+    {
+     "campo": null,
+     "distanza": -1.8375000000000001,
+     "kind": "dimension",
+     "p1": [
+      0.0,
+      0.0
+     ],
+     "p2": [
+      15.0,
+      0.0
+     ],
+     "testo": "l_s = 15,00 m"
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      0.5,
+      4.0
+     ],
+     "simbolo": "q_s2",
+     "stile": "asse",
+     "testo": "5,95 kN/m²"
+    },
+    {
+     "ancora": "end",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      21.0,
+      1.2057340894770006
+     ],
+     "simbolo": "q_s1",
+     "stile": "asse",
+     "testo": "1,20 kN/m²"
+    }
+   ],
+   "titolo": "Sezione copertura"
+  }
+ ],
+ "neve-accumulo#standard": [
+  {
+   "forme": [
+    {
+     "h": 10.0,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 5.25,
+     "x": -5.25,
+     "y": 0.0
+    },
+    {
+     "kind": "line",
+     "p1": [
+      0.0,
+      0.0
+     ],
+     "p2": [
+      21.0,
+      0.0
+     ],
+     "stile": "calcestruzzo",
+     "tratteggio": false
+    },
+    {
+     "kind": "line",
+     "p1": [
+      21.0,
+      0.0
+     ],
+     "p2": [
+      24.15,
+      0.0
+     ],
+     "stile": "fantasma",
+     "tratteggio": true
+    },
+    {
+     "kind": "polygon",
+     "punti": [
+      [
+       0.0,
+       0.0
+      ],
+      [
+       0.0,
+       3.5
+      ],
+      [
+       15.0,
+       0.7057340894770007
+      ],
+      [
+       21.0,
+       0.7057340894770007
+      ],
+      [
+       21.0,
+       0.0
+      ]
+     ],
+     "stile": "pressione"
+    },
+    {
+     "campo": null,
+     "distanza": 1.8375000000000001,
+     "kind": "dimension",
+     "p1": [
+      -5.25,
+      0.0
+     ],
+     "p2": [
+      -5.25,
+      10.0
+     ],
+     "testo": "h = 10,00 m"
+    },
+    {
+     "campo": null,
+     "distanza": -1.8375000000000001,
+     "kind": "dimension",
+     "p1": [
+      0.0,
+      0.0
+     ],
+     "p2": [
+      15.0,
+      0.0
+     ],
+     "testo": "l_s = 15,00 m"
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      0.5,
+      4.0
+     ],
+     "simbolo": "q_s2",
+     "stile": "asse",
+     "testo": "6,16 kN/m²"
+    },
+    {
+     "ancora": "end",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      21.0,
+      1.2057340894770006
+     ],
+     "simbolo": "q_s1",
+     "stile": "asse",
+     "testo": "1,24 kN/m²"
+    }
+   ],
+   "titolo": "Sezione copertura"
+  }
+ ],
+ "neve-carico-falda#excel": [
+  {
+   "forme": [
+    {
+     "kind": "line",
+     "p1": [
+      0.0,
+      0.0
+     ],
+     "p2": [
+      3.0,
+      0.44999999999999996
+     ],
+     "stile": "calcestruzzo",
+     "tratteggio": false
+    },
+    {
+     "kind": "line",
+     "p1": [
+      3.0,
+      0.44999999999999996
+     ],
+     "p2": [
+      3.0,
+      1.0499999999999998
+     ],
+     "stile": "quota",
+     "tratteggio": true
+    },
+    {
+     "altezza_relativa": 0.25,
+     "base": [
+      [
+       0.0,
+       1.0499999999999998
+      ],
+      [
+       3.0,
+       1.0499999999999998
+      ]
+     ],
+     "etichette": [
+      "q_s = 1,24 kN/m²"
+     ],
+     "kind": "diagram",
+     "stile": "pressione",
+     "valori": [
+      1.2431360342953752,
+      1.2431360342953752
+     ]
+    },
+    {
+     "ancora": "middle",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      1.5,
+      0.575
+     ],
+     "simbolo": "μ",
+     "stile": "asse",
+     "testo": "0,80"
+    },
+    {
+     "ancora": "middle",
+     "campo": "a",
+     "kind": "label",
+     "punto": [
+      0.0,
+      0.15
+     ],
+     "simbolo": "α",
+     "stile": "asse",
+     "testo": "0°"
+    },
+    {
+     "kind": "line",
+     "p1": [
+      0.0,
+      4.5
+     ],
+     "p2": [
+      -3.0,
+      2.3993773853708706
+     ],
+     "stile": "calcestruzzo",
+     "tratteggio": false
+    },
+    {
+     "kind": "line",
+     "p1": [
+      0.0,
+      4.5
+     ],
+     "p2": [
+      3.0,
+      0.9247392222173705
+     ],
+     "stile": "calcestruzzo",
+     "tratteggio": false
+    },
+    {
+     "kind": "line",
+     "p1": [
+      0.0,
+      4.5
+     ],
+     "p2": [
+      0.0,
+      5.1
+     ],
+     "stile": "quota",
+     "tratteggio": true
+    },
+    {
+     "altezza_relativa": 0.25,
+     "base": [
+      [
+       -3.0,
+       5.1
+      ],
+      [
+       0.0,
+       5.1
+      ]
+     ],
+     "etichette": [
+      "q_s1 = 1,04 kN/m²"
+     ],
+     "kind": "diagram",
+     "stile": "pressione",
+     "valori": [
+      1.0359466952461458,
+      1.0359466952461458
+     ]
+    },
+    {
+     "altezza_relativa": 0.25,
+     "base": [
+      [
+       0.0,
+       5.1
+      ],
+      [
+       3.0,
+       5.1
+      ]
+     ],
+     "etichette": [
+      "q_s2 = 0,41 kN/m²"
+     ],
+     "kind": "diagram",
+     "stile": "pressione",
+     "valori": [
+      0.41437867809845835,
+      0.41437867809845835
+     ]
+    },
+    {
+     "ancora": "middle",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      -1.5,
+      3.7996886926854354
+     ],
+     "simbolo": "μ_1",
+     "stile": "asse",
+     "testo": "0,67"
+    },
+    {
+     "ancora": "middle",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      1.5,
+      3.0623696111086853
+     ],
+     "simbolo": "μ_2",
+     "stile": "asse",
+     "testo": "0,27"
+    },
+    {
+     "ancora": "middle",
+     "campo": "a1",
+     "kind": "label",
+     "punto": [
+      -3.0,
+      2.5493773853708706
+     ],
+     "simbolo": "α_1",
+     "stile": "asse",
+     "testo": "35°"
+    },
+    {
+     "ancora": "middle",
+     "campo": "a2",
+     "kind": "label",
+     "punto": [
+      3.0,
+      1.0747392222173704
+     ],
+     "simbolo": "α_2",
+     "stile": "asse",
+     "testo": "50°"
+    }
+   ],
+   "titolo": "Sezione copertura"
+  }
+ ],
+ "neve-carico-falda#standard": [
+  {
+   "forme": [
+    {
+     "kind": "line",
+     "p1": [
+      0.0,
+      0.0
+     ],
+     "p2": [
+      3.0,
+      0.44999999999999996
+     ],
+     "stile": "calcestruzzo",
+     "tratteggio": false
+    },
+    {
+     "kind": "line",
+     "p1": [
+      3.0,
+      0.44999999999999996
+     ],
+     "p2": [
+      3.0,
+      1.0499999999999998
+     ],
+     "stile": "quota",
+     "tratteggio": true
+    },
+    {
+     "altezza_relativa": 0.25,
+     "base": [
+      [
+       0.0,
+       1.0499999999999998
+      ],
+      [
+       3.0,
+       1.0499999999999998
+      ]
+     ],
+     "etichette": [
+      "q_s = 1,24 kN/m²"
+     ],
+     "kind": "diagram",
+     "stile": "pressione",
+     "valori": [
+      1.2431360342953752,
+      1.2431360342953752
+     ]
+    },
+    {
+     "ancora": "middle",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      1.5,
+      0.575
+     ],
+     "simbolo": "μ",
+     "stile": "asse",
+     "testo": "0,80"
+    },
+    {
+     "ancora": "middle",
+     "campo": "a",
+     "kind": "label",
+     "punto": [
+      0.0,
+      0.15
+     ],
+     "simbolo": "α",
+     "stile": "asse",
+     "testo": "0°"
+    }
+   ],
+   "titolo": "Sezione copertura"
+  }
+ ],
+ "vento-cpe-rettangolare#excel": [
+  {
+   "forme": [
+    {
+     "h": 12.0,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 15.0,
+     "x": 0.0,
+     "y": 0.0
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -0.75,
+      3.0
+     ],
+     "p2": [
+      0.75,
+      3.0
+     ],
+     "stile": "quota",
+     "tratteggio": false
+    },
+    {
+     "kind": "line",
+     "p1": [
+      14.25,
+      3.0
+     ],
+     "p2": [
+      15.75,
+      3.0
+     ],
+     "stile": "quota",
+     "tratteggio": false
+    },
+    {
+     "campo": null,
+     "coda": [
+      7.5,
+      -4.800000000000001
+     ],
+     "kind": "arrow",
+     "punta": [
+      7.5,
+      0.0
+     ],
+     "stile": "carico",
+     "testo": "vento"
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      0.8999999999999999,
+      1.3499999999999999
+     ],
+     "simbolo": "c_pe,w",
+     "stile": "asse",
+     "testo": "+0,77"
+    },
+    {
+     "ancora": "end",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      14.1,
+      8.76
+     ],
+     "simbolo": "c_pe,s",
+     "stile": "asse",
+     "testo": "−0,45"
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      16.5,
+      6.0
+     ],
+     "simbolo": "A, B",
+     "stile": "asse",
+     "testo": "−0,90"
+    },
+    {
+     "campo": null,
+     "distanza": 3.3,
+     "kind": "dimension",
+     "p1": [
+      0.0,
+      12.0
+     ],
+     "p2": [
+      15.0,
+      12.0
+     ],
+     "testo": "b = 15,00 m"
+    },
+    {
+     "campo": null,
+     "distanza": 3.3,
+     "kind": "dimension",
+     "p1": [
+      0.0,
+      0.0
+     ],
+     "p2": [
+      0.0,
+      12.0
+     ],
+     "testo": "d = 12,00 m"
+    }
+   ],
+   "titolo": "Pianta — direzione 1"
+  },
+  {
+   "forme": [
+    {
+     "h": 15.0,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 12.0,
+     "x": 0.0,
+     "y": 0.0
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -0.75,
+      2.4
+     ],
+     "p2": [
+      0.75,
+      2.4
+     ],
+     "stile": "quota",
+     "tratteggio": false
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -0.75,
+      12.0
+     ],
+     "p2": [
+      0.75,
+      12.0
+     ],
+     "stile": "quota",
+     "tratteggio": false
+    },
+    {
+     "kind": "line",
+     "p1": [
+      11.25,
+      2.4
+     ],
+     "p2": [
+      12.75,
+      2.4
+     ],
+     "stile": "quota",
+     "tratteggio": false
+    },
+    {
+     "kind": "line",
+     "p1": [
+      11.25,
+      12.0
+     ],
+     "p2": [
+      12.75,
+      12.0
+     ],
+     "stile": "quota",
+     "tratteggio": false
+    },
+    {
+     "campo": null,
+     "coda": [
+      6.0,
+      -6.0
+     ],
+     "kind": "arrow",
+     "punta": [
+      6.0,
+      0.0
+     ],
+     "stile": "carico",
+     "testo": "vento"
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      0.72,
+      1.3499999999999999
+     ],
+     "simbolo": "c_pe,w",
+     "stile": "asse",
+     "testo": "+0,76"
+    },
+    {
+     "ancora": "end",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      11.28,
+      11.76
+     ],
+     "simbolo": "c_pe,s",
+     "stile": "asse",
+     "testo": "−0,42"
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      13.5,
+      7.5
+     ],
+     "simbolo": "A, B, C",
+     "stile": "asse",
+     "testo": "−0,90"
+    },
+    {
+     "campo": null,
+     "distanza": 3.3,
+     "kind": "dimension",
+     "p1": [
+      0.0,
+      15.0
+     ],
+     "p2": [
+      12.0,
+      15.0
+     ],
+     "testo": "d = 12,00 m"
+    },
+    {
+     "campo": null,
+     "distanza": 3.3,
+     "kind": "dimension",
+     "p1": [
+      0.0,
+      0.0
+     ],
+     "p2": [
+      0.0,
+      15.0
+     ],
+     "testo": "b = 15,00 m"
+    }
+   ],
+   "titolo": "Pianta — direzione 2"
+  }
+ ],
+ "vento-cpe-rettangolare#standard": [
+  {
+   "forme": [
+    {
+     "h": 12.0,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 15.0,
+     "x": 0.0,
+     "y": 0.0
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -0.75,
+      3.0
+     ],
+     "p2": [
+      0.75,
+      3.0
+     ],
+     "stile": "quota",
+     "tratteggio": false
+    },
+    {
+     "kind": "line",
+     "p1": [
+      14.25,
+      3.0
+     ],
+     "p2": [
+      15.75,
+      3.0
+     ],
+     "stile": "quota",
+     "tratteggio": false
+    },
+    {
+     "campo": null,
+     "coda": [
+      7.5,
+      -4.800000000000001
+     ],
+     "kind": "arrow",
+     "punta": [
+      7.5,
+      0.0
+     ],
+     "stile": "carico",
+     "testo": "vento"
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      0.8999999999999999,
+      1.3499999999999999
+     ],
+     "simbolo": "c_pe,w",
+     "stile": "asse",
+     "testo": "+0,77"
+    },
+    {
+     "ancora": "end",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      14.1,
+      8.76
+     ],
+     "simbolo": "c_pe,s",
+     "stile": "asse",
+     "testo": "−0,45"
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      16.5,
+      6.0
+     ],
+     "simbolo": "A, B",
+     "stile": "asse",
+     "testo": "−0,90"
+    },
+    {
+     "campo": null,
+     "distanza": 3.3,
+     "kind": "dimension",
+     "p1": [
+      0.0,
+      12.0
+     ],
+     "p2": [
+      15.0,
+      12.0
+     ],
+     "testo": "b = 15,00 m"
+    },
+    {
+     "campo": null,
+     "distanza": 3.3,
+     "kind": "dimension",
+     "p1": [
+      0.0,
+      0.0
+     ],
+     "p2": [
+      0.0,
+      12.0
+     ],
+     "testo": "d = 12,00 m"
+    }
+   ],
+   "titolo": "Pianta — direzione 1"
+  },
+  {
+   "forme": [
+    {
+     "h": 15.0,
+     "kind": "rect",
+     "stile": "calcestruzzo",
+     "w": 12.0,
+     "x": 0.0,
+     "y": 0.0
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -0.75,
+      2.4
+     ],
+     "p2": [
+      0.75,
+      2.4
+     ],
+     "stile": "quota",
+     "tratteggio": false
+    },
+    {
+     "kind": "line",
+     "p1": [
+      -0.75,
+      12.0
+     ],
+     "p2": [
+      0.75,
+      12.0
+     ],
+     "stile": "quota",
+     "tratteggio": false
+    },
+    {
+     "kind": "line",
+     "p1": [
+      11.25,
+      2.4
+     ],
+     "p2": [
+      12.75,
+      2.4
+     ],
+     "stile": "quota",
+     "tratteggio": false
+    },
+    {
+     "kind": "line",
+     "p1": [
+      11.25,
+      12.0
+     ],
+     "p2": [
+      12.75,
+      12.0
+     ],
+     "stile": "quota",
+     "tratteggio": false
+    },
+    {
+     "campo": null,
+     "coda": [
+      6.0,
+      -6.0
+     ],
+     "kind": "arrow",
+     "punta": [
+      6.0,
+      0.0
+     ],
+     "stile": "carico",
+     "testo": "vento"
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      0.72,
+      1.3499999999999999
+     ],
+     "simbolo": "c_pe,w",
+     "stile": "asse",
+     "testo": "+0,76"
+    },
+    {
+     "ancora": "end",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      11.28,
+      11.76
+     ],
+     "simbolo": "c_pe,s",
+     "stile": "asse",
+     "testo": "−0,42"
+    },
+    {
+     "ancora": "start",
+     "campo": null,
+     "kind": "label",
+     "punto": [
+      13.5,
+      7.5
+     ],
+     "simbolo": "A, B, C",
+     "stile": "asse",
+     "testo": "−0,90"
+    },
+    {
+     "campo": null,
+     "distanza": 3.3,
+     "kind": "dimension",
+     "p1": [
+      0.0,
+      15.0
+     ],
+     "p2": [
+      12.0,
+      15.0
+     ],
+     "testo": "d = 12,00 m"
+    },
+    {
+     "campo": null,
+     "distanza": 3.3,
+     "kind": "dimension",
+     "p1": [
+      0.0,
+      0.0
+     ],
+     "p2": [
+      0.0,
+      15.0
+     ],
+     "testo": "b = 15,00 m"
+    }
+   ],
+   "titolo": "Pianta — direzione 2"
+  }
+ ]
+}
