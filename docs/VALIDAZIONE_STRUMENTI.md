@@ -175,10 +175,10 @@ Strumenti: 31 · validati: 0 · voci di registro legate a uno strumento: 203
   - `vento-cpe/etichetta-classificazione-maiuscolo` — Le etichette di classificazione tozzo/snello sono tutte maiuscole nel foglio (scelta ingegneristica, da confermare)
 
 ### COL — Verifica di instabilità e resistenza colonne ad H/I — EC3
-- Gruppo: Acciaio / Colonne · norma: EN1993-1-1 §5.5, §6.2, §6.3 · pacchetto: `strutture.members.acciaio_colonna_ec3`
+- Gruppo: Acciaio / Colonne · norma: EN1993-1-1 §5.5, §6.2, §6.3 · pacchetto: `strutture.members.acciaio_colonna_ec3.compose`
 - Fogli Excel di origine: `Verifica instabilità e resistenza colonne ad H secondo EC3.xlsx`
-- Specifica: docs/specs/acciaio.md
-- Esempio ("Carica esempio"): sì · test: 20 file, 1 golden (valori del foglio), 2 oracle (ricalcolo LibreOffice)
+- Specifica: docs/specs/ (pacchetto strutture.members.acciaio_colonna_ec3.compose)
+- Esempio ("Carica esempio"): sì · test: 0 file, 0 golden (valori del foglio), 0 oracle (ricalcolo LibreOffice)
 - Relazione con formule: sì (39 passi sull'esempio) · schizzo: sì · importazione MIDAS: no
 - Collegamenti: fornisce — · riceve — · "Usa in…" verso —
 - Registro: 20 voci: 20 da confermare
