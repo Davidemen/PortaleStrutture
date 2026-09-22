@@ -90,9 +90,9 @@ class InMemoryProjectRepository:
 
     # ---- elementi ----
 
-    def list_elementi(self, progetto_id: str) -> tuple[Elemento, ...]:
+    def list_elementi(self, progetto_id: str, *, inclusi_eliminati: bool = False) -> tuple[Elemento, ...]:
         with self._lock:
-            items = [e for e in self._elementi.values() if e.progetto_id == progetto_id and e.eliminato == ""]
+            items = [e for e in self._elementi.values() if e.progetto_id == progetto_id and (inclusi_eliminati or e.eliminato == "")]
         return tuple(sorted(items, key=lambda e: (e.aggiornato, e.id), reverse=True))
 
     def get_elemento(self, elemento_id: str) -> Elemento:
@@ -146,6 +146,16 @@ class InMemoryProjectRepository:
             self._elementi[elemento_id] = current.model_copy(
                 update={"eliminato": now, "aggiornato": now, "revisione": current.revisione + 1}
             )
+
+    def ripristina_elemento(self, elemento_id: str) -> Elemento:
+        with self._lock:
+            current = self._elementi.get(elemento_id)
+            if current is None:
+                raise NotFoundError(elemento_id)
+            now = _utc_now_iso()
+            record = current.model_copy(update={"eliminato": "", "aggiornato": now, "revisione": current.revisione + 1})
+            self._elementi[elemento_id] = record
+        return record
 
     def revisioni(self, elemento_id: str) -> tuple[RevisioneElemento, ...]:
         with self._lock:

@@ -86,10 +86,18 @@ class FakeProjectRepository:
         self._progetti = {**self._progetti, progetto_id: updated}
         return updated
 
-    def list_elementi(self, progetto_id: str) -> tuple[Elemento, ...]:
+    def list_elementi(self, progetto_id: str, *, inclusi_eliminati: bool = False) -> tuple[Elemento, ...]:
         if progetto_id not in self._progetti:
             raise NotFoundError(progetto_id)
-        return tuple(e for e in self._elementi.values() if e.progetto_id == progetto_id and not e.eliminato)
+        return tuple(e for e in self._elementi.values() if e.progetto_id == progetto_id and (inclusi_eliminati or not e.eliminato))
+
+    def ripristina_elemento(self, elemento_id: str) -> Elemento:
+        current = self._elementi.get(elemento_id)
+        if current is None:
+            raise NotFoundError(elemento_id)
+        updated = current.model_copy(update={"eliminato": "", "revisione": current.revisione + 1, "aggiornato": self._next("t")})
+        self._elementi[elemento_id] = updated
+        return updated
 
     def get_elemento(self, elemento_id: str) -> Elemento:
         elemento = self._elementi.get(elemento_id)
@@ -604,3 +612,15 @@ def test_post_with_text_plain_content_type_is_rejected(client: TestClient) -> No
         headers={"Content-Type": "text/plain"},
     )
     assert response.status_code == 415
+
+
+def test_elemento_can_be_listed_deleted_and_restored(client: TestClient) -> None:
+    progetto = client.post("/api/progetti", json={"nome": "P"}).json()
+    elemento = client.post(f"/api/progetti/{progetto['id']}/elementi", json={"strumento": "fake-sum", "nome": "E", "inputs": {"a": 1}}).json()
+    assert client.request("DELETE", f"/api/elementi/{elemento['id']}", json={"revisione": elemento["revisione"]}).json() == {"eliminato": True}
+    assert client.get(f"/api/progetti/{progetto['id']}/elementi").json() == []
+    eliminati = client.get(f"/api/progetti/{progetto['id']}/elementi", params={"inclusi_eliminati": "true"}).json()
+    assert [e["id"] for e in eliminati] == [elemento["id"]] and eliminati[0]["eliminato"]
+    restored = client.post(f"/api/elementi/{elemento['id']}/ripristina", json={}).json()  # same-origin guard wants JSON
+    assert restored["eliminato"] == "" and restored["revisione"] == elemento["revisione"] + 2
+    assert client.post("/api/elementi/nope/ripristina", json={}).status_code == 404

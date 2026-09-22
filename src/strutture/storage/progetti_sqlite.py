@@ -152,10 +152,11 @@ class SqliteProjectRepository:
 
     # ---- elementi ----
 
-    def list_elementi(self, progetto_id: str) -> tuple[Elemento, ...]:
+    def list_elementi(self, progetto_id: str, *, inclusi_eliminati: bool = False) -> tuple[Elemento, ...]:
+        filtro = "" if inclusi_eliminati else " AND eliminato = ''"
         with session(self._db_path) as connection:
             rows = connection.execute(
-                "SELECT * FROM elemento WHERE progetto_id = ? AND eliminato = '' ORDER BY aggiornato DESC, id ASC",
+                f"SELECT * FROM elemento WHERE progetto_id = ?{filtro} ORDER BY aggiornato DESC, id ASC",
                 (progetto_id,),
             ).fetchall()
         return tuple(_row_to_elemento(row) for row in rows)
@@ -209,6 +210,19 @@ class SqliteProjectRepository:
                 "UPDATE elemento SET eliminato = ?, aggiornato = ?, revisione = ? WHERE id = ?",
                 (now, now, current.revisione + 1, elemento_id),
             )
+
+    def ripristina_elemento(self, elemento_id: str) -> Elemento:
+        with write_session(self._db_path) as connection:
+            row = connection.execute("SELECT * FROM elemento WHERE id = ?", (elemento_id,)).fetchone()
+            if row is None:
+                raise NotFoundError(elemento_id)
+            current = _row_to_elemento(row)
+            now = _utc_now_iso()
+            connection.execute(
+                "UPDATE elemento SET eliminato = '', aggiornato = ?, revisione = ? WHERE id = ?",
+                (now, current.revisione + 1, elemento_id),
+            )
+        return current.model_copy(update={"eliminato": "", "aggiornato": now, "revisione": current.revisione + 1})
 
     def revisioni(self, elemento_id: str) -> tuple[RevisioneElemento, ...]:
         with session(self._db_path) as connection:

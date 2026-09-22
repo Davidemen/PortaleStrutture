@@ -285,3 +285,21 @@ def test_eight_threads_update_same_element_exactly_one_wins_per_revision(reposit
     final = repository.get_elemento(created.id)
     assert final.revisione == 2
     assert len(repository.revisioni(created.id)) == 2
+
+
+@pytest.mark.unit
+def test_ripristina_elemento_restores_and_the_list_can_include_deleted(repository):
+    """Soft delete without restore is a trap (accidental delete, no accounts to ask): the project
+    page needs both the deleted rows (on request) and a way back — found by the projects UI builder."""
+    progetto = repository.crea_progetto(_progetto())
+    created = repository.crea_elemento(_elemento(progetto.id))
+    repository.elimina_elemento(created.id, created.revisione)
+    assert repository.list_elementi(progetto.id) == ()
+    (deleted,) = repository.list_elementi(progetto.id, inclusi_eliminati=True)
+    assert deleted.id == created.id and deleted.eliminato != ""
+
+    restored = repository.ripristina_elemento(created.id)
+    assert restored.eliminato == "" and restored.revisione == deleted.revisione + 1
+    assert [e.id for e in repository.list_elementi(progetto.id)] == [created.id]
+    with pytest.raises(NotFoundError):
+        repository.ripristina_elemento("nope")

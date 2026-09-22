@@ -105,9 +105,9 @@ def build_progetti_router(progetti: ProjectRepository, tools: dict[str, Tool]) -
     # ---- elementi ----
 
     @router.get("/api/progetti/{progetto_id}/elementi")
-    def list_elementi(progetto_id: str) -> Any:
+    def list_elementi(progetto_id: str, inclusi_eliminati: bool = False) -> Any:
         try:
-            elementi = progetti.list_elementi(progetto_id)
+            elementi = progetti.list_elementi(progetto_id, inclusi_eliminati=inclusi_eliminati)
         except NotFoundError:
             return _not_found_progetto(progetto_id)
         return [e.model_dump(mode="json") for e in elementi]
@@ -187,6 +187,13 @@ def build_progetti_router(progetti: ProjectRepository, tools: dict[str, Tool]) -
         except NotFoundError:
             return _not_found_elemento(elemento_id)
         return {"eliminato": True}
+
+    @router.post("/api/elementi/{elemento_id}/ripristina")
+    def ripristina_elemento(elemento_id: str) -> Any:
+        try:
+            return progetti.ripristina_elemento(elemento_id).model_dump(mode="json")
+        except NotFoundError:
+            return _not_found_elemento(elemento_id)
 
     @router.post("/api/elementi/{elemento_id}/duplica")
     async def duplica_elemento(elemento_id: str, request: Request) -> Any:
