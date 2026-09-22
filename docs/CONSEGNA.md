@@ -10,12 +10,9 @@ con agenti, in oltre 60 commit; tutto ciò che conta è nel repository, nulla di
 Gira su macOS (sviluppo) e Windows (scritto per, non ancora provato dall'ufficio: `docs/VERIFICA_WINDOWS.md`).
 
 ## 2. Stato alla consegna
-- Git: remoto `origin` = github.com/Davidemen/PortaleStrutture (pubblico). Rami previsti: `main` (rilasci) e
-  `sviluppo` (lavoro comune); rami di funzione e issue come in `docs/GUIDA_SVILUPPO.md`. Nella pratica, la sera
-  del 2026-09-22 i tre pacchetti (§19/§20/§25/§23/§24/§26) e le correzioni di revisione sono finiti direttamente
-  su `main` (4 commit avanti rispetto a `sviluppo`, che è rimasto indietro): non aggiornato apposta, per evitare
-  di toccare un ramo condiviso senza coordinarsi. Il titolare decide se allineare `sviluppo` (fast-forward, nessuna
-  perdita di lavoro) o continuare a considerare `main` il ramo di lavoro corrente.
+- Git: remoto `origin` = github.com/Davidemen/PortaleStrutture (pubblico). `main` (rilasci, solo avanzamento
+  rapido) e `sviluppo` (lavoro comune) sono allineati al 2026-09-23; da qui in poi si lavora su `sviluppo` o su
+  rami di funzione, come in `docs/GUIDA_SVILUPPO.md`. Nessun tag ancora (il primo sarà `v0.0.1`).
 - Suite verdi al 2026-09-23 (dopo il blocco B, vedi §3/§4 punto 8): `uv run pytest -q` → 4359 superati ·
   `uv run pytest tests/e2e -m e2e -q` → 302 superati, 1 saltato (circa 3 minuti e mezzo) ·
   `node --test tests/e2e/*.mjs` → 92 · `uv run ruff check .` pulito ·
@@ -134,9 +131,7 @@ stesso confronto snapshot).
    - Non toccato in questa ondata (segnalato, non corretto): la mappatura simbolo/unità/sigla completa per i
      motivi "da ricalcolare" (`stato_progetto/origini.py`'s `_messaggio` usa ancora la `chiave` interna, es.
      "sito.ag_g", non il simbolo/unità del campo -- servirebbe accesso allo schema del campo da un modulo oggi
-     volutamente puro/senza dipendenza dai `Tool`); la domanda sulla gravità degli avvisi (§20, "avviso più
-     grave" della tabella di progetto) che richiederebbe toccare `shared/report.py` (contratto protetto dalla
-     regola dura 15: da chiedere al titolare prima).
+     volutamente puro/senza dipendenza dai `Tool`). La gravità degli avvisi non si aggiunge (decisione 23 del titolare): `shared/report.py` resta com'è.
    - `tests/e2e/test_stato_progetto.py` ha solo 2 test; §25.5 (Acceptance) ne descrive una catena più lunga, non
      ancora scritta: "Aggiorna dai dati a monte" + Salva che pulisce "↻ Da ricalcolare"; la firma
      (`signoff-multiplo`) che toglie "◐ Provvisorio"; la relazione di progetto stampata senza "Provvisorio"; la
