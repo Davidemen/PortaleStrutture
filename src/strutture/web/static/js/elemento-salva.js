@@ -14,7 +14,7 @@ import { takeAnteprimaStash } from "./progetto-anteprima.js";
 import { computeSintesiEStato } from "./elemento-sintesi.js";
 import { activeProvenienza, reconstructProvenienza } from "./provenienza.js";
 import { azzeraStoriaAnnulla } from "./annulla-ui.js";
-import { openConflictDialog } from "./elemento-conflitto.js";
+import { apriConflittoDialog } from "./elemento-conflitto.js";
 import {
   fetchProgetti,
   fetchProgetto,
@@ -26,6 +26,32 @@ import {
 } from "./progetti-api.js";
 
 const NEW_PROJECT_VALUE = "__nuovo__";
+
+// Module-level, same "last mount wins" pattern as js/annulla-ui.js's own `activeTool` --
+// js/varianti-bar.js reads this (never writes it) to give a brand-new variant A its `origine`
+// (§19.2: "when the form was opened from an element, A carries origine"). `null` whenever the
+// current tool page has no loaded element at all.
+let activeLoaded = null;
+export function activeElementoOrigine() {
+  return activeLoaded ? { elemento_id: activeLoaded.id, revisione: activeLoaded.revisione, nome: activeLoaded.nome } : null;
+}
+
+// The element payload shape POST/PUT already share (routes/progetti.py) -- extracted so
+// js/varianti-tieni.js (§19.4 "Aggiorna"/"Salva come nuovo") builds the exact same body from a
+// variant's own inputs/report instead of re-deriving it.
+export function buildElementoPayload({ tool, values, sintesi, stato, nome, provenienza, sigla = "", nota = "" }) {
+  return {
+    strumento: tool,
+    nome,
+    inputs: values,
+    sintesi,
+    stato,
+    modalita: values.legacy_compat ? "excel" : "standard",
+    provenienza,
+    sigla: sigla || "",
+    nota: nota || "",
+  };
+}
 
 export function mountElementoSalva({ toolForm, tool, title, fields, params, input, getApi }) {
   const wrap = el("div", { class: "es-widget" });
@@ -60,6 +86,7 @@ export function mountElementoSalva({ toolForm, tool, title, fields, params, inpu
   }
 
   function renderWidgetState() {
+    activeLoaded = loaded;
     if (loaded) {
       stateText.hidden = false;
       stateText.textContent = `Elemento: ${loaded.nome} · ${loaded.progettoNome || ""}`;
@@ -75,17 +102,7 @@ export function mountElementoSalva({ toolForm, tool, title, fields, params, inpu
   function currentPayload(nome, sigla, nota) {
     const values = visibleValues(toolForm, fields);
     const { sintesi, stato } = computeSintesiEStato(tool);
-    return {
-      strumento: tool,
-      nome,
-      inputs: values,
-      sintesi,
-      stato,
-      modalita: values.legacy_compat ? "excel" : "standard",
-      provenienza: activeProvenienza(tool),
-      sigla: sigla || "",
-      nota: nota || "",
-    };
+    return buildElementoPayload({ tool, values, sintesi, stato, nome, provenienza: activeProvenienza(tool), sigla, nota });
   }
 
   function closeDialog() {
@@ -292,19 +309,15 @@ export function mountElementoSalva({ toolForm, tool, title, fields, params, inpu
 
   function showConflictDialog(attuale) {
     closeDialog();
-    const mounted = openConflictDialog({
+    apriConflittoDialog({
       attuale,
-      applyReload,
-      closeDialog,
-      onSaveAsCopy: () => {
+      onRicarica: applyReload,
+      onSalvaCopia: () => {
         const nome = loaded ? `${loaded.nome} (copia)` : "";
         const progettoId = loaded && loaded.progettoId;
-        closeDialog();
         openCreateDialog({ progettoId, defaultNome: nome });
       },
     });
-    dialogEl = mounted.dialogEl;
-    releaseTrap = mounted.releaseTrap;
   }
 
   saveBtn.addEventListener("click", () => {

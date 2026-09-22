@@ -17,10 +17,21 @@ const AVVISI_ESCLUSI_DALLA_TRACCIA = new Set([
   "Lo sviluppo dei calcoli descrive la modalità standard: non è disponibile in modalità Excel.",
 ]);
 
-export function computeSintesiEStato(toolName) {
-  const { tool: reportTool, report } = getReportState();
+// WORKBENCH_SPEC §19.5: "build sintesi/stato from a given report, not only from
+// getReportState()" -- js/varianti-tieni.js (§19.4) computes this for a variant's OWN just-run
+// report, which is never the same one `getReportState()` holds (that always reflects the tool
+// page's CURRENT active variant, not whichever one the engineer is "Tieni questa"-ing).
+// `overrides.report`/`overrides.reportTool` default to the shared state so every existing caller
+// (js/elemento-salva.js) keeps its original behaviour untouched.
+export function computeSintesiEStato(toolName, overrides = {}) {
+  const shared = getReportState();
+  const reportTool = overrides.reportTool !== undefined ? overrides.reportTool : shared.tool;
+  const report = overrides.report !== undefined ? overrides.report : shared.report;
   if (!reportTool || reportTool.name !== toolName || !report) return { sintesi: {}, stato: "dati_modificati" };
-  if (isStaleOnScreen()) return { sintesi: {}, stato: "dati_modificati" };
+  // §14.1/§20.2: a "stale" screen (input changed, run not settled/saved yet) still shows the
+  // sintesi from the LAST successful report -- only `stato` is forced to "dati_modificati". Never
+  // drop straight to `{}` here, or a saved element loses eta_max/evidenze/avvisi on the table.
+  const stale = overrides.stale !== undefined ? overrides.stale : isStaleOnScreen();
   if (!report.ok) {
     const errore = (report.errors && report.errors[0]) || "Errore di calcolo.";
     return { sintesi: { ok: false, errore }, stato: "non_verificato" };
@@ -51,6 +62,6 @@ export function computeSintesiEStato(toolName) {
     avvisi: { n: avvisiContati.length, primo: avvisiContati[0] || "" },
   };
   const allPassed = checks.length === 0 || checks.every((check) => check.passed);
-  const stato = sintesi.ok && allPassed ? "verificato" : "non_verificato";
+  const stato = stale ? "dati_modificati" : sintesi.ok && allPassed ? "verificato" : "non_verificato";
   return { sintesi, stato };
 }

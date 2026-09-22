@@ -1,27 +1,56 @@
-// The 409 "conflitto di salvataggio" dialog for js/elemento-salva.js's "Salva"/"Salva come nuovo"
-// (WORKBENCH_SPEC §14.1), split out purely to keep elemento-salva.js under the 400-line cap
-// (§25.4: "if a further need arises... the 409-conflict dialog is split out first"). Takes every
-// piece of caller state it needs to act (`getApi`, `save`+`requestRun` wiring done by the
-// caller's own `applyReload`) rather than importing elemento-salva.js back, so there is no cycle.
+// The optimistic-locking 409 dialog ("Ricarica"/"Salva come copia"), extracted out of
+// js/elemento-salva.js (WORKBENCH_SPEC §19.5: "373 lines today, so both callers share it") --
+// js/elemento-salva.js's own PUT and js/varianti-tieni.js's §19.4 "Aggiorna" both hit the same
+// `PUT /api/elementi/{id}` 409 shape and need the identical two-way choice.
 import { el } from "./dom.js";
 import { trapFocus } from "./nav-state.js";
 
-// `{ attuale, applyReload(attuale), onSaveAsCopy() }` -> the mounted `<dialog>`. The caller owns
-// `dialogEl`/`releaseTrap` bookkeeping (it already has a `closeDialog()`); this returns the node
-// plus a `release` cleanup so the caller's own `closeDialog` can call both.
-export function openConflictDialog({ attuale, applyReload, onSaveAsCopy, closeDialog }) {
-  const titleId = "es-conflict-title";
-  const dialogEl = el("dialog", { class: "es-dialog", role: "dialog", "aria-modal": "true", "aria-labelledby": titleId }, [
+// `onRicarica(attuale)`/`onSalvaCopia()` are called AFTER the dialog is closed -- neither caller
+// needs to close it itself. Returns nothing: the dialog owns its own lifecycle end to end.
+export function apriConflittoDialog({ attuale, onRicarica, onSalvaCopia }) {
+  const titleId = "ec-conflict-title";
+  let dialogEl = null;
+  let releaseTrap = null;
+
+  function close() {
+    if (releaseTrap) {
+      releaseTrap();
+      releaseTrap = null;
+    }
+    if (dialogEl) {
+      const node = dialogEl;
+      dialogEl = null;
+      node.close();
+      node.remove();
+    }
+  }
+
+  dialogEl = el("dialog", { class: "es-dialog", role: "dialog", "aria-modal": "true", "aria-labelledby": titleId }, [
     el("h2", { id: titleId, text: "Conflitto di salvataggio" }),
     el("p", { text: "Modificato da un altro utente: ricarica e riprova." }),
     el("div", { class: "es-dialog-actions" }, [
-      el("button", { type: "button", class: "es-dialog-save", text: "Ricarica", onclick: () => applyReload(attuale) }),
-      el("button", { type: "button", class: "es-dialog-cancel", text: "Salva come copia", onclick: onSaveAsCopy }),
+      el("button", {
+        type: "button",
+        class: "es-dialog-save",
+        text: "Ricarica",
+        onclick: () => {
+          close();
+          onRicarica(attuale);
+        },
+      }),
+      el("button", {
+        type: "button",
+        class: "es-dialog-cancel",
+        text: "Salva come copia",
+        onclick: () => {
+          close();
+          onSalvaCopia();
+        },
+      }),
     ]),
   ]);
   document.body.append(dialogEl);
-  dialogEl.addEventListener("close", closeDialog);
-  const releaseTrap = trapFocus(dialogEl, { onEscape: closeDialog });
+  dialogEl.addEventListener("close", close);
+  releaseTrap = trapFocus(dialogEl, { onEscape: close });
   dialogEl.showModal();
-  return { dialogEl, releaseTrap };
 }
