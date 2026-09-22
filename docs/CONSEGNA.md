@@ -12,7 +12,7 @@ Gira su macOS (sviluppo) e Windows (scritto per, non ancora provato dall'ufficio
 ## 2. Stato alla consegna
 - Git: solo locale, ramo `main`, nessun remoto (GitHub rinviato dal committente).
 - Suite verdi al 2026-09-22 (sera): `uv run pytest -q` → 4155 superati · `uv run pytest tests/e2e -m e2e -q` → 253 superati,
-  1 saltato (circa 3 minuti) · `node --test tests/e2e/*.mjs` → 34 · `uv run ruff check .` pulito ·
+  1 saltato (circa 3 minuti) · `node --test tests/e2e/*.mjs` → 39 · `uv run ruff check .` pulito ·
   `uv run python -m strutture.shared.divergences.check --strict` → 0 errori (26 avvertimenti di clausola vuota,
   innocui).
 - Interfaccia servita: `src/strutture/web/static/`. Copia di lavoro: `src/strutture/web/static_next/` (ignorata da
@@ -55,6 +55,7 @@ l'interfaccia promossa e il codice corrente (verificato: l'API restituisce i col
    bordo dello schermo (il token `--head-h` era 23 px più corto dell'intestazione reale: ora è derivato e l'intestazione
    è bloccata su di esso). Restano: `neve-carico-falda` disegna la falda inclinata anche con α = 0°; lo schizzo della mensola
    tozza è schematico; i simboli con doppio pedice (`M_Ed/M_Rd`) si leggono male nelle evidenze della sintesi.
+5. Blocco 1 (rifattorizzazione regola 12 + specifica §19-22) integrato il 2026-09-22; interfaccia §19-22 da costruire.
 
 ## 5. Decisioni che spettano all'ingegnere
 Tutte in `docs/DECISIONI_DA_CONFERMARE.md`. Un agente non le prende: le segnala e chiede.
