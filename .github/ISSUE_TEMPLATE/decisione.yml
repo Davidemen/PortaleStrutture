@@ -1,6 +1,6 @@
 name: Decisione ingegneristica
 description: Una scelta che spetta al titolare (coefficiente, clausola, ipotesi di calcolo)
-labels: [decisione]
+labels: [decisione, "per umano"]
 body:
   - type: textarea
     id: domanda

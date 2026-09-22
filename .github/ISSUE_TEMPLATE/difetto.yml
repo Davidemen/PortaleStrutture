@@ -1,6 +1,6 @@
 name: Difetto
 description: Un risultato sbagliato o l'app che si comporta male
-labels: []
+labels: ["per agente"]
 body:
   - type: dropdown
     id: tipo

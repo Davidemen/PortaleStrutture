@@ -1,3 +1,4 @@
+<!-- Label: `per agente` finché c'è lavoro dell'agente, `per umano` quando tocca al titolare (docs/GUIDA_SVILUPPO.md §4). -->
 ## Cosa cambia
 
 ## Perché
