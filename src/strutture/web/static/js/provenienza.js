@@ -1,24 +1,39 @@
-// "Usa in..." consumer-side prefill (WORKBENCH_SPEC §15): when a tool page is reached via
-// `?da=<provider>&<chiave>=<valore>&...` (js/usa-in.js builds that link), every field whose
-// `accepts` hint matches one of those chiave keys is prefilled from the query BEFORE the initial
-// run, gets a "da <SIGLA>" chip next to its label, and a dismissible note under the tool title
-// names the provider. Editing a prefilled field clears its own chip. `accepts` is read straight off
-// the RAW input schema (`resolveProperty`, json-schema.js) rather than through schema.js's own
-// flattened Field -- only this one feature needs it, so schema.js's shared contract stays
-// untouched. Mounted directly by js/forms.js's `renderForm` (a plain function call, exactly like
-// js/elemento-salva.js's `mountElementoSalva`) so the prefill always lands before live.js's first
-// run for this page.
+// "Usa in..." consumer-side prefill (WORKBENCH_SPEC §15) + provenance tracking for "da
+// ricalcolare" (§25.1). When a tool page is reached via `?da=<provider>&<chiave>=<valore>&...`
+// (js/usa-in.js builds that link, adding `&da_elemento=&da_revisione=` when the provider is a
+// saved, unmodified element) every field whose `accepts` hint matches one of those chiave keys is
+// prefilled from the query BEFORE the initial run, gets a "da <SIGLA>" chip next to its label, and
+// a dismissible note under the tool title names the provider. Editing a prefilled field clears its
+// own chip. `accepts` is read straight off the RAW input schema (`resolveProperty`,
+// json-schema.js) rather than through schema.js's own flattened Field -- only this one feature
+// needs it, so schema.js's shared contract stays untouched. Mounted directly by js/forms.js's
+// `renderForm` (a plain function call, exactly like js/elemento-salva.js's `mountElementoSalva`)
+// so the prefill always lands before live.js's first run for this page.
+//
+// §25.1 "new shape": each tracked item is `{chiave, strumento, percorso, ingresso, valore,
+// elemento_id?, revisione_fornitore?}` -- `percorso`/`ingresso` come from the SAME collegamenti
+// registry js/usa-in.js already fetches (`ensureCollegamenti`), `valore` is the exact value
+// copied into the consumer field. `elemento_id`/`revisione_fornitore` are present only when
+// usa-in.js added `da_elemento`/`da_revisione` to the query (provider was a saved, unmodified
+// element at link time). On `?elemento=<id>` load, `reconstructProvenienza` rebuilds the session
+// from the element's OWN saved `provenienza.collegamenti`: an item whose consumer field still
+// holds exactly its saved `valore` gets its chip restored; one that was hand-edited since the
+// save is dropped, same as an ordinary edit would do. `activeProvenienza(tool)` is the union of
+// still-valid restored items and any prefilled in this session -- no save ever clears the
+// provenance of an item the user did not touch.
 import { el, clear } from "./dom.js";
 import { resolveProperty } from "./json-schema.js";
 import { fetchTools } from "./api.js";
+import { ensureCollegamenti } from "./collegamenti-api.js";
 import { save } from "./form-state.js";
 import { requestRun } from "./live.js";
 import { azzeraStoriaAnnulla } from "./annulla-ui.js";
 
-// `{tool, provider, chips: Map<fieldName, chiave>}` -- `chips` holds only the fields whose
-// prefilled value has NOT been edited since; js/elemento-salva.js's `currentPayload` reads this
-// via `activeProvenienza` to decide `provenienza.collegamenti`.
-let session = { tool: null, provider: null, chips: new Map() };
+// `{tool, chips: Map<fieldName, {chiave, strumento, percorso, ingresso, valore, elementoId?,
+// revisioneFornitore?}>}` -- `chips` holds only the fields whose tracked value has NOT been
+// edited since; js/elemento-salva.js's `currentPayload` reads this via `activeProvenienza` to
+// decide `provenienza.collegamenti`.
+let session = { tool: null, chips: new Map() };
 
 function acceptsMap(inputSchema, fields) {
   const properties = (inputSchema && inputSchema.properties) || {};
@@ -45,6 +60,13 @@ function parseValue(field, raw) {
   return undefined;
 }
 
+// Numbers compare with a tolerance (query-string round-tripping, JSON round-tripping), everything
+// else exactly -- the same discipline the backend's own §25.1 comparison uses for its own values.
+function sameValue(a, b) {
+  if (typeof a === "number" && typeof b === "number") return Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(a), Math.abs(b));
+  return a === b;
+}
+
 function insertChip(toolForm, fieldName, chipEl) {
   const wrapper = toolForm.querySelector(`.f-field[data-field="${fieldName}"]`);
   const labelCell = wrapper && (wrapper.querySelector(".f-field-labelcell") || wrapper.querySelector(".f-field-row"));
@@ -67,10 +89,24 @@ function buildNoteContent(note, providerTitle, providerName, count) {
   );
 }
 
+// `percorso`/`ingresso` for `chiave` as supplied by `strumento` (§25.1's shape) -- `undefined`
+// when the registry has not resolved yet or the pair is not a real fornitore (should not happen
+// for a `chiave` that reached us via `?da=`/a saved `provenienza`, but this stays defensive).
+async function fornitoreInfo(chiave, strumento) {
+  try {
+    const registry = await ensureCollegamenti();
+    const link = registry.chiavi[chiave];
+    const fornitore = link && link.fornitori.find((f) => f.strumento === strumento);
+    return fornitore ? { percorso: fornitore.percorso, ingresso: fornitore.ingresso } : undefined;
+  } catch (error) {
+    return undefined;
+  }
+}
+
 export function mountProvenienza({ toolForm, tool, fields, params, input, getApi }) {
   const note = el("p", { class: "pv-note" });
   note.hidden = true;
-  session = { tool, provider: null, chips: new Map() };
+  session = { tool, chips: new Map() };
 
   async function applyFromParams() {
     if (!params || !params.da) return;
@@ -108,12 +144,23 @@ export function mountProvenienza({ toolForm, tool, fields, params, input, getApi
       // provider title/sigla fall back to the raw tool name / "?" -- the prefill already happened
     }
 
-    session = { tool, provider: params.da, chips: new Map(Array.from(toApply, ([name, { chiave }]) => [name, chiave])) };
+    const elementoId = params.da_elemento || undefined;
+    const revisioneFornitore = elementoId && params.da_revisione ? Number(params.da_revisione) : undefined;
+    const nextChips = new Map();
     for (const [fieldName, { chiave, value }] of toApply) {
-      const title = `Valore preso da ${providerTitle}: ${chiave} = ${value}`;
+      const info = await fornitoreInfo(chiave, params.da);
+      nextChips.set(fieldName, {
+        chiave, strumento: params.da, valore: value,
+        percorso: info ? info.percorso : "", ingresso: info ? info.ingresso : true,
+        elementoId, revisioneFornitore,
+      });
+    }
+    session = { tool, chips: nextChips };
+    for (const [fieldName, { chiave, valore }] of nextChips) {
+      const title = `Valore preso da ${providerTitle}: ${chiave} = ${valore}`;
       insertChip(toolForm, fieldName, el("span", { class: "pv-chip", title, text: `da ${providerSigla}` }));
     }
-    buildNoteContent(note, providerTitle, params.da, toApply.size);
+    buildNoteContent(note, providerTitle, params.da, nextChips.size);
     note.hidden = false;
 
     const values = api.values();
@@ -128,7 +175,9 @@ export function mountProvenienza({ toolForm, tool, fields, params, input, getApi
     if (!wrapper || session.tool !== tool) return;
     const name = wrapper.dataset.field;
     if (!session.chips.has(name)) return;
-    session.chips.delete(name);
+    const nextChips = new Map(session.chips);
+    nextChips.delete(name);
+    session = { ...session, chips: nextChips };
     removeChip(toolForm, name);
   }
   toolForm.addEventListener("input", handleEdit);
@@ -137,10 +186,61 @@ export function mountProvenienza({ toolForm, tool, fields, params, input, getApi
   return note;
 }
 
-// js/elemento-salva.js's `currentPayload`: the received keys whose chip is STILL present
-// (untouched since the prefill) -> `{collegamenti: [{chiave, strumento}]}`; otherwise `{}`.
+// WORKBENCH_SPEC §25.1 "reconstruction on open": called by js/elemento-salva.js right after an
+// `?elemento=<id>` load fills the form. `provenienza` is the loaded element's own saved
+// `{collegamenti: [...]}` (old-shape items, with no `percorso`/`valore`, are skipped -- "elements
+// saved before this change lack it"). Restores a "da <sigla>" chip for every item whose field
+// STILL holds exactly its saved `valore`; a hand-edited field is silently dropped, as an ordinary
+// edit would do.
+export async function reconstructProvenienza({ toolForm, tool, fields, input, values, provenienza }) {
+  const collegamenti = (provenienza && Array.isArray(provenienza.collegamenti) ? provenienza.collegamenti : [])
+    .filter((item) => item && typeof item === "object" && "valore" in item && "percorso" in item);
+  if (collegamenti.length === 0) return;
+  const map = acceptsMap(input, fields);
+  const byChiave = new Map(Array.from(map, ([fieldName, chiave]) => [chiave, fieldName]));
+  let tools = [];
+  try {
+    tools = await fetchTools();
+  } catch (error) {
+    tools = [];
+  }
+  const nextChips = session.tool === tool ? new Map(session.chips) : new Map();
+  const byProvider = new Map(); // providerName -> {title, sigla, count}
+  for (const item of collegamenti) {
+    const fieldName = byChiave.get(item.chiave);
+    if (!fieldName || !sameValue(values[fieldName], item.valore)) continue;
+    nextChips.set(fieldName, {
+      chiave: item.chiave, strumento: item.strumento, valore: item.valore,
+      percorso: item.percorso, ingresso: Boolean(item.ingresso),
+      elementoId: item.elemento_id || undefined, revisioneFornitore: item.revisione_fornitore,
+    });
+    const providerTool = tools.find((candidate) => candidate.name === item.strumento);
+    const title = providerTool ? providerTool.title : item.strumento;
+    const sigla = providerTool ? providerTool.sigla : "?";
+    const entry = byProvider.get(item.strumento) || { title, sigla, count: 0 };
+    byProvider.set(item.strumento, { ...entry, count: entry.count + 1 });
+    insertChip(toolForm, fieldName, el("span", {
+      class: "pv-chip", text: `da ${sigla}`,
+      title: `Valore preso da ${title}: ${item.chiave} = ${item.valore}`,
+    }));
+  }
+  session = { tool, chips: nextChips };
+  return byProvider;
+}
+
+// js/elemento-salva.js's `currentPayload`: every field whose chip is STILL present (untouched
+// since the prefill/reconstruction) -> `{collegamenti: [{chiave, strumento, percorso, ingresso,
+// valore, elemento_id?, revisione_fornitore?}]}`; otherwise `{}`. Never omits an item because a
+// SAVE happened -- only editing a field drops its own item (§25.1: "no save ever clears the
+// provenance of an item the user did not touch").
 export function activeProvenienza(tool) {
-  if (session.tool !== tool || !session.provider || session.chips.size === 0) return {};
-  const provider = session.provider;
-  return { collegamenti: Array.from(session.chips.values(), (chiave) => ({ chiave, strumento: provider })) };
+  if (session.tool !== tool || session.chips.size === 0) return {};
+  return {
+    collegamenti: Array.from(session.chips.values(), (item) => ({
+      chiave: item.chiave, strumento: item.strumento, percorso: item.percorso, ingresso: item.ingresso,
+      valore: item.valore,
+      ...(item.elementoId ? { elemento_id: item.elementoId } : {}),
+      ...(item.elementoId && item.revisioneFornitore != null ? { revisione_fornitore: item.revisioneFornitore } : {}),
+    })),
+  };
 }

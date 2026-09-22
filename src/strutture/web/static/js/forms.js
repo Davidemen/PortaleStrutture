@@ -141,7 +141,7 @@ export function renderForm(root, { fields = [], example = null, initialValues = 
   // others -- see the `actions.append(...)` comment further down). Same lazy `getApi` accessor as
   // the two widgets below.
   const annullaWidget = mountAnnullaUi({ tool, fields, getApi: () => api });
-  const salvaWidget = mountElementoSalva({ toolForm: form, tool, title, fields, params, getApi: () => api });
+  const salvaWidget = mountElementoSalva({ toolForm: form, tool, title, fields, params, input, getApi: () => api });
   // WORKBENCH_SPEC §15/§16: both dismissible notices go directly above the form, under the tool
   // title -- `root.insertBefore(node, form)` places each one right before `form` (already `root`'s
   // only child at this point), so calling it twice, in this order, stacks them provenienza-note-

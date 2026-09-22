@@ -14,52 +14,18 @@ import { fetchTools } from "./api.js";
 import { readPath } from "./output-schema.js";
 import { navigate } from "./router.js";
 import { siglaChip } from "./nav-state.js";
+import { ensureCollegamenti, collegamentiSnapshot } from "./collegamenti-api.js";
+import { computeSintesiEStato } from "./elemento-sintesi.js";
+import { loadedElementState } from "./elemento-salva.js";
 
-let registry = null; // {chiavi, per_strumento} | null
-let pending = null; // in-flight Promise<...> | null -- de-dupes concurrent callers
+export { ensureCollegamenti };
+
 let toolsPromise = null; // cached fetchTools(), for the menu's sigla chips + titles
 let lastSuccessful = { name: null, report: null };
 
-async function readJson(response) {
-  try {
-    return await response.json();
-  } catch (error) {
-    throw new Error("Risposta del server non valida.");
-  }
-}
-
-async function fetchCollegamentiRaw() {
-  let response;
-  try {
-    response = await fetch("/api/tools/collegamenti");
-  } catch (error) {
-    throw new Error("Impossibile contattare il server.");
-  }
-  const body = await readJson(response);
-  if (response.status !== 200) {
-    throw new Error((body.errors && body.errors[0]) || "Impossibile caricare i collegamenti tra strumenti.");
-  }
-  return body;
-}
-
-export function ensureCollegamenti() {
-  if (registry) return Promise.resolve(registry);
-  if (pending) return pending;
-  pending = fetchCollegamentiRaw()
-    .then((body) => {
-      registry = body;
-      pending = null;
-      return registry;
-    })
-    .catch((error) => {
-      pending = null;
-      throw error;
-    });
-  return pending;
-}
-
 // Synchronous: `[]` before the registry has loaded, or for a tool with no consumers.
 export function usaInFor(toolName) {
+  const registry = collegamentiSnapshot();
   const entry = registry && registry.per_strumento[toolName];
   return entry ? entry.usa_in : [];
 }
@@ -69,6 +35,7 @@ export function usaInFor(toolName) {
 // paths client-side (WORKBENCH_SPEC §15: "resolve the paths client-side from the registry"). Skips
 // a key whose value is null/undefined rather than sending an empty param.
 function resolvedValues(toolName, report) {
+  const registry = collegamentiSnapshot();
   if (!registry) return {};
   const entry = registry.per_strumento[toolName];
   const fornisce = (entry && entry.fornisce) || [];
@@ -103,11 +70,24 @@ function closeMenu() {
   if (button) button.setAttribute("aria-expanded", "false");
 }
 
+// WORKBENCH_SPEC §25.1: `elemento_id`/`revisione_fornitore` are added only when the on-screen
+// provider EXACTLY matches a saved element -- no unsaved changes (the §14.1 "dati modificati"
+// state, read here off the SAME sintesi js/elemento-sintesi.js would save) and it IS a saved
+// element (`loadedElementState`, never an unsaved `?anteprima=1` preview). When it does not
+// match, the link carries no `da_elemento` ("origine non salvata" in the tooltip elsewhere).
 function navigateToConsumer(providerName, consumerName) {
   if (lastSuccessful.name !== providerName || !lastSuccessful.report) return;
   const values = resolvedValues(providerName, lastSuccessful.report);
   const params = { da: providerName };
   for (const [chiave, value] of Object.entries(values)) params[chiave] = String(value);
+  const loaded = loadedElementState(providerName);
+  if (loaded) {
+    const { stato } = computeSintesiEStato(providerName);
+    if (stato !== "dati_modificati") {
+      params.da_elemento = loaded.id;
+      params.da_revisione = String(loaded.revisione);
+    }
+  }
   navigate(consumerName, params);
 }
 
