@@ -1,21 +1,14 @@
 // The element list of a project page (WORKBENCH_SPEC §14.3): ruled rows (sigla chip, nome, stato
 // icon+word, eta max, verifica governante, aggiornato), row actions Apri/Duplica/Rinomina/Storia/
-// Elimina, sort by aggiornato desc, filter by tool. `Rinomina` PUTs the FULL element record (the
-// server has no rename-only endpoint -- `_ElementoUpdateBody.inputs` defaults to `{}`, so a PUT
-// that omitted it would silently WIPE the element's saved inputs) -- `elemento.inputs`/`sintesi`/
-// etc. are already on hand from the list response itself, never re-fetched.
-//
-// API gap (reported, not worked around): WORKBENCH_SPEC §14.3 asks for "Elimina / Ripristina" on
-// every element row, but `ProjectRepository`/`InMemoryProjectRepository`
-// (src/strutture/storage/progetti_memory.py) have no `ripristina_elemento`, no route exists for
-// one, and `list_elementi` never returns soft-deleted elements at all (unlike `list_progetti`,
-// which takes `inclusi_eliminati`) -- there is no way to even SEE a deleted element again, let
-// alone restore it. "Elimina" (soft delete, via the existing DELETE endpoint) is implemented;
-// "Ripristina" is not, since shipping a button with no working endpoint behind it would be worse
-// than omitting it.
+// Elimina, sort by aggiornato desc, filter by tool, plus a "Mostra eliminati" toggle (same pattern
+// as js/progetti.js's own project-list toggle) that reveals soft-deleted rows marked "Eliminato"
+// with a "Ripristina" action. `Rinomina` PUTs the FULL element record (the server has no
+// rename-only endpoint -- `_ElementoUpdateBody.inputs` defaults to `{}`, so a PUT that omitted it
+// would silently WIPE the element's saved inputs) -- `elemento.inputs`/`sintesi`/etc. are already
+// on hand from the list response itself, never re-fetched.
 import { el, clear } from "./dom.js";
 import { fetchTools } from "./api.js";
-import { fetchElementi, deleteElemento, duplicateElemento, updateElemento } from "./progetti-api.js";
+import { fetchElementi, deleteElemento, duplicateElemento, updateElemento, restoreElemento } from "./progetti-api.js";
 import { siglaChip } from "./nav-state.js";
 import { formatUtilisation } from "./format.js";
 import { buildProgettoStoria } from "./progetto-storia.js";
@@ -36,15 +29,23 @@ function etaMaxText(elemento) {
 
 export function renderProgettoElementi(root, { progetto, params = {} } = {}) {
   clear(root);
-  let elementi = [];
+  let elementi = []; // every element, active AND soft-deleted (fetched once with inclusi_eliminati=true)
   let toolsByName = new Map();
   let filterStrumento = params.strumento || "";
+  let showDeleted = false;
 
   root.append(el("h3", { text: "Elementi" }));
   const errorHost = el("div", { class: "pe-error", role: "alert", hidden: true });
   const toolbar = el("div", { class: "pe-toolbar" });
   const filterSelect = el("select", { id: "pe-filter-strumento", class: "pe-filter-select" });
-  toolbar.append(el("label", { class: "pe-filter-label", for: "pe-filter-strumento", text: "Strumento" }), filterSelect);
+  const showDeletedToggle = el("button", { type: "button", class: "pe-toggle-deleted", "aria-pressed": "false", text: "Mostra eliminati" });
+  showDeletedToggle.addEventListener("click", () => {
+    showDeleted = !showDeleted;
+    showDeletedToggle.setAttribute("aria-pressed", String(showDeleted));
+    buildFilterOptions();
+    renderList();
+  });
+  toolbar.append(el("label", { class: "pe-filter-label", for: "pe-filter-strumento", text: "Strumento" }), filterSelect, showDeletedToggle);
   const listHost = el("div", { class: "pe-list-host" });
   root.append(errorHost, toolbar, listHost);
 
@@ -53,8 +54,15 @@ export function renderProgettoElementi(root, { progetto, params = {} } = {}) {
     errorHost.textContent = message || "";
   }
 
+  // Active elements normally, soft-deleted ones once "Mostra eliminati" is on -- same split as
+  // js/progetti.js's own `visibleProgetti()`, applied here to elements instead of projects.
+  function baseElementi() {
+    return showDeleted ? elementi.filter((item) => item.eliminato) : elementi.filter((item) => !item.eliminato);
+  }
+
   function visibleElementi() {
-    const list = filterStrumento ? elementi.filter((item) => item.strumento === filterStrumento) : elementi;
+    const base = baseElementi();
+    const list = filterStrumento ? base.filter((item) => item.strumento === filterStrumento) : base;
     return [...list].sort((a, b) => (b.aggiornato || "").localeCompare(a.aggiornato || ""));
   }
 
@@ -62,7 +70,7 @@ export function renderProgettoElementi(root, { progetto, params = {} } = {}) {
     clear(filterSelect);
     filterSelect.append(el("option", { value: "", text: "Tutti gli strumenti" }));
     const seen = new Map();
-    for (const item of elementi) {
+    for (const item of baseElementi()) {
       if (seen.has(item.strumento)) continue;
       const tool = toolsByName.get(item.strumento);
       seen.set(item.strumento, tool ? `${tool.sigla} — ${tool.title}` : `${item.strumento} (non disponibile)`);
@@ -74,8 +82,14 @@ export function renderProgettoElementi(root, { progetto, params = {} } = {}) {
     elementi = elementi.map((item) => (item.id === next.id ? next : item));
   }
 
-  function removeElemento(id) {
-    elementi = elementi.filter((item) => item.id !== id);
+  // "Elimina" is a SOFT delete: the row must survive in `elementi` (marked, not dropped) so
+  // "Mostra eliminati" can reveal it again without a full re-fetch. `DELETE .../elementi/{id}`
+  // only ever answers `{eliminato: true}` (routes/progetti.py), never the updated record, so the
+  // timestamp/revision bump are synthesised client-side -- both are used only for truthiness/
+  // display here, never sent back to the server (a later "Ripristina" call carries no body).
+  function markDeleted(id) {
+    const now = new Date().toISOString();
+    elementi = elementi.map((item) => (item.id === id ? { ...item, eliminato: now, aggiornato: now, revisione: item.revisione + 1 } : item));
   }
 
   // -- row actions ---------------------------------------------------------------------------------
@@ -145,7 +159,7 @@ export function renderProgettoElementi(root, { progetto, params = {} } = {}) {
             confirmBtn.disabled = false;
             return;
           }
-          removeElemento(elemento.id);
+          markDeleted(elemento.id);
           renderList();
         } catch (error) {
           errorEl.textContent = error.message || "Impossibile eliminare.";
@@ -192,6 +206,25 @@ export function renderProgettoElementi(root, { progetto, params = {} } = {}) {
 
   function buildActions(elemento, actionsHost) {
     clear(actionsHost);
+    if (elemento.eliminato) {
+      actionsHost.append(
+        el("button", {
+          type: "button",
+          class: "pe-action",
+          text: "Ripristina",
+          onclick: async () => {
+            try {
+              const restored = await restoreElemento(elemento.id);
+              replaceElemento(restored);
+              renderList();
+            } catch (error) {
+              setError(error.message || "Impossibile ripristinare.");
+            }
+          },
+        }),
+      );
+      return;
+    }
     const tool = toolsByName.get(elemento.strumento);
     if (tool) {
       actionsHost.append(el("a", { class: "pe-action", href: `#/${encodeURIComponent(elemento.strumento)}?elemento=${encodeURIComponent(elemento.id)}`, text: "Apri" }));
@@ -205,20 +238,28 @@ export function renderProgettoElementi(root, { progetto, params = {} } = {}) {
     );
   }
 
+  function statoLabel(elemento) {
+    if (elemento.eliminato) return "⊘ Eliminato";
+    return STATO_LABELS[elemento.stato] || elemento.stato;
+  }
+
   function buildRow(elemento) {
     const tool = toolsByName.get(elemento.strumento);
     const chip = tool ? siglaChip(tool.sigla) : siglaChip(elemento.strumento.slice(0, 2).toUpperCase());
+    const statoKey = elemento.eliminato ? "eliminato" : elemento.stato;
     const grid = el("div", { class: "pe-row-grid" }, [
       chip,
       el("span", { class: "pe-row-nome", text: elemento.nome, title: elemento.nome }),
-      el("span", { class: `pe-stato pe-stato--${elemento.stato}`, text: STATO_LABELS[elemento.stato] || elemento.stato }),
+      el("span", { class: `pe-stato pe-stato--${statoKey}`, text: statoLabel(elemento) }),
       el("span", { class: "pe-row-eta", text: etaMaxText(elemento) }),
       el("span", { class: "pe-row-governante", text: (elemento.sintesi && elemento.sintesi.verifica_governante) || "—", title: (elemento.sintesi && elemento.sintesi.verifica_governante) || "" }),
       el("span", { class: "pe-row-updated", text: formatDate(elemento.aggiornato) }),
     ]);
     const actionsHost = el("div", { class: "pe-row-actions" });
     buildActions(elemento, actionsHost);
-    const row = el("li", { class: "pe-row", "data-id": elemento.id }, [grid, actionsHost, buildProgettoStoria(elemento)]);
+    const rowClass = elemento.eliminato ? "pe-row pe-row--deleted" : "pe-row";
+    const children = elemento.eliminato ? [grid, actionsHost] : [grid, actionsHost, buildProgettoStoria(elemento)];
+    const row = el("li", { class: rowClass, "data-id": elemento.id }, children);
     return row;
   }
 
@@ -226,7 +267,12 @@ export function renderProgettoElementi(root, { progetto, params = {} } = {}) {
     clear(listHost);
     const visible = visibleElementi();
     if (visible.length === 0) {
-      listHost.append(el("p", { class: "pe-empty", text: "Nessun elemento salvato per questo progetto." }));
+      listHost.append(
+        el("p", {
+          class: "pe-empty",
+          text: showDeleted ? "Nessun elemento eliminato." : "Nessun elemento salvato per questo progetto.",
+        }),
+      );
       return;
     }
     const list = el("ul", { class: "pe-list" });
@@ -239,7 +285,7 @@ export function renderProgettoElementi(root, { progetto, params = {} } = {}) {
     renderList();
   });
 
-  Promise.all([fetchElementi(progetto.id), fetchTools().catch(() => [])])
+  Promise.all([fetchElementi(progetto.id, { inclusiEliminati: true }), fetchTools().catch(() => [])])
     .then(([elenco, tools]) => {
       elementi = elenco;
       toolsByName = new Map(tools.map((tool) => [tool.name, tool]));

@@ -15,6 +15,8 @@ import { buildCheckRow, sortChecks } from "./verdict.js";
 import { renderSintesi, renderBottomBar, initSintesiCollapse } from "./sintesi.js";
 import { diffScalarPaths, diffChecks, markChanged, captureViewState, restoreViewState, sameValue } from "./results-diff.js";
 import { readJSON, writeJSON } from "./storage.js";
+import { isApproved } from "./registro-stato.js";
+import { usaInFor } from "./usa-in.js";
 
 const PASSAGGI_ID = "r-group-passaggi";
 const LEGACY_ID = "r-group-legacy";
@@ -277,11 +279,17 @@ export function renderReport(root, { report, outputNodes, tool, previous }) {
     unmountGroup(LEGACY_ID);
   }
 
+  // WORKBENCH_SPEC §16: canCompare/usaIn are gated at RENDER time, not cached on `currentTool` at
+  // schema time, so a tool that becomes approved (or, for usaIn, whose registry data only just
+  // finished loading) reflects that on the very next render -- including the first one, since
+  // js/registro-stato.js's/js/usa-in.js's own caches are prefetched at boot (js/main.js), well
+  // before the first run of any tool page ever completes.
   const toolbar = buildToolbar({
     groups,
     hasChecks: checks.length > 0,
     printBtn,
-    canCompare: Boolean(tool && tool.canCompare),
+    canCompare: Boolean(tool && tool.canCompare) && !isApproved(toolName),
+    usaIn: Boolean(report.ok) && usaInFor(toolName).length > 0,
     onFilterChange: (only) => {
       const body = document.getElementById(`${VERIFICHE_ID}-body`);
       if (body) body.dataset.filter = only ? "failed" : "all";

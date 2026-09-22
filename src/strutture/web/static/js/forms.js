@@ -13,6 +13,8 @@ import { groupFields, visibleValues, applyConditions, wireUnitSelector, renderSu
 import { buildSections } from "./form-sections-summary.js";
 import { requestRun, isLiveEnabled } from "./live.js";
 import { mountElementoSalva } from "./elemento-salva.js";
+import { mountProvenienza } from "./provenienza.js";
+import { mountExcelRitirato } from "./excel-ritirato.js";
 import "./forms-submit.js";
 
 const FORM_ID = "tool-form";
@@ -58,7 +60,7 @@ function buildMenu(form, fields, tool) {
 
 // `renderForm(root, {fields, example, initialValues}) -> FormApi`, per DESIGN_SPEC §5, extended
 // per WORKBENCH_SPEC §2/§3. `tool` is needed for persistence/share-link/live-session keying.
-export function renderForm(root, { fields = [], example = null, initialValues = {}, tool = "", params = {}, title = "" } = {}) {
+export function renderForm(root, { fields = [], example = null, initialValues = {}, tool = "", params = {}, title = "", input = {} } = {}) {
   clear(root);
   const actions = document.getElementById("form-actions");
   if (actions) clear(actions);
@@ -115,6 +117,14 @@ export function renderForm(root, { fields = [], example = null, initialValues = 
   // page, by which time `api` is long since assigned, so the temporal-dead-zone read is safe.
   let api;
   const salvaWidget = mountElementoSalva({ toolForm: form, tool, title, fields, params, getApi: () => api });
+  // WORKBENCH_SPEC §15/§16: both dismissible notices go directly above the form, under the tool
+  // title -- `root.insertBefore(node, form)` places each one right before `form` (already `root`'s
+  // only child at this point), so calling it twice, in this order, stacks them provenienza-note-
+  // then-excel-note-then-form without needing a dedicated notices container in index.html.
+  const provenienzaNote = mountProvenienza({ toolForm: form, tool, fields, params, input, getApi: () => api });
+  const excelNote = mountExcelRitirato({ toolForm: form, tool });
+  root.insertBefore(provenienzaNote, form);
+  root.insertBefore(excelNote, form);
   if (actions) actions.append(exampleButton, salvaWidget, calcolaButton, liveStatus, buildMenu(form, fields, tool));
 
   function updateRunUi(values) {
@@ -219,7 +229,7 @@ document.addEventListener("strutture:tool-schema", (event) => {
   const initialValues = { ...defaults, ...(load(name) || {}), ...fromParams(params || {}, fields) };
   current.tool = name;
   current.fields = fields;
-  current.api = renderForm(root, { fields, example, initialValues, tool: name, params: params || {}, title });
+  current.api = renderForm(root, { fields, example, initialValues, tool: name, params: params || {}, title, input: input || {} });
 });
 
 document.addEventListener("strutture:live-setting", () => {

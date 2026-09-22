@@ -9,6 +9,21 @@ from ._actions import expand_all_results, goto_tool, load_example, submit
 
 pytestmark = pytest.mark.e2e
 
+_LEGEND_COLOURS = """() => {
+    const items = [...document.querySelectorAll('.c-legend li')];
+    const labels = items.map(li => getComputedStyle(li.querySelector('.c-legend-label')).color);
+    const swatches = items.map(li => {
+        const style = getComputedStyle(li.querySelector('.c-legend-swatch'));
+        return style.backgroundColor || style.borderTopColor;
+    });
+    return [labels, swatches];
+}"""
+_LEGEND_SETTLED = """() => {
+    const items = [...document.querySelectorAll('.c-legend li')];
+    return items.length === 2 && items.every(li => li.isConnected
+        && getComputedStyle(li.querySelector('.c-legend-label')).color !== '');
+}"""
+
 
 def test_legend_text_uses_ink_not_series_colour(page: Page, base_url: str) -> None:
     goto_tool(page, base_url, "sisma-spettro")
@@ -20,20 +35,12 @@ def test_legend_text_uses_ink_not_series_colour(page: Page, base_url: str) -> No
     # on the settled SECOND render rather than catching the chart mid-rebuild.
     expect(page.locator("svg path[data-series]")).to_have_count(2)
 
-    legend_items = page.locator(".c-legend li")
-    expect(legend_items).to_have_count(2)
-    label_colors = [
-        legend_items.nth(i).locator(".c-legend-label").evaluate("el => getComputedStyle(el).color")
-        for i in range(2)
-    ]
+    expect(page.locator(".c-legend li")).to_have_count(2)
+    # Read every colour in ONE evaluate, and only once the legend is settled: separate per-item
+    # reads could straddle a legend rebuild (a detached <li> reports "" as its computed colour).
+    page.wait_for_function(_LEGEND_SETTLED)
+    label_colors, swatch_colors = page.evaluate(_LEGEND_COLOURS)
     assert label_colors[0] == label_colors[1], f"legend labels must share one text colour: {label_colors}"
-
-    swatch_colors = [
-        legend_items.nth(i).locator(".c-legend-swatch").evaluate(
-            "el => getComputedStyle(el).backgroundColor || getComputedStyle(el).borderTopColor"
-        )
-        for i in range(2)
-    ]
     assert swatch_colors[0] != swatch_colors[1], "the two series swatches must stay visually distinct"
     assert label_colors[0] not in swatch_colors, "legend text must not be painted in a series colour"
 

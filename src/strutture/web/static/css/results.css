@@ -595,6 +595,9 @@
    buttons stacked above a horizontally-scrolling jump-link strip; the jump links themselves are
    gone outright (the collapsed group headers already are the navigation). */
 .r-toolbar {
+  /* Anchors js/usa-in.js's own `.ui-menu` (css/usa-in.css), inserted as a sibling of `.ui-toggle`
+     right here -- `position: relative` with no offset changes nothing about this row's own flow. */
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: center;

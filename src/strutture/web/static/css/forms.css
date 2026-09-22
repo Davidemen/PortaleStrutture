@@ -694,3 +694,53 @@
 @media (prefers-reduced-motion: reduce) {
   .f-field--flash { animation: none; outline: 2px solid var(--ink, #14181d); }
 }
+
+/* Dismissible notices above the form (WORKBENCH_SPEC §15/§16: js/provenienza.js's "Dati ricevuti
+   da..." and js/excel-ritirato.js's "Modalità Excel non più disponibile..."). Plain visible text,
+   no role -- DESIGN_SPEC §3 fixes exactly 3 live regions app-wide on a tool page, and both notes
+   are additive to those, same reasoning as js/elemento-salva.js's own `.es-error`. */
+.pv-note,
+.xr-note {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+  margin: 0 0 var(--s3);
+  padding: var(--s2) var(--s3);
+  background: var(--film);
+  border-radius: var(--radius);
+  font-size: var(--t-s);
+  color: var(--ink);
+}
+.pv-note[hidden],
+.xr-note[hidden] {
+  display: none;
+}
+.pv-note-link {
+  color: var(--ink);
+}
+.pv-note-close,
+.xr-note-close {
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-family: var(--font-label);
+  font-size: var(--t-xs);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+  padding: 0;
+  min-height: 1.75rem;
+}
+
+/* Provenance chip next to a prefilled field's label (js/provenienza.js). */
+.pv-chip {
+  display: inline-block;
+  margin-left: var(--s1);
+  padding: 0 var(--s1);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  font-family: var(--font-label);
+  font-size: var(--t-xs);
+  color: var(--graphite);
+  vertical-align: middle;
+}

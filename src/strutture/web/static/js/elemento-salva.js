@@ -12,6 +12,7 @@ import { requestRun } from "./live.js";
 import { getCurrentProgetto, setCurrentProgetto } from "./progetto-picker.js";
 import { takeAnteprimaStash } from "./progetto-anteprima.js";
 import { computeSintesiEStato } from "./elemento-sintesi.js";
+import { activeProvenienza } from "./provenienza.js";
 import {
   fetchProgetti,
   fetchProgetto,
@@ -79,7 +80,7 @@ export function mountElementoSalva({ toolForm, tool, title, fields, params, getA
       sintesi,
       stato,
       modalita: values.legacy_compat ? "excel" : "standard",
-      provenienza: {},
+      provenienza: activeProvenienza(tool),
       sigla: sigla || "",
       nota: nota || "",
     };

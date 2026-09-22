@@ -1,13 +1,14 @@
-// Per-tool registro indicators (WORKBENCH_SPEC §13.2): after the tool title, a link "N correzioni
-// da confermare" (or the muted "Correzioni confermate" once every entry is decided), and -- when
-// any entry for the tool was rejected -- a banner above Dati saying the standard mode still
-// applies it. Data: GET /api/divergences/riepilogo, fetched once and refreshed after any sign-off
+// Per-tool registro indicators (WORKBENCH_SPEC §13.2/§16): after the tool title, a link "N
+// correzioni da confermare" (or, once every entry is decided, the muted "Correzioni approvate"
+// when the tool is fully approved -- §16 -- else "Correzioni confermate"), and -- when any entry
+// for the tool was rejected -- a banner above Dati saying the standard mode still applies it.
+// Data (`GET /api/divergences/riepilogo`) is shared with js/excel-ritirato.js/js/results.js via
+// js/registro-stato.js's own cache, fetched once and refreshed after any sign-off
 // (`strutture:registro-changed`, dispatched by registro.js on a successful save).
 import { el, clear } from "./dom.js";
-import { fetchRiepilogo } from "./registro-api.js";
+import { ensureRiepilogo, getRiepilogo, isApproved } from "./registro-stato.js";
 
 const container = document.getElementById("tool-registro-indicator");
-let riepilogo = null; // null = not loaded yet (or a fetch error) -- renders nothing rather than a stale/wrong number
 let currentTool = null;
 
 function registroLink(query, text, extraClass) {
@@ -17,6 +18,7 @@ function registroLink(query, text, extraClass) {
 function render() {
   if (!container) return;
   clear(container);
+  const riepilogo = getRiepilogo();
   if (!currentTool || !riepilogo) return;
   const counts = riepilogo[currentTool];
   if (!counts) return;
@@ -24,6 +26,8 @@ function render() {
   if (pending > 0) {
     const label = `${pending} correzion${pending === 1 ? "e" : "i"} da confermare`;
     container.append(registroLink(`strumento=${encodeURIComponent(currentTool)}&stato=da_confermare`, label, "reg-indicator-link--warn"));
+  } else if (isApproved(currentTool, riepilogo)) {
+    container.append(registroLink(`strumento=${encodeURIComponent(currentTool)}`, "Correzioni approvate", "reg-indicator-link--muted"));
   } else if ((counts.approvato || 0) + (counts.respinto || 0) > 0) {
     container.append(el("span", { class: "reg-indicator-muted", text: "Correzioni confermate" }));
   }
@@ -40,22 +44,10 @@ function render() {
   }
 }
 
-function load() {
-  fetchRiepilogo()
-    .then((body) => {
-      riepilogo = body;
-      render();
-    })
-    .catch(() => {
-      riepilogo = null;
-      render();
-    });
-}
-
 document.addEventListener("strutture:tool-schema", (event) => {
   currentTool = (event.detail && event.detail.name) || null;
-  if (riepilogo === null) load();
-  else render();
+  if (getRiepilogo()) render();
+  else ensureRiepilogo().then(render).catch(() => render());
 });
 
-document.addEventListener("strutture:registro-changed", load);
+document.addEventListener("strutture:registro-stato-changed", render);

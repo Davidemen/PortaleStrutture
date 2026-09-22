@@ -132,6 +132,7 @@
 .pj-new-cancel,
 .pj-import-btn,
 .pj-toggle-deleted,
+.pe-toggle-deleted,
 .pd-action,
 /* Row actions are compact text buttons on one line (the register's rows are the pattern): four
    bordered controls per row cost a full extra line each and read as a form, not a list. Kept ≥ 1.75rem
@@ -156,7 +157,8 @@
 .pj-action:focus-visible {
   background: var(--film);
 }
-.pj-toggle-deleted[aria-pressed="true"] {
+.pj-toggle-deleted[aria-pressed="true"],
+.pe-toggle-deleted[aria-pressed="true"] {
   background: var(--marker);
   border-color: var(--marker);
 }
@@ -366,7 +368,8 @@
   border-bottom: 1px solid var(--hairline);
   padding: var(--s2) 0;
 }
-.pj-row--deleted {
+.pj-row--deleted,
+.pe-row--deleted {
   opacity: 0.6;
 }
 .pj-row-grid {
@@ -597,7 +600,8 @@
 .pe-stato--non_verificato {
   color: var(--ko);
 }
-.pe-stato--dati_modificati {
+.pe-stato--dati_modificati,
+.pe-stato--eliminato {
   color: var(--graphite);
 }
 

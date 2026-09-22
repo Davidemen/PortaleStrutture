@@ -296,6 +296,51 @@ def test_soft_delete_and_restore_project(page: Page, base_url: str) -> None:
     expect(page.locator(".pj-row", has_text=nome)).to_have_count(1)
 
 
+def test_soft_delete_and_restore_element(page: Page, base_url: str) -> None:
+    """WORKBENCH_SPEC §14.3: an element row gets the same Elimina/"Mostra eliminati"/Ripristina
+    pattern as the project list (§14.2) -- js/progetto-elementi.js's own toggle, not a copy of
+    js/progetti.js's. The project's own "n. elementi" count (js/progetti.js's `loadCounts`, backed
+    by the DEFAULT `GET .../elementi`, active-only) must stay unaffected by the soft delete."""
+    progetto_id = create_project_via_ui(page, base_url, _unique("Progetto Elemento Eliminabile"))
+    goto_tool(page, base_url, "demo-relazione")
+    load_example(page)
+    page.locator("#r-group-verifiche").wait_for(state="visible")
+    nome = "Elemento eliminabile"
+    save_current_tool_as_new_element(page, progetto_id=progetto_id, nome=nome)
+
+    page.goto(f"{base_url}/#/progetti/{progetto_id}")
+    row = page.locator(".pe-row", has_text=nome)
+    expect(row).to_have_count(1)
+    row.get_by_role("button", name="Elimina", exact=True).click()
+    row.get_by_role("button", name="Conferma eliminazione").click()
+    expect(page.locator(".pe-row", has_text=nome)).to_have_count(0)
+
+    # SAME session, no reload: the deleted row must reappear from the client's own in-memory
+    # list (js/progetto-elementi.js marks it deleted in place rather than dropping it), not only
+    # after a fresh fetch -- catches a real bug where "Elimina" used to purge the row outright.
+    page.get_by_role("button", name="Mostra eliminati").click()
+    expect(page.locator(".pe-row", has_text=nome)).to_have_count(1)
+    page.get_by_role("button", name="Mostra eliminati").click()  # back to the active view
+
+    goto_progetti(page, base_url)
+    count_cell = page.locator(f'.pj-row[data-id="{progetto_id}"] .pj-row-count')
+    expect(count_cell).to_have_text("0")
+
+    page.goto(f"{base_url}/#/progetti/{progetto_id}")
+    page.get_by_role("button", name="Mostra eliminati").click()
+    deleted_row = page.locator(".pe-row", has_text=nome)
+    expect(deleted_row).to_have_count(1)
+    expect(deleted_row.locator(".pe-stato")).to_have_text("⊘ Eliminato")
+    deleted_row.get_by_role("button", name="Ripristina").click()
+    expect(page.locator(".pe-row", has_text=nome)).to_have_count(0)  # gone from the deleted view
+
+    page.get_by_role("button", name="Mostra eliminati").click()  # back to the active view
+    expect(page.locator(".pe-row", has_text=nome)).to_have_count(1)
+
+    goto_progetti(page, base_url)
+    expect(count_cell).to_have_text("1")
+
+
 def test_filter_elements_by_tool(page: Page, base_url: str) -> None:
     progetto_id = create_project_via_ui(page, base_url, _unique("Progetto Filtro"))
     goto_tool(page, base_url, "demo-relazione")

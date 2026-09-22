@@ -444,6 +444,9 @@
 .reg-indicator-link--warn {
   color: var(--warn);
 }
+.reg-indicator-link--muted {
+  color: var(--graphite);
+}
 .reg-indicator-muted {
   display: inline-block;
   margin: 0 0 var(--s3);

@@ -92,8 +92,9 @@ export async function restoreProgetto(id) {
 
 // -- elementi --------------------------------------------------------------------------------------
 
-export async function fetchElementi(progettoId) {
-  const { data } = await request(`/api/progetti/${encodeURIComponent(progettoId)}/elementi`, {
+export async function fetchElementi(progettoId, { inclusiEliminati = false } = {}) {
+  const query = inclusiEliminati ? "?inclusi_eliminati=true" : "";
+  const { data } = await request(`/api/progetti/${encodeURIComponent(progettoId)}/elementi${query}`, {
     fallback: "Impossibile caricare gli elementi del progetto.",
   });
   return data;
@@ -123,6 +124,14 @@ export function deleteElemento(id, revisione) {
     body: { revisione },
     fallback: "Impossibile eliminare l'elemento.",
   });
+}
+
+export async function restoreElemento(id) {
+  const { data } = await request(`/api/elementi/${encodeURIComponent(id)}/ripristina`, {
+    method: "POST",
+    fallback: "Impossibile ripristinare l'elemento.",
+  });
+  return data;
 }
 
 export async function duplicateElemento(id, nome) {

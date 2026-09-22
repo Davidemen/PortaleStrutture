@@ -1,0 +1,47 @@
+/* "Usa in..." (WORKBENCH_SPEC §15): the results-toolbar menu button (js/usa-in.js) and its
+   dropdown. Same ruled-list/control language as results.css/confronto.css -- no card kit, no new
+   colours. `.ui-menu` anchors off `.r-toolbar`'s own `position: relative` (results.css) since
+   js/usa-in.js inserts it as a sibling of `.ui-toggle`, not a child. */
+
+.ui-toggle[aria-expanded="true"] {
+  background: var(--marker);
+  border-color: var(--marker);
+}
+
+.ui-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: var(--z-palette, 100);
+  min-width: 16rem;
+  margin-top: var(--s1);
+  padding: var(--s1);
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  border-radius: var(--radius);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+}
+
+.ui-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: var(--control-h-sm, 2rem);
+  padding: 0 var(--s2);
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--t-s);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ui-menu-item:hover,
+.ui-menu-item:focus-visible {
+  background: var(--film);
+}

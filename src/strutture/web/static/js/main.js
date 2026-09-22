@@ -5,6 +5,8 @@
 // dispatch strutture:tool-schema; on run-request -> run-start -> runTool ->
 // run-result; on results-rendered -> pane + focus.
 import { fetchTools, fetchSchema, runTool } from "./api.js";
+import { ensureCollegamenti } from "./usa-in.js";
+import { ensureRiepilogo } from "./registro-stato.js";
 import { renderIndex } from "./tool-index.js";
 import { renderHome } from "./home.js";
 import { initPalette } from "./palette.js";
@@ -246,6 +248,16 @@ async function loadSideEffectModules() {
 }
 
 async function boot() {
+  // Fire-and-forget, started before anything else awaits: the collegamenti registry (js/usa-in.js)
+  // and the divergence riepilogo (js/registro-stato.js) begin loading immediately, in parallel with
+  // `tools` and `loadSideEffectModules()` below, so both are very likely already cached by the time
+  // the FIRST tool run completes -- an already-approved tool or one with consumers rarely flashes
+  // its retired/missing controls on the first paint. Neither BLOCKS boot the way `tools` itself
+  // does, though: a slow network must never delay the whole page becoming usable for the sake of
+  // two secondary features, and results.js/forms.js re-check both caches on every render anyway,
+  // so a first render that missed the cache simply catches up on the next one.
+  ensureCollegamenti().catch(() => {});
+  ensureRiepilogo().catch(() => {});
   try {
     tools = await fetchTools();
   } catch (error) {
