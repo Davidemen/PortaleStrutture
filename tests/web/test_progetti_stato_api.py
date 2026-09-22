@@ -182,6 +182,32 @@ def test_provvisorio_standard_mode_da_confermare(client: TestClient) -> None:
 
 
 @pytest.mark.unit
+def test_pending_doubt_never_makes_the_element_provvisorio(
+    settings, progetti, signoffs, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """§25.2: a `tipo == "da_verificare"` register entry, even pending, is a doubt to look at --
+    not a correction -- so it must never flip `provvisorio` on by itself."""
+    register = (
+        Divergence(
+            id="fake-sum/da-verificare", titolo="Ipotesi da verificare", tipo="da_verificare",
+            strumenti=("fake-sum",), foglio="Valore da controllare", corretto="Da verificare",
+        ),
+    )
+    monkeypatch.setattr("strutture.web.routes.progetti_stato.load_register", lambda: register)
+    app = create_app(
+        settings=settings, tools=FAKE_TOOLS, signoffs=signoffs, progetti=progetti,
+        impostazioni=InMemoryImpostazioniRepository(),
+    )
+    client = TestClient(app)
+    progetto_id = _crea_progetto(client)
+    elemento = _crea_elemento(client, progetto_id, a=1)
+    stato = client.get(f"/api/progetti/{progetto_id}/stato").json()
+    voce = stato["elementi"][elemento["id"]]
+    assert voce["provvisorio"] is False
+    assert voce["correzioni"]["da_confermare"] == 0
+
+
+@pytest.mark.unit
 def test_conteggi_present_in_response(client: TestClient) -> None:
     progetto_id = _crea_progetto(client)
     _crea_elemento(client, progetto_id, a=1)

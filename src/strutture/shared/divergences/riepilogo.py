@@ -18,7 +18,15 @@ class _StatoLookup(Protocol):
 def riepilogo_per_strumento(
     divergences: tuple[Divergence, ...], signoffs: _StatoLookup
 ) -> dict[str, dict[str, int | dict[str, int]]]:
-    """`{strumento: {da_confermare, approvato, respinto, ramo_nessuno: {...}, da_verificare}}`."""
+    """`{strumento: {da_confermare, approvato, respinto, ramo_nessuno: {...}, da_verificare,
+    correzioni: {...}, correzioni_ramo_nessuno: {...}}}`.
+
+    `da_confermare`/`approvato`/`respinto`/`ramo_nessuno` count EVERY entry regardless of `tipo`
+    (GET /api/divergences/riepilogo's own per-stato tally, unchanged). `correzioni`/
+    `correzioni_ramo_nessuno` are the same two tallies but with `tipo == "da_verificare"` entries
+    excluded: a dubbio never counts as a correction pending/approved/rejected (WORKBENCH_SPEC §25.2
+    -- `shared/stato_progetto/provvisorio.py` reads THESE, not the unfiltered ones, so a tool with
+    only doubts pending a decision is never "provvisorio")."""
     per_strumento: dict[str, dict] = {}
     for divergence in divergences:
         stato = signoffs.get(divergence.id).stato
@@ -29,8 +37,18 @@ def riepilogo_per_strumento(
                 voce["ramo_nessuno"][stato] += 1
             if divergence.tipo == "da_verificare":
                 voce["da_verificare"] += 1
+                continue
+            voce["correzioni"][stato] += 1
+            if divergence.ramo == "nessuno":
+                voce["correzioni_ramo_nessuno"][stato] += 1
     return per_strumento
 
 
 def _voce_vuota() -> dict:
-    return {**dict.fromkeys(STATI, 0), "ramo_nessuno": dict.fromkeys(STATI, 0), "da_verificare": 0}
+    return {
+        **dict.fromkeys(STATI, 0),
+        "ramo_nessuno": dict.fromkeys(STATI, 0),
+        "da_verificare": 0,
+        "correzioni": dict.fromkeys(STATI, 0),
+        "correzioni_ramo_nessuno": dict.fromkeys(STATI, 0),
+    }

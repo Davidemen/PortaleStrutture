@@ -27,6 +27,10 @@ def stato_provvisorio(voce_riepilogo: dict | None, modalita: Modalita) -> StatoP
     at all for the tool, so it is never provvisorio)."""
     if voce_riepilogo is None:
         return StatoProvvisorio(False, Correzioni(0, 0, 0, 0))
+    # `voce_riepilogo`'s `da_confermare`/`ramo_nessuno` here must already exclude `tipo ==
+    # "da_verificare"` entries -- a dubbio never counts as a correction (§25.2). The caller passes
+    # `riepilogo_per_strumento(...)`'s own `correzioni`/`correzioni_ramo_nessuno` sub-dicts for
+    # exactly this reason: this function's own flat shape/tests stay unchanged either way.
     ramo_nessuno = voce_riepilogo["ramo_nessuno"]
     correzioni = Correzioni(
         da_confermare=voce_riepilogo["da_confermare"] if modalita == "standard" else ramo_nessuno["da_confermare"],

@@ -43,6 +43,23 @@ def build_progetti_stato_router(
     return router
 
 
+def _per_provvisorio(voce: dict | None) -> dict | None:
+    """`riepilogo_per_strumento`'s `da_confermare`/`ramo_nessuno` count EVERY divergence, doubts
+    ("da_verificare") included (GET /api/divergences/riepilogo needs that, unchanged); `stato_
+    provvisorio` must NOT (§25.2: a doubt never makes an element provisional). Its own `correzioni`/
+    `correzioni_ramo_nessuno` sub-dicts already exclude them -- this just renames them back onto the
+    flat shape `stato_provvisorio` expects."""
+    if voce is None:
+        return None
+    return {
+        "da_confermare": voce["correzioni"]["da_confermare"],
+        "approvato": voce["correzioni"]["approvato"],
+        "respinto": voce["correzioni"]["respinto"],
+        "ramo_nessuno": voce["correzioni_ramo_nessuno"],
+        "da_verificare": voce["da_verificare"],
+    }
+
+
 def _calcola(
     elementi: tuple, progetti: ProjectRepository, tools: dict[str, Tool],
     signoffs: SignoffRepository, register: tuple[Divergence, ...] | None,
@@ -126,7 +143,7 @@ class _ContestoValutazione:
         if elemento.id in self._cache_completo:
             return self._cache_completo[elemento.id]
         origini = stato_origini(_collegamenti_di(elemento), self._get_elemento, self._valore_attuale)
-        provvisorio = stato_provvisorio(self._riepilogo.get(elemento.strumento), elemento.modalita)
+        provvisorio = stato_provvisorio(_per_provvisorio(self._riepilogo.get(elemento.strumento)), elemento.modalita)
         risultato = (origini, provvisorio)
         self._cache_completo[elemento.id] = risultato
         return risultato
