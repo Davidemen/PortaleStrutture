@@ -37,13 +37,35 @@ def build_progetti_router(progetti: ProjectRepository, tools: dict[str, Tool]) -
     """Build the `/api/progetti` and `/api/elementi` routers bound to a fixed repository and the
     tool registry (used to validate `strumento` on element creation)."""
     router = APIRouter()
+    _register_progetti_read_routes(router, progetti)
+    _register_progetti_create_route(router, progetti)
+    _register_progetti_update_route(router, progetti)
+    _register_progetti_delete_routes(router, progetti)
+    _register_elementi_read_routes(router, progetti)
+    _register_elementi_create_route(router, progetti, tools)
+    _register_elementi_update_route(router, progetti, tools)
+    _register_elementi_lifecycle_routes(router, progetti)
+    _register_scambio_routes(router, progetti, tools)
+    return router
 
-    # ---- progetti ----
 
+# ---- progetti ----
+
+
+def _register_progetti_read_routes(router: APIRouter, progetti: ProjectRepository) -> None:
     @router.get("/api/progetti")
     def list_progetti(inclusi_eliminati: bool = False) -> list[dict[str, Any]]:
         return [p.model_dump(mode="json") for p in progetti.list_progetti(inclusi_eliminati=inclusi_eliminati)]
 
+    @router.get("/api/progetti/{progetto_id}")
+    def get_progetto(progetto_id: str) -> Any:
+        try:
+            return progetti.get_progetto(progetto_id).model_dump(mode="json")
+        except NotFoundError:
+            return _not_found_progetto(progetto_id)
+
+
+def _register_progetti_create_route(router: APIRouter, progetti: ProjectRepository) -> None:
     @router.post("/api/progetti")
     async def crea_progetto(request: Request) -> Any:
         body = await _parse_body(request, _ProgettoBody)
@@ -54,13 +76,8 @@ def build_progetti_router(progetti: ProjectRepository, tools: dict[str, Tool]) -
         )
         return JSONResponse(created.model_dump(mode="json"), status_code=201)
 
-    @router.get("/api/progetti/{progetto_id}")
-    def get_progetto(progetto_id: str) -> Any:
-        try:
-            return progetti.get_progetto(progetto_id).model_dump(mode="json")
-        except NotFoundError:
-            return _not_found_progetto(progetto_id)
 
+def _register_progetti_update_route(router: APIRouter, progetti: ProjectRepository) -> None:
     @router.put("/api/progetti/{progetto_id}")
     async def aggiorna_progetto(progetto_id: str, request: Request) -> Any:
         body = await _parse_body(request, _ProgettoUpdateBody)
@@ -82,6 +99,8 @@ def build_progetti_router(progetti: ProjectRepository, tools: dict[str, Tool]) -
             return _not_found_progetto(progetto_id)
         return saved.model_dump(mode="json")
 
+
+def _register_progetti_delete_routes(router: APIRouter, progetti: ProjectRepository) -> None:
     @router.delete("/api/progetti/{progetto_id}")
     async def elimina_progetto(progetto_id: str, request: Request) -> Any:
         body = await _parse_body(request, _RevisioneBody)
@@ -102,8 +121,11 @@ def build_progetti_router(progetti: ProjectRepository, tools: dict[str, Tool]) -
         except NotFoundError:
             return _not_found_progetto(progetto_id)
 
-    # ---- elementi ----
 
+# ---- elementi ----
+
+
+def _register_elementi_read_routes(router: APIRouter, progetti: ProjectRepository) -> None:
     @router.get("/api/progetti/{progetto_id}/elementi")
     def list_elementi(progetto_id: str, inclusi_eliminati: bool = False) -> Any:
         try:
@@ -112,6 +134,23 @@ def build_progetti_router(progetti: ProjectRepository, tools: dict[str, Tool]) -
             return _not_found_progetto(progetto_id)
         return [e.model_dump(mode="json") for e in elementi]
 
+    @router.get("/api/elementi/{elemento_id}")
+    def get_elemento(elemento_id: str) -> Any:
+        try:
+            return progetti.get_elemento(elemento_id).model_dump(mode="json")
+        except NotFoundError:
+            return _not_found_elemento(elemento_id)
+
+    @router.get("/api/elementi/{elemento_id}/revisioni")
+    def revisioni(elemento_id: str) -> Any:
+        try:
+            history = progetti.revisioni(elemento_id)
+        except NotFoundError:
+            return _not_found_elemento(elemento_id)
+        return [r.model_dump(mode="json") for r in history]
+
+
+def _register_elementi_create_route(router: APIRouter, progetti: ProjectRepository, tools: dict[str, Tool]) -> None:
     @router.post("/api/progetti/{progetto_id}/elementi")
     async def crea_elemento(progetto_id: str, request: Request) -> Any:
         body = await _parse_body(request, _ElementoBody)
@@ -136,13 +175,8 @@ def build_progetti_router(progetti: ProjectRepository, tools: dict[str, Tool]) -
             return _not_found_progetto(progetto_id)
         return JSONResponse(created.model_dump(mode="json"), status_code=201)
 
-    @router.get("/api/elementi/{elemento_id}")
-    def get_elemento(elemento_id: str) -> Any:
-        try:
-            return progetti.get_elemento(elemento_id).model_dump(mode="json")
-        except NotFoundError:
-            return _not_found_elemento(elemento_id)
 
+def _register_elementi_update_route(router: APIRouter, progetti: ProjectRepository, tools: dict[str, Tool]) -> None:
     @router.put("/api/elementi/{elemento_id}")
     async def aggiorna_elemento(elemento_id: str, request: Request) -> Any:
         body = await _parse_body(request, _ElementoUpdateBody)
@@ -175,6 +209,8 @@ def build_progetti_router(progetti: ProjectRepository, tools: dict[str, Tool]) -
             return _not_found_elemento(elemento_id)
         return saved.model_dump(mode="json")
 
+
+def _register_elementi_lifecycle_routes(router: APIRouter, progetti: ProjectRepository) -> None:
     @router.delete("/api/elementi/{elemento_id}")
     async def elimina_elemento(elemento_id: str, request: Request) -> Any:
         body = await _parse_body(request, _RevisioneBody)
@@ -206,16 +242,11 @@ def build_progetti_router(progetti: ProjectRepository, tools: dict[str, Tool]) -
             return _not_found_elemento(elemento_id)
         return JSONResponse(duplicated.model_dump(mode="json"), status_code=201)
 
-    @router.get("/api/elementi/{elemento_id}/revisioni")
-    def revisioni(elemento_id: str) -> Any:
-        try:
-            history = progetti.revisioni(elemento_id)
-        except NotFoundError:
-            return _not_found_elemento(elemento_id)
-        return [r.model_dump(mode="json") for r in history]
 
-    # ---- export / import ----
+# ---- export / import ----
 
+
+def _register_scambio_routes(router: APIRouter, progetti: ProjectRepository, tools: dict[str, Tool]) -> None:
     @router.get("/api/progetti/{progetto_id}/esporta")
     def esporta(progetto_id: str) -> Any:
         try:
@@ -240,8 +271,6 @@ def build_progetti_router(progetti: ProjectRepository, tools: dict[str, Tool]) -
         except ValueError as error:
             return error_envelope(str(error), 400)
         return {"progetto": progetto.model_dump(mode="json"), "avvisi": list(avvisi)}
-
-    return router
 
 
 def _scambio_esporta(progetto: Progetto, elementi_con_revisioni: Any, versione_app: str) -> dict[str, Any]:

@@ -19,19 +19,28 @@ from ..presentation import sigla_for
 
 logger = logging.getLogger(__name__)
 
+MODE_FIELD = "legacy_compat"
+
 
 def build_tools_router(tools: dict[str, Tool], register: tuple[Divergence, ...] | None = None) -> APIRouter:
     """Build the `/api/tools...` router bound to a fixed tool registry. `register` defaults to the
     real, packaged divergence register; inject a fixed tuple in tests instead."""
     router = APIRouter(prefix="/api/tools")
+    _register_list_route(router, tools)
+    _register_collegamenti_route(router, tools)
+    _register_schema_route(router, tools)
+    _register_run_route(router, tools)
+    _register_compare_route(router, tools, register)
+    return router
 
-    def _register() -> tuple[Divergence, ...]:
-        return register if register is not None else load_register()
 
+def _register_list_route(router: APIRouter, tools: dict[str, Tool]) -> None:
     @router.get("")
     def list_tools() -> list[dict[str, Any]]:
         return [_summary(tool) for tool in tools.values()]
 
+
+def _register_collegamenti_route(router: APIRouter, tools: dict[str, Tool]) -> None:
     @router.get("/collegamenti")
     def collegamenti() -> dict[str, Any]:
         """The typed links between tools (docs/ROADMAP.md phase 5): per key, who provides it and who
@@ -57,6 +66,8 @@ def build_tools_router(tools: dict[str, Tool], register: tuple[Divergence, ...] 
         }
         return {"chiavi": chiavi, "per_strumento": per_strumento}
 
+
+def _register_schema_route(router: APIRouter, tools: dict[str, Tool]) -> None:
     @router.get("/{name}/schema")
     def get_schema(name: str) -> JSONResponse:
         tool = tools.get(name)
@@ -71,6 +82,8 @@ def build_tools_router(tools: dict[str, Tool], register: tuple[Divergence, ...] 
             }
         )
 
+
+def _register_run_route(router: APIRouter, tools: dict[str, Tool]) -> None:
     @router.post("/{name}/run")
     async def run_tool(name: str, request: Request, relazione: int = 0) -> JSONResponse:
         tool = tools.get(name)
@@ -94,6 +107,8 @@ def build_tools_router(tools: dict[str, Tool], register: tuple[Divergence, ...] 
         # Validation/domain errors are still a successful HTTP exchange: ok=false carries the detail.
         return report_envelope(body, 200)
 
+
+def _register_compare_route(router: APIRouter, tools: dict[str, Tool], register: tuple[Divergence, ...] | None) -> None:
     @router.post("/{name}/compare")
     async def compare_tool(name: str, request: Request) -> JSONResponse:
         """The same inputs in both modes (code-standard and Excel), the outputs that differ and the
@@ -121,7 +136,7 @@ def build_tools_router(tools: dict[str, Tool], register: tuple[Divergence, ...] 
             logger.exception("unexpected error comparing tool %s", name)
             return internal_error_envelope()
 
-        confronto = confronta(standard, excel, tool.name, _register(), attribuzione) if excel is not None else None
+        confronto = confronta(standard, excel, tool.name, _resolve_register(register), attribuzione) if excel is not None else None
         return JSONResponse({
             "ok": bool(standard["ok"] and (excel is None or excel["ok"])),
             "disponibile": has_excel_mode,
@@ -130,7 +145,9 @@ def build_tools_router(tools: dict[str, Tool], register: tuple[Divergence, ...] 
             "confronto": confronto,
         })
 
-    return router
+
+def _resolve_register(register: tuple[Divergence, ...] | None) -> tuple[Divergence, ...]:
+    return register if register is not None else load_register()
 
 
 def _run_mode(tool: Tool, inputs: dict[str, Any], legacy_compat: bool | None) -> dict[str, Any]:
@@ -174,9 +191,6 @@ def _traccia_con_formula_ast(traccia: dict[str, Any]) -> dict[str, Any]:
 
 def _passo_con_formula_ast(passo: dict[str, Any]) -> dict[str, Any]:
     return {**passo, "formula_ast": ast_a_json(analizza(passo["formula"]))}
-
-
-MODE_FIELD = "legacy_compat"
 
 
 def _ui_schema(schema: dict[str, Any]) -> dict[str, Any]:

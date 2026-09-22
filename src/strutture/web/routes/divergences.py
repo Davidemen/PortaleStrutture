@@ -30,45 +30,55 @@ def build_divergences_router(
     """Build the `/api/divergences...` router. `register` defaults to the real, packaged register;
     inject a fixed tuple in tests instead."""
     router = APIRouter(prefix="/api/divergences")
+    _register_list_routes(router, signoffs, register)
+    _register_detail_route(router, signoffs, register)
+    _register_signoff_routes(router, signoffs, register)
+    return router
 
-    def _all_divergences() -> tuple[Divergence, ...]:
-        return register if register is not None else load_register()
 
-    def _by_id() -> dict[str, Divergence]:
-        return {d.id: d for d in _all_divergences()}
-
+def _register_list_routes(
+    router: APIRouter, signoffs: SignoffRepository, register: tuple[Divergence, ...] | None
+) -> None:
     @router.get("")
     def list_divergences(
         strumento: str | None = None, tipo: str | None = None, stato: str | None = None, q: str | None = None
     ) -> dict[str, Any]:
-        entries = [_entry(d, signoffs.get(d.id)) for d in _all_divergences()]
+        entries = [_entry(d, signoffs.get(d.id)) for d in _all_divergences(register)]
         filtered = [e for e in entries if _matches(e, strumento, tipo, stato, q)]
         return {"divergenze": filtered, "totali": _totals(e["stato"] for e in filtered)}
 
     @router.get("/riepilogo")
     def riepilogo() -> dict[str, Any]:
         per_strumento: dict[str, dict[str, int]] = {}
-        for divergence in _all_divergences():
+        for divergence in _all_divergences(register):
             stato = signoffs.get(divergence.id).stato
             for strumento_name in divergence.strumenti:
                 counts = per_strumento.get(strumento_name, {s: 0 for s in _STATI})
                 per_strumento[strumento_name] = {**counts, stato: counts[stato] + 1}
         return {"per_strumento": per_strumento}
 
+
+def _register_detail_route(
+    router: APIRouter, signoffs: SignoffRepository, register: tuple[Divergence, ...] | None
+) -> None:
     @router.get("/{unita}/{slug}")
     def get_divergence(unita: str, slug: str) -> Any:
         divergence_id = f"{unita}/{slug}"
-        divergence = _by_id().get(divergence_id)
+        divergence = _by_id(register).get(divergence_id)
         if divergence is None:
             return _unknown_divergence(divergence_id)
         entry = _entry(divergence, signoffs.get(divergence_id))
         history = [s.model_dump(mode="json") for s in signoffs.history(divergence_id)]
         return {**entry, "storia": history}
 
+
+def _register_signoff_routes(
+    router: APIRouter, signoffs: SignoffRepository, register: tuple[Divergence, ...] | None
+) -> None:
     @router.put("/{unita}/{slug}/signoff")
     async def signoff(unita: str, slug: str, request: Request) -> Any:
         divergence_id = f"{unita}/{slug}"
-        if divergence_id not in _by_id():
+        if divergence_id not in _by_id(register):
             return _unknown_divergence(divergence_id)
         body = await _parse_body(request, _SignoffBody)
         if isinstance(body, JSONResponse):
@@ -81,7 +91,7 @@ def build_divergences_router(
         body = await _parse_body(request, _BulkSignoffBody)
         if isinstance(body, JSONResponse):
             return body
-        known = _by_id()
+        known = _by_id(register)
         updated = 0
         for divergence_id in body.ids:
             if divergence_id in known:
@@ -89,7 +99,13 @@ def build_divergences_router(
                 updated += 1
         return {"aggiornati": updated}
 
-    return router
+
+def _all_divergences(register: tuple[Divergence, ...] | None) -> tuple[Divergence, ...]:
+    return register if register is not None else load_register()
+
+
+def _by_id(register: tuple[Divergence, ...] | None) -> dict[str, Divergence]:
+    return {d.id: d for d in _all_divergences(register)}
 
 
 class _SignoffBody(BaseModel):
