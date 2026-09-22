@@ -12,6 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_valida
 
 from strutture.shared.divergences.loader import load_register
 from strutture.shared.divergences.models import Divergence
+from strutture.shared.divergences.riepilogo import STATI, riepilogo_per_strumento
 from strutture.storage.interfaces import SignoffRepository
 from strutture.storage.models import MAX_NOTA, MAX_SIGLA, Signoff, Stato
 
@@ -49,12 +50,8 @@ def _register_list_routes(
 
     @router.get("/riepilogo")
     def riepilogo() -> dict[str, Any]:
-        per_strumento: dict[str, dict[str, int]] = {}
-        for divergence in _all_divergences(register):
-            stato = signoffs.get(divergence.id).stato
-            for strumento_name in divergence.strumenti:
-                counts = per_strumento.get(strumento_name, {s: 0 for s in _STATI})
-                per_strumento[strumento_name] = {**counts, stato: counts[stato] + 1}
+        completo = riepilogo_per_strumento(_all_divergences(register), signoffs)
+        per_strumento = {nome: {s: voce[s] for s in STATI} for nome, voce in completo.items()}
         return {"per_strumento": per_strumento}
 
 
