@@ -13,6 +13,11 @@ registro delle correzioni. Interfaccia, messaggi, avvisi, nomi delle verifiche, 
 titolare sono in italiano, con la maiuscola solo sulla prima parola e mai in MAIUSCOLO. Nel codice segui la
 lingua del file in cui lavori (è misto italiano/inglese): non tradurre ciò che esiste.
 
+Difetti e migliorie a basso impatto trovati fuori dal compito (un test rosso non tuo, una pulizia, una rinomina,
+un'impostazione di GitHub): non chiedere al titolare e non correggerli tu. Apri una issue (`gh issue create`,
+label giusta) con cosa succede, dove, come riprodurlo e come si capisce che è chiusa, e citala nel resoconto: la
+prende chi ha tempo e budget. Chiedi solo ciò che blocca il compito o che è una scelta ingegneristica.
+
 ## Cos'è
 31 strumenti di calcolo (NTC 2018 / Eurocodici) nati da 23 fogli Excel. Pacchetto Python `strutture` (layout
 `src/`, Python ≥ 3.12, pydantic v2, FastAPI) più un'interfaccia web in JavaScript puro (moduli ES, nessuna
