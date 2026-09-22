@@ -443,3 +443,10 @@ same sketch WITHOUT the fields, so nothing is editable on paper. Computed dimens
 match and stay plain. Modules: `js/schizzo-modifica.js` (matching + popover), `sketch.js`/`sketch-shapes.js`
 (`campi` option → `data-campo` on the text group), `results.js` (passes `tool.fields`, mounts the editor on
 `#sintesi`). Tests: `tests/e2e/test_schizzo_modifica.py`, `tests/e2e/schizzo_modifica.test.mjs`.
+Same rule for every text-bearing shape (owner's example, the wall section): labels (`Etichetta.simbolo = testo`),
+load arrows (`Freccia.testo`) and diagram texts (`Diagramma.etichette`) — the muro's `q = 2 kN/m²` diagram text edits
+`q_kN_m2`. Unit strings are compared after `²→2`, `³→3`. On the automatic path the SHOWN number must equal the
+field's current value at the displayed precision (`valoreCampoCorrente`): a result label that shares an input's symbol
+and unit (`S_stat = 30 kN`) is never linked. `Etichetta.campo`/`Freccia.campo` exist like `Quota.campo`; a computed
+total may point at the input it is driven by (the wall's `H` → `h_muro_m`; the popover names the field, so the edit
+is unambiguous). Composite dimensions with several inputs (`B` = mancia + paramento + tacco) stay plain.

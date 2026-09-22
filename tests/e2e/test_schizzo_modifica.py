@@ -88,3 +88,28 @@ def test_dimensions_linked_by_symbol_or_by_campo(page: Page, base_url: str, tool
     load_example(page)
     page.locator("#sintesi .r-si-sketch svg").first.wait_for(state="attached")
     expect(page.locator(f'#sintesi .sk-quota-text[data-campo="{campo}"]').first).to_be_attached()
+
+
+def test_wall_labels_edit_the_surcharge_and_the_wall_height(page: Page, base_url: str) -> None:
+    """Owner's example (2026-09-22, muro-sostegno section): `q = 2 kN/m²` is a diagram text (unit
+    "kN/m2" on the field, "kN/m²" in the drawing) and `H = 2,70 m` a computed total that
+    `Quota.campo` points at the wall height; the results `S_stat`, `S_sism`, `p_valle` and the
+    composite `B` stay plain text."""
+    goto_tool(page, base_url, "muro-sostegno")
+    load_example(page)
+    page.locator("#sintesi .r-si-sketch svg").first.wait_for(state="attached")
+    linked = page.locator("#sintesi .sk-modificabile[data-campo]").evaluate_all("els => els.map(e => e.dataset.campo).sort()")
+    assert linked == ["h_muro_m", "q_kN_m2"], linked
+
+    page.locator('#sintesi .sk-modificabile[data-campo="q_kN_m2"]').click()
+    popover = page.locator("form.sk-edit")
+    expect(popover).to_have_attribute("aria-label", "Modifica q")
+    expect(popover.locator(".sk-edit-unit")).to_have_text("kN/m2")
+    popover.locator("#sk-edit-input").fill("5")
+    popover.locator("#sk-edit-input").press("Enter")
+    expect(page.locator('#tool-form [name="q_kN_m2"]')).to_have_value("5")
+    expect(page.locator('#sintesi .sk-modificabile[data-campo="q_kN_m2"] text')).to_have_text("q = 5 kN/m²")
+
+    page.locator('#sintesi .sk-modificabile[data-campo="h_muro_m"]').click()
+    expect(page.locator("form.sk-edit")).to_have_attribute("aria-label", "Modifica h_muro")
+    expect(page.locator("form.sk-edit #sk-edit-input")).to_have_value("2,4")  # the control's own it-IT text

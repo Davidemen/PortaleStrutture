@@ -106,7 +106,9 @@ export function buildArrow(shape, ctx) {
     // whatever the arrow points at. Same model as the Python overlap lint (test_sketch_layout.py),
     // which every sketch author composes against.
     const { textAnchor, dx, dy } = arrowLabelPlacement(x2 - x1, y2 - y1);
-    g.append(textAt(shape.coda, ctx.s, { className: "sk-arrow-text", textAnchor, dx, dy }, (t) => { t.append(...symbolAwareTspans(shape.testo)); }));
+    const label = textAt(shape.coda, ctx.s, { className: "sk-arrow-text", textAnchor, dx, dy }, (t) => { t.append(...symbolAwareTspans(shape.testo)); });
+    markEditable(label, shape.testo, shape.campo, ctx);
+    g.append(label);
   }
   return g;
 }
@@ -155,20 +157,24 @@ export function buildDimension(shape, ctx) {
   const text = svgNode("text", { ...textAttrs, "font-size": TEXT_PX });
   text.append(...symbolAwareTspans(shape.testo));
   textGroup.append(text);
-  // Editable dimension (js/schizzo-modifica.js): the text group becomes a keyboard-reachable
-  // button carrying the Dati field it stands for; the popover itself lives outside the SVG.
-  const campo = ctx.campoPerQuota ? ctx.campoPerQuota(shape.testo, shape.campo || null) : null;
-  if (campo) {
-    textGroup.setAttribute("data-campo", campo);
-    textGroup.setAttribute("role", "button");
-    textGroup.setAttribute("tabindex", "0");
-    textGroup.classList.add("sk-quota-text--modificabile");
-    const title = svgNode("title", {});
-    title.textContent = `Modifica ${shape.testo} (Invio)`;
-    textGroup.prepend(title);
-  }
+  markEditable(textGroup, shape.testo, shape.campo, ctx);
   g.append(textGroup);
   return g;
+}
+
+// Editable text (js/schizzo-modifica.js): when the text stands for a Dati field -- a dimension,
+// a label, a load arrow's or a diagram's text -- its group becomes a keyboard-reachable button
+// carrying that field's name; the popover itself lives outside the SVG.
+function markEditable(group, testo, campo, ctx) {
+  const name = ctx.campoPerTesto ? ctx.campoPerTesto(testo, campo || null) : null;
+  if (!name) return;
+  group.setAttribute("data-campo", name);
+  group.setAttribute("role", "button");
+  group.setAttribute("tabindex", "0");
+  group.classList.add("sk-modificabile");
+  const title = svgNode("title", {});
+  title.textContent = `Modifica ${testo} (Invio)`;
+  group.prepend(title);
 }
 
 // When `testo` redundantly repeats `simbolo` ("q_s2 = 6,16 kN/m²" alongside simbolo="q_s2" --
@@ -182,10 +188,10 @@ function labelValueText(testo, simbolo) {
 }
 
 export function buildLabel(shape, ctx) {
-  return textAt(shape.punto, ctx.s, { className: `sk-shape sk-${shape.stile} sk-label`, textAnchor: shape.ancora }, (t) => {
+  const value = shape.simbolo ? labelValueText(shape.testo, shape.simbolo) : null;
+  const node = textAt(shape.punto, ctx.s, { className: `sk-shape sk-${shape.stile} sk-label`, textAnchor: shape.ancora }, (t) => {
     if (shape.simbolo) {
       t.append(...symbolTspans(shape.simbolo));
-      const value = labelValueText(shape.testo, shape.simbolo);
       // "M = 1 kNm", like a dimension's or an arrow's own text -- every symbol label in the
       // sketches states a quantity and its value, and a bare "M 1 kNm" reads as a typo.
       if (value) t.append(document.createTextNode(` = ${value}`));
@@ -193,6 +199,8 @@ export function buildLabel(shape, ctx) {
       t.append(...symbolAwareTspans(shape.testo));
     }
   });
+  markEditable(node, shape.simbolo && value ? `${shape.simbolo} = ${value}` : shape.testo, shape.campo, ctx);
+  return node;
 }
 
 export function buildBars(shape, ctx) {
@@ -258,7 +266,9 @@ export function buildDiagram(shape, ctx) {
   const dy = ordinates.length > 0 && hangsBelowBase(shape, ordinates) ? TEXT_PX + GAP_PX : -GAP_PX;
   (shape.etichette ?? []).forEach((label, i) => {
     if (!label || !poly[i + 1]) return;
-    g.append(textAt(poly[i + 1], ctx.s, { className: "sk-diagram-text", textAnchor: "middle", dy }, (t) => { t.append(...symbolAwareTspans(label)); }));
+    const node = textAt(poly[i + 1], ctx.s, { className: "sk-diagram-text", textAnchor: "middle", dy }, (t) => { t.append(...symbolAwareTspans(label)); });
+    markEditable(node, label, null, ctx);
+    g.append(node);
   });
   return g;
 }

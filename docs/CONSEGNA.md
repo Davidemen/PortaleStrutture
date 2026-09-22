@@ -11,7 +11,7 @@ Gira su macOS (sviluppo) e Windows (scritto per, non ancora provato dall'ufficio
 
 ## 2. Stato alla consegna
 - Git: solo locale, ramo `main`, nessun remoto (GitHub rinviato dal committente).
-- Suite verdi al 2026-09-22 (sera): `uv run pytest -q` → 4135 superati · `uv run pytest tests/e2e -m e2e -q` → 252 superati,
+- Suite verdi al 2026-09-22 (sera): `uv run pytest -q` → 4135 superati · `uv run pytest tests/e2e -m e2e -q` → 253 superati,
   1 saltato (circa 3 minuti) · `node --test tests/e2e/*.mjs` → 34 · `uv run ruff check .` pulito ·
   `uv run python -m strutture.shared.divergences.check --strict` → 0 errori (26 avvertimenti di clausola vuota,
   innocui).
@@ -39,11 +39,12 @@ riavviato: chiedere al titolare e riavviarlo (sezione 2).
    rigenerate con `uv run python scripts/validazione_strumenti.py`); le decisioni di
    `docs/DECISIONI_DA_CONFERMARE.md`; poi i lavori rinviati di `docs/ROADMAP.md`: GitHub + test automatici,
    griglia di pericolosità sismica, relazione DOCX, MIDAS fase 2.
-3. Quote modificabili nel disegno (`docs/ui/WORKBENCH_SPEC.md` §18): il collegamento quota → campo è automatico
-   per simbolo e unità; dove il disegno stampa un altro simbolo o unità va messo `campo=` sulla `Quota` in
-   Python (fatto per cedimenti e trave di collegamento). Restano senza collegamento, perché quote calcolate o
-   con simboli diversi dai campi: neve-accumulo `l_s`, sezione H rimpiattata, taglio non armato `b`/`d`, muro `B`/`H`,
-   punzonamento `2d`. Se il titolare le vuole modificabili, aggiungere `campo=` dove esiste un campo corrispondente.
+3. Testi modificabili nel disegno (`docs/ui/WORKBENCH_SPEC.md` §18): quote, etichette, testi delle frecce e dei
+   diagrammi si collegano al campo in automatico per simbolo, unità e valore mostrato; dove il disegno stampa un
+   altro simbolo o unità, o mostra un totale calcolato, va messo `campo=` in Python (fatto: cedimenti `B`/`Δz`, trave di
+   collegamento `B`/`H`, muro `H` → `h_muro_m`). Restano senza collegamento, perché calcolati da più dati o con simboli
+   diversi dai campi: neve-accumulo `l_s`, sezione H rimpiattata, taglio non armato `b`/`d`, muro `B`, punzonamento `2d`.
+   Se il titolare li vuole modificabili, aggiungere `campo=` dove esiste un campo corrispondente.
 4. Piccoli seguiti lato calcolo (facoltativi): altri collegamenti tipizzati in `src/strutture/shared/collegamenti.py`
    (plinto su pali → punzonamento richiede prima uscite in mm); `avvisi_campi` per gli avvisi degli strumenti
    diversi da muro, plinti isolati, travi, vento (`docs/BUILD_CONTRACT.md`, sezione sugli avvisi legati a un solo campo).

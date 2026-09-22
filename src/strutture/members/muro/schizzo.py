@@ -170,7 +170,7 @@ def _sezione(
         Quota(p1=(0.0, 0.0), p2=(geometria.b_fond_m, 0.0), distanza=-(scostamento_o + sporgenza_diagramma),
               testo=etichetta_quota("B", geometria.b_fond_m, "m")),
         Quota(p1=(0.0, 0.0), p2=(0.0, geometria.h_muro_tot_m), distanza=scostamento_v,
-              testo=etichetta_quota("H", geometria.h_muro_tot_m, "m")),
+              testo=etichetta_quota("H", geometria.h_muro_tot_m, "m"), campo="h_muro_m"),  # H totale: si modifica h_muro
         *_piano_campagna_valle(inputs, geometria),
     ]
     statica = _spinta("STR_1", spinte, ribaltamento_scorrimento)

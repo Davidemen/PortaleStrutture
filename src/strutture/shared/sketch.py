@@ -89,6 +89,7 @@ class Freccia(_Forma):
     punta: Punto
     stile: Stile = "carico"
     testo: str = ""
+    campo: str | None = None  # input field this text stands for (see Quota.campo)
 
 
 class Quota(_Forma):
@@ -113,6 +114,7 @@ class Etichetta(_Forma):
     simbolo: str | None = None  # rendered with subscripts, e.g. "σ_max"
     ancora: Ancora = "start"
     stile: Stile = "asse"
+    campo: str | None = None  # input field this label stands for (see Quota.campo)
 
 
 class Barre(_Forma):

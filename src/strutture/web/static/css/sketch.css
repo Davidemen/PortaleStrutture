@@ -261,21 +261,21 @@ circle.sk-reazione {
 
 /* Editable dimension (js/schizzo-modifica.js): a dotted underline says "this one you can change",
    the same text gets a visible focus ring when reached by keyboard. */
-.sk-quota-text--modificabile {
+.sk-modificabile {
   cursor: pointer;
 }
-.sk-quota-text--modificabile text {
+.sk-modificabile text {
   text-decoration: underline dotted;
   text-underline-offset: 0.2em;
 }
-.sk-quota-text--modificabile:hover text {
+.sk-modificabile:hover text {
   fill: var(--ink);
   text-decoration-style: solid;
 }
-.sk-quota-text--modificabile:focus {
+.sk-modificabile:focus {
   outline: none;
 }
-.sk-quota-text--modificabile:focus-visible text {
+.sk-modificabile:focus-visible text {
   stroke: var(--ink);
   stroke-width: 0.5;
   paint-order: stroke fill;

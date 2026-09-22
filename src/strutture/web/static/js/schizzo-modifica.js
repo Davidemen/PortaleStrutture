@@ -5,24 +5,49 @@
 // popover next to the dimension with one input. Applying writes the value into the form control
 // and fires a native "input" event, so js/forms.js's own handleChange runs exactly as if the
 // user had typed in the Dati column: validation, persistence, live recalculation, redraw.
-// Pure matching (`campoPerQuota`) is exported for node tests; everything else needs the DOM.
+// Pure matching (`campoPerTesto`) is exported for node tests; everything else needs the DOM.
 import { el, clear } from "./dom.js";
 import { symbolNode } from "./symbols.js";
+import { parseDecimal } from "./number-input.js";
 
 const QUOTA_RE = /^(.+?) = ([^ ]+)(?: (.+))?$/;
 const REFOCUS_MS = 450; // after the live run has redrawn the sketch (debounce + render)
 const FLASH_MS = 1600;
 
-// The number field a dimension text stands for, or null. Symbol and unit must both match the
-// field's own (unit "" for dimensionless); the shown value is never compared (a compressed
-// drawing still prints the true value, a rounded text would not equal the input anyway).
-export function campoPerQuota(testo, fields, campo = null) {
+// "kN/m2" (field hint) and "kN/m²" (sketch text) are the same unit.
+function unitKey(unit) {
+  return (unit || "").replace(/²/g, "2").replace(/³/g, "3").trim();
+}
+
+// The shown number equals the field's current value, at the precision the text shows: the guard
+// that keeps a RESULT label ("S_stat = 30 kN") from ever being linked to an input that happens to
+// share its symbol and unit.
+function shownValueMatches(shown, current) {
+  const value = parseDecimal(shown);
+  if (value === null || current === null || current === undefined) return false;
+  const decimals = shown.includes(",") ? shown.length - shown.indexOf(",") - 1 : 0;
+  return Math.abs(value - current) <= 0.5 * 10 ** -decimals + 1e-9;
+}
+
+// The number field a sketch text ("<symbol> = <value> <unit>") stands for, or null. Either the
+// sketch names it (`campo`, wins as long as that field exists) or symbol AND unit match a field
+// whose current value (`valoreDi(name)`) is the one shown.
+export function campoPerTesto(testo, fields, { campo = null, valoreDi = null } = {}) {
   const numeric = (fields || []).filter((f) => f.kind === "number");
-  if (campo) return numeric.find((f) => f.name === campo) || null; // the sketch names the field itself
+  if (campo) return numeric.find((f) => f.name === campo) || null;
   const match = QUOTA_RE.exec(testo || "");
   if (!match) return null;
-  const [, symbol, , unit = ""] = match;
-  return numeric.find((f) => f.symbol === symbol && (f.unit || "") === unit) || null;
+  const [, symbol, shown, unit = ""] = match;
+  const field = numeric.find((f) => f.symbol === symbol && unitKey(f.unit) === unitKey(unit));
+  if (!field || !valoreDi) return null;
+  return shownValueMatches(shown, valoreDi(field.name)) ? field : null;
+}
+
+// Current value of a Dati control, for the guard above (null when the form is not on the page).
+export function valoreCampoCorrente(name) {
+  const form = document.getElementById("tool-form");
+  const control = form && form.elements.namedItem(name);
+  return control ? parseDecimal(control.value) : null;
 }
 
 const editors = new WeakMap(); // root -> { fields, popover }
@@ -41,7 +66,7 @@ export function mountSketchEditing(root, { fields = [] } = {}) {
 }
 
 function activate(event, root, state) {
-  const target = event.target.closest ? event.target.closest(".sk-quota-text[data-campo]") : null;
+  const target = event.target.closest ? event.target.closest(".sk-modificabile[data-campo]") : null;
   if (!target || !root.contains(target)) return;
   event.preventDefault();
   const field = state.fields.find((f) => f.name === target.dataset.campo);
@@ -133,6 +158,6 @@ function applyValue(control, field, raw) {
 }
 
 function refocus(name) {
-  const next = document.querySelector(`#sintesi .sk-quota-text[data-campo="${name}"]`);
+  const next = document.querySelector(`#sintesi .sk-modificabile[data-campo="${name}"]`);
   if (next) next.focus();
 }

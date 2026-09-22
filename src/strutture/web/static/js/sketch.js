@@ -9,7 +9,7 @@ import { fitVista, uniformScale, applyDimensionOffsets } from "./sketch-fit.js";
 import { svgNode, buildShape, buildArrowMarkers, buildTerrenoPattern } from "./sketch-shapes.js";
 import { resolveLabelCollisions } from "./sketch-labels.js";
 import { measureTextOverhang, hasClippedText } from "./sketch-measure.js";
-import { campoPerQuota } from "./schizzo-modifica.js";
+import { campoPerTesto, valoreCampoCorrente } from "./schizzo-modifica.js";
 
 const FALLBACK_BOX_PX = 320;
 const MAX_VIEWS = 4;
@@ -116,7 +116,9 @@ function drawVistaAt(svg, vista, view, viewIndex, opts) {
   const campi = opts.campi;
   const ctx = {
     s, side: view.side, viewIndex, idPrefix: opts.idPrefix,
-    campoPerQuota: campi ? (testo, campo) => (campoPerQuota(testo, campi, campo) || {}).name || null : null,
+    campoPerTesto: campi
+      ? (testo, campo) => (campoPerTesto(testo, campi, { campo, valoreDi: valoreCampoCorrente }) || {}).name || null
+      : null,
   };
   for (const shape of forme) {
     try {
