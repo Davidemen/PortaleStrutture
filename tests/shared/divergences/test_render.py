@@ -20,13 +20,13 @@ def _div(**overrides: object) -> Divergence:
 
 def test_render_unit_of_empty_tuple_is_still_valid_markdown() -> None:
     text = render_unit(())
-    assert text.startswith("<!-- GENERATED FILE")
-    assert "do not edit by hand" in text.lower()
+    assert text.startswith("<!-- FILE GENERATO")
+    assert "non modificare a mano" in text.lower()
 
 
 def test_render_unit_header_names_the_unit() -> None:
     text = render_unit((_div(id="ca-pilastri/x"),))
-    assert "# Divergences — `ca-pilastri`" in text
+    assert "# Correzioni — `ca-pilastri`" in text
 
 
 def test_render_unit_groups_by_tipo_with_one_table_each() -> None:
@@ -70,8 +70,8 @@ def test_render_all_groups_by_unit() -> None:
     register = (_div(id="demo/a"), _div(id="altro/b", tipo="scelta_ingegneristica"))
     rendered = render_all(register)
     assert set(rendered) == {"demo", "altro"}
-    assert "# Divergences — `demo`" in rendered["demo"]
-    assert "# Divergences — `altro`" in rendered["altro"]
+    assert "# Correzioni — `demo`" in rendered["demo"]
+    assert "# Correzioni — `altro`" in rendered["altro"]
 
 
 def test_units_of_is_sorted_and_deduplicated() -> None:

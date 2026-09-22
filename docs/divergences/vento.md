@@ -1,6 +1,6 @@
-<!-- GENERATED FILE — do not edit by hand. Source: src/strutture/data/divergences/*.json, rendered by `python -m strutture.shared.divergences.render`. -->
+<!-- FILE GENERATO — non modificare a mano. Origine: src/strutture/data/divergences/*.json, prodotto da `python -m strutture.shared.divergences.render`. -->
 
-# Divergences — `vento`
+# Correzioni — `vento`
 
 ## Errori del foglio
 

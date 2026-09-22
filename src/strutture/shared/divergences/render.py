@@ -19,15 +19,15 @@ TIPO_TITLES: dict[Tipo, str] = {
 }
 COLUMNS: tuple[str, ...] = ("titolo", "foglio", "corretto", "clausola", "impatto", "strumenti", "modalità Excel")
 GENERATED_HEADER = (
-    "<!-- GENERATED FILE — do not edit by hand. Source: src/strutture/data/divergences/*.json, "
-    "rendered by `python -m strutture.shared.divergences.render`. -->"
+    "<!-- FILE GENERATO — non modificare a mano. Origine: src/strutture/data/divergences/*.json, "
+    "prodotto da `python -m strutture.shared.divergences.render`. -->"
 )
 
 
 def render_unit(divergences: tuple[Divergence, ...]) -> str:
     """One markdown document for a single unit: one table per `tipo` present, in TIPO_ORDER."""
     unit = divergences[0].id.split("/", 1)[0] if divergences else "unita"
-    lines = [GENERATED_HEADER, "", f"# Divergences — `{unit}`"]
+    lines = [GENERATED_HEADER, "", f"# Correzioni — `{unit}`"]
     for tipo in TIPO_ORDER:
         rows = tuple(d for d in divergences if d.tipo == tipo)
         if rows:
