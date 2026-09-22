@@ -170,3 +170,35 @@ def test_profondita_posa_plausibile_non_emette_avviso():
     inputs = MuroSostegnoInput(**ESEMPIO_TRATTO_A, **TERRENO_DRENATA, legacy_compat=False)
     report = run_muro_sostegno(inputs)
     assert not any("profondità di posa" in w.lower() for w in report.warnings)
+
+
+# --- sliding on the base uses the FOUNDATION soil when the block says what it is ------------------
+
+def test_scorrimento_usa_lattrito_del_terreno_di_fondazione_quando_il_blocco_e_drenato():
+    """NTC2018 §6.5.3.1.1 / EN1997-1 §6.5.3: the base-interface resistance depends on the soil UNDER
+    the footing. With no foundation-soil block the backfill angle is all the tool knows; with the
+    block filled (drained) the sliding check switches to the foundation soil's design angle — here
+    φ'_k = 28° against a 30,69° backfill, so every OS drops (proof-read finding)."""
+    from strutture.members.muro.angoli_progetto import phi_d_rad
+
+    senza = run_muro_sostegno(MuroSostegnoInput(**ESEMPIO_TRATTO_A, legacy_compat=False))
+    con = run_muro_sostegno(MuroSostegnoInput(**ESEMPIO_TRATTO_A, **TERRENO_DRENATA, legacy_compat=False))
+    for prima, dopo, spinta in zip(senza.data.ribaltamento_scorrimento, con.data.ribaltamento_scorrimento, con.data.spinte, strict=True):
+        assert prima.phi_scorrimento_rad == pytest.approx(spinta.phi_d_rad)
+        assert dopo.phi_scorrimento_rad == pytest.approx(phi_d_rad(28.0, spinta.gamma_phi_terr))
+        assert dopo.os_scorrimento < prima.os_scorrimento
+        assert dopo.or_ribaltamento == pytest.approx(prima.or_ribaltamento)  # overturning untouched
+
+
+def test_scorrimento_non_drenata_mantiene_lattrito_del_rinterro_e_avvisa():
+    senza = run_muro_sostegno(MuroSostegnoInput(**ESEMPIO_TRATTO_A, legacy_compat=False))
+    con = run_muro_sostegno(MuroSostegnoInput(**ESEMPIO_TRATTO_A, **TERRENO_NON_DRENATA, legacy_compat=False))
+    for prima, dopo in zip(senza.data.ribaltamento_scorrimento, con.data.ribaltamento_scorrimento, strict=True):
+        assert dopo.os_scorrimento == pytest.approx(prima.os_scorrimento)
+    assert any("scorrimento" in w and "non drenata" in w for w in con.warnings)
+
+
+def test_scorrimento_in_modalita_excel_ignora_il_terreno_di_fondazione():
+    con = run_muro_sostegno(MuroSostegnoInput(**ESEMPIO_TRATTO_A, **TERRENO_DRENATA, legacy_compat=True))
+    for verifica, spinta in zip(con.data.ribaltamento_scorrimento, con.data.spinte, strict=True):
+        assert verifica.phi_scorrimento_rad == pytest.approx(spinta.phi_d_rad)

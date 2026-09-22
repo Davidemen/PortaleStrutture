@@ -4,6 +4,7 @@ soil-pressure moment (muro-sostegno rows 172-187). Pure functions; `tool.py` ass
 `ArmaturaFondazioneMonteCombo`/`ArmaturaFondazioneMonteResult` and picks the governing combination
 via `rebar_selection`.
 """
+from strutture.shared.divergences import legacy
 
 
 def pressione_interpolata_kPa(
@@ -46,6 +47,14 @@ def momento_sovraccarico_verticale_kNm(*, sv_tot_kN: float, x_sv_m: float, b_fon
     return sv_tot_kN * (x_sv_m - (b_fond_m - b_monte_m))
 
 
-def momento_autopeso_kNm(*, b_monte_m: float, gamma_g_muro: float, gamma_cls_kN_m3: float, s_fond_m: float) -> float:
-    """MEd.fond (col J) = Bmonte·γG,muro·γcls·sfondazione²/2 — peso proprio della soletta di monte."""
-    return b_monte_m * gamma_g_muro * gamma_cls_kN_m3 * s_fond_m**2 / 2
+def momento_autopeso_kNm(
+    *, b_monte_m: float, gamma_g_muro: float, gamma_cls_kN_m3: float, s_fond_m: float, legacy_compat: bool = False,
+) -> float:
+    """MEd.fond del peso proprio della soletta di monte (mensola di sporgenza Bmonte e spessore
+    sfondazione): γG,muro·γcls·sfondazione·Bmonte²/2 — la stessa forma del tacco di valle.
+    Il foglio (col J) scambia gli esponenti, Bmonte·γG,muro·γcls·sfondazione²/2 (esatto solo per
+    Bmonte = sfondazione; sottostima non cautelativa di Bmonte/sfondazione altrimenti): riprodotto
+    in modalità Excel, vedi muro-sostegno/momento-autopeso-tacco-esponenti-scambiati."""
+    if legacy("muro-sostegno/momento-autopeso-tacco-esponenti-scambiati", legacy_compat):
+        return b_monte_m * gamma_g_muro * gamma_cls_kN_m3 * s_fond_m**2 / 2
+    return gamma_g_muro * gamma_cls_kN_m3 * s_fond_m * b_monte_m**2 / 2

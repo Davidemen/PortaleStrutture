@@ -18,6 +18,7 @@ from .materiali import materiali
 from .models import PlintoSuPaliOutput
 from .pesi_propri import peso_proprio_kN as calcola_peso_proprio
 from .puntoni_tiranti import puntoni_tiranti
+from .relazione import relazione
 from .rows import RigaCarico, riga_carico
 from .schema import grid_counts, numero_pali
 from .schizzo import disegna as disegna_schizzo
@@ -210,5 +211,6 @@ TOOLS = (
         example=ESEMPIO,
         summary="Verifica il plinto su pali a puntoni e tiranti, con taglio, punzonamento e capacità portante dei pali.",
         live=False,
+        relazione=relazione,
     ),
 )

@@ -124,7 +124,7 @@ def _dettagli(inputs: PilastroRettangolareInput, rules: RuleSet, ac_mm2: float, 
     checks = (
         Check(name="Diametro minimo delle barre longitudinali", passed=diam_long_ok, clause="NTC2018 §4.1.6.1.2"),
         Check(name="Interasse massimo delle barre longitudinali", passed=interasse_calc <= rules.long_bar_max_spacing_mm, clause="NTC2018 §7.4.6.2.2"),
-        Check(name="Area minima di armatura longitudinale", passed=area_min_ok, clause="NTC2018 §7.4.6.2.1"),
+        Check(name="Area minima di armatura longitudinale", passed=area_min_ok, clause="NTC2018 §7.4.6.2.2"),
         Check(
             name="Diametro minimo delle staffe", passed=diam_staffe_ok, clause="NTC2018 §7.4.6.2.2",
             detail=(
@@ -133,7 +133,7 @@ def _dettagli(inputs: PilastroRettangolareInput, rules: RuleSet, ac_mm2: float, 
                 else ""
             ),
         ),
-        Check(name="Interasse massimo delle staffe", passed=inputs.passo_staffe_mm <= soglia_interasse_staffe, clause="NTC2018 §7.4.6.2.2"),
+        Check(name="Interasse massimo delle staffe", passed=inputs.passo_staffe_mm <= soglia_interasse_staffe, clause="NTC2018 §4.1.6.1.2"),
     )
     if rules.as_max_check:
         as_max_mm2 = AREA_MASSIMA_RATIO * ac_mm2
@@ -151,7 +151,10 @@ def _snellezza(inputs: PilastroRettangolareInput, rules: RuleSet, ac_mm2: float,
     i_mm = (
         raggio_inerzia_netto_rettangolare_mm(inputs.l1_mm, inputs.l2_mm, inputs.c_mm)
         if rules.raggio_inerzia == "netto"
-        else rect(inputs.l1_mm, inputs.l2_mm).radius_of_gyration_mm
+        # weak axis: `rect(b, h)` gives h/√12, so the smaller side must be the second argument — the
+        # sheet's own formula SQRT(((MIN)^3*MAX/12)/(b*h)) = MIN/√12; passing (l1, l2) checked L_2
+        # whatever its size (non-conservative for L_1 < L_2; every golden case is square)
+        else rect(max(inputs.l1_mm, inputs.l2_mm), min(inputs.l1_mm, inputs.l2_mm)).radius_of_gyration_mm
     )
     omega = None
     if rules.lambda_lim_kind == "ec2":
@@ -183,7 +186,7 @@ def run_pilastro_rettangolare(inputs: PilastroRettangolareInput) -> Report[Pilas
     armatura_min_result = ArmaturaMinimaResult(as_min_mm2=as_min_mm2, rs_min=rs_min)
     check_percentuale = Check(
         name="Percentuale di armatura longitudinale", passed=verifica_percentuale_armatura(rs, rs_min, controlla_minimo=rules.rs_controlla_minimo),
-        clause="NTC2018 §7.4.6.2.1", detail=f"ρs={rs:.4f}, minimo={rs_min:.4f}, massimo=0.04",
+        clause="NTC2018 §7.4.6.2.2", detail=f"ρs={rs:.4f}, minimo={rs_min:.4f}, massimo=0.04",
     )
 
     taglio_result, nu1, check_taglio, check_gerarchia = _taglio(inputs, rules, ac_mm2, materiali.fcd_MPa, materiali.fyd_MPa)

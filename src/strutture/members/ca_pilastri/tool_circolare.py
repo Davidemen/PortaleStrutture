@@ -118,9 +118,9 @@ def _dettagli(inputs: PilastroCircolareInput, rules: RuleSet, ac_mm2: float, as_
     checks = (
         Check(name="Diametro minimo delle barre longitudinali", passed=diam_long_ok, clause="NTC2018 §4.1.6.1.2"),
         Check(name="Interasse massimo delle barre longitudinali", passed=interasse_calc <= rules.long_bar_max_spacing_mm, clause="NTC2018 §7.4.6.2.2"),
-        Check(name="Area minima di armatura longitudinale", passed=area_min_ok, clause="NTC2018 §7.4.6.2.1"),
-        Check(name="Diametro minimo delle staffe", passed=diam_staffe_ok, clause="NTC2018 §7.4.6.2.2"),
-        Check(name="Interasse massimo delle staffe", passed=inputs.passo_staffe_mm <= soglia_interasse_staffe, clause="NTC2018 §7.4.6.2.2"),
+        Check(name="Area minima di armatura longitudinale", passed=area_min_ok, clause="NTC2018 §7.4.6.2.2"),
+        Check(name="Diametro minimo delle staffe", passed=diam_staffe_ok, clause="NTC2018 §4.1.6.1.2"),
+        Check(name="Interasse massimo delle staffe", passed=inputs.passo_staffe_mm <= soglia_interasse_staffe, clause="NTC2018 §4.1.6.1.2"),
     )
     if rules.as_max_check:
         as_max_mm2 = AREA_MASSIMA_RATIO * ac_mm2
@@ -168,7 +168,7 @@ def run_pilastro_circolare(inputs: PilastroCircolareInput) -> Report[PilastroOut
     armatura_min_result = ArmaturaMinimaResult(as_min_mm2=as_min_mm2, rs_min=rs_min)
     check_percentuale = Check(
         name="Percentuale di armatura longitudinale", passed=verifica_percentuale_armatura(rs, rs_min, controlla_minimo=rules.rs_controlla_minimo),
-        clause="NTC2018 §7.4.6.2.1", detail=f"ρs={rs:.4f}, minimo={rs_min:.4f}, massimo=0.04",
+        clause="NTC2018 §7.4.6.2.2", detail=f"ρs={rs:.4f}, minimo={rs_min:.4f}, massimo=0.04",
     )
 
     taglio_result, nu1, check_taglio, check_gerarchia = _taglio(inputs, rules, ac_mm2, lato_equiv_mm, materiali.fcd_MPa, materiali.fyd_MPa)

@@ -53,7 +53,7 @@ class PlintoSuPaliInput(BaseModel):
                                              gt=0, le=50, json_schema_extra={"unit": "mm", "group": "Pali", "advanced": True})
     av_mm: float = Field(default=120.0, description="Distanza ridotta av per il taglio (EC2 §6.2.2(6))",
                           gt=0, le=2000, json_schema_extra={"unit": "mm", "symbol": "a_v", "group": "Pali", "advanced": True})
-    resistenza_pila_compressione_kN: float = Field(description="Resistenza ammissibile del palo a compressione",
+    resistenza_pila_compressione_kN: float = Field(description="Resistenza di progetto del palo a compressione R_c,d = R_c,k·ξ/γ_R (NTC2018 §6.4.3.1.1, Tab. 6.4.II): inserire il valore già diviso per i coefficienti, non quello caratteristico",
                                                      gt=0, json_schema_extra={"unit": "kN", "group": "Pali"})
     resistenza_pila_trazione_kN: float | None = Field(
         default=None, description="Resistenza ammissibile del palo a trazione (richiesta se un palo risulta teso)",

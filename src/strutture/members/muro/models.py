@@ -14,6 +14,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from strutture.shared.capacita_portante import Condizione
+from strutture.shared.materials.concrete import ConcreteClass
 from strutture.shared.materials.rebar import RebarGrade
 from strutture.shared.ntc_site_seismic import CategoriaSottosuolo, CategoriaTopografica
 from strutture.shared.report import Check
@@ -58,6 +59,11 @@ class MuroSostegnoInput(BaseModel):
     delta_deg: float = Field(description="Angolo di attrito terreno-muro", ge=0, lt=45, json_schema_extra={"unit": "°", "symbol": "δ", "group": "Materiali"})
     gamma_cls_kN_m3: float = Field(description="Peso di volume del calcestruzzo", gt=0, json_schema_extra={"unit": "kN/m3", "symbol": "γ_cls", "group": "Materiali"})
     grado_acciaio: RebarGrade = Field(description="Grado dell'acciaio da armatura (governa fyk/fyd, NTC2018 §11.3.2)", json_schema_extra={"group": "Materiali"})
+    tipo_cls: ConcreteClass = Field(
+        default="C25/30",
+        description="Classe di resistenza del calcestruzzo (governa fctm per l'armatura minima, NTC2018 §4.1.6.1.1)",
+        json_schema_extra={"group": "Materiali"},
+    )
 
     # --- Azioni ---------------------------------------------------------------------------------
     q_kN_m2: float = Field(description="Sovraccarico variabile a tergo del muro", ge=0, json_schema_extra={"unit": "kN/m2", "symbol": "q", "group": "Azioni"})
@@ -218,6 +224,7 @@ class RibaltamentoScorrimentoCombo(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     nome: NomeCombo = Field(description="Identificativo della combinazione")
+    phi_scorrimento_rad: float = Field(default=0.0, description="Angolo di attrito di progetto usato per la resistenza allo scorrimento sul piano di posa: del terreno di fondazione (blocco compilato, condizione drenata) oppure del rinterro", json_schema_extra={"unit": "rad", "symbol": "φ_d,base"})
     dq_kN_m2: float = Field(description="Sovraccarico di progetto Dq = q·γQ", ge=0, json_schema_extra={"unit": "kN/m2"})
     sh_q_kN: float = Field(description="Componente orizzontale della spinta dovuta al sovraccarico", ge=0, json_schema_extra={"unit": "kN"})
     sh_terr_kN: float = Field(description="Componente orizzontale della spinta del terreno", ge=0, json_schema_extra={"unit": "kN"})
@@ -314,6 +321,8 @@ class ArmaturaParamentoResult(BaseModel):
 
     combinazioni: tuple[ArmaturaParamentoCombo, ...] = Field(description="Momento e As.nec per combinazione (8 righe, ordine ALL_COMBOS)")
     as_nec_cm2_m: float = Field(description="Area di armatura necessaria governante, massimo tra le combinazioni", ge=0, json_schema_extra={"unit": "cm2/m", "symbol": "A_s,nec"})
+    as_min_cm2_m: float = Field(default=0.0, description="Armatura minima NTC2018 §4.1.6.1.1, max(0,26·fctm/fyk; 0,0013)·b·d per metro", ge=0, json_schema_extra={"unit": "cm2/m", "symbol": "A_s,min"})
+    as_progetto_cm2_m: float = Field(default=0.0, description="Area di progetto per la scelta delle barre: max(As,nec; As,min) (in modalità Excel: As,nec)", ge=0, json_schema_extra={"unit": "cm2/m", "symbol": "A_s,prog"})
     combo_governante: NomeCombo = Field(description="Combinazione che governa il dimensionamento")
     diametro_mm: float = Field(description="Diametro della barra scelto", gt=0, json_schema_extra={"unit": "mm"})
     passo_m: float = Field(description="Passo delle armature", gt=0, json_schema_extra={"unit": "m"})
@@ -344,6 +353,8 @@ class ArmaturaFondazioneValleResult(BaseModel):
 
     combinazioni: tuple[ArmaturaFondazioneValleCombo, ...] = Field(description="Momento e As.nec per combinazione (8 righe, ordine ALL_COMBOS)")
     as_nec_cm2_m: float = Field(description="Area di armatura necessaria governante, massimo tra le combinazioni", ge=0, json_schema_extra={"unit": "cm2/m", "symbol": "A_s,nec"})
+    as_min_cm2_m: float = Field(default=0.0, description="Armatura minima NTC2018 §4.1.6.1.1, max(0,26·fctm/fyk; 0,0013)·b·d per metro", ge=0, json_schema_extra={"unit": "cm2/m", "symbol": "A_s,min"})
+    as_progetto_cm2_m: float = Field(default=0.0, description="Area di progetto per la scelta delle barre: max(As,nec; As,min) (in modalità Excel: As,nec)", ge=0, json_schema_extra={"unit": "cm2/m", "symbol": "A_s,prog"})
     combo_governante: NomeCombo = Field(description="Combinazione che governa il dimensionamento")
     diametro_mm: float = Field(description="Diametro della barra scelto", gt=0, json_schema_extra={"unit": "mm"})
     passo_m: float = Field(description="Passo delle armature", gt=0, json_schema_extra={"unit": "m"})
@@ -375,6 +386,8 @@ class ArmaturaFondazioneMonteResult(BaseModel):
 
     combinazioni: tuple[ArmaturaFondazioneMonteCombo, ...] = Field(description="Momento e As.nec per combinazione (8 righe, ordine ALL_COMBOS)")
     as_nec_cm2_m: float = Field(description="Area di armatura necessaria governante, massimo tra le combinazioni", ge=0, json_schema_extra={"unit": "cm2/m", "symbol": "A_s,nec"})
+    as_min_cm2_m: float = Field(default=0.0, description="Armatura minima NTC2018 §4.1.6.1.1, max(0,26·fctm/fyk; 0,0013)·b·d per metro", ge=0, json_schema_extra={"unit": "cm2/m", "symbol": "A_s,min"})
+    as_progetto_cm2_m: float = Field(default=0.0, description="Area di progetto per la scelta delle barre: max(As,nec; As,min) (in modalità Excel: As,nec)", ge=0, json_schema_extra={"unit": "cm2/m", "symbol": "A_s,prog"})
     combo_governante: NomeCombo = Field(description="Combinazione che governa il dimensionamento")
     diametro_mm: float = Field(description="Diametro della barra scelto", gt=0, json_schema_extra={"unit": "mm"})
     passo_m: float = Field(description="Passo delle armature", gt=0, json_schema_extra={"unit": "m"})

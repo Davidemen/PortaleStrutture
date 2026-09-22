@@ -61,6 +61,17 @@ def test_momento_sovraccarico_verticale_kNm_is_zero_when_delta_is_zero():
     assert fond_monte.momento_sovraccarico_verticale_kNm(sv_tot_kN=0.0, x_sv_m=1.325, b_fond_m=1.9, b_monte_m=1.15) == 0.0
 
 
-def test_momento_autopeso_kNm_matches_golden_str1():
-    m_fond = fond_monte.momento_autopeso_kNm(b_monte_m=1.15, gamma_g_muro=1.3, gamma_cls_kN_m3=25, s_fond_m=0.3)
+def test_momento_autopeso_kNm_legacy_matches_golden_str1():
+    """The sheet's own value (col J): exponents swapped, reproduced only in Excel mode."""
+    m_fond = fond_monte.momento_autopeso_kNm(b_monte_m=1.15, gamma_g_muro=1.3, gamma_cls_kN_m3=25, s_fond_m=0.3, legacy_compat=True)
     assert m_fond == pytest.approx(1.681875, rel=1e-6)
+
+
+def test_momento_autopeso_kNm_standard_is_the_cantilever_of_projection_b_monte():
+    """γG·γcls·s_fond·B_monte²/2 — the same form as the toe (armatura_fondazione_valle), found by the
+    engineering proof-read of the calculation report: 1,3·25·0,3·1,15²/2 = 6,4472 kNm, 3,8× the
+    sheet's 1,68 (non-conservative there, the error factor being B_monte/s_fond)."""
+    m_fond = fond_monte.momento_autopeso_kNm(b_monte_m=1.15, gamma_g_muro=1.3, gamma_cls_kN_m3=25, s_fond_m=0.3)
+    assert m_fond == pytest.approx(1.3 * 25 * 0.3 * 1.15**2 / 2, rel=1e-9)
+    quadrata = fond_monte.momento_autopeso_kNm(b_monte_m=0.3, gamma_g_muro=1.0, gamma_cls_kN_m3=25, s_fond_m=0.3)
+    assert quadrata == pytest.approx(fond_monte.momento_autopeso_kNm(b_monte_m=0.3, gamma_g_muro=1.0, gamma_cls_kN_m3=25, s_fond_m=0.3, legacy_compat=True))

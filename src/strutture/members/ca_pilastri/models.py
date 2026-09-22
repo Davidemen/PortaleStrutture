@@ -54,7 +54,7 @@ class PilastroRettangolareInput(BaseModel):
     acciaio: AcciaioGrado = Field(description="Tipo di acciaio per l'armatura", json_schema_extra={"group": "Materiali"})
     cls: ClsClasse = Field(description="Tipo di calcestruzzo", json_schema_extra={"group": "Materiali"})
     ned_kN: float = Field(description="Azione assiale di calcolo (pilastro semplicemente compresso)", gt=0, json_schema_extra={"unit": "kN", "symbol": "N_Ed", "group": "Sollecitazioni di progetto"})
-    ved_kN: float = Field(description="Taglio di calcolo agente", ge=0, json_schema_extra={"unit": "kN", "symbol": "V_Ed", "group": "Sollecitazioni di progetto"})
+    ved_kN: float = Field(description="Taglio di calcolo agente, parallelo al lato L_2 (altezza utile da L_2, larghezza resistente L_1)", ge=0, json_schema_extra={"unit": "kN", "symbol": "V_Ed", "group": "Sollecitazioni di progetto"})
     med_kNm: float = Field(description="Momento flettente di calcolo agente", ge=0, json_schema_extra={"unit": "kNm", "symbol": "M_Ed", "group": "Sollecitazioni di progetto"})
     c_mm: float = Field(description="Copriferro, misurato all'asse delle barre", gt=0, json_schema_extra={"unit": "mm", "symbol": "c", "group": "Geometria della sezione"})
     n_ferri: int = Field(description="Numero totale di ferri longitudinali verticali", ge=4, json_schema_extra={"unit": "-", "group": "Geometria della sezione"})

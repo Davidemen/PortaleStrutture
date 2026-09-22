@@ -222,3 +222,17 @@ def test_punzonamento_colonna_beta_1_se_nsd_non_positivo() -> None:
     result = punzonamento_colonna(0.0, 500.0, 500.0, 1102.0, 700.0, 700.0, 2.0, 2.0, 600.0, 32.0, 1.5,
                                    legacy_compat=False)
     assert result.beta == pytest.approx(1.0, rel=1e-9)
+
+
+def test_punzonamento_palo_perimetro_ravvicinato_aumenta_la_resistenza_unitaria() -> None:
+    """EC2 §6.4.4(2) eq. 6.50: a control perimeter at a < 2d gets v_Rd,c·(2d/a) ≥ v_Rd,c. The
+    code passed a/(2d) — the inverse — which understated V_Rd,c,palo about 10× on the example and
+    made pile punching the 'governing' mechanism of the report (proof-read finding)."""
+    comune = {"d_mm": 1102.0, "diametro_pila_mm": 600.0, "rho": 0.0010262916109730722 * 4.0, "k": 1.426014322842305,
+              "fck_MPa": 32.0, "gamma_c": 1.5, "lx_m": 2.0, "ly_m": 2.0, "ax_m": 4.0, "by_m": 4.0, "count_x": 2, "count_y": 2}
+    pieno = punzonamento_palo(896.06124265, **comune, legacy_compat=True)   # a = 2d, no enhancement
+    ridotto = punzonamento_palo(896.06124265, **comune, legacy_compat=False)  # a = 700 mm < 2d
+    unitario_pieno = pieno.vrd_c_kN / pieno.u_mm
+    unitario_ridotto = ridotto.vrd_c_kN / ridotto.u_mm
+    assert unitario_ridotto / unitario_pieno == pytest.approx(2.0 * 1102.0 / 700.0, rel=1e-6)
+    assert ridotto.utilizzo < 0.5  # no longer the governing mechanism of the example

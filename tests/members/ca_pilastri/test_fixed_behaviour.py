@@ -193,12 +193,14 @@ def test_armatura_minima_envelope_max_vs_min():
 
 
 @pytest.mark.unit
-def test_armatura_minima_envelope_capped_at_area_ceiling():
-    """The As,min envelope (NTC2018 §4.1.6.1.2) must never exceed the 4% maximum reinforcement
-    ratio (§7.4.6.2.2), even for extreme Ned/fyd combinations."""
+def test_armatura_minima_envelope_is_not_capped_by_the_area_ceiling():
+    """NTC2018 §4.1.6.1.2 gives max(0,10·N_Ed/f_yd; 0,003·A_c) with NO upper bound; the 4 %
+    maximum (§7.4.6.2.2) is its own check. An earlier version capped the minimum with the maximum,
+    which turned "needs more steel than the section can hold" into a pass."""
     ac_mm2, ned_kN, fyd_MPa = 10000.0, 100000.0, 100.0  # candidato_assiale huge: 100 GN.../fyd
     as_min_fixed, _ = armatura_minima(ac_mm2, ned_kN, fyd_MPa, legacy_compat=False)
-    assert as_min_fixed == pytest.approx(0.04 * ac_mm2)
+    assert as_min_fixed == pytest.approx(0.10 * ned_kN * 1000.0 / fyd_MPa)
+    assert as_min_fixed > 0.04 * ac_mm2
 
 
 @pytest.mark.unit
@@ -427,3 +429,24 @@ def test_passo_staffe_zona_critica_check_is_reported():
     assert "Passo delle staffe in zona critica" in violating_checks
     assert violating_checks["Passo delle staffe in zona critica"] is False
     assert compliant_checks["Passo delle staffe in zona critica"] is True
+
+
+@pytest.mark.unit
+def test_snellezza_usa_il_lato_minore_qualunque_sia_lordine_dei_lati():
+    """NTC2018 §4.1.2.3.9.2 / EC2 §5.8.3.1: λ on the WEAK axis, i = min(L1, L2)/√12 (the sheet's
+    own MIN/MAX formula). The code passed (L1, L2) to `rect(b, h)`, which returns h/√12: a 300×600
+    column got i = 173 mm instead of 87 mm (λ halved, non-conservative) — proof-read finding."""
+    import math
+
+    from strutture.members.ca_pilastri.tool import TOOLS
+    from strutture.shared.tool import execute
+
+    RETT = TOOLS[0]
+
+    base = {k: v for k, v in RETT.example.items() if k != "legacy_compat"}
+    stretto = execute(RETT, {**base, "l1_mm": 300, "l2_mm": 600})
+    largo = execute(RETT, {**base, "l1_mm": 600, "l2_mm": 300})
+    assert stretto.ok and largo.ok
+    assert stretto.data.snellezza.i_mm == pytest.approx(300 / math.sqrt(12), rel=1e-6)
+    assert largo.data.snellezza.i_mm == pytest.approx(300 / math.sqrt(12), rel=1e-6)
+    assert stretto.data.snellezza.lambda_ == pytest.approx(largo.data.snellezza.lambda_, rel=1e-9)

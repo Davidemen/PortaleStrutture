@@ -2,6 +2,7 @@
 from strutture.shared.tool import Tool
 
 from .models import PilastroCircolareInput, PilastroOutput, PilastroRettangolareInput
+from .relazione import relazione_circolare, relazione_rettangolare
 from .tool_circolare import run_pilastro_circolare
 from .tool_rettangolare import run_pilastro_rettangolare
 
@@ -35,6 +36,7 @@ TOOLS = (
         run=run_pilastro_rettangolare,
         example=ESEMPIO_RETTANGOLARE,
         summary="Verifica un pilastro in c.a. a sezione rettangolare a pressoflessione, taglio, snellezza e dettagli sismici.",
+        relazione=relazione_rettangolare,
     ),
     Tool(
         name="ca-pilastro-circolare",
@@ -46,5 +48,6 @@ TOOLS = (
         run=run_pilastro_circolare,
         example=ESEMPIO_CIRCOLARE,
         summary="Verifica un pilastro in c.a. a sezione circolare a pressoflessione, taglio, snellezza e dettagli sismici.",
+        relazione=relazione_circolare,
     ),
 )

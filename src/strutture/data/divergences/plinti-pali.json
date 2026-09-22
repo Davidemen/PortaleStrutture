@@ -354,5 +354,43 @@
    "flessione.sup_x.as_prov_mm2",
    "flessione.sup_y.as_prov_mm2"
   ]
+ },
+ {
+  "id": "plinti-pali/beta-con-lati-del-pilastro",
+  "titolo": "Il fattore di eccentricità β usa i lati del pilastro invece delle dimensioni del perimetro di verifica",
+  "tipo": "scelta_ingegneristica",
+  "strumenti": [
+   "fond-plinto-su-pali"
+  ],
+  "cella": "",
+  "foglio": "il foglio non applica alcun fattore β (vedi plinti-pali/punzonamento-colonna-beta-eccentricita-ignorata)",
+  "corretto": "β = 1 + 1,8·sqrt((e_y/b_X)² + (e_x/b_Y)²) con b_X, b_Y = lati del pilastro; l'eq. 6.39 di EN 1992-1-1 usa le dimensioni del perimetro di verifica (≈ lato + 4·d), quindi il β calcolato è maggiore e il taglio di punzonamento sovrastimato, a favore di sicurezza",
+  "clausola": "EN 1992-1-1 §6.4.3(3) eq. 6.39",
+  "impatto": "caso guida: β = 1,193 con i lati del pilastro contro ≈1,03 con il perimetro di verifica (+16 % su V_Ed di punzonamento al pilastro)",
+  "uscite": [
+   "punzonamento.beta",
+   "punzonamento.ved_kN"
+  ],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "In modalità Excel β vale 1 (il foglio ignora l'eccentricità): la semplificazione riguarda solo la modalità standard."
+ },
+ {
+  "id": "plinti-pali/flessione-soletta-momento-di-fascia-su-striscia-di-1-m",
+  "titolo": "Il momento flettente dell'intera fascia di pali è progettato su una striscia di 1 m",
+  "tipo": "da_verificare",
+  "strumenti": [
+   "fond-plinto-su-pali"
+  ],
+  "cella": "Footing check!flessione (progetto a striscia)",
+  "foglio": "M_u = 0,5·N·L/4 + |M| è il momento dell'intera fascia (N totale del pilastro più tutto il peso del plinto), ma z, A_s,min e A_s disposta sono riferiti a una striscia di 1 m: l'area richiesta per metro risulta moltiplicata per la larghezza del plinto in metri",
+  "corretto": "riprodotto identico in entrambe le modalità (a favore di sicurezza, circa 4× sul caso guida); la relazione dichiara la striscia di calcolo; da decidere se dividere il momento di fascia per la larghezza efficace",
+  "clausola": "EN 1992-1-1 §6.1 (equilibrio della sezione)",
+  "impatto": "caso guida: A_s,req 3204 mm²/m contro ≈800 mm²/m con il momento ripartito sui 4 m di larghezza",
+  "uscite": [
+   "flessione.inf_x.as_req_mm2",
+   "flessione.inf_y.as_req_mm2"
+  ],
+  "ramo": "nessuno",
+  "motivo_senza_ramo": "Il progetto a striscia di 1 m è quello del foglio ed è applicato identico in entrambe le modalità: non c'è un ramo che lo distingua."
  }
 ]

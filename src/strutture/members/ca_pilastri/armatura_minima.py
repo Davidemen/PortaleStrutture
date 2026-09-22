@@ -35,7 +35,10 @@ def armatura_minima(
     elif legacy("ca-pilastri/area-minima-longitudinale-min-invece-max", legacy_compat):
         as_min_mm2 = min(candidato_area, candidato_assiale)
     else:
-        as_min_mm2 = min(max(candidato_area, candidato_assiale), AC_RATIO_MAX_CEILING * ac_mm2)
+        # NTC2018 §4.1.6.1.2: max(0,10·N_Ed/f_yd; 0,003·A_c), no upper bound — the 4 % ceiling is the
+        # separate maximum-reinforcement check (§7.4.6.2.2); capping the minimum with it silently turned
+        # "more steel than the section can hold" into a pass (engineering proof-read finding)
+        as_min_mm2 = max(candidato_area, candidato_assiale)
     rs_min = max(AC_RATIO_FLOOR * ac_mm2, candidato_assiale, candidato_percentuale) / ac_mm2
     return as_min_mm2, rs_min
 

@@ -101,10 +101,10 @@ def test_golden_pressioni_terreno_str1_and_sisma1():
     assert sisma1.p_monte_kPa == pytest.approx(0.0)
 
 
-def test_golden_report_ok_and_has_sixteen_checks():
+def test_golden_report_ok_and_has_nineteen_checks():
     report = run_muro_sostegno(TRATTO_A_INPUT)
     assert report.ok is True
-    assert len(report.checks) == 16  # 8 combinazioni x (ribaltamento + scorrimento)
+    assert len(report.checks) == 19  # 8 combinazioni x (ribaltamento + scorrimento)
 
 
 def test_golden_armatura_paramento_row151():

@@ -10,6 +10,7 @@ import logging
 import math
 
 from strutture.shared.divergences import legacy
+from strutture.shared.materials.concrete import concrete_properties
 from strutture.shared.materials.rebar import rebar_properties
 from strutture.shared.ntc_combos import fattori_resistenza
 from strutture.shared.report import CalcError, Check, Report, success
@@ -18,8 +19,8 @@ from strutture.shared.tool import Tool
 
 from . import armatura_fondazione_monte as fond_monte
 from . import armatura_fondazione_valle as fond_valle
+from . import armatura_minima, rebar_selection
 from . import armatura_paramento as paramento
-from . import rebar_selection
 from .angoli_progetto import delta_d_rad, phi_d_rad
 from .capacita_portante_fondazione import capacita_portante_combo
 from .combinazioni import ALL_COMBOS, SEISMIC_COMBOS, fattori_combo
@@ -46,6 +47,7 @@ from .mononobe_okabe import coefficienti_sismici, kae_mononobe_okabe
 from .parametri_sismici import parametri_sismici
 from .pesi import pesi_combo
 from .pressioni_terreno import eccentricita_risultante, eccentricita_termine, larghezza_efficace, pressioni_valle_monte
+from .relazione import relazione as relazione_muro_sostegno
 from .ribaltamento_scorrimento import (
     GAMMA_R_RIBALTAMENTO_R3,
     fattore_sicurezza_ribaltamento,
@@ -73,7 +75,7 @@ ESEMPIO_TRATTO_A = {
     "passo_arm_fondazione_m": 0.2,
 }
 
-CLAUSE_RIBALTAMENTO = "NTC2018 §6.5.3.1.2"
+CLAUSE_RIBALTAMENTO = "NTC2018 §6.5.3.1.1"  # SLU of gravity walls (§6.5.3.1.2 is the embedded-walls sub-clause)
 CLAUSE_SCORRIMENTO = "NTC2018 §6.5.3.1.1 / EC7 §6.5.4"
 CLAUSE_CAPACITA_PORTANTE = "NTC2018 §6.5.3.1.1, Tab. 6.5.I, §6.4.2.1 / EN1997-1 Annex D"
 # HIGH finding: NTC2018 §6.4.2.1 offre due schemi non miscelabili — Approccio 2 (A1+M1+R3, i
@@ -211,14 +213,16 @@ def _ribaltamento_scorrimento_combo(spinta: SpintaCombo, *, inputs: MuroSostegno
     n_tot_kN = risultante_verticale(w_muro_kN=spinta.w_muro_kN, w_terr_kN=spinta.w_terr_kN, sv_q_kN=forze.sv_q_kN, sv_terr_kN=forze.sv_terr_kN)
     r_tot_kN = risultante_orizzontale(sh_q_kN=forze.sh_q_kN, sh_terr_kN=forze.sh_terr_kN, fh_kN=fh_kN)
     or_ribaltamento = fattore_sicurezza_ribaltamento(m_stab_kNm=m_stab_kNm, m_rib_kNm=m_rib_kNm)
+    phi_scorrimento = _phi_scorrimento_rad(inputs, spinta)
     os_scorrimento = fattore_sicurezza_scorrimento(
-        phi_d_rad=spinta.phi_d_rad, n_tot_kN=n_tot_kN, r_tot_kN=r_tot_kN, omega_rad=math.radians(inputs.omega_deg)
+        phi_d_rad=phi_scorrimento, n_tot_kN=n_tot_kN, r_tot_kN=r_tot_kN, omega_rad=math.radians(inputs.omega_deg)
     )
     # NTC2018 Tab. 6.5.I γR (Approccio 2, A1+M1+R3 per le opere di sostegno, §6.5.3.1.1): the sheet
     # (`legacy_compat=True`) never divides the resistance by γR, i.e. it checks OR/OS >= 1.
     soglia_rib = soglia_verifica(sismica=spinta.sismica, legacy_compat=inputs.legacy_compat, gamma_r_statico=GAMMA_R_RIBALTAMENTO_R3)
     soglia_scorr = soglia_verifica(sismica=spinta.sismica, legacy_compat=inputs.legacy_compat, gamma_r_statico=fattori_resistenza("scorrimento").r3)
     return RibaltamentoScorrimentoCombo(
+        phi_scorrimento_rad=phi_scorrimento,
         nome=spinta.nome,
         dq_kN_m2=dq_kN_m2,
         sh_q_kN=forze.sh_q_kN,
@@ -362,6 +366,45 @@ def _run_capacita_portante_fondazione(
     )
 
 
+
+def _phi_scorrimento_rad(inputs: MuroSostegnoInput, spinta: SpintaCombo) -> float:
+    """Design friction angle for sliding on the base (NTC2018 §6.5.3.1.1 / EN1997-1 §6.5.3): the
+    FOUNDATION soil's, with this combination's own γφ, when the 'Terreno di fondazione' block is
+    filled in drained condition; otherwise (no block, undrained block, Excel mode) the backfill's
+    angle, the only one the sheet knows — proof-read finding: with a weaker foundation soil the
+    sliding resistance was overstated by tan(φ_d,rinterro)/tan(φ_d,fond)."""
+    if inputs.legacy_compat or inputs.terreno_condizione != "drenata" or inputs.terreno_phi_k_deg is None:
+        return spinta.phi_d_rad
+    return phi_d_rad(inputs.terreno_phi_k_deg, spinta.gamma_phi_terr)
+
+
+AVVISO_SCORRIMENTO_NON_DRENATA = (
+    "Verifica a scorrimento: con il terreno di fondazione in condizione non drenata la resistenza sul piano di "
+    "posa (adesione c_u) non è modellata; il calcolo usa l'angolo di attrito del rinterro."
+)
+
+
+def _avvisi_scorrimento(inputs: MuroSostegnoInput) -> tuple[str, ...]:
+    if inputs.legacy_compat or inputs.terreno_condizione != "non_drenata":
+        return ()
+    return (AVVISO_SCORRIMENTO_NON_DRENATA,)
+
+
+def _armatura_minima_cm2_m(inputs: MuroSostegnoInput, d_m: float) -> float:
+    return armatura_minima.as_min_cm2_m(
+        fctm_MPa=concrete_properties(inputs.tipo_cls).fctm_MPa,
+        fyk_MPa=rebar_properties(inputs.grado_acciaio).fyk_MPa, d_m=d_m,
+    )
+
+
+def _check_armatura_minima(nome: str, risultato: object) -> Check:
+    disposta = armatura_minima.area_disposta_cm2_m(diametro_mm=risultato.diametro_mm, passo_m=risultato.passo_m)
+    return Check(
+        name=nome, passed=disposta + 1e-9 >= risultato.as_min_cm2_m, clause="NTC2018 §4.1.6.1.1",
+        detail=f"As,disposta={disposta:.2f} cm²/m >= As,min={risultato.as_min_cm2_m:.2f} cm²/m",
+        value=disposta, limit=risultato.as_min_cm2_m, unit="cm2/m",
+    )
+
 def _armatura_paramento_combo(
     spinta: SpintaCombo, verifica: RibaltamentoScorrimentoCombo, *, inputs: MuroSostegnoInput, geometria: GeometriaResult, fyd_MPa: float
 ) -> ArmaturaParamentoCombo:
@@ -439,7 +482,8 @@ def _armatura_fondazione_monte_combo(
         sv_tot_kN=sv_tot_kN, x_sv_m=geometria.x_sv_m, b_fond_m=geometria.b_fond_m, b_monte_m=inputs.b_monte_m
     )
     m_ed_fond_kNm = fond_monte.momento_autopeso_kNm(
-        b_monte_m=inputs.b_monte_m, gamma_g_muro=spinta.gamma_g_muro, gamma_cls_kN_m3=inputs.gamma_cls_kN_m3, s_fond_m=inputs.s_fond_m
+        b_monte_m=inputs.b_monte_m, gamma_g_muro=spinta.gamma_g_muro, gamma_cls_kN_m3=inputs.gamma_cls_kN_m3,
+        s_fond_m=inputs.s_fond_m, legacy_compat=inputs.legacy_compat,
     )
     m_ed_tot_kNm = m_ed_terr_kNm + m_ed_sv_kNm + m_ed_fond_kNm + m_ed_p_kNm
     d_m = inputs.s_fond_m - inputs.copertura_fondazione_m
@@ -465,14 +509,18 @@ def _run_armatura_paramento(
     )
     governante = max(combinazioni, key=lambda c: c.as_nec_cm2_m)
     as_nec_governante_cm2_m = rebar_selection.governante_cm2_m(tuple(c.as_nec_cm2_m for c in combinazioni))
+    as_min_cm2_m = _armatura_minima_cm2_m(inputs, inputs.s_base_m - inputs.copertura_paramento_m)
+    as_progetto_cm2_m = armatura_minima.as_progetto_cm2_m(as_nec_governante_cm2_m, as_min_cm2_m, legacy_compat=inputs.legacy_compat)
     passo_m = inputs.passo_arm_paramento_m
     return ArmaturaParamentoResult(
         combinazioni=combinazioni,
         as_nec_cm2_m=as_nec_governante_cm2_m,
+        as_min_cm2_m=as_min_cm2_m,
+        as_progetto_cm2_m=as_progetto_cm2_m,
         combo_governante=governante.nome,
-        diametro_mm=rebar_selection.diametro_mm(as_nec_governante_cm2_m, passo_m, legacy_compat=inputs.legacy_compat),
+        diametro_mm=rebar_selection.diametro_mm(as_progetto_cm2_m, passo_m, legacy_compat=inputs.legacy_compat),
         passo_m=passo_m,
-        callout=rebar_selection.callout(as_nec_governante_cm2_m, passo_m, legacy_compat=inputs.legacy_compat),
+        callout=rebar_selection.callout(as_progetto_cm2_m, passo_m, legacy_compat=inputs.legacy_compat),
     )
 
 
@@ -485,14 +533,18 @@ def _run_armatura_fondazione_valle(
     )
     governante = max(combinazioni, key=lambda c: c.as_nec_cm2_m)
     as_nec_governante_cm2_m = rebar_selection.governante_cm2_m(tuple(c.as_nec_cm2_m for c in combinazioni))
+    as_min_cm2_m = _armatura_minima_cm2_m(inputs, inputs.s_fond_m - inputs.copertura_fondazione_m)
+    as_progetto_cm2_m = armatura_minima.as_progetto_cm2_m(as_nec_governante_cm2_m, as_min_cm2_m, legacy_compat=inputs.legacy_compat)
     passo_m = inputs.passo_arm_fondazione_m
     return ArmaturaFondazioneValleResult(
         combinazioni=combinazioni,
         as_nec_cm2_m=as_nec_governante_cm2_m,
+        as_min_cm2_m=as_min_cm2_m,
+        as_progetto_cm2_m=as_progetto_cm2_m,
         combo_governante=governante.nome,
-        diametro_mm=rebar_selection.diametro_mm(as_nec_governante_cm2_m, passo_m, legacy_compat=inputs.legacy_compat),
+        diametro_mm=rebar_selection.diametro_mm(as_progetto_cm2_m, passo_m, legacy_compat=inputs.legacy_compat),
         passo_m=passo_m,
-        callout=rebar_selection.callout(as_nec_governante_cm2_m, passo_m, legacy_compat=inputs.legacy_compat),
+        callout=rebar_selection.callout(as_progetto_cm2_m, passo_m, legacy_compat=inputs.legacy_compat),
     )
 
 
@@ -511,14 +563,18 @@ def _run_armatura_fondazione_monte(
     )
     governante = max(combinazioni, key=lambda c: c.as_nec_cm2_m)
     as_nec_governante_cm2_m = rebar_selection.governante_cm2_m(tuple(c.as_nec_cm2_m for c in combinazioni))
+    as_min_cm2_m = _armatura_minima_cm2_m(inputs, inputs.s_fond_m - inputs.copertura_fondazione_m)
+    as_progetto_cm2_m = armatura_minima.as_progetto_cm2_m(as_nec_governante_cm2_m, as_min_cm2_m, legacy_compat=inputs.legacy_compat)
     passo_m = inputs.passo_arm_fondazione_m
     return ArmaturaFondazioneMonteResult(
         combinazioni=combinazioni,
         as_nec_cm2_m=as_nec_governante_cm2_m,
+        as_min_cm2_m=as_min_cm2_m,
+        as_progetto_cm2_m=as_progetto_cm2_m,
         combo_governante=governante.nome,
-        diametro_mm=rebar_selection.diametro_mm(as_nec_governante_cm2_m, passo_m, legacy_compat=inputs.legacy_compat),
+        diametro_mm=rebar_selection.diametro_mm(as_progetto_cm2_m, passo_m, legacy_compat=inputs.legacy_compat),
         passo_m=passo_m,
-        callout=rebar_selection.callout(as_nec_governante_cm2_m, passo_m, legacy_compat=inputs.legacy_compat),
+        callout=rebar_selection.callout(as_progetto_cm2_m, passo_m, legacy_compat=inputs.legacy_compat),
     )
 
 
@@ -589,8 +645,16 @@ def run_muro_sostegno(inputs: MuroSostegnoInput) -> Report[MuroSostegnoOutput]:
         armatura_fondazione_monte=armatura_fondazione_monte,
         schizzo=schizzo,
     )
-    checks = tuple(c for v in ribaltamento_scorrimento for c in (v.verifica_ribaltamento, v.verifica_scorrimento)) + capacita_portante_checks
-    return success(data, inputs, checks=checks, warnings=warnings)
+    checks = (
+        tuple(c for v in ribaltamento_scorrimento for c in (v.verifica_ribaltamento, v.verifica_scorrimento))
+        + capacita_portante_checks
+        + (
+            _check_armatura_minima("Armatura minima del paramento", armatura_paramento),
+            _check_armatura_minima("Armatura minima della fondazione di valle", armatura_fondazione_valle),
+            _check_armatura_minima("Armatura minima della fondazione di monte", armatura_fondazione_monte),
+        )
+    )
+    return success(data, inputs, checks=checks, warnings=warnings + _avvisi_scorrimento(inputs))
 
 
 TOOLS = (
@@ -604,5 +668,6 @@ TOOLS = (
         run=run_muro_sostegno,
         example=ESEMPIO_TRATTO_A,
         summary="Verifica un muro di sostegno a mensola a ribaltamento, scorrimento, pressione sul terreno, capacità portante (facoltativa) e armatura, per le 8 combinazioni di carico statiche e sismiche.",
+        relazione=relazione_muro_sostegno,
     ),
 )

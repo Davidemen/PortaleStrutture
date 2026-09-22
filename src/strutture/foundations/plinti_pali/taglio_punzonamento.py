@@ -176,7 +176,8 @@ def punzonamento_palo(
     av_over_2d = (
         None
         if legacy("plinti-pali/punzonamento-palo-perimetro-non-limitato-interasse", legacy_compat) or a_mm >= 2.0 * d_mm
-        else a_mm / (2.0 * d_mm)
+        else 2.0 * d_mm / a_mm  # EC2 eq. 6.50: 2d/a >= 1 (a perimeter closer than 2d INCREASES v_Rd,c); the
+        # inverted a/(2d) understated V_Rd,c,palo ~10x on the example and made pile punching look governing
     )
     vrd_c = v_rd_c(k_eff, rho, fck_MPa, sigma_cp_MPa=0.0, gamma_c=gamma_c, av_over_2d=av_over_2d)
     vrd_c_kN = vrd_c.v_rd_c_MPa * perimetro.u_mm * d_mm / 1000.0
