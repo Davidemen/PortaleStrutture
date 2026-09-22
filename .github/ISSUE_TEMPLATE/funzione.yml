@@ -1,0 +1,15 @@
+name: Nuova funzione
+description: Una funzione nuova o una miglioria
+labels: [funzione]
+body:
+  - type: textarea
+    id: cosa
+    attributes:
+      label: Cosa serve e perché
+    validations:
+      required: true
+  - type: textarea
+    id: fatto
+    attributes:
+      label: Come si capirà che è fatta
+      description: Il flusso da provare nell'app o il risultato atteso.

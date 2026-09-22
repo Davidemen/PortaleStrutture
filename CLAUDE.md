@@ -111,8 +111,9 @@ comandi non sono tutti verdi.
 3. Esegui i comandi della sezione "Comandi" che il tuo cambiamento tocca; per i calcoli anche il registro e le
    formule; per l'interfaccia la suite e2e completa.
 4. Aggiorna `docs/CONSEGNA.md` se cambi lo stato del progetto (numeri dei test, lavori aperti).
-5. Un commit locale per pacchetto finito, messaggio `tipo: descrizione` (feat, fix, refactor, docs, test,
-   chore, perf, ci). Non creare rami o remoti senza che il titolare lo chieda.
+5. Un commit per pacchetto finito, messaggio in italiano `tipo: descrizione` (feat, fix, refactor, docs, test,
+   chore, perf, ci). Rami e rilasci: `docs/GUIDA_SVILUPPO.md`. Mai commit diretti su `main` (si muove solo in
+   avanti fino a `sviluppo`); si lavora su `sviluppo` o su un ramo `funzione/…`/`correzione/…` nato da `sviluppo`.
 6. Riferisci al titolare in italiano: cosa è cambiato, cosa hai verificato, cosa deve controllare lui
    nell'app (quale strumento, quale esempio), cosa resta aperto.
 

@@ -1,0 +1,25 @@
+name: Controlli
+
+on:
+  pull_request:
+  push:
+    branches: [main, sviluppo]
+
+jobs:
+  suite:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked
+      - run: uv run ruff check .
+      - run: uv run python -m strutture.shared.divergences.check --strict
+      - run: uv run pytest -q
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test tests/e2e/

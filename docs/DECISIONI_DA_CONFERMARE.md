@@ -99,6 +99,9 @@ Decise dal titolare il 2026-09-22 (restano qui come traccia; la specifica è gi�
 22. "Da ricalcolare" e "provvisorio" si propagano lungo la catena "Usa in…": **sì**. Va costruita con la regola
     di `docs/ui/WORKBENCH_SPEC.md` §25.1 (limite di profondità, protezione dai cicli, "provvisorio per origine").
 
+23. Livello di gravità degli avvisi (per la colonna "avviso più grave" della tabella di progetto, §20): **no**
+    (titolare, 2026-09-22). `shared/report.py` resta invariato; la tabella mostra il numero di avvisi e il primo.
+
 Ancora aperta:
 19-bis. L'obiettivo di sfruttamento < 1 vale anche per le verifiche di minimo o di dettaglio (armatura minima,
     passo, copriferro, rapporto massimo di armatura)? Risposta del titolare il 2026-09-22: "non so". Diventa

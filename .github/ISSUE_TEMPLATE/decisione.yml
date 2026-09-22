@@ -1,0 +1,17 @@
+name: Decisione ingegneristica
+description: Una scelta che spetta al titolare (coefficiente, clausola, ipotesi di calcolo)
+labels: [decisione]
+body:
+  - type: textarea
+    id: domanda
+    attributes:
+      label: Domanda
+    validations:
+      required: true
+  - type: textarea
+    id: alternative
+    attributes:
+      label: Alternative e conseguenze
+      description: Cosa cambia nei risultati con ciascuna scelta, con i riferimenti di norma.
+    validations:
+      required: true

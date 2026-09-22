@@ -1,0 +1,30 @@
+name: Difetto
+description: Un risultato sbagliato o l'app che si comporta male
+labels: []
+body:
+  - type: dropdown
+    id: tipo
+    attributes:
+      label: Tipo
+      options:
+        - Numero sbagliato (difetto di calcolo)
+        - Interfaccia (i numeri sono giusti)
+    validations:
+      required: true
+  - type: input
+    id: strumento
+    attributes:
+      label: Strumento
+      placeholder: es. muro di sostegno
+  - type: textarea
+    id: cosa
+    attributes:
+      label: Cosa succede e cosa ci si aspettava
+      description: Per un numero sbagliato indicare il valore atteso e da dove viene (calcolo a mano, foglio, norma).
+    validations:
+      required: true
+  - type: textarea
+    id: dati
+    attributes:
+      label: Dati per riprodurlo
+      description: Valori di ingresso, o l'esportazione dell'elemento. Mai chiavi o dati riservati del cliente.

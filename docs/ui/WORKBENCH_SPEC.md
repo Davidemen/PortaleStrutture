@@ -608,8 +608,8 @@ reload and Back; ↓ ↓ Enter opens the right element; an element POSTed throug
 shows "n.d."; opening the page sends no `/run` request — asserted with `page.on("request")`),
 `tests/e2e/progetto_tabella.test.mjs` (pure sort/filter/footer).
 
-Decisioni ingegneristiche aperte: nessuna di calcolo. One contract question for the owner: should warnings get a
-gravity level, so that "avviso più grave" means something? (It changes `shared/report.py`, rule 15.)
+Decisioni ingegneristiche aperte: nessuna. Warning gravity level: **no** (owner, 2026-09-22, decision 23) —
+`shared/report.py` stays as is; the column shows the count and the first warning.
 
 ## 21. Annulla e ripristina sui dati del modulo (owner's request 2026-09-22)
 Excel reflex (§0.1): a wrong edit is undone with Ctrl+Z. Scope: the VALUES of the Dati form of the current tool

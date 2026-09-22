@@ -10,7 +10,8 @@ con agenti, in oltre 60 commit; tutto ciò che conta è nel repository, nulla di
 Gira su macOS (sviluppo) e Windows (scritto per, non ancora provato dall'ufficio: `docs/VERIFICA_WINDOWS.md`).
 
 ## 2. Stato alla consegna
-- Git: solo locale, ramo `main`, nessun remoto (GitHub rinviato dal committente).
+- Git: remoto `origin` = github.com/Davidemen/PortaleStrutture (pubblico). Rami `main` (rilasci, solo avanzamento
+  rapido) e `sviluppo` (lavoro comune); rami di funzione e issue come in `docs/GUIDA_SVILUPPO.md`.
 - Suite verdi al 2026-09-22 (sera, dopo il pacchetto "Dimensiona"/"Sensibilità"/"Impostazioni", interfaccia
   §23/§24/§26): `uv run pytest -q` → 4348 superati · `uv run pytest tests/e2e -m e2e -q` → 283 superati,
   1 saltato (circa 3 minuti e mezzo) · `node --test tests/e2e/*.mjs` → 67 · `uv run ruff check .` pulito ·
