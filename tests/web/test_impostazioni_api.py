@@ -141,6 +141,42 @@ def test_put_missing_sigla_rejected(client: TestClient) -> None:
 
 
 @pytest.mark.unit
+def test_put_obiettivo_out_of_range_gives_italian_message(client: TestClient) -> None:
+    response = client.put("/api/impostazioni", json={"impostazioni": {"obiettivo_sfruttamento": 0}, "revisione": 0, "sigla": "AB"})
+    assert response.status_code == 422
+    assert response.json()["errors"] == ["L'obiettivo di sfruttamento deve essere maggiore di 0 e al massimo 1,00"]
+
+    response = client.put("/api/impostazioni", json={"impostazioni": {"obiettivo_sfruttamento": 1.5}, "revisione": 0, "sigla": "AB"})
+    assert response.json()["errors"] == ["L'obiettivo di sfruttamento deve essere maggiore di 0 e al massimo 1,00"]
+
+
+@pytest.mark.unit
+def test_put_empty_sigla_gives_italian_message(client: TestClient) -> None:
+    response = client.put("/api/impostazioni", json={"impostazioni": {}, "revisione": 0, "sigla": ""})
+    assert response.json()["errors"] == ["La sigla non può essere vuota"]
+
+
+@pytest.mark.unit
+def test_put_negative_type_step_gives_italian_message(client: TestClient) -> None:
+    response = client.put("/api/impostazioni", json={
+        "impostazioni": {"passi_per_tipo": {"copriferro": -1.0}}, "revisione": 0, "sigla": "AB",
+    })
+    assert response.status_code == 422
+    assert "copriferro" in response.json()["errors"][0]
+    assert response.json()["errors"][0][0].isupper() or response.json()["errors"][0][0] == "i"
+
+
+@pytest.mark.unit
+def test_put_extra_key_rejected_with_italian_message(client: TestClient) -> None:
+    response = client.put("/api/impostazioni", json={
+        "impostazioni": {"chiave_sconosciuta": 1}, "revisione": 0, "sigla": "AB",
+    })
+    assert response.status_code == 422
+    assert "chiave_sconosciuta" in response.json()["errors"][0]
+    assert "Campo non riconosciuto" in response.json()["errors"][0]
+
+
+@pytest.mark.unit
 def test_put_unknown_tool_exception_gives_422(client: TestClient) -> None:
     payload = {
         "impostazioni": {"passi_per_campo": [{"strumento": "boh", "campo": "x", "passo": 1.0}]},

@@ -16,6 +16,7 @@ from strutture.storage.interfaces import ConflictError, ImpostazioniRepository
 from strutture.storage.models import MAX_SIGLA
 
 from ..envelope import error_envelope
+from ..errori_it import messaggio_errore_it
 
 logger = logging.getLogger(__name__)
 _ETICHETTE_TIPO = {
@@ -166,15 +167,30 @@ async def _parse_body(request: Request) -> _PutBody | JSONResponse:
         return _PutBody.model_validate(raw)
     except ValidationError as error:
         found = error.errors()
-        messages = [str(e["msg"]).removeprefix("Value error, ") for e in found]
+        messages = [messaggio_errore_it(e) for e in found]
         return JSONResponse(
             {
                 "ok": False, "data": None, "checks": [], "warnings": [], "errors": messages,
-                "error_details": [{"loc": list(e["loc"]), "message": str(e["msg"])} for e in found],
+                "error_details": [
+                    {"loc": _loc_con_tipo(e, m), "message": m} for e, m in zip(found, messages, strict=True)
+                ],
                 "inputs_echo": {},
             },
             status_code=422,
         )
+
+
+def _loc_con_tipo(errore: dict, messaggio: str) -> list:
+    """`passi_per_tipo`'s own `field_validator` raises once for the WHOLE dict (pydantic has no
+    per-key loc for a dict-level validator): the tipo it is actually about only shows up in the
+    message text ("il passo di copriferro ..."). Recovering it here keeps §26.10's promise that a
+    `passi_per_tipo` 422 points at the specific tipo, not just the field."""
+    loc = list(errore["loc"])
+    if loc[-1:] == ["passi_per_tipo"]:
+        for tipo in TIPI_DATO:
+            if f"di {tipo} " in messaggio or f" {tipo} " in messaggio:
+                return [*loc, tipo]
+    return loc
 
 
 def _conflict(repository: ImpostazioniRepository, tools: dict[str, Tool]) -> JSONResponse:
