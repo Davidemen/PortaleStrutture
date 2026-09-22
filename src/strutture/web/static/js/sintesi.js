@@ -15,6 +15,7 @@ import { createCopyStatus, wireValueCopy } from "./results-toolbar.js";
 import { renderChart } from "./chart.js";
 import { buildChartArgs } from "./results-rows.js";
 
+const EXPAND_BELOW_PX = 40; // hysteresis: re-expand only back near the top
 const COLLAPSE_AFTER_PX = 200;
 
 function verdictWord(checks) {
@@ -247,7 +248,27 @@ export function initSintesiCollapse(sintesiRoot) {
   // a narrow viewport). Both hosts stay wired for the app's lifetime rather than picking one at
   // this single init call -- simpler and correct across a live breakpoint change mid-session too.
   const read = () => Math.max(pane ? pane.scrollTop : 0, window.scrollY || document.documentElement.scrollTop || 0);
-  const onScroll = () => sintesiRoot.classList.toggle("r-sintesi--collapsed", read() > COLLAPSE_AFTER_PX);
+  // Collapsing removes up to ~260px of sticky block: the pane's scroll range shrinks by as much, the
+  // browser clamps scrollTop back under the threshold, the block re-expands, and so on -- the
+  // "flicker and jump back up" the engineer saw when opening a group and scrolling. Two guards:
+  // hysteresis (collapse past COLLAPSE_AFTER_PX, expand only back near the top) and a bottom
+  // spacer on the scrolling pane equal to the height just removed, so the range never shrinks.
+  const setSpacer = (px) => {
+    const host = pane || document.documentElement;
+    host.style.setProperty("--sm-collapse-spacer", `${Math.max(0, Math.round(px))}px`);
+  };
+  const onScroll = () => {
+    const collapsed = sintesiRoot.classList.contains("r-sintesi--collapsed");
+    const y = read();
+    if (!collapsed && y > COLLAPSE_AFTER_PX) {
+      const before = sintesiRoot.offsetHeight;
+      sintesiRoot.classList.add("r-sintesi--collapsed");
+      setSpacer(before - sintesiRoot.offsetHeight);
+    } else if (collapsed && y < EXPAND_BELOW_PX) {
+      sintesiRoot.classList.remove("r-sintesi--collapsed");
+      setSpacer(0);
+    }
+  };
   if (pane) pane.addEventListener("scroll", onScroll, { passive: true });
   window.addEventListener("scroll", onScroll, { passive: true });
 }

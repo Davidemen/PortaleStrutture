@@ -417,3 +417,14 @@ fetched by the rail badge and refreshed after every sign-off). A tool is **appro
   state approvate." Nothing else changes; a later rejection (respinto > 0) brings the switch back.
 - Tests (`tests/e2e/test_excel_ritirato.py`): approve every entry of one tool through the API (`signoff-multiplo`),
   reload the tool: no switch, no compare button, header text; reject one entry: both come back.
+
+## 17. Avvisi that point at a parameter (user feedback 2026-09-22)
+`Report.avvisi_campi: {warning text: input field name}` — a tool sets it for every warning that is about ONE input
+(`success(..., avvisi_campi=…)`; `execute()` adds the Excel-mode trace warning -> `legacy_compat`). The results
+panel "Dettaglio avvisi" renders such a warning as a text button; clicking it opens the field's accordion section
+(and "Avanzate" when needed), scrolls the field into view, focuses its control and flashes it once
+(`js/campo-salto.js`). Without an entry the UI falls back to the first input whose `symbol` appears as a whole
+word in the text; a warning with no field stays plain text. Also from the same feedback: the sticky Sintesi
+collapse has hysteresis (collapse past 200 px, expand back under 40 px) and gives the removed height back as
+bottom padding on the results pane (`--sm-collapse-spacer`) so the scroll range never shrinks — no flicker, no
+jump; the Dati action bar wraps its live-status text instead of overlapping the save widget.

@@ -265,7 +265,7 @@ def run(inputs: TraveRettangolareInput) -> Report[TraveRettangolareOutput]:
         schizzo=schizzo,
     )
     checks = _checks(inputs, armatura, flessione, taglio, sle_tensioni, fessurazione, dettagli)
-    return success(data, inputs, checks=checks, warnings=_avvisi(inputs))
+    return success(data, inputs, checks=checks, warnings=_avvisi(inputs), avvisi_campi={AVVISO_TAGLIO_GRAVITAZIONALE: "v_gravita_kN"})
 
 
 AVVISO_TAGLIO_GRAVITAZIONALE = (

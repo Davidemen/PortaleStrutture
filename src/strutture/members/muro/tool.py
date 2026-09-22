@@ -654,7 +654,27 @@ def run_muro_sostegno(inputs: MuroSostegnoInput) -> Report[MuroSostegnoOutput]:
             _check_armatura_minima("Armatura minima tacco", armatura_fondazione_monte),
         )
     )
-    return success(data, inputs, checks=checks, warnings=warnings + _avvisi_scorrimento(inputs))
+    tutti_gli_avvisi = warnings + _avvisi_scorrimento(inputs)
+    return success(data, inputs, checks=checks, warnings=tutti_gli_avvisi, avvisi_campi=_campi_degli_avvisi(tutti_gli_avvisi))
+
+
+_CAMPO_PER_AVVISO = {
+    AVVISO_CAPACITA_PORTANTE: "terreno_condizione",
+    AVVISO_CAPACITA_PORTANTE_SISMICA: "terreno_condizione",
+    AVVISO_TERRENO_IGNORATO_LEGACY: "legacy_compat",
+    AVVISO_SCORRIMENTO_NON_DRENATA: "terreno_condizione",
+}
+
+
+def _campi_degli_avvisi(avvisi: tuple[str, ...]) -> dict[str, str]:
+    """The input field each warning is about (the UI jumps to it on click)."""
+    campi = {}
+    for avviso in avvisi:
+        if avviso in _CAMPO_PER_AVVISO:
+            campi[avviso] = _CAMPO_PER_AVVISO[avviso]
+        elif avviso.startswith("Profondità di posa D="):
+            campi[avviso] = "terreno_profondita_posa_m"
+    return campi
 
 
 TOOLS = (

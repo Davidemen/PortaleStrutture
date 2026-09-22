@@ -202,3 +202,12 @@ def test_scorrimento_in_modalita_excel_ignora_il_terreno_di_fondazione():
     con = run_muro_sostegno(MuroSostegnoInput(**ESEMPIO_TRATTO_A, **TERRENO_DRENATA, legacy_compat=True))
     for verifica, spinta in zip(con.data.ribaltamento_scorrimento, con.data.spinte, strict=True):
         assert verifica.phi_scorrimento_rad == pytest.approx(spinta.phi_d_rad)
+
+
+def test_warnings_point_at_the_input_they_are_about():
+    excel = run_muro_sostegno(MuroSostegnoInput(**ESEMPIO_TRATTO_A, **TERRENO_DRENATA, legacy_compat=True))
+    assert excel.avvisi_campi[AVVISO_TERRENO_IGNORATO_LEGACY] == "legacy_compat"
+    standard = run_muro_sostegno(MuroSostegnoInput(**ESEMPIO_TRATTO_A, legacy_compat=False))
+    assert standard.avvisi_campi[AVVISO_CAPACITA_PORTANTE] == "terreno_condizione"
+    profondo = run_muro_sostegno(MuroSostegnoInput(**ESEMPIO_TRATTO_A, **{**TERRENO_DRENATA, "terreno_profondita_posa_m": 2.7}, legacy_compat=False))
+    assert "terreno_profondita_posa_m" in profondo.avvisi_campi.values()

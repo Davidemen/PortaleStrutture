@@ -36,6 +36,7 @@ class Report[T](BaseModel):
     data: T | None = None
     checks: tuple[Check, ...] = ()
     warnings: tuple[str, ...] = ()
+    avvisi_campi: dict[str, str] = {}  # warning text -> the input field it is about (the UI jumps to it on click)
     errors: tuple[str, ...] = ()
     error_details: tuple[ErrorDetail, ...] = ()  # same errors, machine-locatable (form fields, table cells)
     inputs_echo: dict[str, Any] = {}
@@ -46,8 +47,14 @@ class CalcError(ValueError):
     """Domain error with a user-facing message (input outside the method's validity range, etc.)."""
 
 
-def success[T](data: T, inputs: BaseModel, checks: tuple[Check, ...] = (), warnings: tuple[str, ...] = ()) -> Report[T]:
-    return Report(ok=True, data=data, checks=checks, warnings=warnings, inputs_echo=inputs.model_dump(mode="json"))
+def success[T](
+    data: T, inputs: BaseModel, checks: tuple[Check, ...] = (), warnings: tuple[str, ...] = (),
+    avvisi_campi: dict[str, str] | None = None,
+) -> Report[T]:
+    """`avvisi_campi`: for the warnings that are about ONE input field, the field's name — the UI
+    turns those warnings into a jump to the field (only keys that are in `warnings` are kept)."""
+    campi = {testo: campo for testo, campo in (avvisi_campi or {}).items() if testo in warnings}
+    return Report(ok=True, data=data, checks=checks, warnings=warnings, avvisi_campi=campi, inputs_echo=inputs.model_dump(mode="json"))
 
 
 def failure(

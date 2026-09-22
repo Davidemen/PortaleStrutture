@@ -362,6 +362,12 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+/* js/sintesi.js initSintesiCollapse: the height removed by collapsing the sticky block is given back
+   as bottom padding, so the scroll range does not shrink under the reader (no clamp, no flicker). */
+#results-pane {
+  padding-bottom: var(--sm-collapse-spacer, 0px);
+}
+
 .r-sintesi--collapsed .r-si-layout {
   display: block;
 }
@@ -939,4 +945,21 @@
 
 .r-chart {
   margin-bottom: var(--s3, 0.75rem);
+}
+
+/* A warning that is about one input (js/campo-salto.js): the text itself is the jump. */
+.r-warning-jump {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.r-warning-jump:focus-visible {
+  outline: 2px solid var(--ink, #14181d);
+  outline-offset: 2px;
 }

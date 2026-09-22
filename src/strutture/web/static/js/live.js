@@ -133,6 +133,10 @@ document.addEventListener("strutture:inputs-changed", handleInputsChanged);
 document.addEventListener("strutture:tool-schema", (event) => {
   const { name, input, live } = event.detail || {};
   session = { ...initialSession(), name, fields: describeFields(input || {}), metaLive: live !== false };
+  if (manualRunPending) {
+    manualRunPending = false;
+    setTimeout(manualRun, 0); // after forms.js's own listener has mounted and restored the form
+  }
 });
 
 document.addEventListener("strutture:live-setting", (event) => {
@@ -153,13 +157,24 @@ document.addEventListener("strutture:run-network-error", (event) => {
 
 // Ctrl+Enter runs immediately from anywhere (WORKBENCH_SPEC §2); Enter-in-a-field already submits
 // the native form, which forms.js routes through `requestRun` too.
-document.addEventListener("keydown", (event) => {
-  if (!(event.ctrlKey || event.metaKey) || event.key !== "Enter") return;
-  if (!session.name) return;
+// A press that lands before the tool's schema has arrived (a reload: the title shows first, the
+// schema a fetch later) is remembered and fired once the form is mounted, instead of being lost.
+let manualRunPending = false;
+
+function manualRun() {
+  if (!session.name) {
+    manualRunPending = true;
+    return;
+  }
   const form = currentForm();
   if (!form) return;
   const values = visibleValues(form, session.fields);
   if (Object.keys(validateValues(session.fields, values)).length > 0) return; // already shown inline
-  event.preventDefault();
   requestRun(session.name, values, "manual");
+}
+
+document.addEventListener("keydown", (event) => {
+  if (!(event.ctrlKey || event.metaKey) || event.key !== "Enter") return;
+  event.preventDefault();
+  manualRun();
 });

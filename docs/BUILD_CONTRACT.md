@@ -70,5 +70,10 @@ under `docs/divergences/` is GENERATED (`python -m strutture.shared.divergences.
 - Acceptance: `uv run python -m strutture.shared.divergences.check --strict` reports 0 errors for your unit(s); your
   package's golden / oracle / unit tests are unchanged and green in BOTH modes; `uv run ruff check` clean.
 
+### Warnings about one input
+When a warning is about a single input field (a value left at its default, a block half filled, a mode switch),
+pass `avvisi_campi={testo_avviso: "nome_campo"}` to `success()`: the UI turns the warning into a jump to that field
+(docs/ui/WORKBENCH_SPEC.md §17). Warnings about results or about the method stay unmapped.
+
 ## Token discipline
 Read your spec and only the architecture sections named in your task (use `grep -n`/`sed -n` to pull sections). Do not open other specs, the workbooks, or whole CSVs (`head`, `awk`, `grep` only). Do not explore the repo.

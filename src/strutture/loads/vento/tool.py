@@ -69,7 +69,9 @@ def run(inputs: VentoPressioneInput) -> Report[VentoPressioneOutput]:
         p_h_kNm2=qb * ce_h,
         profilo=profilo,
     )
-    return success(data, inputs, warnings=_warnings(inputs))
+    avvisi = _warnings(inputs)
+    campi = {a: ("altitudine_m" if a.startswith("Altitudine") else "n_sezioni") for a in avvisi}
+    return success(data, inputs, warnings=avvisi, avvisi_campi=campi)
 
 
 TOOLS = (

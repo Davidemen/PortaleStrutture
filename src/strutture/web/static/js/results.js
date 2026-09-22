@@ -4,6 +4,7 @@
 // (results-groups.js/results-rows.js via results-toolbar.js's `mountGroup`) instead of clearing
 // `#results-root` -- so scroll position, open/closed groups and focus survive, and only the value
 // cells that actually changed get `data-changed` (results-diff.js).
+import { fieldForWarning, jumpToField } from "./campo-salto.js";
 import { el, clear } from "./dom.js";
 import { describeOutput, extractByPredicate, readPath, rowsHighlightPairs, firstChartNode } from "./output-schema.js";
 import { describeFields } from "./schema.js";
@@ -60,10 +61,27 @@ function makeRegisterGroup(toolName, groups) {
 // Finding E: the WARNING COUNT is spoken once, in the Sintesi's own button ("1 avviso" / "2
 // avvisi", sintesi.js) -- this is the detail list it opens, so its own summary names the content
 // rather than repeating the count a second time.
-function buildWarningsPanel(warnings) {
+// A warning about one input is a button that jumps to that input (campo-salto.js); the rest stay text.
+function buildWarningsPanel(warnings, avvisiCampi, fields) {
   const details = el("details", { class: "r-warnings-details", id: WARNINGS_ID });
   details.append(el("summary", { text: "Dettaglio avvisi" }));
-  details.append(buildMessageList(warnings, "r-warnings"));
+  const list = el("div", { class: "r-warnings" });
+  for (const text of warnings) {
+    const name = fieldForWarning(text, avvisiCampi, fields);
+    const field = name ? (fields || []).find((f) => f.name === name) : null;
+    if (!field) {
+      list.append(el("p", { text }));
+      continue;
+    }
+    const button = el("button", {
+      type: "button", class: "r-warning-jump", text,
+      "aria-label": `${text} Vai al campo ${field.label}.`, title: `Vai al campo: ${field.label}`,
+      "data-field": name,
+    });
+    button.addEventListener("click", () => jumpToField(name));
+    list.append(el("p", {}, [button]));
+  }
+  details.append(list);
   return details;
 }
 
@@ -214,7 +232,7 @@ export function renderReport(root, { report, outputNodes, tool, previous }) {
 
   const copyCtx = createCopyStatus(root);
   if (errors.length > 0) chrome.append(buildMessageList(errors, "r-errors"));
-  if (warnings.length > 0) chrome.append(buildWarningsPanel(warnings));
+  if (warnings.length > 0) chrome.append(buildWarningsPanel(warnings, report.avvisi_campi, tool && tool.fields));
   chrome.append(el("h2", { id: "results-head", tabindex: "-1", text: (tool && tool.title) || "Risultati" }));
   if (tool && tool.norm) chrome.append(el("p", { class: "r-norm", text: tool.norm }));
 

@@ -7,7 +7,7 @@ from strutture.shared.report import Report, success
 from strutture.shared.sketch import Sketch
 from strutture.shared.tool import Tool
 
-from .capacita_portante import capacita_portante
+from .capacita_portante import AVVISO_BLOCCO_IGNORATO_LEGACY, AVVISO_SISMICO, capacita_portante
 from .capacita_portante_checks import checks_capacita_portante
 from .checks_inviluppo import checks_inviluppo
 from .flessione import flessione
@@ -99,7 +99,10 @@ def run(inputs: PlintoIsolatoInput) -> Report[PlintoIsolatoOutput]:
         mu_ribaltamento_minimo=min(mu_ribaltamento_candidati) if mu_ribaltamento_candidati else None,
         schizzo=schizzo,
     )
-    return success(data, inputs, checks=checks, warnings=avvisi_capacita_portante)
+    return success(
+        data, inputs, checks=checks, warnings=avvisi_capacita_portante,
+        avvisi_campi={AVVISO_BLOCCO_IGNORATO_LEGACY: "legacy_compat", AVVISO_SISMICO: "terreno_condizione"},
+    )
 
 
 def _minimo(inviluppo_righe: tuple, grandezza: str) -> float | None:

@@ -454,14 +454,15 @@
 #form-actions {
   display: flex;
   align-items: center;
-  flex-wrap: nowrap;
+  flex-wrap: wrap; /* the live-status text moves to its own line when the buttons fill the row */
   gap: var(--s3);
   padding: var(--s3) var(--s4);
 }
 
 .f-live-status {
-  flex: 1 1 auto;
-  min-width: 0;
+  order: 1; /* last: when the row is full it wraps alone, the buttons and the menu stay together */
+  flex: 1 1 8rem;
+  min-width: 8rem;
   overflow: hidden;
   color: var(--graphite);
   font-size: var(--t-xs);
@@ -680,4 +681,16 @@
   .f-table-btn {
     transition: background-color 0.1s ease, border-color 0.1s ease;
   }
+}
+
+/* The field a warning jumped to (js/campo-salto.js): one short flash, then nothing. */
+.f-field--flash {
+  animation: sm-field-flash 1.6s ease-out 1;
+}
+@keyframes sm-field-flash {
+  from { background: var(--marker, #ffe600); }
+  to { background: transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .f-field--flash { animation: none; outline: 2px solid var(--ink, #14181d); }
 }

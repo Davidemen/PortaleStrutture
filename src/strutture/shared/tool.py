@@ -62,7 +62,10 @@ def _con_relazione(tool: Tool, inputs: BaseModel, report: Report[Any]) -> Report
     the tool's `relazione` inside the SAME broad-except discipline as a live calculation failure:
     any problem downgrades to an empty `relazione` plus an Italian warning, never a failed run."""
     if getattr(inputs, "legacy_compat", False):
-        return report.model_copy(update={"warnings": (*report.warnings, AVVISO_RELAZIONE_MODALITA_EXCEL)})
+        return report.model_copy(update={
+            "warnings": (*report.warnings, AVVISO_RELAZIONE_MODALITA_EXCEL),
+            "avvisi_campi": {**report.avvisi_campi, AVVISO_RELAZIONE_MODALITA_EXCEL: "legacy_compat"},
+        })
     try:
         tracce = tool.relazione(inputs, report.data)
     except Exception:

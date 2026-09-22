@@ -684,3 +684,32 @@
 .pr-progress[hidden] {
   display: none;
 }
+
+/* The save widget lives in the Dati action bar (#form-actions, a flex row): lay its own pieces out in
+   a row too, hide the empty status/error paragraphs (they took space and let the widget overlap the
+   live-status text next to it), and never let the bar's remaining text overlap it. */
+.es-widget {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--s2);
+  min-width: 0;
+}
+.es-state-text:empty,
+.es-status:empty,
+.es-error:empty {
+  display: none;
+}
+.es-state-text {
+  color: var(--graphite);
+  font-size: var(--t-xs);
+  white-space: nowrap;
+}
+.es-status,
+.es-error {
+  margin: 0;
+  font-size: var(--t-xs);
+}
+.es-error {
+  color: var(--danger, #b3261e);
+}
