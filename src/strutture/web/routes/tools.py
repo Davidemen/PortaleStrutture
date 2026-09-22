@@ -6,6 +6,7 @@ from fastapi import APIRouter, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 
+from strutture.shared.collegamenti import raccogli
 from strutture.shared.divergences import Divergence, load_register
 from strutture.shared.divergences.marker import traccia
 from strutture.shared.relazione.ast_json import ast_a_json
@@ -30,6 +31,31 @@ def build_tools_router(tools: dict[str, Tool], register: tuple[Divergence, ...] 
     @router.get("")
     def list_tools() -> list[dict[str, Any]]:
         return [_summary(tool) for tool in tools.values()]
+
+    @router.get("/collegamenti")
+    def collegamenti() -> dict[str, Any]:
+        """The typed links between tools (docs/ROADMAP.md phase 5): per key, who provides it and who
+        accepts it; per tool, what it offers, what it takes and where its results can be used."""
+        registro = raccogli(tools)
+        chiavi = {
+            chiave: {
+                "fornitori": [{"strumento": f.strumento, "percorso": f.percorso, "ingresso": f.ingresso} for f in link.fornitori],
+                "consumatori": [{"strumento": c.strumento, "campo": c.campo} for c in link.consumatori],
+            }
+            for chiave, link in registro.items()
+        }
+        per_strumento = {
+            name: {
+                "fornisce": [chiave for chiave, link in registro.items() if any(f.strumento == name for f in link.fornitori)],
+                "accetta": {c.campo: chiave for chiave, link in registro.items() for c in link.consumatori if c.strumento == name},
+                "usa_in": sorted({
+                    c.strumento for chiave, link in registro.items()
+                    if any(f.strumento == name for f in link.fornitori) for c in link.consumatori if c.strumento != name
+                }),
+            }
+            for name in tools
+        }
+        return {"chiavi": chiavi, "per_strumento": per_strumento}
 
     @router.get("/{name}/schema")
     def get_schema(name: str) -> JSONResponse:

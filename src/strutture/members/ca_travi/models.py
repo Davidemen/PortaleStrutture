@@ -188,7 +188,7 @@ class SleTensioniOutput(BaseModel):
         description="Tensione di compressione nel calcestruzzo, combinazione rara", json_schema_extra={"unit": "MPa", "symbol": "σ_c,rara"}
     )
     sigma_s_rara_MPa: float = Field(
-        description="Tensione di trazione nell'acciaio, combinazione rara", json_schema_extra={"unit": "MPa", "symbol": "σ_s,rara"}
+        description="Tensione di trazione nell'acciaio, combinazione rara", json_schema_extra={"provides": "trave.sigma_s_rara_MPa", "unit": "MPa", "symbol": "σ_s,rara"}
     )
     sigma_c_qp_MPa: float = Field(
         description="Tensione di compressione nel calcestruzzo, combinazione quasi permanente",

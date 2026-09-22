@@ -23,15 +23,15 @@ class TraviCollegamentoInput(BaseModel):
 
     norma: Norma = Field(default="NTC2018", description="Normativa di riferimento", json_schema_extra={"group": "Sito"})
 
-    ag_g: float = Field(description="Accelerazione orizzontale massima al sito ag (C4)", gt=0, le=2, json_schema_extra={"unit": "g", "symbol": "a_g", "group": "Sito"})
+    ag_g: float = Field(description="Accelerazione orizzontale massima al sito ag (C4)", gt=0, le=2, json_schema_extra={"accepts": "sito.ag_g", "unit": "g", "symbol": "a_g", "group": "Sito"})
     f0: float | None = Field(
         default=None, description="Fattore di amplificazione dello spettro F0 (C5)", gt=0, le=5,
-        json_schema_extra={"unit": "-", "symbol": "F_0", "group": "Sito", "condition": {"field": "norma", "equals": ["NTC2018"]}},
+        json_schema_extra={"accepts": "sito.f0", "unit": "-", "symbol": "F_0", "group": "Sito", "condition": {"field": "norma", "equals": ["NTC2018"]}},
     )
     categoria_sottosuolo: CategoriaSottosuoloTravi = Field(description="Categoria di sottosuolo (C6/C5)", json_schema_extra={"group": "Sito"})
     categoria_topografica: CategoriaTopograficaTravi | None = Field(
         default=None, description="Categoria topografica (C7)",
-        json_schema_extra={"group": "Sito", "condition": {"field": "norma", "equals": ["NTC2018"]}},
+        json_schema_extra={"accepts": "sito.categoria_topografica", "group": "Sito", "condition": {"field": "norma", "equals": ["NTC2018"]}},
     )
     ms: float | None = Field(
         default=None, description="Magnitudo di onde di superficie Ms (C6)", gt=0, le=10,

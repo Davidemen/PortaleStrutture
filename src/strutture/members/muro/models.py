@@ -29,10 +29,10 @@ class MuroSostegnoInput(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     # --- Sito ---------------------------------------------------------------------------------
-    ag_g: float = Field(description="Accelerazione orizzontale massima al sito", gt=0, lt=1, json_schema_extra={"unit": "g", "symbol": "a_g", "group": "Sito"})
-    f0: float = Field(description="Fattore massimo di amplificazione dello spettro in accelerazione orizzontale", gt=0, json_schema_extra={"unit": "-", "symbol": "F_0", "group": "Sito"})
-    categoria_sottosuolo: CategoriaSottosuolo = Field(description="Categoria di sottosuolo (governa il coefficiente Ss, Tab. 3.2.IV)", json_schema_extra={"group": "Sito"})
-    categoria_topografica: CategoriaTopografica = Field(description="Categoria topografica (governa il coefficiente ST, Tab. 3.2.V)", json_schema_extra={"group": "Sito"})
+    ag_g: float = Field(description="Accelerazione orizzontale massima al sito", gt=0, lt=1, json_schema_extra={"accepts": "sito.ag_g", "unit": "g", "symbol": "a_g", "group": "Sito"})
+    f0: float = Field(description="Fattore massimo di amplificazione dello spettro in accelerazione orizzontale", gt=0, json_schema_extra={"accepts": "sito.f0", "unit": "-", "symbol": "F_0", "group": "Sito"})
+    categoria_sottosuolo: CategoriaSottosuolo = Field(description="Categoria di sottosuolo (governa il coefficiente Ss, Tab. 3.2.IV)", json_schema_extra={"accepts": "sito.categoria_sottosuolo", "group": "Sito"})
+    categoria_topografica: CategoriaTopografica = Field(description="Categoria topografica (governa il coefficiente ST, Tab. 3.2.V)", json_schema_extra={"accepts": "sito.categoria_topografica", "group": "Sito"})
     beta_m: float = Field(description="Fattore di riduzione dell'accelerazione massima attesa al sito", gt=0, le=1, json_schema_extra={"unit": "-", "symbol": "β_m", "group": "Sito"})
     gamma_e: float = Field(
         default=1.0,
