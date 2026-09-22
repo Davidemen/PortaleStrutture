@@ -63,6 +63,11 @@ class Esito:
     incoerenze: tuple[str, ...]
     solo_esito: tuple[str, ...]
     senza_obiettivo: tuple[str, ...]
+    # Checks the objective actually constrained ("diretto", or "inverso" with
+    # `obiettivo_su_minimi`) -- empty means `obiettivo` had no effect on this sample at all
+    # (e.g. every check with a ratio is "inverso" and `obiettivo_su_minimi` is false, WORKBENCH_SPEC
+    # §23.6/DECISIONI 19-bis): the caller must not claim the objective was "applied" in that case.
+    con_obiettivo: tuple[str, ...]
 
 
 def valuta_esito(
@@ -75,6 +80,7 @@ def valuta_esito(
     incoerenze: list[str] = []
     solo_esito: list[str] = []
     senza_obiettivo: list[str] = []
+    con_obiettivo: list[str] = []
     etas: list[tuple[str, float]] = []
     obiettivo_rispettato = True
     for check in checks:
@@ -92,11 +98,14 @@ def valuta_esito(
         applica = orientamento == "diretto" or obiettivo_su_minimi
         if not applica:
             senza_obiettivo.append(check.name)
-        elif valore_eta > obiettivo:
-            obiettivo_rispettato = False
+        else:
+            con_obiettivo.append(check.name)
+            if valore_eta > obiettivo:
+                obiettivo_rispettato = False
     governante = max(etas, key=lambda coppia: coppia[1]) if etas else None
     ammissibile = all(c.passed for c in checks) and obiettivo_rispettato
     return Esito(
         ammissibile=ammissibile, eta_max=governante[1] if governante else None, governante=governante,
         incoerenze=tuple(incoerenze), solo_esito=tuple(solo_esito), senza_obiettivo=tuple(senza_obiettivo),
+        con_obiettivo=tuple(con_obiettivo),
     )

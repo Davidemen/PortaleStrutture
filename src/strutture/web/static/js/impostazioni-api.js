@@ -93,6 +93,10 @@ export function passiStrumento(toolName) {
   const promise = fetch(`/api/impostazioni/passi?strumento=${encodeURIComponent(toolName)}`)
     .then((response) => readJson(response))
     .catch(() => {
+      // A REJECTED promise must never stay cached: a momentary network error would otherwise wedge
+      // Dimensiona/Sensibilità on "valori di fabbrica" until the page reloads, even once the
+      // network recovers -- delete the entry BEFORE rethrowing so the next call retries for real.
+      passiCache.delete(toolName);
       throw new Error("Impossibile contattare il server.");
     });
   passiCache.set(toolName, promise);

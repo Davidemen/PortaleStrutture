@@ -44,6 +44,7 @@ def propaga(
     archi: Mapping[str, tuple[Arco, ...]],
     stato_proprio: Callable[[str], OwnState],
     ids_in_ciclo: frozenset[str],
+    messaggi_ciclo: Mapping[str, str] | None = None,
 ) -> StatoPropagato:
     """§25.1: one motivo per DIRECT provider (`archi[elemento_id]`), not one per every marked node
     reached anywhere in its subtree -- "Apri l'origine" opens the DIRECT provider, so that is the
@@ -57,26 +58,39 @@ def propaga(
         raggiunto, branch_rinviato = _esplora_ramo(elemento_id, diretto, archi)
         rinviato = rinviato or branch_rinviato
         piu_lontano = None  # (profondita, OwnState) of the deepest own reason found on this branch
-        provvisorio_visto = None  # "origine_provvisoria"/"origine_excel", first one found
-        for nodo_id, profondita in raggiunto:
+        provvisorio_visto = None  # (causa, nodo_id, strumento) of the node ACTUALLY responsible --
+        # never assumed to be `diretto` itself: `diretto`'s own corrections can be approved while a
+        # node further upstream on the same branch is the real (still unapproved/excel) cause.
+        for nodo_id, profondita, strumento in raggiunto:
             proprio = stato_proprio(nodo_id)
             if proprio.da_ricalcolare and (piu_lontano is None or profondita > piu_lontano[0]):
                 piu_lontano = (profondita, proprio)
             if provvisorio_visto is None:
                 if proprio.provvisorio:
-                    provvisorio_visto = "origine_provvisoria"
+                    provvisorio_visto = ("origine_provvisoria", nodo_id, strumento)
                 elif proprio.excel:
-                    provvisorio_visto = "origine_excel"
+                    provvisorio_visto = ("origine_excel", nodo_id, strumento)
         if piu_lontano is not None:
             motivi_ricalcolo.append(
                 MotivoOrigine(diretto.elemento_id, diretto.strumento, "origine_da_ricalcolare", piu_lontano[1].messaggio)
             )
         if provvisorio_visto is not None:
-            motivi_provvisorio.append({"elemento_id": diretto.elemento_id, "strumento": diretto.strumento, "causa": provvisorio_visto})
+            causa, nodo_reale_id, nodo_reale_strumento = provvisorio_visto
+            voce = {"elemento_id": diretto.elemento_id, "strumento": diretto.strumento, "causa": causa}
+            # Only surface "a monte" fields when the real cause is NOT the direct provider itself --
+            # keeps the payload/message identical to before for the (common) direct-cause case.
+            if nodo_reale_id != diretto.elemento_id:
+                voce["causa_elemento_id"] = nodo_reale_id
+                voce["causa_strumento"] = nodo_reale_strumento
+            motivi_provvisorio.append(voce)
     if rinviato:
         motivi_ricalcolo.append(MotivoOrigine("", "", "controllo_rinviato", "Catena di origini più lunga di 10 passaggi: controllo interrotto"))
     if elemento_id in ids_in_ciclo:
-        motivi_ricalcolo.append(MotivoOrigine("", "", "ciclo_origini", "Le origini formano un ciclo"))
+        # §25.1: name the actual cycle path ("<sigla> → … → <sigla>"), not just that one exists --
+        # `messaggi_ciclo` is precomputed by the caller (`web/routes/progetti_stato.py`, which has
+        # the tool siglas `propaga` itself never sees) from `cicli.cicli_componenti()`.
+        messaggio = (messaggi_ciclo or {}).get(elemento_id, "Le origini formano un ciclo")
+        motivi_ricalcolo.append(MotivoOrigine("", "", "ciclo_origini", messaggio))
     return StatoPropagato(
         da_ricalcolare_per_origine=any(m.causa == "origine_da_ricalcolare" for m in motivi_ricalcolo),
         motivi_ricalcolo=tuple(motivi_ricalcolo),
@@ -87,87 +101,35 @@ def propaga(
 
 def _esplora_ramo(
     radice: str, diretto: Arco, archi: Mapping[str, tuple[Arco, ...]],
-) -> tuple[list[tuple[str, int]], bool]:
+) -> tuple[list[tuple[str, int, str]], bool]:
     """Breadth-first from one direct provider, own visited set (bounds a cycle local to this
-    branch) starting at `{radice, diretto.elemento_id}`. Returns `(nodo_id, profondita)` for every
-    node reached (itself included, `profondita=1`) plus whether the depth cap was hit."""
+    branch) starting at `{radice, diretto.elemento_id}`. Returns `(nodo_id, profondita, strumento)`
+    for every node reached (itself included, `profondita=1`, `strumento` from the edge that reached
+    it) plus whether the depth cap was hit -- `strumento` lets the caller name the ACTUAL node
+    responsible for a "provvisorio"/excel state when it is not `diretto` itself."""
     visitati = {radice, diretto.elemento_id}
-    raggiunto = [(diretto.elemento_id, 1)]
+    raggiunto = [(diretto.elemento_id, 1, diretto.strumento)]
     coda: list[tuple[Arco, int]] = [(diretto, 1)]
     rinviato = False
     while coda:
         arco, profondita = coda.pop(0)
         if profondita > PROFONDITA_MAX_ORIGINI:
-            rinviato = True
+            # A node exactly AT the cap with no further providers is a genuine dead end, not a
+            # cutoff -- only flag "rinviato" when there really is more beyond the cap left unvisited
+            # (off-by-one found in review: a chain of EXACTLY 11 archi was marked rinviato even
+            # though the last node had nothing left to explore).
+            if archi.get(arco.elemento_id, ()):
+                rinviato = True
             continue
         for prossimo in archi.get(arco.elemento_id, ()):
             if prossimo.elemento_id not in visitati:
                 visitati.add(prossimo.elemento_id)
-                raggiunto.append((prossimo.elemento_id, profondita + 1))
+                raggiunto.append((prossimo.elemento_id, profondita + 1, prossimo.strumento))
                 coda.append((prossimo, profondita + 1))
     return raggiunto, rinviato
 
 
-def cicli(archi: Mapping[str, tuple[Arco, ...]]) -> frozenset[str]:
-    """Ids belonging to a strongly connected component with more than one node, or a self-edge
-    (Tarjan, iterative — recursion would blow the stack on a real project graph)."""
-    grafo: dict[str, tuple[str, ...]] = {
-        nodo: tuple(a.elemento_id for a in archi.get(nodo, ())) for nodo in _tutti_i_nodi(archi)
-    }
-    componenti = _tarjan(grafo)
-    return frozenset(
-        nodo for componente in componenti for nodo in componente
-        if len(componente) > 1 or grafo.get(next(iter(componente)), ()).count(next(iter(componente))) > 0
-    )
-
-
-def _tutti_i_nodi(archi: Mapping[str, tuple[Arco, ...]]) -> frozenset[str]:
-    nodi = set(archi.keys())
-    for lista in archi.values():
-        nodi.update(a.elemento_id for a in lista)
-    return frozenset(nodi)
-
-
-def _tarjan(grafo: Mapping[str, tuple[str, ...]]) -> tuple[frozenset[str], ...]:
-    """Iterative Tarjan's SCC algorithm: order-independent over `sorted(grafo)`, no recursion."""
-    index_di: dict[str, int] = {}
-    lowlink: dict[str, int] = {}
-    nella_pila: set[str] = set()
-    pila: list[str] = []
-    componenti: list[frozenset[str]] = []
-    contatore = [0]
-
-    for radice in sorted(grafo):
-        if radice in index_di:
-            continue
-        lavoro: list[tuple[str, int]] = [(radice, 0)]
-        while lavoro:
-            nodo, indice_vicino = lavoro[-1]
-            if indice_vicino == 0:
-                index_di[nodo] = lowlink[nodo] = contatore[0]
-                contatore[0] += 1
-                pila.append(nodo)
-                nella_pila.add(nodo)
-            vicini = grafo.get(nodo, ())
-            if indice_vicino < len(vicini):
-                lavoro[-1] = (nodo, indice_vicino + 1)
-                vicino = vicini[indice_vicino]
-                if vicino not in index_di:
-                    lavoro.append((vicino, 0))
-                elif vicino in nella_pila:
-                    lowlink[nodo] = min(lowlink[nodo], index_di[vicino])
-            else:
-                lavoro.pop()
-                if lavoro:
-                    genitore = lavoro[-1][0]
-                    lowlink[genitore] = min(lowlink[genitore], lowlink[nodo])
-                if lowlink[nodo] == index_di[nodo]:
-                    componente = []
-                    while True:
-                        cima = pila.pop()
-                        nella_pila.discard(cima)
-                        componente.append(cima)
-                        if cima == nodo:
-                            break
-                    componenti.append(frozenset(componente))
-    return tuple(componenti)
+# `cicli`/`cicli_componenti` moved to `stato_progetto/cicli.py` (rule 12: this module was 202
+# lines). Re-exported here since `web/routes/progetti_stato.py` and every existing test import
+# them from `propagazione` -- avoids touching every caller for a pure house-move.
+from strutture.shared.stato_progetto.cicli import cicli, cicli_componenti  # noqa: F401

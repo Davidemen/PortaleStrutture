@@ -111,3 +111,13 @@ Ancora aperta:
     distinguere una verifica di resistenza da un limite massimo di dettaglio (ρ ≤ ρmax): con "no" e obiettivo < 1
     la finestra "Dimensiona" segna quindi il risultato "da controllare". La voce resta aperta finché il titolare
     non sceglie un valore definitivo.
+
+    Precisazione dopo la revisione del 2026-09-22: "inverso" (valore ≥ limite, come As ≥ As,min) non è solo
+    armatura minima/passo/copriferro. Ci finiscono anche i coefficienti di sicurezza (FS ≥ FSmin: ribaltamento,
+    scorrimento, capacità portante — STR/GEO/EQU/SISMA) dei muri di sostegno e, in generale, ogni verifica
+    scritta come "capacità/domanda ≥ 1" invece di "domanda/capacità ≤ 1". Esempio: muro-sostegno con
+    obiettivo_su_verifiche_minimo = "no" (valore di fabbrica) — l'obiettivo di sfruttamento non si applica a
+    NESSUNA verifica di stabilità del muro, solo passa/non passa. Nel frattempo (in attesa della scelta) il
+    programma non applica più l'obiettivo a queste verifiche ma AVVISA con "Obiettivo non applicato: tutte le
+    verifiche sono di minimo (Impostazioni)" invece di dire (come prima, erroneamente) che l'obiettivo è stato
+    applicato anche ai limiti di dettaglio.

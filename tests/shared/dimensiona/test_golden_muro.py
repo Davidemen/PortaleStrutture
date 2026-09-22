@@ -1,5 +1,6 @@
-"""Golden case on `muro-sostegno` (WORKBENCH_SPEC §23.6): a real tool with both demand/capacity and
-minimum checks. `h_muro_m` has a clean N…N A…A boundary (larger wall = less stable) in [1.5, 3.5] m
+"""Golden case on `muro-sostegno` (WORKBENCH_SPEC §23.6): every stability check ("inverso", capacità/
+domanda >= 1 -- ribaltamento/scorrimento/capacità portante) here, no "diretto" checks at all
+(DECISIONI 19-bis). `h_muro_m` has a clean N…N A…A boundary (larger wall = less stable) in [1.5, 3.5] m
 with `passo=0.1` — verified once, by hand, in the worktree before writing this test:
 `uv run python -c "..."` at h=2.8 (admissible) and h=2.9 (not) with the tool's own example inputs."""
 from decimal import Decimal
@@ -94,3 +95,23 @@ def test_muro_sostegno_via_endpoint_post_dimensiona():
     assert data["ok"] is True
     assert data["esito"] == "trovato"
     assert data["valore"] == pytest.approx(2.8)
+
+
+def test_muro_sostegno_obiettivo_minore_di_uno_dice_la_verita_se_non_si_applica():
+    """§23.6/DECISIONI 19-bis: with `obiettivo_su_verifiche_minimo` false (factory value) and every
+    check "inverso", `obiettivo=0.80` reaches nothing -- same `valore` as `obiettivo=1.00`, and the
+    response must say the objective was NOT applied, never the (false) "applicato anche a limiti
+    di dettaglio" motivo."""
+    from fastapi.testclient import TestClient
+
+    from strutture.web.app import create_app
+
+    client = TestClient(create_app())
+    base_body = {"inputs": _MURO.example, "campo": "h_muro_m", "da": 1.5, "a": 3.5, "passo": 0.1, "verso": "massimo"}
+    risposta_1 = client.post("/api/tools/muro-sostegno/dimensiona", json={**base_body, "obiettivo": 1.0})
+    risposta_08 = client.post("/api/tools/muro-sostegno/dimensiona", json={**base_body, "obiettivo": 0.8})
+    assert risposta_1.status_code == 200 and risposta_08.status_code == 200
+    dati_1, dati_08 = risposta_1.json(), risposta_08.json()
+    assert dati_08["valore"] == pytest.approx(dati_1["valore"])
+    assert any("non applicato" in m.lower() for m in dati_08["motivi"]), dati_08["motivi"]
+    assert not any("applicato anche a" in m.lower() for m in dati_08["motivi"]), dati_08["motivi"]

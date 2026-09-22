@@ -29,6 +29,15 @@ def test_controllo_rinviato_and_cicli_from_motivi():
         _voce(da_ricalcolare=True, motivi=[{"causa": "ciclo_origini"}]),
         _voce(),
     ]
-    conteggi = conta(["verificato"] * 3, voci)
+    conteggi = conta(["verificato"] * 3, voci, numero_cicli=1)
     assert conteggi.controllo_rinviato == 1
+    assert conteggi.cicli_origini == 1
+
+
+@pytest.mark.unit
+def test_cicli_origini_counts_cycles_not_the_elements_inside_them():
+    """A single 3-element cycle (SPS -> TCO -> MUR -> SPS) must show "1 ciclo", not 3 (one per
+    element that happens to sit in it)."""
+    voci = [_voce(motivi=[{"causa": "ciclo_origini"}]) for _ in range(3)]
+    conteggi = conta(["verificato"] * 3, voci, numero_cicli=1)
     assert conteggi.cicli_origini == 1

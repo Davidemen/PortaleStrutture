@@ -24,12 +24,25 @@ import {
   etichettaTab,
 } from "./varianti-state.js";
 
+// Module-level, "last mount wins" (same pattern as js/elemento-salva.js's own `activeLoaded`/
+// js/annulla-ui.js's `activeTool`): js/varianti-chiusura-confirm.js's "Chiudi e carica" clears
+// `sessionStorage` itself, then fires ONE `strutture:varianti-chiuse` event -- a SINGLE
+// document-level listener (registered once below, never per mount, so navigating back and forth
+// across tool pages never stacks listeners) resets whichever instance is currently mounted, since
+// a route change that stays on the SAME tool page (a hash change, not a full document reload)
+// never remounts `mountVariantiBar` on its own.
+let resetAttivo = null; // {tool, reset} | null
+document.addEventListener("strutture:varianti-chiuse", (event) => {
+  if (resetAttivo && event.detail && event.detail.tool === resetAttivo.tool) resetAttivo.reset();
+});
+
 // Mounted by js/forms.js's `renderForm`, once per tool page. `origine` (§19.2: "when the form was
 // opened from an element, A carries origine") is `{elemento_id, revisione, nome} | null`, read
 // from js/provenienza.js's own state the same way js/elemento-salva.js already does.
 export function mountVariantiBar({ tool, fields, getApi, getOrigine }) {
   let set = caricaVarianti(tool);
   let applyingSet = false; // suppresses re-recording our OWN api.setValues() as a form edit
+  resetAttivo = { tool, reset: () => { set = null; render(); } };
 
   // Two SEPARATE elements, not one widget: §19.2 puts "Crea variante" in the Dati action bar
   // (next to "Carica esempio") but the strip itself ABOVE the form, under the §15/§16 notices --

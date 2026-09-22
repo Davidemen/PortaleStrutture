@@ -16,6 +16,8 @@ import { azzeraStoriaAnnulla } from "./annulla-ui.js";
 import { apriConflittoDialog } from "./elemento-conflitto.js";
 import { openCreateDialog as openCreateDialogImpl } from "./elemento-salva-dialog.js";
 import { fetchProgetto, fetchElemento, updateElemento } from "./progetti-api.js";
+import { caricaVarianti } from "./varianti-state.js";
+import { confermaChiusuraVarianti } from "./varianti-chiusura-confirm.js";
 
 // Module-level, same "last mount wins" pattern as js/annulla-ui.js's own `activeTool` --
 // js/varianti-bar.js reads this (never writes it) to give a brand-new variant A its `origine`
@@ -210,6 +212,9 @@ export function mountElementoSalva({ toolForm, tool, title, fields, params, inpu
     if (!params || params.anteprima !== "1") return false;
     const stash = takeAnteprimaStash(tool);
     if (!stash) return false;
+    // §19.2: an open varianti set must not be silently overwritten by a preview load -- the
+    // engineer chooses "Chiudi e carica" or "Annulla" before the stash is applied.
+    if (caricaVarianti(tool) && !(await confermaChiusuraVarianti(tool))) return false;
     // `getApi()` only resolves to a real value once `renderForm` (js/forms.js) has finished
     // assigning it, which -- unlike every other path below -- never happens on its own here:
     // `takeAnteprimaStash` is synchronous, so without a deliberate await this whole function would
@@ -229,6 +234,9 @@ export function mountElementoSalva({ toolForm, tool, title, fields, params, inpu
     if (await loadAnteprimaFromParams()) return;
     const id = params && params.elemento;
     if (!id) return;
+    // §19.2: same rule as the `?anteprima=1` path above -- an open varianti set is never
+    // overwritten by an `?elemento=` load without the engineer's explicit confirmation.
+    if (caricaVarianti(tool) && !(await confermaChiusuraVarianti(tool))) return;
     try {
       const elemento = await fetchElemento(id);
       const api = getApi();

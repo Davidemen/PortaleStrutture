@@ -47,16 +47,43 @@ export function statoElementiSnapshot() {
   return snapshot.elementi;
 }
 
-function motiviRicalcolo(voce) {
+// §25.1/§25.4: named by SIGLA (siglaOf, below), never the internal tool slug -- an own reason
+// (`voce.motivi` with `chiave`/`strumento`/`valore_salvato`/`valore_attuale`) is this element's
+// OWN provider; a propagated one already carries its own farthest-upstream `messaggio` (built by
+// `stato_progetto/propagazione.py`) and is shown as-is.
+//
+// `m.messaggio` (when present) is `stato_progetto/origini.py`'s own "<chiave>: <salvato> →
+// <attuale>", Italian-comma-formatted server-side -- reformatting it here would lose that
+// formatting, so it is kept AS THE BASE TEXT and the sigla is appended, rather than rebuilding the
+// whole line from the raw (unformatted) `valore_salvato`/`valore_attuale`. `chiave` (e.g.
+// "sito.ag_g") staying internal, and no symbol/unit, is a known gap -- fixing it needs the field's
+// own schema metadata, which this pure module deliberately has no access to (docs/CONSEGNA.md §4.8).
+function motiviRicalcolo(voce, toolsByName) {
   const propri = voce.motivi.filter((m) => m.causa !== "origine_da_ricalcolare" && m.causa !== "ciclo_origini" && m.causa !== "controllo_rinviato");
-  if (propri.length > 0) return propri.map((m) => m.messaggio || `${m.chiave} da ${m.strumento}: ${m.valore_salvato} → ${m.valore_attuale}`);
+  if (propri.length > 0) {
+    return propri.map((m) => {
+      const testo = m.messaggio || `${m.chiave}: ${m.valore_salvato} → ${m.valore_attuale}`;
+      return `${testo} (da ${siglaOf(toolsByName, m.strumento)})`;
+    });
+  }
   return voce.motivi.map((m) => m.messaggio || m.causa);
 }
 
-function motiviProvvisorioOrigine(voce) {
-  return (voce.motivi_origine || []).map((m) => (m.causa === "origine_excel"
-    ? `Usa valori di ${m.strumento}, che riproduce il foglio Excel`
-    : `Usa valori di ${m.strumento}, che applica correzioni non approvate`));
+// §25.4: `strumento`/`elemento_id` are the DIRECT provider (for "Apri l'origine"); when the real
+// cause is further upstream (`causa_strumento`/`causa_elemento_id`, WORKBENCH_SPEC §25.1 --
+// `propagazione.py`'s own `provvisorio_visto`) the message names BOTH, so approving the direct
+// provider's own corrections does not leave a stale "SPS applica correzioni non approvate" behind
+// once SPS itself is clean and some node further upstream is the actual cause.
+function motiviProvvisorioOrigine(voce, toolsByName) {
+  return (voce.motivi_origine || []).map((m) => {
+    const sigla = siglaOf(toolsByName, m.strumento);
+    const testo = m.causa === "origine_excel" ? "riproduce il foglio Excel" : "applica correzioni non approvate";
+    if (m.causa_strumento && m.causa_elemento_id) {
+      const siglaCausa = siglaOf(toolsByName, m.causa_strumento);
+      return `Usa valori di ${sigla}, a monte ${siglaCausa} ${testo}`;
+    }
+    return `Usa valori di ${sigla}, che ${testo}`;
+  });
 }
 
 // §25.2/§25.4: "◐ Provvisorio" links to the registro filtered on the OWN tool; a chip alone
@@ -93,7 +120,7 @@ export function renderProgettoStatoBadges(cell, elemento, toolsByName) {
   const voce = snapshot.elementi[elemento.id];
   if (!voce) return;
   if (voce.da_ricalcolare) {
-    cell.append(el("span", { class: "pst-chip pst-chip--ricalcola", title: motiviRicalcolo(voce).join(" · "), text: "↻ Da ricalcolare" }));
+    cell.append(el("span", { class: "pst-chip pst-chip--ricalcola", title: motiviRicalcolo(voce, toolsByName).join(" · "), text: "↻ Da ricalcolare" }));
   }
   if (voce.provvisorio) {
     const da = voce.correzioni.da_confermare;
@@ -107,7 +134,7 @@ export function renderProgettoStatoBadges(cell, elemento, toolsByName) {
     ]));
   }
   if (voce.provvisorio_origine) {
-    cell.append(el("span", { class: "pst-chip pst-chip--provvisorio", title: motiviProvvisorioOrigine(voce).join(" · ") }, [
+    cell.append(el("span", { class: "pst-chip pst-chip--provvisorio", title: motiviProvvisorioOrigine(voce, toolsByName).join(" · ") }, [
       document.createTextNode("◐ Provvisorio per origine "),
       ...linksFornitori(voce, toolsByName).flatMap((a, i) => (i === 0 ? [a] : [document.createTextNode(" · "), a])),
     ]));

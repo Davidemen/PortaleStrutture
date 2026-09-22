@@ -202,6 +202,15 @@ def test_passi_404_unknown_tool(client: TestClient) -> None:
 
 
 @pytest.mark.unit
+def test_passi_without_strumento_gives_italian_envelope_not_fastapi_default(client: TestClient) -> None:
+    response = client.get("/api/impostazioni/passi")
+    assert response.status_code == 422
+    body = response.json()
+    assert body["ok"] is False
+    assert "Indicare lo strumento" in body["errors"][0]
+
+
+@pytest.mark.unit
 def test_passi_precedence_campo_over_tipo(client: TestClient) -> None:
     client.put("/api/impostazioni", json={
         "impostazioni": {"passi_per_campo": [{"strumento": "fake-sum", "campo": "a", "passo": 5.0}]},

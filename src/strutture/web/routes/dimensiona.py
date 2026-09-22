@@ -39,6 +39,9 @@ _TROPPE_RICERCHE_IT = "Un'altra ricerca è in corso: riprovare fra qualche secon
 _MOTIVO_OBIETTIVO_SU_MINIMI = (
     "Obiettivo applicato anche a eventuali limiti massimi di dettaglio: controllare"
 )
+_MOTIVO_OBIETTIVO_NON_APPLICATO = (
+    "Obiettivo non applicato: tutte le verifiche sono di minimo (Impostazioni)"
+)
 _MOTIVO_EXCEL = "Valore trovato riproducendo il foglio Excel, errori inclusi"
 
 
@@ -203,9 +206,16 @@ def _affidabilita_finale(
     orientation that held on the initial samples but was contradicted later."""
     motivi = list(risultato.motivi)
     affidabile = risultato.affidabile
-    if not obiettivo_su_minimi and obiettivo < 1 and _MOTIVO_OBIETTIVO_SU_MINIMI not in motivi:
-        affidabile = False
-        motivi.append(_MOTIVO_OBIETTIVO_SU_MINIMI)
+    if not obiettivo_su_minimi and obiettivo < 1:
+        # §23.6/DECISIONI 19-bis: say what actually happened -- when EVERY check with a ratio is
+        # "inverso" (e.g. muro-sostegno's stability factors of safety), `obiettivo` reached none of
+        # them, so claiming it was "applied ... to detail limits" would be false.
+        if esito is not None and not esito.con_obiettivo:
+            if _MOTIVO_OBIETTIVO_NON_APPLICATO not in motivi:
+                motivi.append(_MOTIVO_OBIETTIVO_NON_APPLICATO)
+        elif _MOTIVO_OBIETTIVO_SU_MINIMI not in motivi:
+            affidabile = False
+            motivi.append(_MOTIVO_OBIETTIVO_SU_MINIMI)
     if modalita == "excel":
         affidabile = False
         motivi.append(_MOTIVO_EXCEL)
@@ -267,8 +277,18 @@ def _valida_campo(tool: Tool, campo: str) -> tuple[dict[str, Any], None] | tuple
         return None, _errore_body(f"Il campo {campo} non è numerico", "campo", 422)
     risolto = _risolvi_schema_campo(info)
     if campo == "legacy_compat" or risolto.get("type") not in ("number", "integer") or "enum" in risolto:
-        return None, _errore_body(f"Il campo {campo} non è numerico", "campo", 422)
+        return None, _errore_body(f"Il campo {_etichetta_campo(info, campo)} non è numerico", "campo", 422)
     return risolto, None
+
+
+def _etichetta_campo(info: dict[str, Any], campo: str) -> str:
+    """Simbolo/descrizione italiana del campo (`json_schema_extra`/`description`), MAI il nome
+    interno pydantic (`categoria_sottosuolo`) -- l'ingegnere non lo conosce."""
+    simbolo = info.get("symbol")
+    descrizione = info.get("description")
+    if simbolo and descrizione:
+        return f"{simbolo} ({descrizione})"
+    return descrizione or simbolo or campo
 
 
 def _risolvi_schema_campo(info: dict[str, Any]) -> dict[str, Any]:

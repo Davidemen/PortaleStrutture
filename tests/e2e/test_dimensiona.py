@@ -42,6 +42,31 @@ def test_cerca_disabled_until_passo_filled(page: Page, base_url: str) -> None:
     expect(reason).to_be_hidden()
 
 
+def test_obiettivo_edited_by_hand_survives_campo_change_and_blocks_search_when_invalid(
+    page: Page, base_url: str
+) -> None:
+    """§23.1: an obiettivo typed by the engineer is never rewritten by the settings fetch, and
+    the search must not start without a valid one (no silent default to 1,00)."""
+    _open_tool(page, base_url)
+    _open_dimensiona(page)
+
+    obiettivo = page.locator("#dm-obiettivo")
+    cerca = page.locator(".dm-panel").get_by_role("button", name="Cerca", exact=True)
+    reason = page.locator("#dm-cerca-reason")
+
+    obiettivo.fill("0,85")
+    page.locator("#dm-da").fill("250")
+    page.locator("#dm-a").fill("1000")
+    page.locator("#dm-passo").fill("10")
+    expect(cerca).to_have_attribute("aria-disabled", "false")
+    expect(obiettivo).to_have_value("0,85")
+
+    obiettivo.fill("")
+    expect(cerca).to_have_attribute("aria-disabled", "true")
+    expect(reason).to_be_visible()
+    expect(reason).to_have_text("Indicare un obiettivo di sfruttamento fra 0 e 1.")
+
+
 def test_search_shows_reliability_and_applica_updates_field(page: Page, base_url: str) -> None:
     _open_tool(page, base_url)
     _open_dimensiona(page)

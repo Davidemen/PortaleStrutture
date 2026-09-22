@@ -99,6 +99,41 @@ def test_chiudi_varianti_discards_the_set(page: Page, base_url: str) -> None:
     expect(page.get_by_role("button", name=CREA_VARIANTE, exact=True)).to_be_enabled()
 
 
+def test_opening_elemento_with_open_varianti_asks_for_confirmation(page: Page, base_url: str) -> None:
+    """§19.2: `?elemento=` must not silently overwrite an open varianti set -- "Annulla" leaves
+    the strip untouched, "Chiudi e carica" applies the element and closes the set."""
+    progetto_id = create_project_via_ui(page, base_url, _unique("Progetto varianti conferma"))
+    goto_tool(page, base_url, "demo-relazione")
+    load_example(page)
+    nome = _unique("Demo per conferma")
+    from .test_progetti import save_current_tool_as_new_element
+
+    save_current_tool_as_new_element(page, progetto_id=progetto_id, nome=nome)
+    elemento = elemento_by_nome(page, base_url, progetto_id, nome)
+
+    goto_tool(page, base_url, "demo-relazione")
+    load_example(page)
+    page.get_by_role("button", name=CREA_VARIANTE, exact=True).click()
+    strip = page.locator('[role="tablist"].vb-strip')
+    expect(strip).to_be_visible()
+
+    page.goto(f"{base_url}/#/demo-relazione?elemento={elemento['id']}")
+    dialog = page.get_by_role("dialog", name="Chiudere le varianti aperte?")
+    expect(dialog).to_be_visible()
+
+    dialog.get_by_role("button", name="Annulla", exact=True).click()
+    expect(dialog).to_be_hidden()
+    expect(strip).to_be_visible()
+    expect(strip.get_by_role("tab")).to_have_count(2)
+
+    page.goto(f"{base_url}/#/demo-relazione?elemento={elemento['id']}")
+    dialog = page.get_by_role("dialog", name="Chiudere le varianti aperte?")
+    expect(dialog).to_be_visible()
+    dialog.get_by_role("button", name="Chiudi e carica", exact=True).click()
+    expect(dialog).to_be_hidden()
+    expect(page.locator('[role="tablist"].vb-strip')).to_be_hidden()
+
+
 def test_tieni_questa_salva_come_nuovo_creates_one_element(page: Page, base_url: str) -> None:
     progetto_id = create_project_via_ui(page, base_url, _unique("Progetto varianti"))
     page.locator("#progetto-picker-select").select_option(progetto_id)

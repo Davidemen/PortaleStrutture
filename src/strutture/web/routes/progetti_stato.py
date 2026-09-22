@@ -12,9 +12,10 @@ from fastapi import APIRouter
 from strutture.shared.divergences.loader import load_register
 from strutture.shared.divergences.models import Divergence
 from strutture.shared.divergences.riepilogo import riepilogo_per_strumento
+from strutture.shared.stato_progetto.cicli import cicli, cicli_componenti
 from strutture.shared.stato_progetto.conteggi import conta
 from strutture.shared.stato_progetto.origini import LimiteRicalcoliRaggiunto, stato_origini
-from strutture.shared.stato_progetto.propagazione import Arco, OwnState, cicli, propaga
+from strutture.shared.stato_progetto.propagazione import Arco, OwnState, propaga
 from strutture.shared.stato_progetto.provvisorio import stato_provvisorio
 from strutture.shared.stato_progetto.valutazione import valore_attuale_a_percorso
 from strutture.shared.tool import Tool
@@ -98,15 +99,36 @@ def _calcola(
         elemento.id: _archi_di(elemento) for elemento in elementi
     }
     ids_ciclo = cicli(archi)
+    componenti_cicliche = cicli_componenti(archi)
+    strumento_di = {elemento.id: elemento.strumento for elemento in elementi}
+    messaggi_ciclo = _messaggi_ciclo(componenti_cicliche, strumento_di, tools)
 
     voci: dict[str, dict[str, Any]] = {}
     for elemento in elementi:
         origini, provvisorio_proprio = contesto.stato_proprio_completo(elemento)
-        propagato = propaga(elemento.id, archi, contesto.own_state, ids_ciclo)
+        propagato = propaga(elemento.id, archi, contesto.own_state, ids_ciclo, messaggi_ciclo)
         voci[elemento.id] = _voce(elemento, origini, provvisorio_proprio, propagato)
 
-    conteggi = conta((e.stato for e in elementi), voci.values())
+    conteggi = conta((e.stato for e in elementi), voci.values(), numero_cicli=len(componenti_cicliche))
     return {"elementi": voci, "conteggi": conteggi.__dict__}
+
+
+def _sigla(strumento: str, tools: dict[str, Tool]) -> str:
+    tool = tools.get(strumento)
+    return tool.sigla if tool else strumento
+
+
+def _messaggi_ciclo(
+    componenti_cicliche: tuple[tuple[str, ...], ...], strumento_di: dict[str, str], tools: dict[str, Tool],
+) -> dict[str, str]:
+    """§25.1: "<sigla> → … → <sigla>" for every id in a cycle, from `cicli.cicli_componenti()`'s
+    own ordered path -- every id in the same cycle gets the SAME full path message."""
+    messaggi: dict[str, str] = {}
+    for percorso in componenti_cicliche:
+        sigle = " → ".join(_sigla(strumento_di.get(nodo_id, ""), tools) for nodo_id in percorso)
+        for nodo_id in percorso[:-1]:
+            messaggi[nodo_id] = sigle
+    return messaggi
 
 
 def _archi_di(elemento: Any) -> tuple[Arco, ...]:

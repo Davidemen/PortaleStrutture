@@ -142,23 +142,42 @@ export function openDimensiona(preselected) {
     if (controller) controller.abort();
   };
 
+  // §23.1: "the search never starts without an obiettivo, the program never chooses one" -- valid
+  // range is 0 < x <= 1 (a share of the verification, not a raw ratio).
+  function obiettivoValida() {
+    const value = parseDecimal(obiettivoInput.value);
+    return value !== null && value > 0 && value <= 1;
+  }
+
   function updateReason() {
     const passoOk = parseDecimal(passoInput.value) !== null && parseDecimal(passoInput.value) > 0;
     const daOk = daInput.value.trim() !== "" && aInput.value.trim() !== "";
-    const ok = passoOk && daOk;
+    const obiettivoOk = obiettivoValida();
+    const ok = passoOk && daOk && obiettivoOk;
     // §23.5: "disabled with aria-disabled + aria-describedby ... still reachable by Tab" -- the
     // NATIVE `disabled` attribute would remove it from the tab order entirely, so only the ARIA
     // state is toggled; `runSearch`/the Ctrl+Enter handler both re-check `aria-disabled` instead.
     cercaBtn.setAttribute("aria-disabled", String(!ok));
+    if (!obiettivoOk) {
+      reasonEl.textContent = "Indicare un obiettivo di sfruttamento fra 0 e 1.";
+    } else {
+      reasonEl.textContent = "Indicare il passo di arrotondamento.";
+    }
     reasonEl.hidden = ok;
   }
-  [daInput, aInput, passoInput].forEach((input) => input.addEventListener("input", updateReason));
+  [daInput, aInput, passoInput, obiettivoInput].forEach((input) => input.addEventListener("input", updateReason));
   // §23.1: "changing Campo re-resolves [Passo] unless the user already typed one" -- only a real
   // keystroke sets this (programmatic writes below never dispatch `input`), so a settings fetch
   // that resolves late never clobbers a value the engineer already typed.
   let userEditedPasso = false;
   passoInput.addEventListener("input", () => {
     userEditedPasso = true;
+  });
+  // Same rule for Obiettivo: once the engineer types their own value, no later settings fetch
+  // (even one that resolves after the keystroke, e.g. a slow Campo switch) may overwrite it.
+  let userEditedObiettivo = false;
+  obiettivoInput.addEventListener("input", () => {
+    userEditedObiettivo = true;
   });
 
   function applyPrefill(field) {
@@ -171,7 +190,7 @@ export function openDimensiona(preselected) {
   function applyPassiSettings(field) {
     passiStrumento(session.name)
       .then((body) => {
-        obiettivoInput.value = formatForInput(body.obiettivo_sfruttamento ?? 1);
+        if (!userEditedObiettivo) obiettivoInput.value = formatForInput(body.obiettivo_sfruttamento ?? 1);
         minimoLine.textContent = `Obiettivo anche sulle verifiche di minimo: ${body.obiettivo_su_verifiche_minimo ? "sì" : "no"} (Impostazioni)`;
         const info = body.passi ? body.passi[field.name] : null;
         if (!userEditedPasso) {
@@ -186,7 +205,7 @@ export function openDimensiona(preselected) {
       })
       .catch(() => {
         passoNote.textContent = "Impostazioni non disponibili: valori di fabbrica.";
-        obiettivoInput.value = "1";
+        if (!userEditedObiettivo) obiettivoInput.value = "1";
         updateReason();
       });
   }
@@ -210,7 +229,7 @@ export function openDimensiona(preselected) {
       da: parseDecimal(daInput.value),
       a: parseDecimal(aInput.value),
       passo: parseDecimal(passoInput.value),
-      obiettivo: parseDecimal(obiettivoInput.value) ?? 1,
+      obiettivo: parseDecimal(obiettivoInput.value),
       verso: versoSelect.value,
     };
     // A second Cerca while one is already running (double-click, repeated Ctrl+Enter) must cancel

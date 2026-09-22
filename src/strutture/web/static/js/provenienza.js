@@ -30,6 +30,8 @@ import { ensureCollegamenti } from "./collegamenti-api.js";
 import { save } from "./form-state.js";
 import { requestRun } from "./live.js";
 import { azzeraStoriaAnnulla } from "./annulla-ui.js";
+import { caricaVarianti } from "./varianti-state.js";
+import { confermaChiusuraVarianti } from "./varianti-chiusura-confirm.js";
 
 // `{tool, chips: Map<fieldName, {chiave, strumento, percorso, ingresso, valore, elementoId?,
 // revisioneFornitore?}>}` -- `chips` holds only the fields whose tracked value has NOT been
@@ -123,6 +125,9 @@ export function mountProvenienza({ toolForm, tool, fields, params, input, getApi
       toApply.set(fieldName, { value, chiave });
     }
     if (toApply.size === 0) return;
+    // §19.2: a "Usa in..." arrival is a load like `?elemento=`/`?anteprima=1` -- an open varianti
+    // set is never overwritten without the engineer's explicit confirmation.
+    if (caricaVarianti(tool) && !(await confermaChiusuraVarianti(tool))) return;
     // Let renderForm finish assigning `api` (still a few statements away, js/forms.js) -- same
     // temporal-dead-zone wait js/elemento-salva.js's own `loadElementoFromParams` uses.
     await Promise.resolve();

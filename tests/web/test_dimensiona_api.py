@@ -2,7 +2,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from strutture.web.routes.dimensiona import StatoDimensiona
+from strutture.web.routes.dimensiona import StatoDimensiona, _etichetta_campo
 
 pytestmark = pytest.mark.integration
 
@@ -24,6 +24,14 @@ def test_422_campo_non_numerico(client: TestClient) -> None:
     response = client.post("/api/tools/fake-verifica/dimensiona", json=_corpo(campo="legacy_compat"))
     assert response.status_code == 422
     assert "non è numerico" in response.json()["errors"][0]
+
+
+def test_etichetta_campo_uses_description_and_symbol_never_the_internal_name() -> None:
+    """The engineer never sees a raw pydantic field name (e.g. `categoria_sottosuolo`) -- the
+    field's own `symbol`/`description` come first, the internal name is only a last resort."""
+    assert _etichetta_campo({"symbol": "ag", "description": "Accelerazione al suolo"}, "ag_g") == "ag (Accelerazione al suolo)"
+    assert _etichetta_campo({"description": "Categoria di sottosuolo"}, "categoria_sottosuolo") == "Categoria di sottosuolo"
+    assert _etichetta_campo({}, "categoria_sottosuolo") == "categoria_sottosuolo"
 
 
 def test_422_campo_inesistente(client: TestClient) -> None:

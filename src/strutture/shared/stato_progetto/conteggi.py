@@ -17,9 +17,13 @@ class Conteggi:
     cicli_origini: int
 
 
-def conta(stati_elementi: Iterable[str], voci_stato: Iterable[Mapping[str, Any]]) -> Conteggi:
+def conta(
+    stati_elementi: Iterable[str], voci_stato: Iterable[Mapping[str, Any]], numero_cicli: int = 0,
+) -> Conteggi:
     """`stati_elementi`: each element's own `StatoElemento` ("verificato"/...). `voci_stato`: the
-    matching `{da_ricalcolare, motivi, provvisorio, provvisorio_origine}` payloads, same order."""
+    matching `{da_ricalcolare, motivi, provvisorio, provvisorio_origine}` payloads, same order.
+    `numero_cicli`: distinct cycles (§25.1: `propagazione.cicli_componenti()`'s own count), NOT the
+    number of elements that sit in one -- a single 3-element cycle must show "1 ciclo", not 3."""
     stati = list(stati_elementi)
     voci = list(voci_stato)
     return Conteggi(
@@ -31,7 +35,7 @@ def conta(stati_elementi: Iterable[str], voci_stato: Iterable[Mapping[str, Any]]
         provvisori=sum(1 for v in voci if v["provvisorio"]),
         provvisori_per_origine=sum(1 for v in voci if v["provvisorio_origine"]),
         controllo_rinviato=sum(1 for v in voci if _con_causa(v, "controllo_rinviato")),
-        cicli_origini=sum(1 for v in voci if _con_causa(v, "ciclo_origini")),
+        cicli_origini=numero_cicli,
     )
 
 

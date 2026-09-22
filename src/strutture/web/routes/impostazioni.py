@@ -89,7 +89,9 @@ def _register_tipi_route(router: APIRouter, tools: dict[str, Tool]) -> None:
 
 def _register_passi_route(router: APIRouter, repository: ImpostazioniRepository, tools: dict[str, Tool]) -> None:
     @router.get("/passi")
-    def passi(strumento: str) -> Any:
+    def passi(strumento: str | None = None) -> Any:
+        if not strumento:
+            return _errori_body(("Indicare lo strumento",), ["query", "strumento"])
         tool = tools.get(strumento)
         if tool is None:
             return _unknown_tool(strumento)

@@ -86,6 +86,10 @@ def test_provider_value_change_marks_consumer_da_ricalcolare(page: Page, base_ur
     page.locator(".pt-table").wait_for(state="visible")
     muro_row = page.locator(f'.pt-row:has-text("{nome_muro}")')
     expect(muro_row.locator(".pst-chip--ricalcola")).to_have_text("↻ Da ricalcolare")
+    # §25.1/§25.4: the tooltip names the provider by its SIGLA ("SPS"), never the raw tool slug.
+    titolo = muro_row.locator(".pst-chip--ricalcola").get_attribute("title")
+    assert "da SPS" in titolo, titolo
+    assert PROVIDER not in titolo, titolo
 
 
 def test_rename_only_resave_keeps_da_ricalcolare_marker(page: Page, base_url: str) -> None:

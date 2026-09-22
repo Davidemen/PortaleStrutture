@@ -46,6 +46,21 @@ def test_rate_limit_returns_429_after_limit_exceeded() -> None:
 
 
 @pytest.mark.unit
+def test_static_assets_never_count_against_the_rate_limit() -> None:
+    """Static paths (`/js`, `/css`, `/fonts`) must not exhaust the budget on their own -- a page
+    reload's own module fetches (~140 measured with this wave's ~40 new JS files) are not `/api`
+    traffic and must never trigger a 429 that then also blocks the real calculation."""
+    settings = config.Settings(rate_limit_per_minute=1, max_body_bytes=1_000_000, host="127.0.0.1", port=8000)
+    app = create_app(tools=FAKE_TOOLS, settings=settings)
+    limited_client = TestClient(app)
+
+    for _ in range(5):
+        limited_client.get("/js/main.js")
+
+    assert limited_client.get("/api/tools").status_code == 200
+
+
+@pytest.mark.unit
 def test_body_size_cap_returns_413() -> None:
     settings = config.Settings(rate_limit_per_minute=120, max_body_bytes=10, host="127.0.0.1", port=8000)
     app = create_app(tools=FAKE_TOOLS, settings=settings)

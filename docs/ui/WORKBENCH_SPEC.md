@@ -904,11 +904,14 @@ for body and response in `shared/dimensiona/modelli.py`.
   bisection point (§23.3 point 4), forced `verso` in and against the sequence, a new warning appearing at the
   answer, orientation contradicted after being fixed, evaluation and time limits; `test_copertura_rapporti.py`
   (23.2).
-- Golden: on `muro-sostegno`'s example (has both demand/capacity and minimum checks), searching a stated field
-  `campo=<nome>` over an explicit `da=<x>, a=<y>, passo=<p>` with `obiettivo=1,00` returns `esito = "trovato"` with a
-  grid value v such that v is admissible and v − passo is not (checked by two direct `execute` calls); target 0,80
-  gives a value v' ≥ v. `ca-taglio-non-armato` (a single minimum/ceiling check, no demand/capacity action) is kept
-  only as a `estremo_sufficiente` case, not as the main golden example.
+- Golden: on `muro-sostegno`'s example (every check is "inverso" -- safety factors written as
+  capacità/domanda ≥ 1, none "diretto"; DECISIONI 19-bis), searching a stated field `campo=<nome>` over an
+  explicit `da=<x>, a=<y>, passo=<p>` with `obiettivo=1,00` returns `esito = "trovato"` with a grid value v such
+  that v is admissible and v − passo is not (checked by two direct `execute` calls); with `obiettivo_su_verifiche_
+  minimo` false (the factory value) the objective reaches none of those checks, so a target 0,80 must give the
+  SAME v and the response's `motivi` must say so truthfully rather than claim the objective was applied.
+  `ca-taglio-non-armato` (a single minimum/ceiling check, no demand/capacity action) is kept only as a
+  `estremo_sufficiente` case, not as the main golden example.
 - API (`tests/web/test_dimensiona_api.py`): 404, each 422 message (including empty grid and non-integer passo),
   429 with a held semaphore (via the injectable `app.state.dimensiona`), response shape including `modalita` and
   `correzioni`.
