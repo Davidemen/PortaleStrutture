@@ -1,9 +1,8 @@
 # StruttureMenni — istruzioni per gli agenti di sviluppo
 
-Leggi tutto questo file prima di toccare qualsiasi cosa. Poi leggi `docs/CONSEGNA.md` (stato del progetto e
-lavori aperti), `docs/BUILD_CONTRACT.md` (regole di costruzione, in inglese) e solo la sezione della specifica
-che riguarda il tuo compito (`docs/INDICE.md` dice dove sta cosa). Non esplorare il repository a caso: usa
-`grep -n` e `sed -n` per leggere sezioni mirate.
+Prima di lavorare leggi `docs/CONSEGNA.md` (stato del progetto e lavori aperti), `docs/BUILD_CONTRACT.md`
+(regole di costruzione, in inglese) e solo la sezione della specifica che riguarda il tuo compito
+(`docs/INDICE.md` dice dove sta cosa). Leggi sezioni mirate invece di esplorare il repository per intero.
 
 ## Con chi lavori
 Il titolare è un ingegnere strutturista, non un programmatore. Rispondi sempre in italiano, breve e concreto:
@@ -55,8 +54,8 @@ uv run python -m strutture.shared.divergences.check --strict    # registro: deve
 uv run python -m strutture.shared.divergences.render            # rigenera docs/divergences/*.md
 uv run python scripts/validazione_strumenti.py                  # rigenera docs/VALIDAZIONE_STRUMENTI.md (schede dai dati; la tabella di stato è del titolare e viene conservata)
 ```
-Numeri attesi al 2026-09-22: vedi `docs/CONSEGNA.md`, sezione "Stato". Un lavoro non è finito finché quei
-comandi non sono tutti verdi.
+Numeri attesi dei test: `docs/CONSEGNA.md`, sezione "Stato". Un lavoro non è finito finché i comandi che
+tocca non sono tutti verdi.
 
 ## Regole dure
 1. Mai fermare un processo per nome (`pkill -f`, `killall`, `taskkill /IM`, `lsof | xargs kill`). Porte, decise
@@ -79,8 +78,9 @@ comandi non sono tutti verdi.
    servita con `--static-dir src/strutture/web/static_next --data-dir build/ui-dev-data`, si prova con
    `STRUTTURE_E2E_STATIC_DIR=src/strutture/web/static_next uv run pytest tests/e2e -m e2e -q`, poi si promuove:
    `rm -rf build/static_prev_backup && mv src/strutture/web/static build/static_prev_backup && cp -R
-   src/strutture/web/static_next src/strutture/web/static && sed -i '' 's#web/static_next/js/#web/static/js/#'
-   tests/e2e/*.mjs`, si rilancia la suite e2e su `static/`, si committa `src/strutture/web/static tests/e2e`.
+   src/strutture/web/static_next src/strutture/web/static`, poi in `tests/e2e/*.mjs` si sostituisce
+   `web/static_next/js/` con `web/static/js/`, si rilancia la suite e2e su `static/`, si committa
+   `src/strutture/web/static tests/e2e`.
 4. CSP rigida: niente stile o script in linea, mai `innerHTML`; `el.style.setProperty` va bene. Nessun CDN,
    font ospitati in locale. Ogni comando da tastiera; icona + parola, mai solo il colore.
 5. Modalità Excel: ogni ramo che riproduce il foglio è `if legacy("<unita>/<slug>", legacy_compat):` con una
@@ -92,8 +92,8 @@ comandi non sono tutti verdi.
    relazione o in un avviso.
 7. Formule: ogni strumento ha `relazione*.py`; il harness (`tests/shared/relazione/harness.py`) valuta ogni
    formula stampata contro il numero dello strumento, quindi un cambiamento di calcolo senza cambiare la
-   traccia fallisce lì: è voluto. Dopo ogni nuovo calcolo, far rileggere il testo RESO delle formule a un
-   modello forte: ha trovato dieci difetti reali in tre ondate.
+   traccia fallisce lì: è voluto. Dopo un nuovo calcolo rileggi il testo reso delle formule (non solo il
+   codice) e segnala al titolare che va riletto anche da lui.
 8. Verifiche (`checks`): nomi brevi (≤ 25 caratteri circa, in italiano, senza trattini bassi) e dettagli corti
    (`"3,93 >= 3,56 cm²/m"`), altrimenti `test_wall_results_height_budget` fallisce. Ingressi piatti, uscite
    annidate; ogni campo con descrizione italiana, unità, simbolo, gruppo; `advanced: true` sui coefficienti rari.
@@ -112,8 +112,8 @@ comandi non sono tutti verdi.
 13. Non committare mai i fogli Excel (`*.xls`, `*.xlsx`, `workbooks/`), `var/`, `.env`, chiavi. La chiave MIDAS
     vive in `MIDAS_MAPI_KEY` (ambiente) o nella sessione del browser (intestazione `X-Midas-Key`): mai nei log,
     mai nelle risposte, mai nel codice.
-14. Fai il lavoro tu stesso: non delegare ad altri agenti a catena. Se il titolare vuole più agenti, ognuno
-    lavora su file disgiunti e committa il proprio pacchetto appena finito.
+14. Fai il lavoro tu stesso: niente catene di agenti. Se il titolare vuole più agenti in parallelo, ognuno
+    lavora su file disgiunti, nel proprio worktree, e committa il proprio pacchetto appena finito.
 15. Non modificare `pyproject.toml` né `src/strutture/shared/{tool,report,numeric,tables}.py` senza dirlo prima al
     titolare: sono il contratto condiviso da tutti gli strumenti e dall'interfaccia, che si costruisce dallo schema.
 
@@ -149,8 +149,3 @@ comandi non sono tutti verdi.
 - Avviso legato a un ingresso: `success(..., avvisi_campi={testo: "nome_campo"})` (spec §17).
 - Firme del registro, progetti, elementi: API in `routes/divergences.py` e `routes/progetti.py`; SQLite via
   repository in `storage/`; blocco ottimistico con `revisione` (409 = ricarica e riprova).
-
-## Modelli e costi (consiglio, non obbligo)
-Costruire e correggere con modelli economici e veloci; revisione ingegneristica e rilettura delle formule con
-un modello forte; le decisioni di architettura si scrivono nei documenti prima di costruire. Ogni prompt a un
-agente costruttore deve contenere: "fai il lavoro tu stesso, non delegare" e "non fermare processi per nome".
