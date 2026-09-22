@@ -67,6 +67,14 @@ comandi non sono tutti verdi.
    avvia|ferma|riavvia|stato` (alias `strutture` sul PC dell'ufficio; si avvia da solo all'accesso a Windows con
    l'attività pianificata "StruttureMenni"). Lo script usa `scripts/serve_live.py`, la cui riga di comando non
    contiene il nome del modulo, apposta. Riavvialo solo dopo averlo detto al titolare.
+   La cartella principale del repository resta SEMPRE su `main` e serve solo al server dell'ufficio: mai lavorarci
+   dentro direttamente (niente modifiche, commit o `git switch`). Si lavora sempre in una cartella di lavoro
+   separata (git worktree), una per ramo, accanto al repository:
+   `git worktree add ../PortaleStrutture-wt/<nome> -b funzione/<nome> origin/sviluppo` (per `sviluppo`:
+   `git worktree add ../PortaleStrutture-wt/sviluppo sviluppo`), poi `uv sync` al suo interno; i server di prova
+   di quella cartella usano la porta del ramo (regola 1). A lavoro unito: `git worktree remove ../PortaleStrutture-wt/<nome>`.
+   Il rilascio (`main` avanza fino a `sviluppo`, `docs/GUIDA_SVILUPPO.md`) è l'unico caso in cui la cartella
+   principale cambia: `git pull --ff-only` al suo interno, poi `strutture riavvia`, dopo averlo detto al titolare.
 3. Interfaccia: si lavora nella copia `src/strutture/web/static_next/` (se manca: `cp -R static static_next`),
    servita con `--static-dir src/strutture/web/static_next --data-dir build/ui-dev-data`, si prova con
    `STRUTTURE_E2E_STATIC_DIR=src/strutture/web/static_next uv run pytest tests/e2e -m e2e -q`, poi si promuove:

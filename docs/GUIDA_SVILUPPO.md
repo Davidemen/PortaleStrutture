@@ -23,10 +23,12 @@ Regole:
 ## 2. Il ciclo di una funzione
 
 1. **Issue.** Ogni lavoro parte da una issue su GitHub (§4). Chi lo prende se la assegna.
-2. **Ramo.** Aggiornare e creare il ramo:
+2. **Ramo.** In una cartella di lavoro separata (git worktree): la cartella principale resta su `main` per il server
+   dell'ufficio e non si tocca (`CLAUDE.md`, regola 2):
    ```
-   git switch sviluppo && git pull
-   git switch -c funzione/42-tabella-progetto
+   git fetch
+   git worktree add ../PortaleStrutture-wt/42-tabella-progetto -b funzione/42-tabella-progetto origin/sviluppo
+   cd ../PortaleStrutture-wt/42-tabella-progetto && uv sync
    ```
 3. **Lavoro.** Prima il test che fallisce, poi il codice (`CLAUDE.md`, "Come si fa una modifica"). Commit piccoli.
 4. **Tenersi aggiornati.** Se `sviluppo` va avanti mentre si lavora: `git fetch && git rebase origin/sviluppo`
@@ -102,12 +104,12 @@ Commit e PR citano la issue: `fix: neve con α = 0 non disegna la falda (#17)`.
   - `v1.0.0`: tutti gli strumenti validati e il registro firmato.
 - Rilascio, fatto da chi ha i permessi:
   ```
-  git switch sviluppo && git pull            # suite tutte verdi
-  git switch main && git pull
-  git merge --ff-only sviluppo               # se rifiuta, main ha qualcosa che sviluppo non ha: fermarsi
-  git tag -a v0.1.0 -m "v0.1.0: <riassunto>"
-  git push origin main --follow-tags
+  git fetch                                  # suite tutte verdi su origin/sviluppo
+  git push origin origin/sviluppo:main       # avanzamento rapido; se rifiuta, main ha qualcosa che sviluppo non ha: fermarsi
+  git tag -a v0.1.0 -m "v0.1.0: <riassunto>" origin/sviluppo
+  git push origin v0.1.0
   ```
+  Poi nella cartella principale (sempre su `main`, `CLAUDE.md` regola 2): `git pull --ff-only` e `strutture riavvia`.
   Poi su GitHub "Releases → Draft a new release" dal tag, con l'elenco delle issue chiuse.
 - Correzione urgente in ufficio: ramo `correzione/<nome>` da `main`, PR verso `sviluppo`, poi rilascio come sopra.
   Non si committa mai su `main` a mano.
