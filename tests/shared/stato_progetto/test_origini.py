@@ -77,3 +77,35 @@ def test_same_revision_but_changed_output_still_marks():
     # still be caught (§25.1).
     stato = stato_origini((_item(),), lambda eid: object(), lambda f, p, i: 0.20)
     assert stato.da_ricalcolare is True
+
+
+@pytest.mark.unit
+def test_malformed_saved_item_is_non_calcolabile_never_a_crash():
+    """A saved `provenienza.collegamenti` entry missing `chiave`/`strumento` (external, stored
+    data) must never raise KeyError -- read defensively, report "non calcolabile" like any other
+    provider failure."""
+    item = {"elemento_id": "prov-1", "percorso": "risultati.ag_g", "valore": 0.15}
+    stato = stato_origini((item,), lambda eid: object(), lambda f, p, i: 0.18)
+    assert stato.motivi[0].causa == "valore_cambiato"
+    assert stato.motivi[0].chiave == ""
+    assert stato.motivi[0].strumento == ""
+
+
+@pytest.mark.unit
+def test_missing_percorso_is_non_calcolabile():
+    stato = stato_origini((_item(percorso=None),), lambda eid: object(), lambda f, p, i: 0.15)
+    assert stato.motivi[0].causa == "origine_non_calcolabile"
+
+
+@pytest.mark.unit
+def test_vanished_output_path_is_non_calcolabile_not_valore_cambiato():
+    """The provider ran fine but its own output shape changed, so nothing lives at `percorso`
+    anymore (`None`): a missing value, not "changed to None"."""
+    stato = stato_origini((_item(),), lambda eid: object(), lambda f, p, i: None)
+    assert stato.motivi[0].causa == "origine_non_calcolabile"
+
+
+@pytest.mark.unit
+def test_message_uses_italian_decimal_comma():
+    stato = stato_origini((_item(valore=0.15),), lambda eid: object(), lambda f, p, i: 0.18)
+    assert stato.motivi[0].messaggio == "sito.ag_g: 0,15 → 0,18"

@@ -4,6 +4,7 @@ Pure: the route supplies `get_elemento` (may reach across projects) and `valore_
 (runs the provider's tool with its current stored inputs and reads the value at `percorso`)."""
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
 from typing import Any, Literal
 
 Causa = Literal["valore_cambiato", "origine_eliminata", "origine_non_calcolabile", "controllo_rinviato"]
@@ -51,21 +52,34 @@ def _motivo_di(item: Mapping[str, Any], get_elemento, valore_attuale_fornitore) 
     elemento_id = item.get("elemento_id")
     if not elemento_id:
         return None  # "origine non salvata": never marks, never propagates (§25.1)
+    # Read defensively (`.get`, never `[...]`): `item` is a saved `provenienza.collegamenti` entry,
+    # external stored data (WORKBENCH_SPEC's own "never trust stored JSON") -- a malformed one must
+    # report as "non calcolabile", never crash the whole `GET .../stato` with a KeyError.
+    chiave, strumento = item.get("chiave", ""), item.get("strumento", "")
+    percorso = item.get("percorso")
     fornitore = get_elemento(elemento_id)
     if fornitore is None:
-        return Motivo(item["chiave"], item["strumento"], elemento_id, "origine_eliminata",
+        return Motivo(chiave, strumento, elemento_id, "origine_eliminata",
                        item.get("valore"), None, MOTIVO_ORIGINE_ELIMINATA)
+    if not percorso:
+        return Motivo(chiave, strumento, elemento_id, "origine_non_calcolabile",
+                       item.get("valore"), None, MOTIVO_ORIGINE_NON_CALCOLABILE)
     try:
-        valore_attuale = valore_attuale_fornitore(fornitore, item["percorso"], bool(item.get("ingresso", False)))
+        valore_attuale = valore_attuale_fornitore(fornitore, percorso, bool(item.get("ingresso", False)))
     except LimiteRicalcoliRaggiunto:
-        return Motivo(item["chiave"], item["strumento"], elemento_id, "controllo_rinviato",
+        return Motivo(chiave, strumento, elemento_id, "controllo_rinviato",
                        item.get("valore"), None, MOTIVO_CONTROLLO_RINVIATO)
     except Exception:  # noqa: BLE001 - any failure of the provider's own run means "non calcolabile"
-        return Motivo(item["chiave"], item["strumento"], elemento_id, "origine_non_calcolabile",
+        return Motivo(chiave, strumento, elemento_id, "origine_non_calcolabile",
                        item.get("valore"), None, MOTIVO_ORIGINE_NON_CALCOLABILE)
-    if valore_attuale is None or _diverso(item.get("valore"), valore_attuale):
-        return Motivo(item["chiave"], item["strumento"], elemento_id, "valore_cambiato",
-                       item.get("valore"), valore_attuale, _messaggio(item, valore_attuale))
+    # A vanished `percorso` (the provider's own output shape changed) reads back as `None`: a
+    # missing value, not "changed to nothing" -- "non calcolabile", same as a provider that raises.
+    if valore_attuale is None:
+        return Motivo(chiave, strumento, elemento_id, "origine_non_calcolabile",
+                       item.get("valore"), None, MOTIVO_ORIGINE_NON_CALCOLABILE)
+    if _diverso(item.get("valore"), valore_attuale):
+        return Motivo(chiave, strumento, elemento_id, "valore_cambiato",
+                       item.get("valore"), valore_attuale, _messaggio(chiave, item.get("valore"), valore_attuale))
     return None
 
 
@@ -81,5 +95,16 @@ def _numero(valore: Any) -> bool:
     return isinstance(valore, int | float) and not isinstance(valore, bool)
 
 
-def _messaggio(item: Mapping[str, Any], valore_attuale: Any) -> str:
-    return f"{item['chiave']}: {item.get('valore')} → {valore_attuale}"
+def _messaggio(chiave: str, salvato: Any, valore_attuale: Any) -> str:
+    return f"{chiave}: {_formatta_it(salvato)} → {_formatta_it(valore_attuale)}"
+
+
+def _formatta_it(valore: Any) -> str:
+    """Italian decimal comma (spec example: "ag: 0,150 → 0,180 g"); anything non-numeric (or that
+    somehow does not survive `Decimal`) is shown as-is."""
+    if not _numero(valore):
+        return str(valore)
+    try:
+        return format(Decimal(str(valore)), "f").replace(".", ",")
+    except InvalidOperation:
+        return str(valore)
