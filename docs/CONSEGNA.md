@@ -11,8 +11,9 @@ Gira su macOS (sviluppo) e Windows (scritto per, non ancora provato dall'ufficio
 
 ## 2. Stato alla consegna
 - Git: solo locale, ramo `main`, nessun remoto (GitHub rinviato dal committente).
-- Suite verdi al 2026-09-22 (sera): `uv run pytest -q` → 4155 superati · `uv run pytest tests/e2e -m e2e -q` → 253 superati,
-  1 saltato (circa 3 minuti) · `node --test tests/e2e/*.mjs` → 39 · `uv run ruff check .` pulito ·
+- Suite verdi al 2026-09-22 (sera, dopo il pacchetto "Dimensiona"/"Sensibilità"/"Impostazioni", interfaccia
+  §23/§24/§26): `uv run pytest -q` → 4348 superati · `uv run pytest tests/e2e -m e2e -q` → 283 superati,
+  1 saltato (circa 3 minuti e mezzo) · `node --test tests/e2e/*.mjs` → 67 · `uv run ruff check .` pulito ·
   `uv run python -m strutture.shared.divergences.check --strict` → 0 errori (26 avvertimenti di clausola vuota,
   innocui).
 - Interfaccia servita: `src/strutture/web/static/`. Copia di lavoro: `src/strutture/web/static_next/` (ignorata da
@@ -56,6 +57,16 @@ l'interfaccia promossa e il codice corrente (verificato: l'API restituisce i col
    è bloccata su di esso). Restano: `neve-carico-falda` disegna la falda inclinata anche con α = 0°; lo schizzo della mensola
    tozza è schematico; i simboli con doppio pedice (`M_Ed/M_Rd`) si leggono male nelle evidenze della sintesi.
 5. Blocco 1 (rifattorizzazione regola 12 + specifica §19-22) integrato il 2026-09-22; interfaccia §19-22 da costruire.
+6. Interfaccia §23/§24/§26 (pacchetto "dimensiona_ui", 2026-09-22): finestre "Dimensiona" e "Sensibilità"
+   (`js/dimensiona*.js`, `js/sensibilita*.js`), pagina `#/impostazioni` (`js/impostazioni*.js`), voce nella barra
+   laterale e nella tavolozza, scorciatoie `g d`/`g s`/`g i`, link "Dimensiona" nel popover dello schizzo (§18),
+   grafico con linea dell'obiettivo e fino a 5 serie (`js/chart.js`, `js/chart-axis.js`). Provato con
+   `tests/e2e/test_dimensiona.py`, `test_sensibilita.py`, `test_impostazioni.py` e i pure-test `.mjs` omonimi.
+   Restano aperti (non bloccanti): la tabella "Storia delle modifiche" mostra un diff testuale semplice (non ogni
+   caso limite del §26.8 è coperto da un test dedicato); non è stata provata la vista a foglio intero sotto 720 px
+   per ogni combinazione di campi lunga (solo un controllo di visibilità generico); i test e2e coprono i percorsi
+   principali della specifica, non ogni comportamento elencato in §23.6/§24.3/§26.10 (es. campionamento non
+   monotono, limite di validità, conflitto 409 con due schede aperte).
 
 ## 5. Decisioni che spettano all'ingegnere
 Tutte in `docs/DECISIONI_DA_CONFERMARE.md`. Un agente non le prende: le segnala e chiede.
