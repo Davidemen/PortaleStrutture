@@ -82,3 +82,20 @@ roadmap). Cambierebbero i numeri rispetto ai fogli: è una decisione ingegnerist
 | MIDAS fase 2 (sollecitazioni degli elementi, non solo reazioni) | esito della verifica MIDAS |
 | Cartiglio dello studio (logo, numerazione) | logo e campi che volete in relazione |
 | Login e permessi | escluso dal committente: tutti vedono e modificano tutto |
+
+## Scelte dell'interfaccia da confermare (specifica interfaccia §23-25, 2026-09-22)
+Dimensiona e studio di sensibilità (`docs/ui/WORKBENCH_SPEC.md` §23-24):
+17. Obiettivo di sfruttamento proposto: 1,00 (limite di norma). Il programma lo propone sempre e l'utente lo può
+    cambiare; decidere se il valore predefinito resta 1,00 o se lo studio preferisce un margine (per esempio 0,90).
+18. Passo di arrotondamento: oggi il campo è vuoto e obbligatorio (solo i numeri interi, come il numero di barre,
+    propongono 1). Decidere se e quali passi predefiniti dare per tipo di dato (dimensioni, spessori, diametri) o
+    campo per campo; il programma non ne sceglie nessuno da solo.
+19. Verifiche senza rapporto numerico (valore e limite): nella ricerca contano solo come "passa / non passa", senza
+    obiettivo. Decidere se è accettabile o se quelle verifiche vanno completate (modifica del contratto condiviso
+    `Check`, da concordare).
+
+Stato del progetto (§25):
+20. "Provvisorio" nella relazione stampata: oggi l'indicatore compare solo nella pagina del progetto; decidere se
+    deve comparire anche nella relazione del singolo strumento e in quella di progetto, e con quale frase.
+21. Una correzione del registro respinta (ancora applicata in modalità standard finché un agente non adegua il
+    codice) rende l'elemento "provvisorio" come una da confermare? La specifica propone di sì.
