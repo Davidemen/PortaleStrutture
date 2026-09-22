@@ -33,14 +33,18 @@ function isTableLike(field) {
 
 // One entry per field present in at least one variant's inputs, `diverso` true when at least two
 // variants disagree on its value (§19.3 "Dati diversi: 3 di 24"). `dettaglio` carries the table
-// row-diff summary for table/list fields, null otherwise.
-export function differenzeCampi(fields, varianti) {
+// row-diff summary for table/list fields, null otherwise. `indiceRiferimento` (default the FIRST
+// variant, unchanged for every existing caller) picks which column is "the reference" -- the
+// selector in the confronto page's own "Confronta con" changes it, so the summary/detail (and
+// the reference column's own "= uguale") follow the SAME column the delta arrows do, not always
+// column A regardless of what is selected.
+export function differenzeCampi(fields, varianti, indiceRiferimento = 0) {
   const byName = new Map(fields.map((field) => [field.name, field]));
   const nomi = fields.map((field) => field.name);
   return nomi.map((nome) => {
     const field = byName.get(nome);
     const valori = varianti.map((variante) => (variante.inputs ? variante.inputs[nome] : undefined));
-    const riferimento = valori[0];
+    const riferimento = valori[indiceRiferimento];
     const diverso = valori.some((valore) => !sameValue(valore, riferimento));
     const dettaglio = diverso && isTableLike(field) ? diffRighe(riferimento, valori.find((v) => !sameValue(v, riferimento))) : null;
     return { field, nome, diverso, dettaglio };
@@ -90,17 +94,26 @@ function arrotonda(valore, decimali) {
 }
 
 // Relative delta of `valore` against `riferimento` (§19.3: "▲ +12,5 %" / "▼ −3,0 %", 1 decimal;
-// "= uguale" when equal at displayed precision). Returns null when either side is not a finite
-// number or the reference is zero (a relative delta from zero is not meaningful).
+// "= uguale" when the PERCENTAGE itself rounds to 0,0 % at that same precision). Returns null
+// when either side is not a finite number or the reference is zero (a relative delta from zero
+// is not meaningful) and `valore` does not also round to zero.
+//
+// Rounding the two RAW values first (the previous rule) answers a different question: it called
+// eta 0,81 vs 0,84 "= uguale" (rounded to 1 decimal, both "0,8") even though that is a genuine
+// 3,7 % difference shown as 2-decimal eta, and it could call two visibly different small
+// quantities (areas in m², forces in MN) "= uguale" purely because both round to "0,0" at 1
+// decimal, or flag two IDENTICAL small quantities as different for the opposite reason.
 export function deltaRelativo(valore, riferimento, { decimali = 1 } = {}) {
   if (typeof valore !== "number" || typeof riferimento !== "number") return null;
   if (!Number.isFinite(valore) || !Number.isFinite(riferimento)) return null;
-  if (arrotonda(valore, decimali) === arrotonda(riferimento, decimali)) return { simbolo: "=", testo: "= uguale" };
-  if (riferimento === 0) return null;
+  if (riferimento === 0) {
+    return arrotonda(valore, decimali) === 0 ? { simbolo: "=", testo: "= uguale" } : null;
+  }
   const percento = ((valore - riferimento) / Math.abs(riferimento)) * 100;
   const arrotondata = arrotonda(percento, decimali);
-  const simbolo = arrotondata >= 0 ? "▲" : "▼";
-  const segno = arrotondata >= 0 ? "+" : "−"; // U+2212 minus sign, not a hyphen, per format.js convention
+  if (arrotondata === 0) return { simbolo: "=", testo: "= uguale" };
+  const simbolo = arrotondata > 0 ? "▲" : "▼";
+  const segno = arrotondata > 0 ? "+" : "−"; // U+2212 minus sign, not a hyphen, per format.js convention
   const testo = `${simbolo} ${segno}${PERCENT_FORMAT.format(Math.abs(arrotondata))} %`;
   return { simbolo, testo };
 }

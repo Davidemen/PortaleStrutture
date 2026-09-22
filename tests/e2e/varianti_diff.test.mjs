@@ -81,3 +81,15 @@ test("deltaRelativo reports a percentage with an arrow, or 'uguale' at displayed
   assert.equal(deltaRelativo(5, 0), null);
   assert.equal(deltaRelativo("x", 10), null);
 });
+
+test("deltaRelativo compares at the displayed percentage, never the raw values rounded to 1 decimal", () => {
+  // eta 0,81 vs 0,84 (2-decimal eta) is a genuine 3,7 % difference -- rounding the RAW values to
+  // 1 decimal first used to call this "= uguale" (both "0,8").
+  const eta = deltaRelativo(0.81, 0.84);
+  assert.equal(eta.simbolo, "▼");
+
+  // Two distinct small quantities (e.g. an area in m²) whose relative difference still rounds to
+  // 0,0 % are correctly "= uguale"; two IDENTICAL small quantities are too.
+  assert.deepEqual(deltaRelativo(1.00003, 1.0), { simbolo: "=", testo: "= uguale" });
+  assert.deepEqual(deltaRelativo(0.0007, 0.0007), { simbolo: "=", testo: "= uguale" });
+});

@@ -6,7 +6,7 @@ import { el, clear } from "./dom.js";
 import { save } from "./form-state.js";
 import { requestRun } from "./live.js";
 import { navigate } from "./router.js";
-import { azzeraStoriaAnnulla } from "./annulla-ui.js";
+import { azzeraStoriaAnnulla, setHistoryScope } from "./annulla-ui.js";
 import {
   MAX_VARIANTI,
   caricaVarianti,
@@ -48,6 +48,12 @@ export function mountVariantiBar({ tool, fields, getApi, getOrigine }) {
     applyingSet = true;
     api.setValues(attiva.inputs);
     applyingSet = false;
+    // §21.1/§19.2: every write of a variant's inputs into the form is scoped to THAT variant's
+    // own undo history -- called AFTER `api.setValues()` above (never before), so the snapshot
+    // this scope's history baselines against is the value now actually ON SCREEN, not whatever
+    // the PREVIOUS variant still held the instant before `setValues()` ran (`setValues()` never
+    // dispatches a native "change", so nothing else would catch that staleness).
+    setHistoryScope(`${tool}#${attiva.id}`);
     const values = api.values();
     save(tool, values, fields);
     requestRun(tool, values, "manual");
@@ -126,16 +132,34 @@ export function mountVariantiBar({ tool, fields, getApi, getOrigine }) {
       el("button", { type: "button", class: "vb-confirm-yes", text: "Chiudi e scarta", onclick: () => {
         chiudiVarianti(tool);
         set = null;
+        // Back to the tool's own plain (non-variant) undo history -- otherwise a Ctrl+Z right
+        // after closing the set would still act on whichever variant was active last.
+        setHistoryScope(tool);
         render();
       } }),
       el("button", { type: "button", class: "vb-confirm-no", text: "Annulla", onclick: render }),
     );
   }
 
+  // §19.2: "Variante B di 3" next to the tool title -- the ONLY place in the DOM outside this
+  // widget's own strip/Affianca page that names the current variant, so an engineer scrolled past
+  // the strip still knows which one is on screen. `#tool-title` is js/main.js's own element (a
+  // plain DOM id, not a module import, to avoid a cycle back into main.js); harmless no-op when
+  // this page is not a tool page at all (never happens while `mountVariantiBar` is mounted).
+  function renderTitleBadge() {
+    const titleEl = document.getElementById("tool-title");
+    if (!titleEl) return;
+    const existing = titleEl.querySelector(".vb-title-badge");
+    if (existing) existing.remove();
+    if (!set) return;
+    titleEl.append(el("span", { class: "vb-title-badge", text: ` — Variante ${set.attiva} di ${set.varianti.length}` }));
+  }
+
   function render() {
     clear(strip);
     creaBtn.disabled = Boolean(set) && !puoAggiungere(set);
     creaBtn.title = creaBtn.disabled ? "Massimo 4 varianti" : "";
+    renderTitleBadge();
     if (!set) {
       strip.hidden = true;
       return;
@@ -159,11 +183,14 @@ export function mountVariantiBar({ tool, fields, getApi, getOrigine }) {
       return;
     }
     persist();
-    // A brand-new variant set is a history boundary the same way §21.1 treats "Carica esempio":
-    // the newly-active variant's inputs are not an edit of what was on screen a moment ago.
-    azzeraStoriaAnnulla();
     render();
+    // `applyActive()` below scopes the undo history to the newly-active variant's OWN id first
+    // (js/annulla-ui.js's `setHistoryScope`) -- a brand-new scope already starts empty, but
+    // `azzeraStoriaAnnulla()` after it still enforces the boundary explicitly (§21.1, same as
+    // "Carica esempio") for the rare case this scope was already visited earlier in the tab's
+    // life (e.g. re-adding a variant after deleting it) and would otherwise resume old steps.
     applyActive();
+    azzeraStoriaAnnulla();
   });
 
   strip.addEventListener("keydown", (event) => {

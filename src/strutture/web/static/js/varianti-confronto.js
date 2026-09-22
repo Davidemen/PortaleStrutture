@@ -1,34 +1,20 @@
 // #/varianti/<tool> ("Affianca", WORKBENCH_SPEC §19.3): one column per variant, a `<table>` with
-// variants as columns and Verdict/Verifiche/Risultati/Dati rows. Full-width page, no Dati/Sintesi
-// split -- same shell slot as #/registro and #/progetti (js/main.js `showVarianti`).
+// variants as columns and Modalità/Esito/Schema/Verifiche/Risultati/Dati rows. Full-width page,
+// no Dati/Sintesi split -- same shell slot as #/registro and #/progetti (js/main.js
+// `showVarianti`). Row builders live in js/varianti-confronto-righe.js (kept this module under
+// the 400-line cap); this module owns the page shell, the run loop, the reference-column
+// selector/toggles and the narrow-viewport (<1100px) one-column-at-a-time tab strip.
 import { el, clear } from "./dom.js";
 import { navigate } from "./router.js";
 import { fetchSchema, runTool } from "./api.js";
 import { describeFields } from "./schema.js";
-import { describeOutput, extractByPredicate, readPath } from "./output-schema.js";
-import { checkMark, buildBar, effectiveUtilisation, displayCheckName, governingCheck } from "./verdict.js";
-import { formatValue, formatUnit } from "./format.js";
-import { caricaVarianti, salvaVarianti, etichettaTab } from "./varianti-state.js";
-import { differenzeCampi, unioneVerifiche, checkPer, deltaRelativo, sameValue } from "./varianti-diff.js";
+import { describeOutput } from "./output-schema.js";
+import { caricaVarianti, salvaVarianti, rinominaVariante, etichettaTab } from "./varianti-state.js";
+import { differenzeCampi, deltaRelativo } from "./varianti-diff.js";
 import { apriTieniDialog } from "./varianti-tieni.js";
-
-function verdictWordOf(report) {
-  if (!report) return "! Errore";
-  const checks = report.checks || [];
-  if (checks.length === 0) return report.ok ? "✓ Calcolo eseguito" : "✕ Non verificato";
-  const failing = checks.filter((c) => !c.passed).length;
-  return failing === 0 ? "✓ Verificato" : `✕ ${failing} non soddisfatte`;
-}
-
-function highlightPairsOf(outputNodes, data) {
-  const { matched } = extractByPredicate(outputNodes, (node) => node.kind === "scalar" && node.highlight);
-  return matched.map((node) => ({ node, value: readPath(data, node.path) })).filter((pair) => pair.value !== null && pair.value !== undefined);
-}
-
-function everyScalarOf(outputNodes, data) {
-  const { matched } = extractByPredicate(outputNodes, (node) => node.kind === "scalar");
-  return matched.map((node) => ({ node, value: readPath(data, node.path) }));
-}
+import {
+  buildModalitaRow, buildVerdictRow, buildSchemaRow, buildVerificheRows, buildRisultatiRows, buildDatiRows, sectionHead,
+} from "./varianti-confronto-righe.js";
 
 export async function renderVariantiConfronto(root, { tool, owner }) {
   if (root._smOwner !== owner) return;
@@ -58,14 +44,40 @@ export async function renderVariantiConfronto(root, { tool, owner }) {
   let mostraTuttiRisultati = false;
   let mostraTuttiDati = false;
   let riferimentoId = set.varianti[0].id;
+  // §19.3 "<1100px: one column at a time, same tab strip as above" -- which column stays visible
+  // in the narrow layout; a screen-reader/keyboard user never loses the others (CSS `display:
+  // none` only applies inside that one `@media` query, so this is purely a narrow-viewport
+  // affordance, never a data-loss risk at any width).
+  let activeColIndex = Math.max(0, set.varianti.findIndex((v) => v.id === set.attiva));
   const reportsById = new Map(); // id -> {report, error}
 
   root.append(
     el("h2", { text: `Confronto varianti — ${schema.title || tool}` }),
     el("a", { href: `#/${tool}`, class: "vc-torna", text: "← Torna al calcolo" }),
   );
+  const narrowTabs = el("div", { class: "vc-narrow-tabs", role: "tablist", "aria-label": "Variante visibile" });
+  root.append(narrowTabs);
   const table = el("table", { class: "vc-table", tabindex: "0", "aria-label": "Confronto varianti" });
   root.append(el("div", { class: "r-table-scroll" }, [table]));
+
+  function renderNarrowTabs() {
+    clear(narrowTabs);
+    set.varianti.forEach((variante, index) => {
+      narrowTabs.append(el("button", {
+        type: "button", role: "tab", class: "vc-narrow-tab", "aria-selected": String(index === activeColIndex), text: variante.nome,
+        onclick: () => { activeColIndex = index; render(); },
+      }));
+    });
+  }
+
+  // Marks every data cell of `tr` (skipping the row's own `<th>`) with `vc-col-hidden-narrow`
+  // when it is not the active column -- the ONLY thing the <1100px media query in css/varianti.css
+  // acts on, so a row builder never needs its own narrow-layout logic.
+  function markNarrowVisibility(tr) {
+    Array.from(tr.children)
+      .slice(1)
+      .forEach((cell, index) => cell.classList.toggle("vc-col-hidden-narrow", index !== activeColIndex));
+  }
 
   function reportOf(id) {
     return (reportsById.get(id) || {}).report || null;
@@ -74,10 +86,19 @@ export async function renderVariantiConfronto(root, { tool, owner }) {
   async function runOne(variante, colEl) {
     colEl.setAttribute("aria-busy", "true");
     try {
-      const { report } = await runTool(tool, variante.inputs);
-      reportsById.set(variante.id, { report, error: null });
+      const { status, report } = await runTool(tool, variante.inputs);
+      // `runTool` never throws on 4xx/5xx (api.js's own `readJson` contract) -- a non-2xx body is
+      // the Italian error envelope (`{errors: [...]}`), never a real report, so this column must
+      // show "! Errore" with the first message, exactly like every other error path in the app,
+      // not silently render it as if the calculation had produced this as its result.
+      if (status >= 200 && status < 300) {
+        reportsById.set(variante.id, { report, error: null });
+      } else {
+        const message = (report && report.errors && report.errors[0]) || "Impossibile eseguire il calcolo.";
+        reportsById.set(variante.id, { report: null, error: message });
+      }
     } catch (error) {
-      reportsById.set(variante.id, { report: null, error: "Impossibile eseguire il calcolo." });
+      reportsById.set(variante.id, { report: null, error: "Impossibile contattare il server." });
     }
     colEl.setAttribute("aria-busy", "false");
   }
@@ -107,11 +128,23 @@ export async function renderVariantiConfronto(root, { tool, owner }) {
     for (const variante of set.varianti) {
       const nameInput = el("input", { type: "text", class: "vc-name-input", value: variante.nome, maxlength: "40", "aria-label": `Nome variante ${variante.id}` });
       nameInput.addEventListener("change", () => {
-        set = { ...set, varianti: set.varianti.map((v) => (v.id === variante.id ? { ...v, nome: nameInput.value.trim() || v.id } : v)) };
+        // `rinominaVariante` (the SAME pure transition js/varianti-bar.js's own tab menu uses),
+        // never a hand-rolled map here -- otherwise this table's own copy of `set` drifts from
+        // what a following "Tieni questa" reads (the closed-over `variante`, captured before the
+        // rename), and the dialog opens on the OLD name.
+        set = rinominaVariante(set, variante.id, nameInput.value);
         salvaVarianti(tool, set);
+        render();
       });
       const originTxt = variante.origine ? `da ${variante.origine.nome || "elemento"}, rev. ${variante.origine.revisione}` : "";
-      const teniBtn = el("button", { type: "button", class: "vc-tieni", text: "Tieni questa", onclick: () => apriTieniDialog({ tool, variante, report: reportOf(variante.id), outputNodes, fields }) });
+      const teniBtn = el("button", {
+        type: "button", class: "vc-tieni", text: "Tieni questa",
+        // Never on a column that errored or has not finished its own first run yet -- "Tieni
+        // questa" builds its payload straight from THIS report (js/varianti-tieni.js's own
+        // `payloadFor`), so with none there is nothing correct to keep.
+        disabled: !reportOf(variante.id),
+        onclick: () => apriTieniDialog({ tool, title: schema.title, variante, report: reportOf(variante.id), outputNodes, fields, tuttiId: set.varianti.map((v) => v.id) }),
+      });
       const th = el("th", { scope: "col", class: "vc-col-head" }, [
         nameInput,
         originTxt ? el("p", { class: "vc-origin", text: originTxt }) : document.createTextNode(""),
@@ -122,144 +155,32 @@ export async function renderVariantiConfronto(root, { tool, owner }) {
     return tr;
   }
 
-  function buildVerdictRow() {
-    const tr = el("tr", { class: "vc-row-verdict" });
-    tr.append(el("th", { scope: "row", text: "Esito" }));
-    const refReport = reportOf(riferimentoId);
-    for (const variante of set.varianti) {
-      const info = reportsById.get(variante.id) || {};
-      const report = info.report;
-      const cell = el("td", {});
-      if (info.error) {
-        cell.append(el("span", { class: "vc-verdict-err", text: "! Errore" }), el("p", { class: "vc-error-msg", text: info.error }));
-      } else if (report) {
-        const checks = report.checks || [];
-        const ok = checks.length === 0 ? Boolean(report.ok) : checks.every((c) => c.passed);
-        cell.append(el("span", {}, [checkMark(ok)]), document.createTextNode(` ${verdictWordOf(report)}`));
-        const governing = governingCheck(checks);
-        if (governing) {
-          const ratio = effectiveUtilisation(governing);
-          if (ratio !== null) {
-            cell.append(el("p", { class: "vc-eta", text: `η max ${ratio.toFixed(2).replace(".", ",")} — ${displayCheckName(governing.name)}` }));
-            cell.append(buildBar(ratio, governing.passed));
-          }
-          if (refReport && variante.id !== riferimentoId) {
-            const refGoverning = (refReport.checks || []).find((c) => c.name === governing.name);
-            const refRatio = refGoverning ? effectiveUtilisation(refGoverning) : null;
-            if (refRatio !== null && ratio !== null && refRatio !== ratio) cell.append(deltaCell(ratio, refRatio));
-            const okRef = (refReport.checks || []).every((c) => c.passed);
-            if (ok !== okRef) cell.append(el("p", { class: "vc-diff-flag", text: "≠ esito diverso" }));
-          }
-        }
-      }
-      tr.append(cell);
-    }
-    return tr;
-  }
-
-  function buildVerificheRows() {
-    const reports = set.varianti.map((v) => reportOf(v.id));
-    const nomi = unioneVerifiche(reports, set.varianti.findIndex((v) => v.id === riferimentoId));
-    const rows = [];
-    for (const nome of nomi) {
-      const tr = el("tr");
-      tr.append(el("th", { scope: "row", text: displayCheckName(nome) }));
-      const refCheck = checkPer(reportOf(riferimentoId), nome);
-      const refRatio = refCheck ? effectiveUtilisation(refCheck) : null;
-      for (const variante of set.varianti) {
-        const check = checkPer(reportOf(variante.id), nome);
-        const cell = el("td", {});
-        if (!check) {
-          cell.append(el("span", { text: "—" }));
-        } else {
-          const ratio = effectiveUtilisation(check);
-          cell.append(el("span", {}, [checkMark(check.passed)]));
-          if (ratio !== null) cell.append(document.createTextNode(` ${ratio.toFixed(2).replace(".", ",")}`));
-          if (variante.id !== riferimentoId && ratio !== null && refRatio !== null && ratio !== refRatio) cell.append(deltaCell(ratio, refRatio));
-        }
-        tr.append(cell);
-      }
-      rows.push(tr);
-    }
-    return rows;
-  }
-
-  function buildRisultatiRows() {
-    const refData = (reportOf(riferimentoId) || {}).data || {};
-    const refHighlights = highlightPairsOf(outputNodes, refData);
-    const pairsSets = set.varianti.map((v) => {
-      const data = (reportOf(v.id) || {}).data || {};
-      return mostraTuttiRisultati ? everyScalarOf(outputNodes, data) : highlightPairsOf(outputNodes, data);
-    });
-    const refPairs = mostraTuttiRisultati ? everyScalarOf(outputNodes, refData) : refHighlights;
-    const rows = [];
-    for (let i = 0; i < refPairs.length; i += 1) {
-      const node = refPairs[i].node;
-      const tr = el("tr");
-      tr.append(el("th", { scope: "row", text: node.label }));
-      pairsSets.forEach((pairs, colIndex) => {
-        const pair = pairs.find((p) => p.node.path === node.path);
-        const cell = el("td", {});
-        if (!pair) {
-          cell.append(el("span", { text: "—" }));
-        } else {
-          const { text } = formatValue(pair.value, pair.node);
-          cell.append(document.createTextNode(`${text}${pair.node.unit && pair.node.unit !== "-" ? ` ${formatUnit(pair.node.unit)}` : ""}`));
-          if (set.varianti[colIndex].id !== riferimentoId) cell.append(deltaCell(pair.value, refPairs[i].value));
-        }
-        tr.append(cell);
-      });
-      rows.push(tr);
-    }
-    return rows;
-  }
-
-  function buildDatiRows() {
-    const differenze = differenzeCampi(fields, set.varianti);
-    const daMostrare = mostraTuttiDati ? differenze : differenze.filter((voce) => voce.diverso);
-    return daMostrare.map((voce) => {
-      const tr = el("tr");
-      tr.append(el("th", { scope: "row", text: voce.field ? voce.field.label : voce.nome }));
-      const riferimentoValore = (set.varianti.find((v) => v.id === riferimentoId) || {}).inputs?.[voce.nome];
-      for (const variante of set.varianti) {
-        const valore = variante.inputs ? variante.inputs[voce.nome] : undefined;
-        const cell = el("td", {});
-        if (voce.dettaglio) {
-          cell.append(el("span", { text: `tabella: ${voce.dettaglio.diverse} righe diverse su ${voce.dettaglio.totale}` }));
-        } else {
-          const { text } = formatValue(valore, {});
-          cell.append(document.createTextNode(text || "—"));
-          if (variante.id !== riferimentoId && !sameValue(valore, riferimentoValore)) cell.append(el("span", { class: "vc-diff-flag", text: " ≠ diverso" }));
-        }
-        tr.append(cell);
-      }
-      return tr;
-    });
-  }
-
-  function sectionHead(text) {
-    const tr = el("tr", { class: "vc-section" });
-    const th = el("th", { colspan: String(set.varianti.length + 1), text });
-    tr.append(th);
-    return tr;
+  function buildCtx() {
+    return { set, fields, outputNodes, riferimentoId, mostraTuttiRisultati, mostraTuttiDati, reportOf, reportsById, deltaCell };
   }
 
   function render() {
     clear(table);
-    const conta = differenzeCampi(fields, set.varianti).filter((v) => v.diverso).length;
+    const ctx = buildCtx();
+    const conta = differenzeCampi(fields, set.varianti, set.varianti.findIndex((v) => v.id === riferimentoId)).filter((v) => v.diverso).length;
     const totale = fields.length;
     table.append(el("caption", { class: "vc-caption" }, [el("span", { text: `Variante ${set.varianti.findIndex((v) => v.id === set.attiva) + 1} di ${set.varianti.length}` })]));
     const thead = el("thead", {}, [buildHeadRow()]);
     const tbody = el("tbody", {}, [
-      buildVerdictRow(),
-      sectionHead("Verifiche"),
-      ...buildVerificheRows(),
-      sectionHead("Risultati"),
-      ...buildRisultatiRows(),
-      sectionHead(`Dati diversi: ${conta} di ${totale}`),
-      ...buildDatiRows(),
+      buildModalitaRow(ctx),
+      buildVerdictRow(ctx),
+      buildSchemaRow(ctx),
+      sectionHead(ctx, "Verifiche"),
+      ...buildVerificheRows(ctx),
+      sectionHead(ctx, "Risultati"),
+      ...buildRisultatiRows(ctx),
+      sectionHead(ctx, `Dati diversi: ${conta} di ${totale}`),
+      ...buildDatiRows(ctx),
     ]);
     table.append(thead, tbody);
+    renderNarrowTabs();
+    for (const tr of tbody.children) markNarrowVisibility(tr);
+    markNarrowVisibility(thead.children[0]);
   }
 
   root.insertBefore(buildRefSelector(), table.parentElement);
@@ -275,6 +196,23 @@ export async function renderVariantiConfronto(root, { tool, owner }) {
   } });
   root.insertBefore(el("div", { class: "vc-toggles" }, [toggleRisultati, toggleDati]), table.parentElement);
 
+  // Registered BEFORE the run loop below (§19.3: Esc must work WHILE the columns are still
+  // running), bound to `owner` rather than removed on first use -- a page reached through
+  // "Torna al calcolo"/the rail never runs this handler again since `root._smOwner` moved on, but
+  // an unconditional one-shot `removeEventListener` would instead leave THIS handler dead while
+  // still on this very page (e.g. after an unrelated Esc closed some other widget) and never
+  // catch a later Esc meant for this page. `document.activeElement`'s own open `<dialog>` (Tieni/
+  // conflitto) already stops Esc from reaching here (native dialog behaviour), so no extra guard.
+  document.addEventListener("keydown", function onKeydown(event) {
+    if (root._smOwner !== owner) {
+      document.removeEventListener("keydown", onKeydown);
+      return;
+    }
+    if (event.key !== "Escape" || document.querySelector("dialog[open]")) return;
+    document.removeEventListener("keydown", onKeydown);
+    navigate(tool);
+  });
+
   render();
   for (const variante of set.varianti) {
     if (root._smOwner !== owner) return;
@@ -284,10 +222,4 @@ export async function renderVariantiConfronto(root, { tool, owner }) {
     if (root._smOwner !== owner) return;
     render();
   }
-
-  document.addEventListener("keydown", function onKeydown(event) {
-    if (event.key !== "Escape") return;
-    document.removeEventListener("keydown", onKeydown);
-    navigate(tool);
-  });
 }

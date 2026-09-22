@@ -274,6 +274,24 @@ export function unmountAnnullaUi() {
   liveRegion = null;
 }
 
+// WORKBENCH_SPEC §21.1/§19.2: a per-variant undo history (`<tool>#<variante>`), called by
+// js/varianti-bar.js right before it writes a DIFFERENT variant's inputs into the form
+// (activate/duplicaVariante/eliminaVariante-of-the-active-one/the first "Crea variante"). Without
+// this, every variant shared the SAME `<tool>`-keyed history: switching tabs left the OLD
+// variant's steps in place, so Ctrl+Z after a tab switch undid the PREVIOUS variant's edit onto
+// the CURRENT variant's screen, and `onValidChange` then wrote that back as if it were real.
+// Starts a fresh, empty history for a scope never seen before (first visit to that variant);
+// resumes the existing one otherwise -- exactly `mountAnnullaUi`'s own "resume or start empty".
+export function setHistoryScope(scope) {
+  if (!activeGetApi) return;
+  activeTool = scope;
+  const api = activeGetApi();
+  const valori = api ? api.allValues() : {};
+  if (!historyByTool.has(scope)) historyByTool.set(scope, creaStoria(valori));
+  lastKnownValues = valori;
+  if (activeRender) activeRender();
+}
+
 export function azzeraStoriaAnnulla() {
   if (!activeTool || !activeGetApi) return;
   const api = activeGetApi();

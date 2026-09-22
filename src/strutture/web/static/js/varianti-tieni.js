@@ -35,15 +35,19 @@ function useOnlyInForm(tool, variante, fields) {
   navigate(tool);
 }
 
-function payloadFor(tool, variante, report, outputNodes, nome) {
+function payloadFor(tool, variante, report, outputNodes, nome, nota) {
   const { sintesi, stato } = computeSintesiEStato(tool, { reportTool: { name: tool, outputNodes: outputNodes || [] }, report, stale: false });
-  return buildElementoPayload({ tool, values: variante.inputs, sintesi, stato, nome, provenienza: {} });
+  return buildElementoPayload({ tool, values: variante.inputs, sintesi, stato, nome, provenienza: {}, nota });
 }
 
-async function doAggiorna(tool, variante, report, outputNodes, errorEl) {
+// §19.4: on success the set closes (its work is done: the origin element now IS this variant)
+// and the tool page shows the just-kept inputs, exactly like `useOnlyInForm` -- never just a
+// silent `close()`, which left the confronto page open on stale columns and never re-fetched the
+// element's own new `revisione`, so a SECOND "Aggiorna" always hit the 409 dialog below.
+async function doAggiorna(tool, title, variante, report, outputNodes, fields, notaInput, errorEl) {
   const origine = variante.origine;
   const nome = origine.nome || variante.nome;
-  const body = { ...payloadFor(tool, variante, report, outputNodes, nome), revisione: origine.revisione, nota: `Variante ${variante.id} scelta fra ${variante.id}` };
+  const body = { ...payloadFor(tool, variante, report, outputNodes, nome, notaInput.value.trim()), revisione: origine.revisione };
   try {
     const result = await updateElemento(origine.elemento_id, body);
     if (result.conflict) {
@@ -51,11 +55,14 @@ async function doAggiorna(tool, variante, report, outputNodes, errorEl) {
       apriConflittoDialog({
         attuale: result.attuale,
         onRicarica: () => navigate(tool, { elemento: origine.elemento_id }),
-        onSalvaCopia: () => apriTieniDialog({ tool, variante, report, outputNodes, fields: null, defaultAzione: "nuovo" }),
+        onSalvaCopia: () => apriTieniDialog({ tool, title, variante, report, outputNodes, fields, defaultAzione: "nuovo" }),
       });
       return;
     }
+    save(tool, variante.inputs, fields || []);
+    chiudiVarianti(tool);
     close();
+    navigate(tool, { elemento: origine.elemento_id });
   } catch (error) {
     errorEl.textContent = error.message || "Impossibile aggiornare l'elemento.";
     errorEl.hidden = false;
@@ -86,12 +93,17 @@ async function doSalvaComeNuovo(tool, variante, report, outputNodes, progettoId,
 
 // `defaultAzione` ("nuovo"): used by the "Salva come copia" branch of the 409 dialog above, which
 // must land straight on "Salva come nuovo elemento" rather than re-offering "Aggiorna" for an
-// element that just proved to be out of date.
-export async function apriTieniDialog({ tool, variante, report, outputNodes = [], fields, defaultAzione = null }) {
+// element that just proved to be out of date. `tuttiId` (every id currently in the set, §19.2's
+// own A/B/C/D) feeds the default "Variante X scelta fra A, B, C" revision note -- editable, never
+// baked in.
+export async function apriTieniDialog({ tool, title, variante, report, outputNodes = [], fields, defaultAzione = null, tuttiId = [variante.id] }) {
   close();
   const titleId = "vt-title";
   const current = getCurrentProgetto();
-  const puoAggiornare = Boolean(variante.origine) && defaultAzione !== "nuovo";
+  // Aggiorna needs BOTH a saved origin AND a current project (§19.4: it PUTs to the origin
+  // element, which only makes sense once a project is selected -- offering it with none invites
+  // a save that has nowhere consistent to land).
+  const puoAggiornare = Boolean(variante.origine) && Boolean(current) && defaultAzione !== "nuovo";
   const puoSalvareNuovo = Boolean(current);
 
   const errorEl = el("p", { class: "es-dialog-error", role: "alert" });
@@ -99,17 +111,26 @@ export async function apriTieniDialog({ tool, variante, report, outputNodes = []
 
   const body = [];
   if (puoAggiornare) {
+    const notaInput = el("input", {
+      type: "text", class: "vt-nota-input", maxlength: "500", "aria-label": "Nota della revisione",
+      value: `Variante ${variante.id} scelta fra ${tuttiId.join(", ")}`,
+    });
     body.push(
-      el("button", {
-        type: "button",
-        class: "vt-action",
-        text: `Aggiorna "${variante.origine.nome || "elemento"}"`,
-        onclick: () => doAggiorna(tool, variante, report, outputNodes, errorEl),
-      }),
+      el("div", { class: "vt-aggiorna" }, [
+        el("label", { text: "Nota della revisione" }),
+        notaInput,
+        el("button", {
+          type: "button",
+          class: "vt-action",
+          text: `Aggiorna "${variante.origine.nome || "elemento"}"`,
+          onclick: () => doAggiorna(tool, title, variante, report, outputNodes, fields, notaInput, errorEl),
+        }),
+        el("p", { class: "vt-avviso", text: "Chiude le varianti aperte e riporta la pagina sull'elemento aggiornato." }),
+      ]),
     );
   }
   if (puoSalvareNuovo) {
-    const nomeInput = el("input", { type: "text", class: "vt-nome-input", value: `${variante.origine ? variante.origine.nome : tool} – variante ${variante.id}`, maxlength: "120" });
+    const nomeInput = el("input", { type: "text", class: "vt-nome-input", value: `${variante.origine ? variante.origine.nome : (title || tool)} – variante ${variante.id}`, maxlength: "120" });
     const chiudiCheckbox = el("input", { type: "checkbox", id: "vt-chiudi-dopo" });
     body.push(
       el("div", { class: "vt-nuovo" }, [
@@ -131,7 +152,7 @@ export async function apriTieniDialog({ tool, variante, report, outputNodes = []
       const select = el("select", { "aria-label": "Progetto" });
       select.append(el("option", { value: "", text: "Seleziona un progetto…" }));
       for (const progetto of progetti) select.append(el("option", { value: progetto.id, text: progetto.nome }));
-      const nomeInput = el("input", { type: "text", class: "vt-nome-input", value: `${tool} – variante ${variante.id}`, maxlength: "120" });
+      const nomeInput = el("input", { type: "text", class: "vt-nome-input", value: `${title || tool} – variante ${variante.id}`, maxlength: "120" });
       const chiudiCheckbox = el("input", { type: "checkbox", id: "vt-chiudi-dopo" });
       body.push(
         el("div", { class: "vt-nuovo" }, [
@@ -156,7 +177,12 @@ export async function apriTieniDialog({ tool, variante, report, outputNodes = []
       );
     }
   }
-  body.push(el("button", { type: "button", class: "vt-action vt-action--solo", text: "Usa solo nel modulo", onclick: () => useOnlyInForm(tool, variante, fields || []) }));
+  body.push(
+    el("div", { class: "vt-solo" }, [
+      el("button", { type: "button", class: "vt-action vt-action--solo", text: "Usa solo nel modulo", onclick: () => useOnlyInForm(tool, variante, fields || []) }),
+      el("p", { class: "vt-avviso", text: "Chiude le varianti aperte e torna al modulo con questi dati, senza salvare nulla." }),
+    ]),
+  );
 
   dialogEl = el("dialog", { class: "es-dialog vt-dialog", role: "dialog", "aria-modal": "true", "aria-labelledby": titleId }, [
     el("h2", { id: titleId, text: `Tieni la variante ${variante.id}` }),

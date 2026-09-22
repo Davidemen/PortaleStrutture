@@ -184,3 +184,33 @@ def test_tieni_questa_conflict_shows_the_dialog(page: Page, base_url: str) -> No
     dialog = page.locator(".vt-dialog")
     dialog.get_by_role("button", name=re.compile(r"^Aggiorna")).click()
     expect(page.get_by_role("heading", name="Conflitto di salvataggio")).to_be_visible()
+
+
+def test_switching_variant_tabs_keeps_undo_isolated_per_variant(page: Page, base_url: str) -> None:
+    """§21.1/§19.2: each variant's undo history is its own -- Ctrl+Z after switching to another
+    variant must undo THAT variant's own last edit, never bleed the previous variant's step onto
+    the newly active one's screen."""
+    _open_demo_relazione(page, base_url)
+    field = page.locator(field_id("fattore"))
+    expect(field).to_have_value("2")
+
+    page.get_by_role("button", name=CREA_VARIANTE, exact=True).click()  # A, B (B active)
+    field.fill("5")
+    field.press("Tab")
+    expect(field).to_have_value("5")
+
+    tabs = page.locator('[role="tablist"].vb-strip').get_by_role("tab")
+    tabs.nth(0).click()  # back to A (still its original value)
+    expect(field).to_have_value("2")
+
+    field.fill("9")
+    field.press("Tab")
+    expect(field).to_have_value("9")
+
+    page.keyboard.press("Control+z")
+    expect(field).to_have_value("2")  # undoes A's OWN edit, not B's
+
+    tabs.nth(1).click()  # to B: still 5, unaffected by A's undo
+    expect(field).to_have_value("5")
+    page.keyboard.press("Control+z")
+    expect(field).to_have_value("2")  # B's own edit undone, its own pre-edit value

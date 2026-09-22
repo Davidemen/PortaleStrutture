@@ -14,8 +14,20 @@ function storageKey(tool) {
   return `sm.varianti.${tool}`;
 }
 
+// A corrupt/foreign sessionStorage value (hand-edited, an old shape from a future/rolled-back
+// version) must never reach js/varianti-bar.js/js/varianti-confronto.js as if it were a real set
+// -- every reader here assumes `varianti` is a non-empty array of at most `MAX_VARIANTI` and
+// `attiva` names one of them; `render()` would otherwise throw on the very first `.find()`.
+function formaValida(set) {
+  if (!set || typeof set !== "object") return false;
+  if (!Array.isArray(set.varianti) || set.varianti.length === 0 || set.varianti.length > MAX_VARIANTI) return false;
+  if (!set.varianti.every((v) => v && typeof v.id === "string" && typeof v.nome === "string" && v.inputs && typeof v.inputs === "object")) return false;
+  return set.varianti.some((v) => v.id === set.attiva);
+}
+
 export function caricaVarianti(tool) {
-  return readSessionJSON(storageKey(tool), null);
+  const set = readSessionJSON(storageKey(tool), null);
+  return formaValida(set) ? set : null;
 }
 
 export function salvaVarianti(tool, set) {
