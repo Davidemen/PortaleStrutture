@@ -17,6 +17,9 @@ const SHORTCUTS = [
   // keydown listener (native-first while typing) -- this sheet only lists them.
   { keys: "Ctrl/Cmd+Z", desc: "Annulla l'ultima modifica ai dati" },
   { keys: "Ctrl/Cmd+Shift+Z oppure Ctrl+Y", desc: "Ripristina la modifica annullata" },
+  // WORKBENCH_SPEC §19.2/§19.5: the keys belong to js/varianti-bar.js's own strip
+  // (`role="tablist"`) keydown listener -- this sheet only lists them, same pattern as Annulla.
+  { keys: "← / →", desc: "Variante precedente/successiva (nella barra Varianti)" },
   { keys: "?", desc: "Mostra questa guida" },
 ];
 

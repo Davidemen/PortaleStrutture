@@ -23,6 +23,7 @@ const indexRoot = document.getElementById("tool-index");
 const homeRoot = document.getElementById("home-pane");
 const registroRoot = document.getElementById("registro-pane");
 const progettiRoot = document.getElementById("progetti-pane");
+const variantiRoot = document.getElementById("varianti-pane");
 const progettoPickerRoot = document.getElementById("progetto-picker-root");
 const formRoot = document.getElementById("form-root");
 const toolTitleEl = document.getElementById("tool-title");
@@ -126,6 +127,28 @@ function showProgettoPage(progettoId, params) {
   showProgetti(owner, () => import("./progetto.js").then(({ renderProgetto }) => renderProgetto(progettiRoot, { progettoId, params, owner })));
 }
 
+// #/varianti/<tool> (WORKBENCH_SPEC §19.3, "Affianca"): same full-width, no Dati/Sintesi split
+// slot as #/registro/#/progetti above, own `owner` guard for the same "two close navigations
+// resolving out of order" reason as `showProgettoPage`.
+function showVarianti(toolName) {
+  const owner = {};
+  variantiRoot._smOwner = owner;
+  if (appEl) appEl.dataset.view = "varianti";
+  unmountAnnullaUi();
+  clear(formRoot);
+  toolTitleEl.textContent = "";
+  updatePicker("");
+  if (bottomBarEl) bottomBarEl.hidden = true;
+  indexApi.setActive("");
+  import("./varianti-confronto.js")
+    .then(({ renderVariantiConfronto }) => renderVariantiConfronto(variantiRoot, { tool: toolName, owner }))
+    .catch(() => {
+      if (variantiRoot._smOwner !== owner) return;
+      clear(variantiRoot);
+      variantiRoot.append(el("p", { text: "Impossibile caricare il confronto delle varianti." }));
+    });
+}
+
 function showUnknownTool(name) {
   if (appEl) appEl.dataset.view = "tool";
   unmountAnnullaUi();
@@ -199,6 +222,10 @@ function onRouteChange({ tool, params }) {
   }
   if (tool.startsWith("progetti/")) {
     showProgettoPage(tool.slice("progetti/".length), params);
+    return;
+  }
+  if (tool.startsWith("varianti/")) {
+    showVarianti(tool.slice("varianti/".length));
     return;
   }
   selectTool(tool, params);

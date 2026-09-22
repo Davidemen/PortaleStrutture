@@ -1,0 +1,245 @@
+/* Varianti affiancate (WORKBENCH_SPEC §19): the Dati action-bar "Crea variante" button + the
+   variant strip on the tool page (js/varianti-bar.js), and the #/varianti/<tool> comparison table
+   (js/varianti-confronto.js) + its "Tieni questa" dialog (js/varianti-tieni.js, shares the
+   `.es-dialog` shell with css/progetti.css). Tokens only, same ruled-table language as
+   css/registro.css/css/progetti.css -- no new colours. */
+
+/* `test_dati_action_bar_is_one_row` (WORKBENCH_SPEC finding F) is a permanent test: "Carica
+   esempio"/"Salva in progetto"/"Calcola"/"⋯" already fill the row's whole width at 1440px, the
+   same reason css/forms.css's own `.an-widget` (Annulla/Ripristina) gets its own line instead of
+   sharing that one -- `flex: 1 0 100%` here does the identical thing for "Crea variante". */
+.vb-crea {
+  flex: 1 0 100%;
+  order: 4;
+  height: var(--control-h);
+  padding: 0 var(--s3);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--t-s);
+  cursor: pointer;
+  width: fit-content;
+}
+.vb-crea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.vb-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s2) var(--s4);
+  border-bottom: 1px solid var(--hairline);
+  background: var(--film);
+}
+.vb-strip[hidden] {
+  display: none;
+}
+.vb-tab-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+}
+.vb-tab {
+  height: var(--control-h-sm);
+  padding: 0 var(--s3);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--t-xs);
+  cursor: pointer;
+}
+.vb-tab[aria-selected="true"] {
+  border-color: var(--ink);
+  font-weight: 600;
+}
+.vb-menu-btn {
+  cursor: pointer;
+  list-style: none;
+  height: var(--control-h-sm);
+  padding: 0 var(--s2);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+.vb-menu-btn::-webkit-details-marker {
+  display: none;
+}
+.vb-menu-item,
+.vb-affianca,
+.vb-chiudi,
+.vb-confirm-yes,
+.vb-confirm-no {
+  height: var(--control-h-sm);
+  padding: 0 var(--s3);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--t-xs);
+  cursor: pointer;
+  display: block;
+  margin-top: var(--s1);
+}
+.vb-menu-item--danger {
+  color: var(--ko, #b42318);
+}
+.vb-menu-rename {
+  display: flex;
+  gap: var(--s1);
+}
+.vb-rename-input {
+  min-width: 0;
+  height: var(--control-h-sm);
+  padding: 0 var(--s2);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+.vb-confirm-text {
+  font-size: var(--t-xs);
+  color: var(--graphite);
+}
+
+/* -- #/varianti/<tool> -------------------------------------------------------------------- */
+
+.vc-torna {
+  display: inline-block;
+  margin: 0 var(--s4) var(--s3);
+  font-size: var(--t-s);
+}
+.vc-toggles {
+  display: flex;
+  gap: var(--s2);
+  padding: 0 var(--s4) var(--s2);
+}
+.vc-toggle {
+  height: var(--control-h-sm);
+  padding: 0 var(--s3);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  cursor: pointer;
+}
+.vc-ref {
+  padding: 0 var(--s4) var(--s2);
+  font-size: var(--t-xs);
+}
+.vc-table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 40rem;
+}
+.vc-table th,
+.vc-table td {
+  border: 1px solid var(--hairline);
+  padding: var(--s2) var(--s3);
+  text-align: left;
+  vertical-align: top;
+  min-width: 20rem;
+}
+.vc-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--paper);
+  z-index: 1;
+}
+.vc-section th {
+  background: var(--film);
+  font-weight: 600;
+}
+.vc-name-input {
+  width: 100%;
+  height: var(--control-h-sm);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 0 var(--s2);
+  margin-bottom: var(--s1);
+}
+.vc-origin {
+  font-size: var(--t-xs);
+  color: var(--graphite);
+  margin: 0 0 var(--s1);
+}
+.vc-tieni {
+  height: var(--control-h-sm);
+  padding: 0 var(--s3);
+  border: 1px solid var(--ink);
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: var(--paper);
+  cursor: pointer;
+}
+.vc-eta {
+  margin: var(--s1) 0 0;
+  font-size: var(--t-xs);
+}
+.vc-delta {
+  display: inline-block;
+  margin-left: var(--s1);
+  font-size: var(--t-xs);
+}
+.vc-delta--up {
+  color: var(--ko, #b42318);
+}
+.vc-delta--down {
+  color: var(--ok, #1e6b3c);
+}
+.vc-diff-flag {
+  display: inline-block;
+  margin-left: var(--s1);
+  font-size: var(--t-xs);
+  color: var(--graphite);
+}
+.vc-error-msg {
+  font-size: var(--t-xs);
+  color: var(--ko, #b42318);
+  margin: var(--s1) 0 0;
+}
+.vc-caption {
+  caption-side: top;
+  text-align: left;
+  padding: 0 0 var(--s2);
+  font-size: var(--t-xs);
+  color: var(--graphite);
+}
+
+/* -- "Tieni questa" dialog (js/varianti-tieni.js), shares .es-dialog with css/progetti.css --- */
+
+.vt-nuovo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  margin: var(--s3) 0;
+}
+.vt-nome-input {
+  height: var(--control-h);
+  padding: 0 var(--s3);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+.vt-action {
+  height: var(--control-h);
+  padding: 0 var(--s4);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  margin: var(--s2) 0;
+}
+.vt-action--solo {
+  border-color: var(--hairline);
+}
+.vt-chiudi-label {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  font-size: var(--t-xs);
+}

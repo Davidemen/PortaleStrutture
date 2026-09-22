@@ -12,7 +12,8 @@ import { save, load, fromParams, clearStored } from "./form-state.js";
 import { groupFields, rawValues, visibleValues, applyConditions, wireUnitSelector, renderSummary, copyShareLink } from "./forms-sections.js";
 import { buildSections } from "./form-sections-summary.js";
 import { requestRun, isLiveEnabled } from "./live.js";
-import { mountElementoSalva } from "./elemento-salva.js";
+import { mountElementoSalva, activeElementoOrigine } from "./elemento-salva.js";
+import { mountVariantiBar } from "./varianti-bar.js";
 import { mountProvenienza } from "./provenienza.js";
 import { mountExcelRitirato } from "./excel-ritirato.js";
 import { mountAnnullaUi } from "./annulla-ui.js";
@@ -142,6 +143,9 @@ export function renderForm(root, { fields = [], example = null, initialValues = 
   // the two widgets below.
   const annullaWidget = mountAnnullaUi({ tool, fields, getApi: () => api });
   const salvaWidget = mountElementoSalva({ toolForm: form, tool, title, fields, params, input, getApi: () => api });
+  // WORKBENCH_SPEC §19.2: "Crea variante" next to "Carica esempio"; the strip itself is placed
+  // above the form, below the §15/§16 notices, further down.
+  const variantiApi = mountVariantiBar({ tool, fields, getApi: () => api, getOrigine: activeElementoOrigine });
   // WORKBENCH_SPEC §15/§16: both dismissible notices go directly above the form, under the tool
   // title -- `root.insertBefore(node, form)` places each one right before `form` (already `root`'s
   // only child at this point), so calling it twice, in this order, stacks them provenienza-note-
@@ -150,11 +154,14 @@ export function renderForm(root, { fields = [], example = null, initialValues = 
   const excelNote = mountExcelRitirato({ toolForm: form, tool });
   root.insertBefore(provenienzaNote, form);
   root.insertBefore(excelNote, form);
+  root.insertBefore(variantiApi.stripElement, form);
   // `annullaWidget` renders on its OWN line below (`.an-widget { flex-basis: 100% }`, forms.css):
   // WORKBENCH_SPEC finding F's "the action bar stays on one row" is a permanent test
   // (`test_dati_action_bar_is_one_row`) that already leaves this row no spare width for two more
   // full-width buttons -- appended last so tab order still matches the visual order.
-  if (actions) actions.append(exampleButton, salvaWidget, calcolaButton, liveStatus, buildMenu(form, fields, tool), annullaWidget);
+  if (actions) {
+    actions.append(exampleButton, variantiApi.creaButton, salvaWidget, calcolaButton, liveStatus, buildMenu(form, fields, tool), annullaWidget);
+  }
 
   function updateRunUi(values) {
     const live = isLiveEnabled(values);
@@ -185,7 +192,11 @@ export function renderForm(root, { fields = [], example = null, initialValues = 
     // (debounced typing, Ctrl+Enter from live.js's own keydown listener) -- restricting `save()`
     // to that one path would silently stop remembering inputs for anyone who never presses
     // Calcola, breaking "reload restores the last inputs" (DESIGN_SPEC P1 / WORKBENCH_SPEC §9).
-    if (valid) save(tool, values, fields);
+    if (valid) {
+      save(tool, values, fields);
+      // WORKBENCH_SPEC §19.2: "Every valid form change updates the active variant's inputs".
+      variantiApi.onValidChange(values);
+    }
     document.dispatchEvent(
       new CustomEvent("strutture:inputs-changed", {
         detail: { name: tool, values, valid },
