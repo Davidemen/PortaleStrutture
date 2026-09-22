@@ -1,7 +1,7 @@
 """calcola_serie (WORKBENCH_SPEC §24): even spacing, per-point limits, errors preserved, a partial
 series when the time budget runs out, and `verifiche_solo_esito` covering every outcome-only check
 seen -- not just the ones `impara_orientamenti` happened to give an orientation to."""
-import time
+import itertools
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -14,7 +14,7 @@ def test_punti_equispaziati_covers_both_ends_and_is_evenly_spaced():
     valori = punti_equispaziati(0.0, 10.0, 5)
     assert valori[0] == 0.0
     assert valori[-1] == 10.0
-    passi = {round(b - a, 9) for a, b in zip(valori, valori[1:])}
+    passi = {round(b - a, 9) for a, b in itertools.pairwise(valori)}
     assert passi == {2.5}
 
 

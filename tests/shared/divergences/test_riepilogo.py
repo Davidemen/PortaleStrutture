@@ -6,7 +6,7 @@ import pytest
 
 from strutture.shared.divergences.models import Divergence
 from strutture.shared.divergences.riepilogo import riepilogo_per_strumento
-from strutture.storage.models import Signoff, Stato
+from strutture.storage.models import Signoff
 
 
 class _Signoffs:
