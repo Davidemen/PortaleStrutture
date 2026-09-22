@@ -11,12 +11,12 @@ Gira su macOS (sviluppo) e Windows (scritto per, non ancora provato dall'ufficio
 
 ## 2. Stato alla consegna
 - Git: solo locale, ramo `main`, nessun remoto (GitHub rinviato dal committente).
-- Suite verdi al 2026-09-22: `uv run pytest -q` → 4123 superati · `uv run pytest tests/e2e -m e2e -q` → 229 superati,
+- Suite verdi al 2026-09-22 (sera): `uv run pytest -q` → 4134 superati · `uv run pytest tests/e2e -m e2e -q` → 238 superati,
   1 saltato (circa 3 minuti) · `node --test tests/e2e/*.mjs` → 34 · `uv run ruff check .` pulito ·
   `uv run python -m strutture.shared.divergences.check --strict` → 0 errori (26 avvertimenti di clausola vuota,
   innocui).
 - Interfaccia servita: `src/strutture/web/static/`. Copia di lavoro: `src/strutture/web/static_next/` (ignorata da
-  git; oggi identica a `static/`). Il flusso di lavoro e di promozione è in `CLAUDE.md`, regola 3.
+  git; identica a `static/` dopo la promozione del 2026-09-22). Il flusso di lavoro e di promozione è in `CLAUDE.md`, regola 3.
 - Server: `uv run python scripts/serve_live.py --host 127.0.0.1 --port 8000` (il lanciatore esiste perché una volta
   un agente ha fermato il server dell'ufficio con `pkill -f strutture.web`; la sua riga di comando non contiene
   il nome del modulo). Controllo: `curl -s http://127.0.0.1:8000/api/tools`.
@@ -24,21 +24,21 @@ Gira su macOS (sviluppo) e Windows (scritto per, non ancora provato dall'ufficio
   209 voci, tutte "da confermare".
 
 ## 3. In corso
-Un costruttore sta completando in `static_next/` le tre ultime sezioni della specifica dell'interfaccia:
-`docs/ui/WORKBENCH_SPEC.md` §15 ("Usa in…", collegamenti tipizzati fra strumenti), §16 (la modalità Excel si
-ritira dagli strumenti con tutte le correzioni approvate) e il ripristino degli elementi eliminati di un progetto
-(§14.3). Alla fine di quel lavoro questa sezione dirà "nessun lavoro in corso" e i numeri della sezione 2
-saranno aggiornati. Se trovi `static_next/` diverso da `static/` e test nuovi in `tests/e2e/` (`test_usa_in.py`,
-`test_excel_ritirato.py`) senza commit, il lavoro è stato interrotto: lancia la suite e2e su `static_next/` e
-decidi se completarlo o scartarlo (`rm -rf static_next && cp -R static static_next`).
+Nessun lavoro in corso. Le ultime tre sezioni della specifica dell'interfaccia (`docs/ui/WORKBENCH_SPEC.md` §15
+"Usa in…", §16 ritiro della modalità Excel per strumento, §14.3 ripristino degli elementi eliminati) sono state
+completate, provate con la suite e2e (`test_usa_in.py`, `test_excel_ritirato.py`, `test_progetti.py`) e promosse in
+`static/` il 2026-09-22. Il server dell'ufficio (porta 8000) serve ancora la versione precedente finché non viene
+riavviato: chiedere al titolare e riavviarlo (sezione 2).
 
 ## 4. Lavori aperti, in ordine
-1. Chiusura del punto 3, poi promozione in `static/` e riavvio del server (avvisando il titolare).
+1. Riavvio del server dell'ufficio con l'interfaccia promossa (dopo averlo detto al titolare).
 2. In attesa del titolare (non iniziare, ricordarglielo): verifica su Windows (`docs/VERIFICA_WINDOWS.md`,
    incluso il lanciatore `Avvia StruttureMenni.bat`); verifica MIDAS dal vivo (`docs/VERIFICA_MIDAS.md`); firma
-   del registro delle correzioni (pagina `#/registro`); le decisioni di `docs/DECISIONI_DA_CONFERMARE.md`; poi i
-   lavori rinviati di `docs/ROADMAP.md`: GitHub + test automatici, griglia di pericolosità sismica, relazione
-   DOCX, MIDAS fase 2.
+   del registro delle correzioni (pagina `#/registro`); validazione strumento per strumento
+   (`docs/VALIDAZIONE_STRUMENTI.md`: sei passi, tabella di stato compilata da lui o su sua richiesta, schede
+   rigenerate con `uv run python scripts/validazione_strumenti.py`); le decisioni di
+   `docs/DECISIONI_DA_CONFERMARE.md`; poi i lavori rinviati di `docs/ROADMAP.md`: GitHub + test automatici,
+   griglia di pericolosità sismica, relazione DOCX, MIDAS fase 2.
 3. Piccoli seguiti lato calcolo (facoltativi): altri collegamenti tipizzati in `src/strutture/shared/collegamenti.py`
    (plinto su pali → punzonamento richiede prima uscite in mm); `avvisi_campi` per gli avvisi degli strumenti
    diversi da muro, plinti isolati, travi, vento (`docs/BUILD_CONTRACT.md`, sezione sugli avvisi legati a un solo campo).
@@ -52,7 +52,7 @@ Tutte in `docs/DECISIONI_DA_CONFERMARE.md`. Un agente non le prende: le segnala 
 La mappa del codice è in `CLAUDE.md`. Documentazione: indice in `docs/INDICE.md`. In sintesi: regole di
 costruzione `docs/BUILD_CONTRACT.md`; architettura `docs/architecture*.md` (`-batch2.md` §9 = decisioni del
 committente D1–D5, `-phase2.md` formule, `-phase3.md` progetti, `-phase4.md` motore M-N e capacità portante);
-piano `docs/ROADMAP.md`; interfaccia `docs/ui/DESIGN_SPEC.md`, `docs/ui/WORKBENCH_SPEC.md` §0–17,
+piano `docs/ROADMAP.md`; validazione `docs/VALIDAZIONE_STRUMENTI.md`; interfaccia `docs/ui/DESIGN_SPEC.md`, `docs/ui/WORKBENCH_SPEC.md` §0–17,
 `docs/ui/REVIEW_FABLE_2026-09-21.md`; MIDAS `docs/integrations/MIDAS.md`; specifiche per strumento `docs/specs/`.
 
 ## 7. Convenzioni e lezioni (ognuna è costata tempo una volta)
@@ -81,6 +81,11 @@ piano `docs/ROADMAP.md`; interfaccia `docs/ui/DESIGN_SPEC.md`, `docs/ui/WORKBENC
   nelle specifiche del repository e nel prompt iniziale (i messaggi a metà corsa vengono ignorati); i limiti di
   sessione hanno ucciso lavori a metà due volte: committare ogni pacchetto finito subito e non lanciare più di
   circa 5 agenti pesanti insieme.
+- Server reale contro test: i test dell'API usano repository in memoria; il server con `--data-dir` passa dai
+  wrapper pigri di `web/app.py`. Un metodo o un parametro mancante lì dà 500 solo in produzione: il test
+  `tests/web/test_lazy_repositories.py` confronta le firme dei wrapper con i Protocol di `storage/interfaces.py`.
+- Test e2e con letture di stile: leggere i colori calcolati in una sola `evaluate` dopo `wait_for_function`,
+  mai una chiamata per elemento (un nodo staccato durante un ridisegno risponde con stringa vuota).
 - Git: commit locali, messaggi `tipo: descrizione`; nessun remoto senza il consenso del titolare.
 
 ## 8. Primi 15 minuti per un agente nuovo
