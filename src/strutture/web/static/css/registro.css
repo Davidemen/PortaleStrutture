@@ -18,6 +18,31 @@
   max-width: 48rem;
   margin: 0 0 var(--s5);
 }
+/* "Come funziona il registro": collapsed by default, one line; the five steps open under it. */
+.reg-help {
+  margin: 0 0 var(--s3);
+  font-size: var(--t-s);
+}
+.reg-help-summary {
+  cursor: pointer;
+  color: var(--ink);
+  font-family: var(--font-label);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  min-height: var(--control-h);
+  display: flex;
+  align-items: center;
+}
+.reg-help-list {
+  margin: var(--s2) 0 0;
+  padding-left: 1.25rem;
+  max-width: 70ch;
+  color: var(--ink);
+}
+.reg-help-list li {
+  margin-bottom: var(--s2);
+}
+
 .reg-error {
   margin-bottom: var(--s4);
   padding: var(--s2) var(--s3);

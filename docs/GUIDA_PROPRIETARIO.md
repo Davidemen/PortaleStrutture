@@ -85,7 +85,9 @@ uv run playwright install chromium
   è sempre costruita da un calcolo fresco e contiene tutto, anche ciò che sullo schermo era chiuso.
 - **Registro correzioni** (barra laterale): l'elenco delle differenze fra i fogli Excel e il programma. Ogni voce
   dice cosa faceva il foglio, cosa fa il codice, la clausola e l'effetto sul numero. Va firmato voce per voce
-  con la propria sigla: approvata o respinta. Vedi `docs/DECISIONI_DA_CONFERMARE.md`.
+  con la propria sigla: approvata o respinta. La firma è una decisione salvata nel database, non un interruttore:
+  le voci respinte le applica poi un agente ("Applica le voci respinte del registro"). La pagina lo spiega
+  sotto "Come funziona il registro". Vedi `docs/DECISIONI_DA_CONFERMARE.md`.
 - **Modalità Excel**: sotto "Avanzate" di ogni strumento, "Riproduci il foglio Excel originale (errori inclusi)" rifà il conto
   come lo faceva il foglio, errori inclusi. Serve per confrontare, non per progettare. "Confronta con Excel" nei
   risultati mostra le due colonne e quale correzione spiega ogni differenza. Quando tutte le correzioni di uno

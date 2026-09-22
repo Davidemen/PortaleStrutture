@@ -11,7 +11,7 @@ Gira su macOS (sviluppo) e Windows (scritto per, non ancora provato dall'ufficio
 
 ## 2. Stato alla consegna
 - Git: solo locale, ramo `main`, nessun remoto (GitHub rinviato dal committente).
-- Suite verdi al 2026-09-22 (sera): `uv run pytest -q` → 4135 superati · `uv run pytest tests/e2e -m e2e -q` → 243 superati,
+- Suite verdi al 2026-09-22 (sera): `uv run pytest -q` → 4135 superati · `uv run pytest tests/e2e -m e2e -q` → 244 superati,
   1 saltato (circa 3 minuti) · `node --test tests/e2e/*.mjs` → 34 · `uv run ruff check .` pulito ·
   `uv run python -m strutture.shared.divergences.check --strict` → 0 errori (26 avvertimenti di clausola vuota,
   innocui).

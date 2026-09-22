@@ -123,6 +123,10 @@ comandi non sono tutti verdi.
   formule → suite completa.
 - Collegamento fra strumenti ("Usa in…"): `provides`/`accepts` in `json_schema_extra` dei campi, chiave
   `<ambito>.<nome_unità>`; il test permanente di `shared/collegamenti.py` rifiuta i collegamenti incoerenti.
+- Voce del registro respinta dal titolare (la pagina Registro promette che "le applica un agente"): leggere stato e
+  nota della firma (`GET /api/divergences/{unita}/{slug}` o la pagina), adeguare la modalità standard a quanto
+  chiede la nota (spesso: il comportamento del foglio), aggiornare voce JSON, test e golden, `render`,
+  `check --strict`, harness delle formule; riferire al titolare voce per voce.
 - Avviso legato a un ingresso: `success(..., avvisi_campi={testo: "nome_campo"})` (spec §17).
 - Firme del registro, progetti, elementi: API in `routes/divergences.py` e `routes/progetti.py`; SQLite via
   repository in `storage/`; blocco ottimistico con `revisione` (409 = ricarica e riprova).

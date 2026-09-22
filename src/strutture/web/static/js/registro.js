@@ -37,6 +37,26 @@ function countByState(entries) {
   return totals;
 }
 
+// "Come funziona il registro" (owner's request, 2026-09-22): the page must say, in the app itself,
+// what a signature IS -- a saved engineering decision, read and implemented afterwards by a
+// development agent -- not a switch that changes the calculation on its own.
+const HELP_STEPS = [
+  "Ogni voce descrive un punto in cui il programma, in modalità standard, si discosta dal foglio Excel: cosa faceva il foglio, cosa fa il codice, la clausola di norma e l'effetto sui numeri (\"Confronta con Excel\" nei risultati lo mostra sui dati correnti).",
+  "Il progettista firma ogni voce con la propria sigla. Approvata: la correzione resta com'è. Respinta: si vuole tornare al comportamento del foglio, o un'altra soluzione, da scrivere nella nota.",
+  "La firma viene salvata nel database con data, nota e storia. È una decisione ingegneristica registrata: da sola non modifica il calcolo.",
+  "Le voci respinte le applica poi un agente di sviluppo: legge il registro, modifica il codice secondo la nota, esegue i test e aggiorna la voce. Richiesta tipo: \"Applica le voci respinte del registro\".",
+  "Finché una voce resta da confermare, la relazione lo dichiara e la modalità Excel resta disponibile; quando tutte le voci di uno strumento sono approvate, l'interruttore Excel sparisce da quello strumento.",
+];
+
+function buildHelp() {
+  const list = el("ol", { class: "reg-help-list" });
+  for (const step of HELP_STEPS) list.append(el("li", { text: step }));
+  return el("details", { class: "reg-help" }, [
+    el("summary", { class: "reg-help-summary", text: "Come funziona il registro" }),
+    list,
+  ]);
+}
+
 export function renderRegistro(root, { params = {} } = {}) {
   clear(root);
   let toolsByName = new Map();
@@ -54,7 +74,8 @@ export function renderRegistro(root, { params = {} } = {}) {
 
   root.append(
     el("h2", { text: "Registro correzioni" }),
-    el("p", { class: "reg-intro", text: "Ogni punto in cui lo strumento si discosta dal foglio Excel originale. Il progettista conferma o respinge ogni correzione." })
+    el("p", { class: "reg-intro", text: "Ogni punto in cui lo strumento si discosta dal foglio Excel originale. Il progettista conferma o respinge ogni correzione." }),
+    buildHelp()
   );
   const errorHost = el("div", { class: "reg-error", role: "alert", hidden: true });
   const totalsStrip = el("div", { class: "reg-totals" });

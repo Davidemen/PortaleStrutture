@@ -315,3 +315,19 @@ def test_mobile_registro_has_no_horizontal_overflow(mobile_page: tuple[Page, obj
     row = row_for(page, "muro-sostegno/verifica-portanza-non-segnalata")
     row.locator(".reg-row-toggle").click()
     expect(row.locator(".reg-form")).to_be_visible()
+
+
+def test_help_explains_that_a_signature_is_a_saved_decision_applied_by_an_agent(page: Page, base_url: str) -> None:
+    """Owner's request (2026-09-22): the page itself explains the register -- a signature is a saved
+    engineering decision, and rejected entries are then implemented by a development agent."""
+    page.goto(f"{base_url}/#/registro")
+    help_block = page.locator("details.reg-help")
+    expect(help_block.locator("summary")).to_have_text("Come funziona il registro")
+    expect(help_block.locator(".reg-help-list")).not_to_be_visible()
+    help_block.locator("summary").click()
+    steps = help_block.locator(".reg-help-list li")
+    expect(steps).to_have_count(5)
+    text = help_block.inner_text()
+    assert "salvata nel database" in text
+    assert "agente di sviluppo" in text and "respinte" in text
+    assert "Applica le voci respinte del registro" in text
