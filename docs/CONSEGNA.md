@@ -11,7 +11,7 @@ Gira su macOS (sviluppo) e Windows (scritto per, non ancora provato dall'ufficio
 
 ## 2. Stato alla consegna
 - Git: solo locale, ramo `main`, nessun remoto (GitHub rinviato dal committente).
-- Suite verdi al 2026-09-22 (sera): `uv run pytest -q` → 4134 superati · `uv run pytest tests/e2e -m e2e -q` → 238 superati,
+- Suite verdi al 2026-09-22 (sera): `uv run pytest -q` → 4134 superati · `uv run pytest tests/e2e -m e2e -q` → 239 superati,
   1 saltato (circa 3 minuti) · `node --test tests/e2e/*.mjs` → 34 · `uv run ruff check .` pulito ·
   `uv run python -m strutture.shared.divergences.check --strict` → 0 errori (26 avvertimenti di clausola vuota,
   innocui).
@@ -42,7 +42,8 @@ riavviato: chiedere al titolare e riavviarlo (sezione 2).
 3. Piccoli seguiti lato calcolo (facoltativi): altri collegamenti tipizzati in `src/strutture/shared/collegamenti.py`
    (plinto su pali → punzonamento richiede prima uscite in mm); `avvisi_campi` per gli avvisi degli strumenti
    diversi da muro, plinti isolati, travi, vento (`docs/BUILD_CONTRACT.md`, sezione sugli avvisi legati a un solo campo).
-4. Difetti noti minori: `neve-carico-falda` disegna la falda inclinata anche con α = 0°; lo schizzo della mensola
+4. Difetti noti minori (corretto il 2026-09-22 il menu "⋯" della barra Dati che si apriva sotto la barra laterale
+   con colonna stretta ed elemento salvato): `neve-carico-falda` disegna la falda inclinata anche con α = 0°; lo schizzo della mensola
    tozza è schematico; i simboli con doppio pedice (`M_Ed/M_Rd`) si leggono male nelle evidenze della sintesi.
 
 ## 5. Decisioni che spettano all'ingegnere

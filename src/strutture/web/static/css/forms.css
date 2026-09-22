@@ -543,6 +543,12 @@
   border-radius: var(--radius);
 }
 
+/* Set by js/forms.js on open when the "⋯" button sits at the left edge of a wrapped bar. */
+.f-menu--destra .f-menu-list {
+  right: auto;
+  left: 0;
+}
+
 .f-menu-item {
   min-height: var(--control-h);
   padding: 0 var(--s3);

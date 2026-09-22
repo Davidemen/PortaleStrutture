@@ -25,6 +25,8 @@ function printRelazione() {
   else window.print();
 }
 
+const MENU_OPENS_RIGHT = "f-menu--destra";
+
 function buildMenu(form, fields, tool) {
   const menu = el("details", { class: "f-menu" });
   const copyLinkButton = el("button", {
@@ -54,7 +56,17 @@ function buildMenu(form, fields, tool) {
     },
   });
   menu.append(el("summary", { class: "f-menu-btn", "aria-label": "Altre azioni" }, [document.createTextNode("⋯")]));
-  menu.append(el("div", { class: "f-menu-list" }, [copyLinkButton, resetButton, printButton]));
+  const list = el("div", { class: "f-menu-list" }, [copyLinkButton, resetButton, printButton]);
+  menu.append(list);
+  // The list is right-aligned to the "⋯" button. When the action bar wraps (saved element +
+  // narrow Dati column) the button sits at the LEFT edge and a right-aligned list would open
+  // under the sidebar: measure on open and flip it to open rightwards instead.
+  menu.addEventListener("toggle", () => {
+    if (!menu.open) return;
+    const bar = menu.parentElement.getBoundingClientRect();
+    const button = menu.getBoundingClientRect();
+    menu.classList.toggle(MENU_OPENS_RIGHT, button.right - list.offsetWidth < bar.left);
+  });
   return menu;
 }
 
