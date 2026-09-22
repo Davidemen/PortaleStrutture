@@ -98,6 +98,18 @@ Per ogni riga, confrontare con la tabella delle reazioni di MIDAS, riga per riga
 - `combo` è il nome della combinazione senza suffisso (`SLU1(CB)` -> `SLU1`).
 - `famiglia` è ciò che si è passato in `combinazioni`.
 
+## 4 bis. Nodi vincolati
+
+L'interfaccia, con la scelta "Tutti i nodi vincolati", chiede a MIDAS l'elenco dei vincoli invece di far
+digitare gli id dei nodi:
+```powershell
+curl.exe -s -X POST http://127.0.0.1:8000/api/midas/supports -H "Content-Type: application/json" -H "X-Midas-Key: $key" -d "{`"base_url`":`"$baseUrl`"}"
+```
+Confrontare il numero di nodi restituiti (campo `nodo` di ogni riga) con i vincoli del modello (**Model > Boundaries**
+oppure la tabella delle reazioni): devono coincidere per numero e per id. Se la risposta è vuota su un modello
+che ha vincoli, riferire il JSON grezzo: la forma della risposta di MIDAS per i vincoli è una delle ipotesi non
+verificate (`src/strutture/integrations/midas/supports.py`).
+
 ## 5. Modello con unità non SI
 
 Passare il sistema di unità del modello (**Tools > Unit System**) a uno non SI (per esempio kgf/cm o tonf/m),

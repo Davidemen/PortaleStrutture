@@ -35,12 +35,14 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 cd C:\percorso\della\cartella\StruttureMenni
 uv sync
 ```
-macOS, nel Terminale:
+macOS, nel Terminale (Cmd+Spazio, scrivere «Terminale», Invio):
 ```
 curl -LsSf https://astral.sh/uv/install.sh | sh
 cd /percorso/della/cartella/StruttureMenni
 uv sync
 ```
+Consiglio per la riga `cd`: scrivere `cd ` con lo spazio, poi trascinare la cartella StruttureMenni dentro la
+finestra del terminale: il percorso si scrive da solo; Invio per confermare.
 `uv sync` scarica Python e le librerie dentro la cartella `.venv` del progetto (qualche minuto la prima volta).
 Se il comando `uv` non viene trovato dopo l'installazione, chiudere e riaprire il terminale.
 
@@ -53,9 +55,10 @@ uv run playwright install chromium
 - Doppio clic su `Avvia StruttureMenni.bat` (o `.command`). Si apre una finestra nera (il server) e poi il
   browser su `http://127.0.0.1:8000`. Chiudendo la finestra nera il programma si ferma.
 - Su macOS, se il sistema blocca il doppio clic la prima volta: tasto destro → Apri.
-- Dal terminale, con più controllo:
+- Dal terminale, con più controllo (questo è il comando giusto per un server da lasciare acceso; le istruzioni
+  per gli agenti spiegano perché):
   ```
-  uv run python -m strutture.web --host 127.0.0.1 --port 8000
+  uv run python scripts/serve_live.py --host 127.0.0.1 --port 8000
   ```
 - Per farlo raggiungere ai colleghi dalla rete dell'ufficio, aggiungere l'indirizzo del computer
   (`ipconfig` su Windows, `ifconfig` su macOS) dopo `--host`, separato da una virgola:
@@ -83,7 +86,7 @@ uv run playwright install chromium
 - **Registro correzioni** (barra laterale): l'elenco delle differenze fra i fogli Excel e il programma. Ogni voce
   dice cosa faceva il foglio, cosa fa il codice, la clausola e l'effetto sul numero. Va firmato voce per voce
   con la propria sigla: approvata o respinta. Vedi `docs/DECISIONI_DA_CONFERMARE.md`.
-- **Modalità Excel**: sotto "Avanzate" di ogni strumento, "Riproduci il foglio Excel originale" rifà il conto
+- **Modalità Excel**: sotto "Avanzate" di ogni strumento, "Riproduci il foglio Excel originale (errori inclusi)" rifà il conto
   come lo faceva il foglio, errori inclusi. Serve per confrontare, non per progettare. "Confronta con Excel" nei
   risultati mostra le due colonne e quale correzione spiega ogni differenza. Quando tutte le correzioni di uno
   strumento sono approvate, l'interruttore sparisce da quello strumento.
@@ -210,7 +213,7 @@ L'elenco completo dei lavori rinviati è in `docs/DECISIONI_DA_CONFERMARE.md`, i
 |---|---|
 | Il browser dice "impossibile connettersi" | il server non è partito: guardare la finestra nera; se dice "porta in uso" vedere il punto 4 |
 | Pagina bianca o pezzi vecchi dopo una modifica | Ctrl+F5 (svuota la cache) |
-| Un risultato sembra sbagliato | controllare che "Riproduci il foglio Excel originale" sia spento; leggere gli avvisi; aprire il registro per lo strumento; se resta il dubbio, chiedere all'agente allegando i dati e il risultato atteso |
+| Un risultato sembra sbagliato | controllare che "Riproduci il foglio Excel originale (errori inclusi)" sia spento; leggere gli avvisi; aprire il registro per lo strumento; se resta il dubbio, chiedere all'agente allegando i dati e il risultato atteso |
 | Un test fallisce dopo una modifica | incollare all'agente l'output completo del comando |
 | "Modificato da un altro utente" salvando un elemento | qualcun altro l'ha salvato prima: "Ricarica" per prendere la sua versione o "Salva come copia" |
 | Errore 415 o 403 usando l'API a mano | mancano le intestazioni `Content-Type: application/json` e stessa origine: usare l'interfaccia, oppure gli esempi in `docs/VERIFICA_MIDAS.md` |
@@ -223,3 +226,7 @@ L'elenco completo dei lavori rinviati è in `docs/DECISIONI_DA_CONFERMARE.md`, i
 - **Registro delle correzioni**: l'elenco delle differenze volute fra i fogli Excel e il programma, da firmare.
 - **Modalità standard / Excel**: norma applicata / foglio riprodotto (errori inclusi).
 - **Agente**: un assistente di intelligenza artificiale che legge e modifica il codice su vostra richiesta.
+- **Cache**: la copia locale, nel browser, delle pagine già viste; dopo una modifica va svuotata (Ctrl+F5) per
+  vedere la versione nuova. **API**: il canale con cui due programmi si scambiano dati senza passare dallo
+  schermo (qui: fra StruttureMenni e MIDAS). **VPN**: collegamento cifrato alla rete dell'ufficio da fuori;
+  se è spenta, gli indirizzi di quella rete non rispondono.

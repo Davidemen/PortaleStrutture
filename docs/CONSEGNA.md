@@ -41,7 +41,7 @@ decidi se completarlo o scartarlo (`rm -rf static_next && cp -R static static_ne
    DOCX, MIDAS fase 2.
 3. Piccoli seguiti lato calcolo (facoltativi): altri collegamenti tipizzati in `src/strutture/shared/collegamenti.py`
    (plinto su pali → punzonamento richiede prima uscite in mm); `avvisi_campi` per gli avvisi degli strumenti
-   diversi da muro, plinti isolati, travi, vento (`docs/BUILD_CONTRACT.md`, "Warnings about one input").
+   diversi da muro, plinti isolati, travi, vento (`docs/BUILD_CONTRACT.md`, sezione sugli avvisi legati a un solo campo).
 4. Difetti noti minori: `neve-carico-falda` disegna la falda inclinata anche con α = 0°; lo schizzo della mensola
    tozza è schematico; i simboli con doppio pedice (`M_Ed/M_Rd`) si leggono male nelle evidenze della sintesi.
 

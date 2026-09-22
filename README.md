@@ -27,7 +27,7 @@ Tutto gira sul vostro computer: nessun dato esce dall'ufficio. I progetti salvat
 
 ## Comandi essenziali
 ```
-uv run python -m strutture.web --host 127.0.0.1 --port 8000   # server (senza aprire il browser)
+uv run python scripts/serve_live.py --host 127.0.0.1 --port 8000   # server da lasciare acceso (senza aprire il browser)
 uv run pytest -q                                              # test dei calcoli e dell'API
 uv run pytest tests/e2e -m e2e -q                             # test del browser (circa 3 minuti)
 uv run python -m strutture.shared.divergences.check --strict  # coerenza del registro delle correzioni

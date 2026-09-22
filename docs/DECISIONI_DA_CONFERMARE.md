@@ -38,7 +38,7 @@ Travi in c.a. (`ca-trave-rettangolare`):
 10. Nuovo ingresso V_g, taglio da carichi gravitazionali nella gerarchia delle resistenze (NTC 2018 §7.4.4.1.1).
     Il valore predefinito è 0 con un avviso: se dimenticato, la verifica è a favore di sicurezza mancata.
 
-Plinti su pali (`fond-plinto-pali`):
+Plinti su pali (`fond-plinto-su-pali`):
 11. β del punzonamento calcolato con i lati del pilastro e progetto a flessione su una striscia di 1 m: sono
     semplificazioni del foglio, tenute e documentate nel registro.
 

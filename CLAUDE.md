@@ -44,7 +44,7 @@ foglio errori inclusi). Ogni differenza fra le due è una voce del registro dell
 ## Comandi
 ```
 uv sync                                                         # una volta
-uv run python -m strutture.web --host 127.0.0.1 --port 8000     # server
+uv run python -m strutture.web --host 127.0.0.1 --port 8013     # prova rapida in primo piano; il server dell'ufficio (porta 8000) parte SOLO come dice la regola dura 2
 uv run pytest -q                                                # calcoli, API, moduli condivisi
 uv run pytest tests/e2e -m e2e -q                               # browser (circa 3 minuti; prima: uv run playwright install chromium)
 node --test tests/e2e/*.mjs                                     # test JavaScript puri
@@ -96,6 +96,8 @@ comandi non sono tutti verdi.
     mai nelle risposte, mai nel codice.
 14. Fai il lavoro tu stesso: non delegare ad altri agenti a catena. Se il titolare vuole più agenti, ognuno
     lavora su file disgiunti e committa il proprio pacchetto appena finito.
+15. Non modificare `pyproject.toml` né `src/strutture/shared/{tool,report,numeric,tables}.py` senza dirlo prima al
+    titolare: sono il contratto condiviso da tutti gli strumenti e dall'interfaccia, che si costruisce dallo schema.
 
 ## Come si fa una modifica
 1. Leggi la specifica pertinente (`docs/specs/<unità>.md` per un calcolo, `docs/ui/WORKBENCH_SPEC.md` e
