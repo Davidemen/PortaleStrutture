@@ -13,6 +13,7 @@ tradurle non aggiunge nulla e rischia errori nelle formule). I comandi sono iden
 | `docs/DECISIONI_DA_CONFERMARE.md` | IT | scelte ingegneristiche da confermare, dubbi aperti, lavori rinviati |
 | `docs/VERIFICA_WINDOWS.md` | IT | controlli da fare una volta sul PC Windows |
 | `docs/VERIFICA_MIDAS.md` | IT | verifica dell'importazione da MIDAS NX su un modello reale |
+| `docs/VALIDAZIONE_STRUMENTI.md` | IT | validazione strumento per strumento: i sei passi, la tabella di stato (compilata a mano, conservata) e le schede generate da `scripts/validazione_strumenti.py` |
 | `docs/divergences/*.md` (29 file) | IT | registro delle correzioni per unità, GENERATO dai JSON (`render`); si firma nell'app, pagina Registro |
 
 ## Per gli agenti di sviluppo

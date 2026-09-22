@@ -31,4 +31,5 @@ uv run python scripts/serve_live.py --host 127.0.0.1 --port 8000   # server da l
 uv run pytest -q                                              # test dei calcoli e dell'API
 uv run pytest tests/e2e -m e2e -q                             # test del browser (circa 3 minuti)
 uv run python -m strutture.shared.divergences.check --strict  # coerenza del registro delle correzioni
+uv run python scripts/validazione_strumenti.py                # rigenera docs/VALIDAZIONE_STRUMENTI.md (la tabella compilata resta)
 ```

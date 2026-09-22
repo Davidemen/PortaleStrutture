@@ -38,7 +38,8 @@ foglio errori inclusi). Ogni differenza fra le due è una voce del registro dell
   `js/` e `css/`), `static_next/` (copia di lavoro dell'interfaccia, ignorata da git).
 - `tests/` rispecchia `src/`. `tests/e2e/` è Playwright (fixture in `conftest.py`, azioni in `_actions.py`,
   server in memoria in `_server.py`). `tests/fixtures/*.json` sono valori di riferimento calcolati dai fogli.
-- `docs/`: indice in `docs/INDICE.md`. `extract/`: strumenti di sviluppo per leggere i fogli Excel (non servono
+- `docs/`: indice in `docs/INDICE.md`. `docs/VALIDAZIONE_STRUMENTI.md`: tabella di stato compilata dal titolare (le
+  righe fra i marcatori si toccano solo su sua richiesta) + schede generate da `scripts/validazione_strumenti.py`. `extract/`: strumenti di sviluppo per leggere i fogli Excel (non servono
   in produzione). `scripts/serve_live.py`, `scripts/avvia.py`, `Avvia StruttureMenni.{bat,command}`: avvio.
 
 ## Comandi
@@ -51,6 +52,7 @@ node --test tests/e2e/*.mjs                                     # test JavaScrip
 uv run ruff check .                                             # stile
 uv run python -m strutture.shared.divergences.check --strict    # registro: deve dare 0 errori
 uv run python -m strutture.shared.divergences.render            # rigenera docs/divergences/*.md
+uv run python scripts/validazione_strumenti.py                  # rigenera docs/VALIDAZIONE_STRUMENTI.md (schede dai dati; la tabella di stato è del titolare e viene conservata)
 ```
 Numeri attesi al 2026-09-22: vedi `docs/CONSEGNA.md`, sezione "Stato". Un lavoro non è finito finché quei
 comandi non sono tutti verdi.

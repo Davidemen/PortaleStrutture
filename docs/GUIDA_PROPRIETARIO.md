@@ -149,7 +149,11 @@ uv run playwright install chromium
    MIDAS va considerata non collaudata.
 3. Firmare il registro delle correzioni (209 voci) e le decisioni in `docs/DECISIONI_DA_CONFERMARE.md`. Finché
    una voce è "da confermare", la relazione lo dice.
-4. Decidere se aprire un repository GitHub privato (consigliato: backup del codice fuori dal computer e test
+4. Validare gli strumenti uno per uno prima di usarli in produzione: `docs/VALIDAZIONE_STRUMENTI.md` elenca i sei
+   passi (esempio in modalità Excel contro il foglio, registro, caso reale, relazione, schizzo, firma) e tiene la
+   tabella di stato per sigla. Si compila a mano o dicendo a un agente "segna PLI come validato, sigla AB, oggi";
+   le schede sotto la tabella si rigenerano con `uv run python scripts/validazione_strumenti.py`.
+5. Decidere se aprire un repository GitHub privato (consigliato: backup del codice fuori dal computer e test
    automatici a ogni modifica). Un agente lo fa in pochi minuti; serve un vostro account.
 
 ## 8. Lavorare con un agente di sviluppo
@@ -168,6 +172,7 @@ Esempi di richieste che funzionano bene:
 - "Aggiungi uno strumento per … partendo da questa specifica (allegare il foglio o la descrizione). Segui
   docs/BUILD_CONTRACT.md."
 - "Esegui tutti i test e dimmi se è tutto verde."
+- "Segna MUR come validato, passi 1-6, sigla AB, oggi, e rigenera docs/VALIDAZIONE_STRUMENTI.md."
 - "Fai un backup del database e dimmi dove l'hai messo."
 
 Cosa pretendere sempre, a fine lavoro:
