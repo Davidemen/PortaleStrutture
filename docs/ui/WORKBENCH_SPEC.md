@@ -454,3 +454,244 @@ Permanent rule (`tests/shared/test_sketch_campi.py`, mirrors the JS matching ove
 carrying the symbol of a numeric input must be linked (automatically or via `campo`), `campo` must name an existing
 numeric input, and a COMPUTED text must not borrow an input's symbol (punching `a` → `a_gov`, settlement layer
 thickness `Δz` → `s`, since `Δz` is the discretisation step input).
+
+## 19. Varianti affiancate (owner's request 2026-09-22)
+Purpose: the engineer tries two to four versions of the same element ("plinto 1,80 m" vs "2,00 m" vs "2,00 m,
+cls C30/37"), sees them side by side with checks, utilisation and verdict, keeps one and saves it. No new
+engineering: every column is an ordinary run of the same tool.
+
+### 19.1 Where variants live (decided)
+A **client-side working set, per tool, in `sessionStorage`** (`sm.varianti.<tool>`: survives a reload and a
+visit to another tool, dies with the browser tab), NOT in SQLite. Reasons, after reading `storage/` and
+`routes/progetti.py`: (a) variants must work without a project (§14.1: nothing changes when none is selected);
+(b) saving each attempt as an element would fill the project table (§20) and the project report (§14.3) with
+discarded attempts; (c) what is kept is already covered by elements + revisions: the chosen variant becomes a
+normal element (POST) or the next revision of the element it started from (PUT with `revisione`), and the
+revision history keeps the previous inputs. **No SQLite schema change, no new endpoint.** Stored shape (immutable
+updates only, one JSON object): `{attiva: "B", varianti: [{id: "A", nome: "A", inputs, origine: {elemento_id,
+revisione, nome} | null}]}` — ids are the letters A–D, `nome` is editable (≤ 40 chars, default the letter).
+Results are never stored: every column is recomputed (`POST /api/tools/{name}/run`) when shown.
+
+### 19.2 Behaviour in the tool page
+- **Crea variante** (Dati action bar, next to "Carica esempio"; icon "⧉" + word). The first press turns the current
+  form into variant A and a copy of it into variant B, and B becomes active; later presses copy the ACTIVE
+  variant. Maximum **4** (`MAX_VARIANTI`); at 4 the button is disabled with the tooltip "Massimo 4 varianti".
+  When the form was opened from an element (`?elemento=<id>`), A carries `origine` (id, revisione, nome).
+- **Variant strip** above the form (under the §15/§16 notices): `role="tablist"`, one tab per variant ("A",
+  "B · cls C30", …) + **Affianca** (opens §19.3) + **Chiudi varianti** (confirm: "Le varianti non salvate
+  saranno scartate"). ←/→ move between tabs, Enter/Space activates; activating a tab writes that variant's inputs
+  into the form through `api.setValues()` (live run as usual). Every valid form change updates the active
+  variant's `inputs` (same hook as `form-state.save`). Per-tab menu: Rinomina, Duplica, Elimina (not on the last
+  remaining one). With variants open the header shows "Variante B di 3".
+- A tool change leaves the set in `sessionStorage`; coming back restores the strip and the active variant.
+  Opening an element, "Carica questa revisione" or a "Usa in…" link while a set exists asks first: "Chiudere le
+  varianti aperte?" (Chiudi e carica / Annulla).
+
+### 19.3 Page `#/varianti/<tool>` ("Affianca")
+One column per variant (≥ 1440 px: 4 columns fit; 1100–1439 px: columns keep a 320 px minimum and the grid
+scrolls horizontally inside `.r-table-scroll`; < 1100 px: one column at a time with the same tablist on top).
+A `<table>` with variants as columns (`<th scope=col>` sticky) and rows aligned across columns (`<th scope=row>`):
+1. Head: variant name (editable inline), origin ("da P1, rev. 4" when `origine`), **Tieni questa**.
+2. Verdict: icon + word as in the Sintesi (`✓ Verificato` · `✕ Non verificato` · `! Errore` + the first Italian
+   error), η max (2 decimals) with the `verdict.js` bar, verifica governante.
+3. The small sketch (`sketch.js`, same fit as the Sintesi, no §18 editing, `aria-hidden` + figcaption).
+4. **Verifiche**: one row per check name in the union of all columns (ordered by `sortChecks` on the reference
+   column); cell = η + ✓/✕ + word; a check absent from a column shows "—".
+5. **Risultati**: the highlighted outputs (the selection `elemento-sintesi.js` uses for `evidenze`), then, behind
+   "Mostra tutti i risultati", every scalar output.
+6. **Dati**: by default ONLY the inputs that differ between at least two variants ("Dati diversi: 3 di 24");
+   "Mostra tutti i dati" reveals the rest. Table inputs compare as a whole ("tabella: 2 righe diverse su 5").
+Differences are always **icon + word**, never colour alone. The reference column is A (switchable: select
+"Confronta con"). An input cell different from the reference carries "≠ diverso"; a result or η cell carries
+"▲ +12,5 %" / "▼ −3,0 %" relative to the reference (1 decimal; "= uguale" when equal at displayed precision); a
+verdict different from the reference carries "≠ esito diverso". The page never ranks variants or picks a "best".
+Runs: sequential, one per variant, `aria-busy` on the column while its run is in flight; a run error fills its own
+column and leaves the others intact. Keyboard: the table is Tab-reachable (`tabindex="0"`, `aria-label="Confronto
+varianti"`), every button reachable; Esc or **Torna al calcolo** returns to `#/<tool>` with the active variant
+unchanged. Print (`@media print`): the table as it is, no buttons, with the §10 mode line per column — a working
+sheet, not the relazione (the relazione stays per element).
+
+### 19.4 Keeping one ("Tieni questa")
+A dialog with three outcomes, all through existing code paths:
+- Project selected and `origine` set: **Aggiorna "<nome elemento>"** = PUT `/api/elementi/{id}` with the variant's
+  inputs, `sintesi`/`stato` from its run (same builder as §14.1), `revisione` from `origine`, and the revision
+  `nota` prefilled "Variante B scelta fra A, B, C" (editable). 409 → the existing conflict dialog of §14.1
+  ("Ricarica" / "Salva come copia").
+- Project selected: **Salva come nuovo elemento** = POST `/api/progetti/{id}/elementi` (the §14.1 dialog, nome
+  prefilled "<nome dell'origine o titolo dello strumento> – variante B").
+- Always: **Usa solo nel modulo** = the variant's inputs go into the form, nothing is saved.
+After Aggiorna or Usa solo nel modulo the set is closed (the dialog says so beforehand) and the tool page shows
+the kept inputs. After Salva come nuovo the dialog offers "Chiudi le varianti" or "Tieni aperte" (so several
+variants can be saved in turn); there is no bulk "save all" in this phase.
+
+### 19.5 Files, backend, CSP, tests
+New modules (each ≤ 400 lines): `js/varianti-state.js` (pure: create/copy/rename/delete/activate over an immutable
+set, `sessionStorage` through `storage.js`, `MAX_VARIANTI`), `js/varianti-diff.js` (pure: input diff incl. tables,
+relative deltas, union of checks; node-testable), `js/varianti-bar.js` (strip + "Crea variante"),
+`js/varianti-confronto.js` (page, runs, table), `js/varianti-tieni.js` (§19.4 dialog), `js/elemento-conflitto.js`
+(the 409 dialog extracted from `elemento-salva.js`, 373 lines today, so both callers share it),
+`css/varianti.css`. Touched: `router.js` (`#/varianti/<tool>`), `forms.js` (mount the strip, update the active
+variant on change), `elemento-salva.js` (use `elemento-conflitto.js`; export its payload builder),
+`elemento-sintesi.js` (build `sintesi`/`stato` from a given report, not only from `getReportState()`),
+`shortcuts.js` (the sheet lists ←/→ on the strip). Backend: none. CSP (rule 4): nothing inline, column widths by
+class, the delta arrows are text, `el.style.setProperty` only for sticky offsets. Tests:
+`tests/e2e/test_varianti.py` (from an example create 3 variants, change one input in B, Affianca shows 3 columns
+with "≠ diverso" on that input only and "Dati diversi: 1 di N", η delta with ▲/▼ text; reload keeps the set; at
+4 the button is disabled; Tieni questa → Salva come nuovo creates one element; from `?elemento=` → Aggiorna does a
+PUT and the history gains a revision with the prefilled nota; a stale `revisione` (second PUT through
+`page.request`) → 409 dialog; a run error in one column leaves the others), `tests/e2e/varianti_diff.test.mjs`
+(pure diff: scalars, tables, missing checks, equal at displayed precision → "= uguale").
+
+Decisioni ingegneristiche aperte: nessuna.
+
+## 20. Tabella di progetto (owner's request 2026-09-22)
+The element list of `#/progetti/<id>` (§14.3) becomes a real table: every element of the project, sortable,
+filterable, keyboard-driven, opened with a click. It READS what was saved and never recomputes (the project
+report of §14.3 remains the place where every element is recalculated).
+
+### 20.1 What is saved today, what is missing
+`Elemento.sintesi` (free JSON in `storage/models.py`, TEXT column in `elemento` and `elemento_revisione`) holds
+`{ok, eta_max?, verifica_governante?, evidenze}` from the last successful run (`js/elemento-sintesi.js`); the
+element also has `stato` and `aggiornato`. So η max, esito (`stato`) and the date of the last revision
+(`aggiornato`, written by the save that created the current `revisione`) are already there. **Missing: the
+warnings** (and the error text of a failed run). Decision: extend the summary **computed at save time** (the moment
+`sintesi` is built today; stored with the element AND its revision) — no SQLite migration, no API change, the
+column is already JSON: `sintesi.avvisi = {n: <count>, primo: "<text of the first warning>"}` and, when `ok` is
+false, `sintesi.errore = "<first Italian error>"`. The Excel-mode trace warning that `execute()` appends is not
+counted (the mode is shown by `modalita`). **"Avviso più grave" is not definable today**: `Report.warnings` is a
+plain tuple of strings with no level (`shared/report.py`), so the table shows the count and the FIRST warning in
+the tool's own order. A gravity level would change the shared contract (rule 15) and every tool: a question for
+the owner (below), not part of this section.
+Also at save: when live calculation is on and a run is pending or in flight, "Salva" waits for it (`live.js`
+`whenSettled()`, at most the debounce + one run), so the saved summary belongs to the saved inputs and
+`dati_modificati` remains only when that run could not complete. Elements saved before this change lack `avvisi`:
+their cell shows "n.d." with the tooltip "Riepilogo salvato con una versione precedente: apri e salva l'elemento
+per aggiornarlo". Optional backend hardening (small, same change): `_ElementoBody.sintesi` stays a `dict` but
+rejects a non-numeric `eta_max` and a non-integer `avvisi.n` with the standard Italian 400 envelope.
+
+### 20.2 Table
+Columns (`<table>`, `<caption>` "Elementi del progetto", sticky `<th scope=col>`): **Strumento** (sigla chip, tool
+title in the tooltip), **Nome** (link `#/<tool>?elemento=<id>`, the element's sigla after it), **η max** (2
+decimals + the `verdict.js` bar; "—" when absent), **Esito** (icon + word: `✓ Verificato` · `✕ Non verificato` ·
+`○ Dati modificati` · `! Errore di calcolo`), **Avvisi** ("2 · <first warning cut to one line>", full text in the
+tooltip; "Nessuno"; "n.d."), **Ultima revisione** (date and time, "rev. 4" muted). The §14.3 row actions
+(Duplica, Rinomina, Storia, Elimina/Ripristina) move into a per-row **Azioni** menu button in the last column. When
+`stato = dati_modificati`, η max and Avvisi are muted and prefixed "(prec.)": they belong to earlier inputs. A
+click anywhere on a row outside Azioni follows the Nome link; Ctrl/Cmd+click and middle-click on the link open a
+new tab as usual.
+- **Sort**: each header is a `<button>` inside its `<th>`, `aria-sort` on the `<th>`; the first click sorts
+  ascending (η max: descending first), the second reverses. Missing values always last; stable, secondary key
+  Nome. Default: Ultima revisione, descending (as §14.3 today).
+- **Filter** (one row above the table): "Cerca" text (nome, sigla, tool title; case- and accent-insensitive),
+  select Strumento (siglas present), select Esito, checkbox "Solo con avvisi"; counter "8 di 23 elementi";
+  "Azzera filtri" while any filter is active; empty result: one sentence + "Azzera filtri".
+- Sort and filters live in the hash query (`#/progetti/<id>?ordina=eta&verso=desc&strumento=PLI&esito=
+  non_verificato&avvisi=1&q=plinto`), so Back/Forward and shared links reproduce the view.
+- **Keyboard**: Tab reaches the filters, the header buttons, then the table body; in the body ↑/↓ move a roving
+  focus across rows (focus sits on the Nome link), Home/End first/last, Enter opens, the context-menu key or
+  Shift+F10 opens Azioni. Footer: "23 elementi · 17 ✓ verificati · 4 ✕ non verificati · 2 ○ dati modificati ·
+  η max del progetto 0,94 (P3)".
+- Print (`@media print`): the filtered, sorted table without buttons under the project cartiglio — a quick status
+  sheet, distinct from "Relazione di progetto".
+
+### 20.3 Files, backend, CSP, tests
+New: `js/progetto-tabella.js` (render, header buttons, roving focus, query sync), `js/progetto-tabella-dati.js`
+(pure: row model from elements, sort, filter, footer counts; node-testable), additions to `css/progetti.css`.
+Touched: `progetto-elementi.js` (row actions become the Azioni menu; list rendering moves to the table),
+`progetto.js` (mount), `elemento-sintesi.js` (`avvisi`, `errore`), `elemento-salva.js` (await `whenSettled()`),
+`live.js` (export `whenSettled()`). Backend: none required; the optional validation of §20.1 goes in
+`web/routes/progetti.py` with a unit test under `tests/web/`. CSP: nothing inline; the η bar width through
+`el.style.setProperty`, as `verdict.js` already does. Tests: `tests/e2e/test_progetto_tabella.py` (three elements
+of different tools saved through the UI, one with warnings and one failing a check: η, esito words and "1 ·
+<text>" shown; sorting by η puts missing values last; filters by esito and "Solo con avvisi"; the query survives a
+reload and Back; ↓ ↓ Enter opens the right element; an element POSTed through `page.request` without `avvisi`
+shows "n.d."; opening the page sends no `/run` request — asserted with `page.on("request")`),
+`tests/e2e/progetto_tabella.test.mjs` (pure sort/filter/footer).
+
+Decisioni ingegneristiche aperte: nessuna di calcolo. One contract question for the owner: should warnings get a
+gravity level, so that "avviso più grave" means something? (It changes `shared/report.py`, rule 15.)
+
+## 21. Annulla e ripristina sui dati del modulo (owner's request 2026-09-22)
+Excel reflex (§0.1): a wrong edit is undone with Ctrl+Z. Scope: the VALUES of the Dati form of the current tool
+(every field, conditional ones included, and table inputs). Out of scope: project/element records, register
+sign-offs, relazione overlay settings.
+
+### 21.1 Behaviour
+- Keys: **Ctrl+Z / Cmd+Z** annulla; **Ctrl+Shift+Z / Cmd+Shift+Z** and **Ctrl+Y** (Windows habit) ripristina.
+  Buttons in the Dati action bar, after "Carica esempio": "↶ Annulla" and "↷ Ripristina" (icon + word; accessible
+  names "Annulla modifica" / "Ripristina modifica", which contain the visible word). Disabled (`aria-disabled`,
+  still focusable, DESIGN_SPEC §3 disabled style) when there is nothing to undo/redo; the tooltip names the step
+  ("Annulla: Altezza muro 3,00 → 3,50 m"). After each undo/redo a polite live region says "Annullato: Altezza
+  muro" / "Ripristinato: …", the field flashes (`.f-field--flash`, as §17/§18) and its accordion section opens if
+  collapsed (reuse `campo-salto.js`).
+- **Native undo first**: when the focused element is a text control whose value differs from the current snapshot
+  (uncommitted typing), the key is left to the browser (character-level undo inside the box). Otherwise the app
+  handles it and calls `preventDefault()`. The keys do nothing while a dialog or popover is open (§11 overlay, §18
+  popover, §14 dialogs).
+- **Granularity**: one step per CONFIRMED field change. Consecutive `input` events on the same control are one
+  step, closed by its `change` event, by focus leaving it, or by an edit in another control. A select, checkbox or
+  unit-selector change is one step. Table inputs: one step per committed cell edit; a paste (`table-paste.js`), a
+  row insert or a row delete is one step. The snapshot is the full value object of every field (`allValues`,
+  hidden conditional fields included, so undoing a switch brings back what was typed under it).
+- Applying a snapshot uses `api.setValues()` and then dispatches ONE `change` on the form, so `handleChange` runs
+  as for a manual edit (validation, `form-state.save`, live run, redraw, `dati_modificati` on a loaded element). A
+  new edit after an undo discards the redo branch. Limit: **100 steps** (`MAX_PASSI_ANNULLA`); the oldest step is
+  dropped silently.
+- **§18 sketch edits are ordinary steps (unified history).** The popover's "Applica" writes the control and
+  dispatches `input` + `change`, so the edit is one step and Ctrl+Z restores the previous value (the sketch follows
+  through the live run). The popover's own "Annulla"/Esc keeps its meaning: discard an edit never applied (no step).
+- **Carica esempio** is one undoable step (label "Carica esempio"): the engineer can get their own data back.
+- **Boundaries that reset the history** (both stacks emptied, the loaded state is the new base): opening an element
+  (`?elemento=`), "Ricarica" in the 409 dialog, "Carica questa revisione" (`?anteprima=1`), a "Usa in…" arrival
+  (§15), "Tieni questa" (§19). Reason: undoing past a load would put another element's inputs under the loaded
+  element's header, one "Salva" away from overwriting it.
+- **Tool change**: each tool keeps its own history in memory for the life of the tab (a `Map` keyed by tool,
+  immutable stacks). Coming back to a tool whose current values equal the history's present resumes it; otherwise
+  (values changed elsewhere) it starts empty. Nothing is persisted: a reload starts with an empty history.
+- **Variants (§19)**: one history per variant (key `<tool>#<variante>`); switching tab is not a step.
+- **§15 provenance chips** are not restored by undo (a prefilled value brought back by Ctrl+Z shows no chip):
+  declared limitation, keeps §15's "editing clears the chip" rule simple.
+
+### 21.2 Files, backend, CSP, tests
+New: `js/annulla.js` (pure: `{passato, presente, futuro}`, `registra`, `annulla`, `ripristina`, coalescing by
+control, `MAX_PASSI_ANNULLA`, step labels; every function returns a new object; node-testable), `js/annulla-ui.js`
+(buttons, keys with the native-first rule, live region, wiring to the form API, per-tool/per-variant `Map`).
+Touched: `forms.js` (mount; expose `allValues()`; report `change`/focus-out commits and the example load),
+`fields.js` (read hidden fields too, if `visibleValues` cannot be reused), `table-input-events.js` /
+`table-paste.js` (one commit per cell edit, paste, row operation), `schizzo-modifica.js` (dispatch `change` after
+`input`), `elemento-salva.js` and `provenienza.js` (reset at the boundaries above), `shortcuts.js` (the sheet lists
+the three combinations; its global keydown leaves Z/Y to `annulla-ui.js`). Backend: none. CSP: nothing inline;
+icons are text glyphs or existing `icons.js` SVGs. Tests: `tests/e2e/test_annulla.py` (type 3,5 in a field + Tab →
+one Ctrl+Z restores the old value and the live result follows; typing "123" is one step; while typing inside the
+box Ctrl+Z is native and the app history is untouched; a select change, a table cell edit and a table paste are one
+step each; Ctrl+Shift+Z and Ctrl+Y redo; a new edit clears redo; undoing "Carica esempio" brings back the user's
+data; undoing a §18 sketch edit restores the field and the dimension text; opening `?elemento=` empties the history
+(buttons disabled); switching tool and back keeps it; the buttons work by mouse and name the step in the tooltip;
+`Meta+Z` path for macOS), `tests/e2e/annulla.test.mjs` (pure stacks: coalescing, limit 100, redo cleared, returned
+objects never the same instance as the input).
+
+Decisioni ingegneristiche aperte: nessuna.
+
+## 22. `sketch-fit.js` split (module cap, 2026-09-22)
+`js/sketch-fit.js` has 459 lines, over the 400-line cap (CLAUDE.md rule 12). It holds three independent parts;
+split along them, code moved verbatim (no behaviour change), no re-export shims:
+- `js/sketch-geometry.js` (~130 lines): `MIN_EXTENT` (now exported), `PADDING`, `isFiniteNumber`,
+  `isFinitePoint`, `toScreen`, `dimensionOffset`, `diagramPolygon`, `boundsPoints`, `extend`, `boundsOfShapes`,
+  `sizeOf`, `referenceSide`, `round6` (today's lines 1–135 minus the fit constants).
+- `js/sketch-dimensions.js` (~115 lines): the "M2" block — `MIN_DIMENSION_OFFSET_PX`, `DIMENSION_STACK_PX`,
+  `PARALLEL_TOLERANCE`, `MAX_DIMENSION_OFFSET_SHARE`, `direction`, `parallelAndOverlapping`, `DIAGRAM_LABEL_PX`,
+  `leftNormal`, `diagramClearance`, `resolveDimensionOffsets`, `applyDimensionOffsets` (today's lines 342–452);
+  imports `MIN_EXTENT` from `sketch-geometry.js` and `TEXT_PX`/`LABEL_GAP_PX` from `sketch-text.js`.
+- `js/sketch-fit.js` (~220 lines): `STRUCTURAL_KINDS`, `ANNOTATION_KINDS`, `MIN_ELEMENT_SHARE`,
+  `CENTER_BUDGET_SHARE`, `clampNear`, `centerAround`, the margin-aware scale helpers, `fitVista`, `uniformScale`;
+  imports from the two modules above and `longestTextPx` from `sketch-text.js`.
+Importers: `sketch-shapes.js` takes `toScreen`, `dimensionOffset`, `diagramPolygon` from `sketch-geometry.js`;
+`sketch.js` takes `fitVista`, `uniformScale` from `sketch-fit.js` and `applyDimensionOffsets` from
+`sketch-dimensions.js`. Safety net written BEFORE the move: `tests/e2e/sketch_fit.test.mjs`, a characterisation
+test running `fitVista` and `applyDimensionOffsets` on every tool example's sketch views (dumped once to
+`tests/fixtures/sketch_viste.json` by a small script in `scripts/`) against outputs recorded from the current
+file; it must pass unchanged after the split. Also `tests/web/test_js_module_size.py`: every file in `static/js`
+(and `static_next/js` when present) ≤ 400 lines (today `results.js` sits exactly at 400). The full e2e suite
+(`test_sketch_quality.py`, `test_schizzo_modifica.py` included) runs on `static_next` before promotion (rule 3).
+
+Decisioni ingegneristiche aperte: nessuna.
