@@ -56,7 +56,12 @@ def calcola_serie(
         {"valore": v, "messaggio": "; ".join(r.get("errors", ())) or "Ingresso non valido"}
         for v, r in riporti if not r.get("ok")
     )
-    solo_esito = tuple(nome for nome, o in orientamenti.items() if o is None)
+    # `orientamenti` (impara_orientamenti) only holds an entry for a check NAME once it has seen at
+    # least one sample with a ratio: a check with NO ratio anywhere (no value/limit at all, ca-
+    # pilastro/ca-trave's own outcome-only checks) never becomes a key there at all, so filtering
+    # `orientamenti.items()` alone silently drops it from `verifiche_solo_esito`. `verifiche` (built
+    # from every check NAME actually seen, `_serie_verifiche`'s own `nomi`) is the right universe.
+    solo_esito = tuple(v.nome for v in verifiche if orientamenti.get(v.nome) is None)
     valori_calcolati = tuple(v for v, _ in riporti)
     return Serie(valori=valori_calcolati, verifiche=verifiche, errori=errori, verifiche_solo_esito=solo_esito, completa=completa)
 
