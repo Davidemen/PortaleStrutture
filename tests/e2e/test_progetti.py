@@ -517,7 +517,10 @@ def test_unknown_tool_element_flagged_in_list_and_report(desktop_page: tuple[Pag
     progetto_id = response.json()["progetto"]["id"]
 
     page.goto(f"{base_url}/#/progetti/{progetto_id}")
-    expect(page.locator(".pe-action--disabled")).to_have_text("Strumento non disponibile")
+    # §20.2 fix: the name is always shown, never hidden behind the "unavailable" note.
+    nome_cell = page.locator(".pt-cell-nome")
+    expect(nome_cell).to_contain_text("Elemento fantasma")
+    expect(nome_cell.locator(".pe-action--disabled")).to_contain_text("strumento non disponibile")
 
     _stub_print(page)
     page.get_by_role("button", name="Relazione di progetto").click()

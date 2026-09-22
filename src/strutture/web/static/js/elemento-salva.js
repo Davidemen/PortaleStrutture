@@ -4,28 +4,18 @@
 // event listener -- `#form-actions` is rebuilt synchronously on every `strutture:tool-schema`, and
 // mounting via a document-level listener of our own could race forms.js's OWN listener that clears
 // the bar first) so ordering is guaranteed rather than left to dynamic-import timing.
-import { el, clear } from "./dom.js";
-import { trapFocus } from "./nav-state.js";
+import { el } from "./dom.js";
 import { visibleValues } from "./forms-sections.js";
 import { save } from "./form-state.js";
 import { requestRun, whenSettled } from "./live.js";
 import { getCurrentProgetto, setCurrentProgetto } from "./progetto-picker.js";
 import { takeAnteprimaStash } from "./progetto-anteprima.js";
 import { computeSintesiEStato } from "./elemento-sintesi.js";
-import { activeProvenienza, reconstructProvenienza } from "./provenienza.js";
+import { activeProvenienza, reconstructProvenienza, aggiornaOrigini } from "./provenienza.js";
 import { azzeraStoriaAnnulla } from "./annulla-ui.js";
 import { apriConflittoDialog } from "./elemento-conflitto.js";
-import {
-  fetchProgetti,
-  fetchProgetto,
-  createProgetto,
-  fetchElementi,
-  createElemento,
-  fetchElemento,
-  updateElemento,
-} from "./progetti-api.js";
-
-const NEW_PROJECT_VALUE = "__nuovo__";
+import { openCreateDialog as openCreateDialogImpl } from "./elemento-salva-dialog.js";
+import { fetchProgetto, fetchElemento, updateElemento } from "./progetti-api.js";
 
 // Module-level, same "last mount wins" pattern as js/annulla-ui.js's own `activeTool` --
 // js/varianti-bar.js reads this (never writes it) to give a brand-new variant A its `origine`
@@ -74,6 +64,17 @@ export function mountElementoSalva({ toolForm, tool, title, fields, params, inpu
   let loaded = null; // {id, revisione, nome, sigla, nota, progettoId, progettoNome} | null
   let dialogEl = null;
   let releaseTrap = null;
+  // Fingerprint of the inputs+modalita the CURRENTLY loaded element was saved/reloaded with --
+  // §25.1: "Usa in..." adds `da_elemento`/`da_revisione` only when the on-screen inputs are
+  // IDENTICAL to this saved revision, not merely when the last run finished (a run can finish
+  // successfully on inputs that were never saved at all).
+  let savedFootprint = null;
+  function captureFootprint() {
+    savedFootprint = JSON.stringify(visibleValues(toolForm, fields));
+  }
+  function isUnmodified() {
+    return loaded !== null && savedFootprint === JSON.stringify(visibleValues(toolForm, fields));
+  }
 
   function showError(message) {
     errorEl.textContent = message || "Errore imprevisto.";
@@ -130,6 +131,7 @@ export function mountElementoSalva({ toolForm, tool, title, fields, params, inpu
         return;
       }
       loaded = { ...loaded, revisione: result.data.revisione };
+      captureFootprint();
       renderWidgetState();
       showStatus("Elemento salvato.");
     } catch (error) {
@@ -139,169 +141,42 @@ export function mountElementoSalva({ toolForm, tool, title, fields, params, inpu
     }
   }
 
-  async function defaultElementName(progettoId) {
-    const base = title || tool;
-    if (!progettoId) return `${base} 1`;
-    try {
-      const elementi = await fetchElementi(progettoId);
-      return `${base} ${elementi.filter((item) => item.strumento === tool).length + 1}`;
-    } catch (error) {
-      return `${base} 1`;
-    }
-  }
-
-  // One dialog for "Salva in progetto", "Salva come nuovo" and "Salva come copia": all three
-  // create a NEW element, only the pre-filled name/project differ. The project picker sits INSIDE
-  // this dialog rather than a separate wizard step, so "with no project selected it opens the
-  // picker first" (§14.1) is just this same dialog with nothing preselected.
-  async function openCreateDialog({ progettoId, defaultNome } = {}) {
-    closeDialog();
-    const current = getCurrentProgetto();
-    const startProgettoId = progettoId || (current && current.id) || "";
-    let progetti = [];
-    try {
-      progetti = await fetchProgetti();
-    } catch (error) {
-      // the dialog still offers "Nuovo progetto..." even when the list failed to load
-    }
-
-    const titleId = "es-dialog-title";
-    const progettoSelect = el("select", { id: "es-dialog-progetto", required: true });
-    const newProjectHost = el("div", { class: "es-new-progetto" });
-    newProjectHost.hidden = true;
-    const newNomeInput = el("input", { type: "text", id: "es-new-progetto-nome", maxlength: "120" });
-    const newCodiceInput = el("input", { type: "text", id: "es-new-progetto-codice", maxlength: "40" });
-    const newCommittenteInput = el("input", { type: "text", id: "es-new-progetto-committente", maxlength: "120" });
-    newProjectHost.append(
-      el("div", { class: "es-dialog-field" }, [el("label", { for: "es-new-progetto-nome", text: "Nome del nuovo progetto" }), newNomeInput]),
-      el("div", { class: "es-dialog-field" }, [el("label", { for: "es-new-progetto-codice", text: "Codice" }), newCodiceInput]),
-      el("div", { class: "es-dialog-field" }, [el("label", { for: "es-new-progetto-committente", text: "Committente" }), newCommittenteInput]),
+  // The dialog's own DOM/wiring live in js/elemento-salva-dialog.js (§25.4: kept this module
+  // under the 400-line cap) -- this wrapper supplies the caller-side state/callbacks and keeps
+  // `dialogEl`/`releaseTrap` so `closeDialog()` above still works unchanged.
+  async function openCreateDialog(options) {
+    const mounted = await openCreateDialogImpl(
+      {
+        tool, title, loaded, currentPayload, closeDialog,
+        onCreated: (created, targetId, targetNome, sigla, nota) => {
+          loaded = { id: created.id, revisione: created.revisione, nome: created.nome, sigla, nota, progettoId: targetId, progettoNome: targetNome };
+          captureFootprint();
+          const current2 = getCurrentProgetto();
+          if (!current2 || current2.id !== targetId) setCurrentProgetto({ id: targetId, nome: targetNome });
+          renderWidgetState();
+          showStatus("Elemento salvato in progetto.");
+        },
+      },
+      options,
     );
-
-    function renderProgettoOptions(selectedId) {
-      clear(progettoSelect);
-      progettoSelect.append(el("option", { value: "", text: "Seleziona un progetto…" }));
-      for (const progetto of progetti) {
-        const text = progetto.codice ? `${progetto.codice} — ${progetto.nome}` : progetto.nome;
-        progettoSelect.append(el("option", { value: progetto.id, text, selected: progetto.id === selectedId }));
-      }
-      progettoSelect.append(el("option", { value: NEW_PROJECT_VALUE, text: "Nuovo progetto…" }));
-    }
-    renderProgettoOptions(startProgettoId);
-
-    const nomeInput = el("input", { type: "text", id: "es-dialog-nome", required: true, maxlength: "120" });
-    const siglaInput = el("input", { type: "text", id: "es-dialog-sigla", maxlength: "8" });
-    const notaInput = el("textarea", { id: "es-dialog-nota", rows: "2", maxlength: "2000" });
-    let nomeTouched = false;
-    nomeInput.addEventListener("input", () => {
-      nomeTouched = true;
-    });
-    nomeInput.value = defaultNome || (await defaultElementName(startProgettoId));
-
-    progettoSelect.addEventListener("change", async () => {
-      newProjectHost.hidden = progettoSelect.value !== NEW_PROJECT_VALUE;
-      if (!newProjectHost.hidden) {
-        newNomeInput.focus();
-        return;
-      }
-      if (nomeTouched || defaultNome) return;
-      const computed = await defaultElementName(progettoSelect.value);
-      // Re-checked AFTER the await: typing a custom name while this fetch was still in flight
-      // must never have it clobbered the instant the fetch resolves.
-      if (nomeTouched || defaultNome) return;
-      nomeInput.value = computed;
-    });
-
-    // Same "no role=alert" reasoning as the widget's own `errorEl` above: this dialog is opened
-    // from a tool page, so it too would be additive to that page's already-fixed 3 live regions.
-    const dialogErrorEl = el("p", { class: "es-dialog-error" });
-    dialogErrorEl.hidden = true;
-    const saveButton = el("button", { type: "submit", class: "es-dialog-save", text: "Salva" });
-    const form = el("form", { class: "es-dialog-form" }, [
-      el("div", { class: "es-dialog-field" }, [el("label", { for: "es-dialog-progetto", text: "Progetto" }), progettoSelect]),
-      newProjectHost,
-      el("div", { class: "es-dialog-field" }, [el("label", { for: "es-dialog-nome", text: "Nome elemento" }), nomeInput]),
-      el("div", { class: "es-dialog-field" }, [el("label", { for: "es-dialog-sigla", text: "Sigla" }), siglaInput]),
-      el("div", { class: "es-dialog-field" }, [el("label", { for: "es-dialog-nota", text: "Nota" }), notaInput]),
-      dialogErrorEl,
-      el("div", { class: "es-dialog-actions" }, [saveButton, el("button", { type: "button", class: "es-dialog-cancel", text: "Annulla", onclick: closeDialog })]),
-    ]);
-
-    dialogEl = el("dialog", { class: "es-dialog", role: "dialog", "aria-modal": "true", "aria-labelledby": titleId }, [
-      el("h2", { id: titleId, text: loaded ? "Salva come nuovo" : "Salva in progetto" }),
-      form,
-    ]);
-    document.body.append(dialogEl);
-    dialogEl.addEventListener("close", closeDialog);
-
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      dialogErrorEl.hidden = true;
-      let targetId = progettoSelect.value;
-      let targetNome = null;
-      if (targetId === NEW_PROJECT_VALUE) {
-        const nome = newNomeInput.value.trim();
-        if (!nome) return showDialogError("Il nome del nuovo progetto è obbligatorio.");
-        try {
-          const created = await createProgetto({ codice: newCodiceInput.value.trim(), nome, committente: newCommittenteInput.value.trim() });
-          targetId = created.id;
-          targetNome = created.nome;
-          setCurrentProgetto(created);
-        } catch (error) {
-          return showDialogError(error.message || "Impossibile creare il progetto.");
-        }
-      }
-      if (!targetId) return showDialogError("Scegli un progetto.");
-      const nome = nomeInput.value.trim();
-      if (!nome) return showDialogError("Il nome dell'elemento è obbligatorio.");
-
-      function showDialogError(message) {
-        dialogErrorEl.textContent = message;
-        dialogErrorEl.hidden = false;
-      }
-
-      saveButton.disabled = true;
-      try {
-        await whenSettled(); // §20.1: the saved sintesi belongs to the saved inputs
-        const created = await createElemento(targetId, currentPayload(nome, siglaInput.value.trim(), notaInput.value.trim()));
-        if (!targetNome) {
-          const found = progetti.find((progetto) => progetto.id === targetId);
-          targetNome = found ? found.nome : await fetchProgetto(targetId).then((p) => p.nome).catch(() => "");
-        }
-        loaded = {
-          id: created.id,
-          revisione: created.revisione,
-          nome: created.nome,
-          sigla: siglaInput.value.trim(),
-          nota: notaInput.value.trim(),
-          progettoId: targetId,
-          progettoNome: targetNome,
-        };
-        const current2 = getCurrentProgetto();
-        if (!current2 || current2.id !== targetId) setCurrentProgetto({ id: targetId, nome: targetNome });
-        renderWidgetState();
-        closeDialog();
-        showStatus("Elemento salvato in progetto.");
-      } catch (error) {
-        showDialogError(error.message || "Impossibile salvare l'elemento.");
-      } finally {
-        saveButton.disabled = false;
-      }
-    });
-
-    releaseTrap = trapFocus(dialogEl, { onEscape: closeDialog });
-    dialogEl.showModal();
-    (progettoSelect.value ? nomeInput : progettoSelect).focus();
+    dialogEl = mounted.dialogEl;
+    releaseTrap = mounted.releaseTrap;
   }
 
-  function applyReload(attuale) {
+  async function applyReload(attuale) {
     const api = getApi();
     if (api) api.setValues(attuale.inputs || {});
     azzeraStoriaAnnulla(); // WORKBENCH_SPEC §21.1: "Ricarica" is a history boundary
     const values = visibleValues(toolForm, fields);
+    // Same reasoning as loadElementoFromParams: the "da <sigla>" provenance chips must reflect
+    // the RELOADED (server) inputs, not whatever the session still held from before -- otherwise
+    // a following Salva registers a collegamento with a value that no longer matches the field,
+    // or drops the server's own provenance entirely.
+    await reconstructProvenienza({ toolForm, tool, fields, input, values, provenienza: attuale.provenienza });
     save(tool, values, fields);
     requestRun(tool, values, "manual");
     loaded = loaded ? { ...loaded, revisione: attuale.revisione, nome: attuale.nome } : loaded;
+    captureFootprint();
     renderWidgetState();
     closeDialog();
     showStatus("Elemento ricaricato: le modifiche locali sono state scartate.");
@@ -365,6 +240,11 @@ export function mountElementoSalva({ toolForm, tool, title, fields, params, inpu
       await reconstructProvenienza({ toolForm, tool, fields, input, values, provenienza: elemento.provenienza });
       save(tool, values, fields);
       requestRun(tool, values, "manual");
+      // §25.4: "Aggiorna dai dati a monte" row action -- AFTER the history reset/reconstruction
+      // above, so it is its own single undoable step, never entangled with the `?elemento=` load.
+      if (params && params.aggiorna_origini === "1") {
+        await aggiornaOrigini({ toolForm, tool, fields, input, getApi, progettoId: elemento.progetto_id, elementoId: elemento.id });
+      }
       let progettoNome = "";
       try {
         progettoNome = (await fetchProgetto(elemento.progetto_id)).nome;
@@ -372,6 +252,7 @@ export function mountElementoSalva({ toolForm, tool, title, fields, params, inpu
         progettoNome = "";
       }
       loaded = { id: elemento.id, revisione: elemento.revisione, nome: elemento.nome, sigla: "", nota: "", progettoId: elemento.progetto_id, progettoNome };
+      captureFootprint();
       setCurrentProgetto({ id: elemento.progetto_id, nome: progettoNome });
       renderWidgetState();
     } catch (error) {
@@ -385,10 +266,12 @@ export function mountElementoSalva({ toolForm, tool, title, fields, params, inpu
   // WORKBENCH_SPEC §25.1: js/usa-in.js reads `loadedElementState()` (below) BEFORE adding
   // `&da_elemento=&da_revisione=` to a "Usa in..." link -- only a SAVED, currently-loaded element
   // (never the transient state of an unsaved `?anteprima=1` preview, which never sets `loaded`)
-  // is eligible. `tool` closes over this mount's own tool name so a stale reference from a
-  // previous page can never answer for the wrong tool.
+  // AND whose on-screen inputs are still exactly what was saved (`isUnmodified()`) is eligible.
+  // `tool` closes over this mount's own tool name so a stale reference from a previous page can
+  // never answer for the wrong tool.
   currentTool = tool;
   currentLoaded = () => loaded;
+  currentUnmodified = isUnmodified;
 
   return wrap;
 }
@@ -397,9 +280,11 @@ export function mountElementoSalva({ toolForm, tool, title, fields, params, inpu
 // time, so the LATEST `mountElementoSalva` call always wins.
 let currentTool = null;
 let currentLoaded = () => null;
+let currentUnmodified = () => false;
 
 export function loadedElementState(tool) {
   if (currentTool !== tool) return null;
   const loaded = currentLoaded();
-  return loaded ? { id: loaded.id, revisione: loaded.revisione } : null;
+  if (!loaded) return null;
+  return { id: loaded.id, revisione: loaded.revisione, modificato: !currentUnmodified() };
 }

@@ -44,6 +44,12 @@ export function renderProgettoElementi(root, { progetto, params = {} } = {}) {
   let elementi = [];
   let toolsByName = new Map();
   let showDeleted = false;
+  let statoRequestId = 0; // discards an in-flight refreshStato() answered out of order
+  // "last mount wins" owner token (same pattern as js/varianti-confronto.js's `root._smOwner`):
+  // the `strutture:registro-changed` listener below is added once per render call but must stop
+  // acting the moment a LATER render (a different project, or a re-render of this one) replaces it.
+  const owner = {};
+  root._smOwner = owner;
 
   root.append(el("h3", { text: "Elementi" }));
   const errorHost = el("div", { class: "pe-error", role: "alert", hidden: true });
@@ -83,23 +89,32 @@ export function renderProgettoElementi(root, { progetto, params = {} } = {}) {
       toolsByName,
       params,
       onChange: (next) => {
-        elementi = next;
+        // `next` is the table's own non-eliminated rows only (it never sees `eliminato` ones) --
+        // merge by id rather than replacing wholesale, or every already-deleted element vanishes
+        // from "Mostra eliminati" (it can no longer be restored) the moment the table itself
+        // changes anything (Rinomina/Duplica/Elimina).
+        const byId = new Map(next.map((item) => [item.id, item]));
+        const stillEliminati = elementi.filter((item) => item.eliminato && !byId.has(item.id));
+        elementi = [...next, ...stillEliminati];
         renderAll();
       },
     });
   }
 
   function refreshStato() {
+    const requestId = ++statoRequestId;
     fetchStatoProgetto(progetto.id)
       .then((stato) => {
+        if (requestId !== statoRequestId) return; // a later refreshStato() already answered
         setStatoProgetto(stato);
-        renderProgettoStatoHead(statoHeadHost, stato.conteggi, (query) => {
-          window.location.hash = `#/progetti/${encodeURIComponent(progetto.id)}?${query}`;
-        });
+        renderProgettoStatoHead(statoHeadHost, stato.conteggi);
         renderTabella(); // badges read the just-set snapshot
       })
       .catch(() => {
+        if (requestId !== statoRequestId) return;
         setStatoProgetto({ elementi: {}, conteggi: null });
+        renderProgettoStatoHead(statoHeadHost, null);
+        setError("Stato del progetto non disponibile.");
       });
   }
 
@@ -114,6 +129,14 @@ export function renderProgettoElementi(root, { progetto, params = {} } = {}) {
     showDeletedToggle.setAttribute("aria-pressed", String(showDeleted));
     deletedHost.hidden = !showDeleted;
     if (showDeleted) renderDeleted();
+  });
+
+  // §25.3: a registro signoff can flip da_confermare/respinto counts for THIS project's own
+  // elements without anything here having changed them -- refetch stato (never the elements
+  // themselves, which the registro cannot touch) so provvisorio/da_ricalcolare badges catch up.
+  document.addEventListener("strutture:registro-changed", () => {
+    if (root._smOwner !== owner) return;
+    refreshStato();
   });
 
   Promise.all([fetchElementi(progetto.id, { inclusiEliminati: true }), fetchTools().catch(() => [])])

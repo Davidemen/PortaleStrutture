@@ -55,22 +55,34 @@ export function buildRows(elementi, toolsByName) {
     });
 }
 
-export function filterRows(rows, { q = "", strumento = "", esito = "", soloAvvisi = false } = {}) {
+// `stato`/`statoElementi` (§25.4): "da_ricalcolare" | "provvisorio" | "provvisorio_origine" against
+// GET /api/progetti/{id}/stato's own per-elemento voce (js/progetto-stato.js's
+// `statoElementiSnapshot()`) -- missing entirely (stato fetch still in flight/failed) never
+// matches, same "no badge rather than an error" rule as `renderProgettoStatoBadges`.
+export function filterRows(rows, { q = "", strumento = "", esito = "", soloAvvisi = false, stato = "", statoElementi = {} } = {}) {
   const needle = normalizza(q);
   return rows.filter((row) => {
     if (strumento && row.strumento !== strumento) return false;
     if (esito && row.esitoKey !== esito) return false;
     if (soloAvvisi && (row.avvisi.nd || !row.avvisi.n)) return false;
+    if (stato) {
+      const voce = statoElementi[row.id];
+      if (!voce || !voce[stato]) return false;
+    }
     if (!needle) return true;
     return normalizza(row.nome).includes(needle) || normalizza(row.siglaTool).includes(needle) || normalizza(row.toolTitle).includes(needle);
   });
 }
 
+// Rank, never the alphabet: an internal key like "errore" or "non_verificato" sorts
+// alphabetically to a spot that has nothing to do with how bad the outcome is.
+const ESITO_RANK = { errore: 0, non_verificato: 1, dati_modificati: 2, verificato: 3 };
+
 const SORT_KEYS = {
   strumento: (row) => normalizza(row.toolTitle),
   nome: (row) => normalizza(row.nome),
   eta: (row) => row.etaMax,
-  esito: (row) => normalizza(row.esitoKey),
+  esito: (row) => (row.esitoKey in ESITO_RANK ? ESITO_RANK[row.esitoKey] : -1),
   avvisi: (row) => (row.avvisi.nd ? null : row.avvisi.n),
   aggiornato: (row) => row.aggiornato,
 };

@@ -24,6 +24,8 @@
 import { el, clear } from "./dom.js";
 import { resolveProperty } from "./json-schema.js";
 import { fetchTools } from "./api.js";
+import { fetchElemento } from "./progetti-api.js";
+import { fetchStatoProgetto } from "./progetto-stato.js";
 import { ensureCollegamenti } from "./collegamenti-api.js";
 import { save } from "./form-state.js";
 import { requestRun } from "./live.js";
@@ -226,6 +228,77 @@ export async function reconstructProvenienza({ toolForm, tool, fields, input, va
   }
   session = { tool, chips: nextChips };
   return byProvider;
+}
+
+// WORKBENCH_SPEC §25.4 "Aggiorna dai dati a monte" -- `#/<tool>?elemento=<id>&aggiorna_origini=1`
+// (js/elemento-salva.js's `loadElementoFromParams`, AFTER its own history reset and
+// `reconstructProvenienza`). Reads `valore_attuale` off the SAME motivi `GET /api/progetti/{id}/
+// stato` already exposes (js/progetto-stato.js's chips), fills every linked field that changed,
+// and re-reads each provider element to store its CURRENT revisione -- so a following "Salva"
+// records a provenance that matches what was actually just applied. One undoable step, never a
+// history boundary (unlike the `?elemento=` load itself): the engineer can still Ctrl+Z it away
+// before Salva.
+export async function aggiornaOrigini({ toolForm, tool, fields, input, getApi, progettoId, elementoId }) {
+  if (!progettoId || !elementoId) return;
+  let stato;
+  try {
+    stato = await fetchStatoProgetto(progettoId);
+  } catch (error) {
+    return; // §25.3: the page must not break because the stato fetch failed
+  }
+  const voce = stato.elementi[elementoId];
+  const motivi = ((voce && voce.motivi) || []).filter((m) => m.chiave && m.valore_attuale !== null && m.valore_attuale !== undefined);
+  if (motivi.length === 0) return;
+  const map = acceptsMap(input, fields);
+  const byChiave = new Map(Array.from(map, ([fieldName, chiave]) => [chiave, fieldName]));
+  const toApply = []; // {fieldName, motivo}
+  for (const motivo of motivi) {
+    const fieldName = byChiave.get(motivo.chiave);
+    const field = fieldName && fields.find((candidate) => candidate.name === fieldName);
+    if (!field) continue;
+    const value = parseValue(field, String(motivo.valore_attuale));
+    if (value === undefined) continue;
+    toApply.push({ fieldName, motivo, value });
+  }
+  if (toApply.length === 0) return;
+  const api = getApi();
+  if (!api) return;
+  const nextValues = { ...api.values() };
+  for (const { fieldName, value } of toApply) nextValues[fieldName] = value;
+  api.setValues(nextValues);
+
+  const nextChips = new Map(session.tool === tool ? session.chips : []);
+  const tools = await fetchTools().catch(() => []);
+  for (const { fieldName, motivo, value } of toApply) {
+    const providerTool = tools.find((candidate) => candidate.name === motivo.strumento);
+    const title = providerTool ? providerTool.title : motivo.strumento;
+    const sigla = providerTool ? providerTool.sigla : "?";
+    let revisioneFornitore;
+    try {
+      revisioneFornitore = motivo.elemento_id ? (await fetchElemento(motivo.elemento_id)).revisione : undefined;
+    } catch (error) {
+      revisioneFornitore = undefined;
+    }
+    const previous = nextChips.get(fieldName);
+    const info = previous || (await fornitoreInfo(motivo.chiave, motivo.strumento)) || { percorso: "", ingresso: true };
+    nextChips.set(fieldName, {
+      chiave: motivo.chiave, strumento: motivo.strumento, valore: value,
+      percorso: info.percorso, ingresso: info.ingresso,
+      elementoId: motivo.elemento_id || undefined, revisioneFornitore,
+    });
+    removeChip(toolForm, fieldName);
+    insertChip(toolForm, fieldName, el("span", {
+      class: "pv-chip", text: `da ${sigla}`,
+      title: `Valore preso da ${title}: ${motivo.chiave} = ${value} (era ${motivo.valore_salvato})`,
+    }));
+  }
+  session = { tool, chips: nextChips };
+
+  // Own undoable step, not a history boundary: matches js/forms.js's own "Carica esempio" event.
+  document.dispatchEvent(new CustomEvent("strutture:annulla-commit", { detail: { label: "Aggiorna dai dati a monte" } }));
+  const values = api.values();
+  save(tool, values, fields);
+  requestRun(tool, values, "manual");
 }
 
 // js/elemento-salva.js's `currentPayload`: every field whose chip is STILL present (untouched

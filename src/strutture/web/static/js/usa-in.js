@@ -15,7 +15,6 @@ import { readPath } from "./output-schema.js";
 import { navigate } from "./router.js";
 import { siglaChip } from "./nav-state.js";
 import { ensureCollegamenti, collegamentiSnapshot } from "./collegamenti-api.js";
-import { computeSintesiEStato } from "./elemento-sintesi.js";
 import { loadedElementState } from "./elemento-salva.js";
 
 export { ensureCollegamenti };
@@ -80,13 +79,14 @@ function navigateToConsumer(providerName, consumerName) {
   const values = resolvedValues(providerName, lastSuccessful.report);
   const params = { da: providerName };
   for (const [chiave, value] of Object.entries(values)) params[chiave] = String(value);
+  // §25.1: exactly "the on-screen provider matches the saved revision" -- `loaded.modificato`
+  // (elemento-salva.js's own footprint of the inputs it was last saved/reloaded with) is the
+  // real test; a run finishing successfully says nothing about whether those inputs were ever
+  // saved at all (e.g. a field changed after loading ?elemento=X, calc settled, still unsaved).
   const loaded = loadedElementState(providerName);
-  if (loaded) {
-    const { stato } = computeSintesiEStato(providerName);
-    if (stato !== "dati_modificati") {
-      params.da_elemento = loaded.id;
-      params.da_revisione = String(loaded.revisione);
-    }
+  if (loaded && !loaded.modificato) {
+    params.da_elemento = loaded.id;
+    params.da_revisione = String(loaded.revisione);
   }
   navigate(consumerName, params);
 }
