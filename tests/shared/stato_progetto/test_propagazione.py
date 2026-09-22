@@ -35,6 +35,27 @@ def test_chain_a_changed_marks_b_and_c():
 
 
 @pytest.mark.unit
+def test_two_marked_nodes_on_the_same_branch_group_into_one_motivo_at_the_direct_provider():
+    """§25.1: one motivo per DIRECT provider, not one per marked node reached -- "Apri l'origine"
+    opens the direct one; the message is the farthest-upstream own reason on that branch."""
+    archi = _catena("D", "C", "B", "A")  # D uses C uses B uses A
+    stato_proprio = _stato_di(marcati=frozenset({"B", "C"}))  # both B and C already reflect A's change
+    stato_d = propaga("D", archi, stato_proprio, frozenset())
+    assert len(stato_d.motivi_ricalcolo) == 1
+    motivo = stato_d.motivi_ricalcolo[0]
+    assert motivo.elemento_id == "C"  # D's DIRECT provider, not the farther B
+    assert motivo.messaggio == "motivo di B"  # the farthest-upstream reason found on this branch
+
+
+@pytest.mark.unit
+def test_two_direct_providers_each_get_their_own_motivo():
+    archi = {"C": (Arco("A", "s", "k"), Arco("B", "s", "k"))}
+    stato_proprio = _stato_di(marcati=frozenset({"A", "B"}))
+    stato_c = propaga("C", archi, stato_proprio, frozenset())
+    assert {m.elemento_id for m in stato_c.motivi_ricalcolo} == {"A", "B"}
+
+
+@pytest.mark.unit
 def test_provvisorio_or_excel_provider_marks_provvisorio_origine_only():
     archi = _catena("C", "B", "A")
     stato_proprio = _stato_di(marcati=frozenset(), provvisori=frozenset({"A"}))

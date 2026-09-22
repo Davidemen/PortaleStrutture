@@ -45,31 +45,34 @@ def propaga(
     stato_proprio: Callable[[str], OwnState],
     ids_in_ciclo: frozenset[str],
 ) -> StatoPropagato:
-    """Breadth-first from `elemento_id` along provider edges, with a visited set (terminates on any
-    cycle) and a depth cap (`PROFONDITA_MAX_ORIGINI`, not itself a marker)."""
-    visitati = {elemento_id}
-    coda: list[tuple[Arco, int]] = [(arco, 1) for arco in archi.get(elemento_id, ())]
+    """§25.1: one motivo per DIRECT provider (`archi[elemento_id]`), not one per every marked node
+    reached anywhere in its subtree -- "Apri l'origine" opens the DIRECT provider, so that is the
+    identity every motivo must carry. The message is the farthest-upstream own reason found along
+    that direct provider's own branch (breadth-first within the branch, with its own visited set
+    and the shared depth cap `PROFONDITA_MAX_ORIGINI`)."""
     motivi_ricalcolo: list[MotivoOrigine] = []
     motivi_provvisorio: list[dict] = []
     rinviato = False
-    while coda:
-        arco, profondita = coda.pop(0)
-        if arco.elemento_id in visitati:
-            continue
-        visitati.add(arco.elemento_id)
-        if profondita > PROFONDITA_MAX_ORIGINI:
-            rinviato = True
-            continue
-        proprio = stato_proprio(arco.elemento_id)
-        if proprio.da_ricalcolare:
-            motivi_ricalcolo.append(MotivoOrigine(arco.elemento_id, arco.strumento, "origine_da_ricalcolare", proprio.messaggio))
-        if proprio.provvisorio:
-            motivi_provvisorio.append({"elemento_id": arco.elemento_id, "strumento": arco.strumento, "causa": "origine_provvisoria"})
-        elif proprio.excel:
-            motivi_provvisorio.append({"elemento_id": arco.elemento_id, "strumento": arco.strumento, "causa": "origine_excel"})
-        for prossimo in archi.get(arco.elemento_id, ()):
-            if prossimo.elemento_id not in visitati:
-                coda.append((prossimo, profondita + 1))
+    for diretto in archi.get(elemento_id, ()):
+        raggiunto, branch_rinviato = _esplora_ramo(elemento_id, diretto, archi)
+        rinviato = rinviato or branch_rinviato
+        piu_lontano = None  # (profondita, OwnState) of the deepest own reason found on this branch
+        provvisorio_visto = None  # "origine_provvisoria"/"origine_excel", first one found
+        for nodo_id, profondita in raggiunto:
+            proprio = stato_proprio(nodo_id)
+            if proprio.da_ricalcolare and (piu_lontano is None or profondita > piu_lontano[0]):
+                piu_lontano = (profondita, proprio)
+            if provvisorio_visto is None:
+                if proprio.provvisorio:
+                    provvisorio_visto = "origine_provvisoria"
+                elif proprio.excel:
+                    provvisorio_visto = "origine_excel"
+        if piu_lontano is not None:
+            motivi_ricalcolo.append(
+                MotivoOrigine(diretto.elemento_id, diretto.strumento, "origine_da_ricalcolare", piu_lontano[1].messaggio)
+            )
+        if provvisorio_visto is not None:
+            motivi_provvisorio.append({"elemento_id": diretto.elemento_id, "strumento": diretto.strumento, "causa": provvisorio_visto})
     if rinviato:
         motivi_ricalcolo.append(MotivoOrigine("", "", "controllo_rinviato", "Catena di origini più lunga di 10 passaggi: controllo interrotto"))
     if elemento_id in ids_in_ciclo:
@@ -80,6 +83,29 @@ def propaga(
         provvisorio_origine=bool(motivi_provvisorio),
         motivi_provvisorio=tuple(motivi_provvisorio),
     )
+
+
+def _esplora_ramo(
+    radice: str, diretto: Arco, archi: Mapping[str, tuple[Arco, ...]],
+) -> tuple[list[tuple[str, int]], bool]:
+    """Breadth-first from one direct provider, own visited set (bounds a cycle local to this
+    branch) starting at `{radice, diretto.elemento_id}`. Returns `(nodo_id, profondita)` for every
+    node reached (itself included, `profondita=1`) plus whether the depth cap was hit."""
+    visitati = {radice, diretto.elemento_id}
+    raggiunto = [(diretto.elemento_id, 1)]
+    coda: list[tuple[Arco, int]] = [(diretto, 1)]
+    rinviato = False
+    while coda:
+        arco, profondita = coda.pop(0)
+        if profondita > PROFONDITA_MAX_ORIGINI:
+            rinviato = True
+            continue
+        for prossimo in archi.get(arco.elemento_id, ()):
+            if prossimo.elemento_id not in visitati:
+                visitati.add(prossimo.elemento_id)
+                raggiunto.append((prossimo.elemento_id, profondita + 1))
+                coda.append((prossimo, profondita + 1))
+    return raggiunto, rinviato
 
 
 def cicli(archi: Mapping[str, tuple[Arco, ...]]) -> frozenset[str]:
