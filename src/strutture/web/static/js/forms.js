@@ -9,12 +9,13 @@ import { describeFields } from "./schema.js";
 import { buildField, setValue, setFieldError } from "./fields.js";
 import { validateValues } from "./validate.js";
 import { save, load, fromParams, clearStored } from "./form-state.js";
-import { groupFields, visibleValues, applyConditions, wireUnitSelector, renderSummary, copyShareLink } from "./forms-sections.js";
+import { groupFields, rawValues, visibleValues, applyConditions, wireUnitSelector, renderSummary, copyShareLink } from "./forms-sections.js";
 import { buildSections } from "./form-sections-summary.js";
 import { requestRun, isLiveEnabled } from "./live.js";
 import { mountElementoSalva } from "./elemento-salva.js";
 import { mountProvenienza } from "./provenienza.js";
 import { mountExcelRitirato } from "./excel-ritirato.js";
+import { mountAnnullaUi } from "./annulla-ui.js";
 import "./forms-submit.js";
 
 const FORM_ID = "tool-form";
@@ -42,6 +43,10 @@ function buildMenu(form, fields, tool) {
     onclick: () => {
       fields.forEach((field) => setValue(form, field, field.default));
       clearStored(tool);
+      // WORKBENCH_SPEC §21.1: names this one undo step outright ("Azzera dati" touches every
+      // field at once, so js/annulla-ui.js's own diff would otherwise fall back to a generic
+      // label) -- consumed by its `change` listener, never read by anything else.
+      form.dataset.annullaLabel = "Azzera dati";
       form.dispatchEvent(new Event("change", { bubbles: true }));
       menu.open = false;
     },
@@ -120,6 +125,10 @@ export function renderForm(root, { fields = [], example = null, initialValues = 
       if (Object.keys(errors).length === 0) {
         save(tool, values, fields);
         requestRun(tool, values, "example");
+        // WORKBENCH_SPEC §21.1: "Carica esempio" is one undoable step. A dedicated event, not
+        // `change` -- js/forms.js already ran its own full pipeline above (`validateAndRender`,
+        // `save`, `requestRun`), so dispatching `change` too would run it a second time for nothing.
+        document.dispatchEvent(new CustomEvent("strutture:annulla-commit", { detail: { label: "Carica esempio" } }));
       }
     },
   });
@@ -128,6 +137,10 @@ export function renderForm(root, { fields = [], example = null, initialValues = 
   // own dialog/deep-link handlers only ever call it once the engineer has interacted with the
   // page, by which time `api` is long since assigned, so the temporal-dead-zone read is safe.
   let api;
+  // WORKBENCH_SPEC §21.1: "Annulla"/"Ripristina" in the Dati action bar (own line below the
+  // others -- see the `actions.append(...)` comment further down). Same lazy `getApi` accessor as
+  // the two widgets below.
+  const annullaWidget = mountAnnullaUi({ tool, fields, getApi: () => api });
   const salvaWidget = mountElementoSalva({ toolForm: form, tool, title, fields, params, getApi: () => api });
   // WORKBENCH_SPEC §15/§16: both dismissible notices go directly above the form, under the tool
   // title -- `root.insertBefore(node, form)` places each one right before `form` (already `root`'s
@@ -137,7 +150,11 @@ export function renderForm(root, { fields = [], example = null, initialValues = 
   const excelNote = mountExcelRitirato({ toolForm: form, tool });
   root.insertBefore(provenienzaNote, form);
   root.insertBefore(excelNote, form);
-  if (actions) actions.append(exampleButton, salvaWidget, calcolaButton, liveStatus, buildMenu(form, fields, tool));
+  // `annullaWidget` renders on its OWN line below (`.an-widget { flex-basis: 100% }`, forms.css):
+  // WORKBENCH_SPEC finding F's "the action bar stays on one row" is a permanent test
+  // (`test_dati_action_bar_is_one_row`) that already leaves this row no spare width for two more
+  // full-width buttons -- appended last so tab order still matches the visual order.
+  if (actions) actions.append(exampleButton, salvaWidget, calcolaButton, liveStatus, buildMenu(form, fields, tool), annullaWidget);
 
   function updateRunUi(values) {
     const live = isLiveEnabled(values);
@@ -185,6 +202,10 @@ export function renderForm(root, { fields = [], example = null, initialValues = 
 
   api = {
     values: () => visibleValues(form, fields),
+    // WORKBENCH_SPEC §21.2: every field's CURRENT value, hidden conditional ones included -- the
+    // undo snapshot (`values()`/`visibleValues` fall a hidden field back to its default/minimum,
+    // which would silently drop what was typed under a switch the moment it is hidden again).
+    allValues: () => rawValues(form, fields),
     setValues: (values) => {
       fields.forEach((field) => setValue(form, field, values[field.name]));
       validateAndRender();

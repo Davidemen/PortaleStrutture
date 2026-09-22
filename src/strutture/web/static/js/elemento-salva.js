@@ -13,6 +13,7 @@ import { getCurrentProgetto, setCurrentProgetto } from "./progetto-picker.js";
 import { takeAnteprimaStash } from "./progetto-anteprima.js";
 import { computeSintesiEStato } from "./elemento-sintesi.js";
 import { activeProvenienza } from "./provenienza.js";
+import { azzeraStoriaAnnulla } from "./annulla-ui.js";
 import {
   fetchProgetti,
   fetchProgetto,
@@ -276,6 +277,7 @@ export function mountElementoSalva({ toolForm, tool, title, fields, params, getA
   function applyReload(attuale) {
     const api = getApi();
     if (api) api.setValues(attuale.inputs || {});
+    azzeraStoriaAnnulla(); // WORKBENCH_SPEC §21.1: "Ricarica" is a history boundary
     const values = visibleValues(toolForm, fields);
     save(tool, values, fields);
     requestRun(tool, values, "manual");
@@ -334,6 +336,7 @@ export function mountElementoSalva({ toolForm, tool, title, fields, params, getA
     await Promise.resolve();
     const api = getApi();
     if (api) api.setValues(stash.inputs || {});
+    azzeraStoriaAnnulla(); // WORKBENCH_SPEC §21.1: "?anteprima=1" is a history boundary
     const values = visibleValues(toolForm, fields);
     save(tool, values, fields);
     requestRun(tool, values, "manual");
@@ -349,6 +352,7 @@ export function mountElementoSalva({ toolForm, tool, title, fields, params, getA
       const elemento = await fetchElemento(id);
       const api = getApi();
       if (api) api.setValues(elemento.inputs || {});
+      azzeraStoriaAnnulla(); // WORKBENCH_SPEC §21.1: "?elemento=" load is a history boundary
       const values = visibleValues(toolForm, fields);
       save(tool, values, fields);
       requestRun(tool, values, "manual");

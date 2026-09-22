@@ -502,6 +502,53 @@
   cursor: pointer;
 }
 
+/* "Annulla"/"Ripristina" (WORKBENCH_SPEC §21.1): `aria-disabled`, not `disabled`, so the button
+   stays focusable/announced with nothing to undo yet (§21.1) -- the greyed-out look otherwise
+   matches `.f-run-button[disabled]` above exactly (DESIGN_SPEC §3 disabled style). */
+.an-widget {
+  display: flex;
+  gap: var(--s2);
+  /* Own line below the rest (`test_dati_action_bar_is_one_row`, WORKBENCH_SPEC finding F, is a
+     permanent test: "Carica esempio"/"Salva in progetto"/"Calcola"/"⋯" already use the row's
+     whole width at 1440px, leaving none for two more full buttons). `order` alone would still let
+     it share the LAST line with whichever of those wraps there; `flex-basis: 100%` guarantees its
+     own line regardless. */
+  flex: 1 0 100%;
+  order: 5;
+}
+
+.an-btn {
+  flex: none;
+  height: var(--control-h);
+  padding: 0 var(--s3);
+  font-family: var(--font-label);
+  font-size: var(--t-s);
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.an-btn[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Visually hidden polite announcement ("Annullato: …"/"Ripristinato: …") -- same clip technique as
+   `.f-table-file` below, reused rather than a second hidden-text pattern. */
+.an-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* "⋯" menu (Copia link / Azzera dati / Stampa relazione, WORKBENCH_SPEC §3 action bar). */
 .f-menu {
   flex: none;
@@ -681,6 +728,7 @@
   .f-field select,
   .f-run-button,
   .f-example-button,
+  .an-btn,
   .f-menu-btn,
   .f-menu-item,
   .f-section-tools-btn,

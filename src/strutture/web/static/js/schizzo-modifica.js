@@ -151,6 +151,9 @@ function place(popover, anchor) {
 function applyValue(control, field, raw) {
   control.value = raw;
   control.dispatchEvent(new Event("input", { bubbles: true }));
+  // WORKBENCH_SPEC §21.1: "§18 sketch edits are ordinary steps" -- js/annulla-ui.js commits on
+  // `change`, not `input` (which the app also still needs for validation/live run, unchanged).
+  control.dispatchEvent(new Event("change", { bubbles: true }));
   const wrapper = document.querySelector(`.f-field[data-field="${field.name}"]`);
   if (!wrapper) return;
   wrapper.classList.add("f-field--flash");

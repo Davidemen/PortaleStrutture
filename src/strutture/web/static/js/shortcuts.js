@@ -13,6 +13,10 @@ const SHORTCUTS = [
   { keys: "Alt+1", desc: "Vai a Dati" },
   { keys: "Alt+2", desc: "Vai a Risultati" },
   { keys: "Ctrl/Cmd+K oppure /", desc: "Apri la ricerca strumenti" },
+  // WORKBENCH_SPEC §21.1: the keys themselves belong to js/annulla-ui.js's own document-level
+  // keydown listener (native-first while typing) -- this sheet only lists them.
+  { keys: "Ctrl/Cmd+Z", desc: "Annulla l'ultima modifica ai dati" },
+  { keys: "Ctrl/Cmd+Shift+Z oppure Ctrl+Y", desc: "Ripristina la modifica annullata" },
   { keys: "?", desc: "Mostra questa guida" },
 ];
 

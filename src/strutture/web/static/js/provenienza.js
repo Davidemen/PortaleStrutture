@@ -13,6 +13,7 @@ import { resolveProperty } from "./json-schema.js";
 import { fetchTools } from "./api.js";
 import { save } from "./form-state.js";
 import { requestRun } from "./live.js";
+import { azzeraStoriaAnnulla } from "./annulla-ui.js";
 
 // `{tool, provider, chips: Map<fieldName, chiave>}` -- `chips` holds only the fields whose
 // prefilled value has NOT been edited since; js/elemento-salva.js's `currentPayload` reads this
@@ -92,6 +93,7 @@ export function mountProvenienza({ toolForm, tool, fields, params, input, getApi
     const nextValues = { ...api.values() };
     for (const [fieldName, { value }] of toApply) nextValues[fieldName] = value;
     api.setValues(nextValues);
+    azzeraStoriaAnnulla(); // WORKBENCH_SPEC §21.1: a "Usa in…" arrival is a history boundary
 
     let providerTitle = params.da;
     let providerSigla = "?";
