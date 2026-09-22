@@ -61,7 +61,7 @@ class PilastroRettangolareInput(BaseModel):
     diametro_ferri_mm: float = Field(description="Diametro dei ferri longitudinali verticali", gt=0, json_schema_extra={"unit": "mm", "symbol": "⌀", "group": "Geometria della sezione"})
     diametro_staffe_mm: float = Field(description="Diametro delle staffe", gt=0, json_schema_extra={"unit": "mm", "symbol": "⌀_sw", "group": "Geometria della sezione"})
     passo_staffe_mm: float = Field(description="Passo delle staffe", gt=0, json_schema_extra={"unit": "mm", "symbol": "s", "group": "Geometria della sezione"})
-    mrd_kNm: float = Field(description=_MRD_DESCRIPTION, gt=0, json_schema_extra={"unit": "kNm", "symbol": "M_Rd", "group": "Sollecitazioni di progetto"})
+    mrd_kNm: float = Field(description=_MRD_DESCRIPTION, gt=0, json_schema_extra={"accepts": "sezione.mrd_x_kNm", "unit": "kNm", "symbol": "M_Rd", "group": "Sollecitazioni di progetto"})
     n_ferri_l1: int = Field(
         description="Numero di ferri lungo il lato corto (solo per la disposizione grafica dei ferri, non influenza alcuna verifica)",
         ge=2, json_schema_extra={"unit": "-", "group": "Geometria della sezione", "advanced": True},
@@ -96,7 +96,7 @@ class PilastroCircolareInput(BaseModel):
     diametro_ferri_mm: float = Field(description="Diametro dei ferri longitudinali verticali", gt=0, json_schema_extra={"unit": "mm", "symbol": "⌀", "group": "Geometria della sezione"})
     diametro_staffe_mm: float = Field(description="Diametro delle staffe", gt=0, json_schema_extra={"unit": "mm", "symbol": "⌀_sw", "group": "Geometria della sezione"})
     passo_staffe_mm: float = Field(description="Passo delle staffe", gt=0, json_schema_extra={"unit": "mm", "symbol": "s", "group": "Geometria della sezione"})
-    mrd_kNm: float = Field(description=_MRD_DESCRIPTION, gt=0, json_schema_extra={"unit": "kNm", "symbol": "M_Rd", "group": "Sollecitazioni di progetto"})
+    mrd_kNm: float = Field(description=_MRD_DESCRIPTION, gt=0, json_schema_extra={"accepts": "sezione.mrd_x_kNm", "unit": "kNm", "symbol": "M_Rd", "group": "Sollecitazioni di progetto"})
     l0_mm: float | None = Field(default=None, description=_L0_DESCRIPTION, gt=0, json_schema_extra={"unit": "mm", "symbol": "l_0", "group": "Geometria della sezione", "advanced": True})
     rm: float | None = Field(default=None, description=_RM_DESCRIPTION, ge=-1, le=1, json_schema_extra={"unit": "-", "symbol": "r_m", "group": "Parametri di calcolo", "advanced": True})
     phi_ef: float | None = Field(

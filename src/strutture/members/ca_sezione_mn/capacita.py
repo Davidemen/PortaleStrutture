@@ -12,7 +12,7 @@ from strutture.shared.sezione_ca.domini import m_rd as m_rd_esatto
 from strutture.shared.sezione_ca.modelli import Sezione
 
 from .interpolazione import m_rd_da_dominio
-from .models_output import RigaAzione, TipoPressoflessione
+from .models_output import ResistenzeGovernante, RigaAzione, TipoPressoflessione
 from .rapporto import RdPosNeg, rd_nel_verso
 from .rapporto import rapporto as calcola_rapporto
 from .rows import AzioneRow
@@ -56,12 +56,19 @@ def riga_azione(
     return _costruisci_riga(azione, tipo, rd_x, rd_y, h_x_mm, h_y_mm, n_rd_kN)
 
 
-def riga_azione_esatta(azione: AzioneRow, sezione: Sezione, h_x_mm: float, h_y_mm: float, n_rd_kN: float) -> RigaAzione:
+def riga_azione_esatta(
+    azione: AzioneRow, sezione: Sezione, h_x_mm: float, h_y_mm: float, n_rd_kN: float,
+) -> tuple[RigaAzione, ResistenzeGovernante | None]:
     """Stessa verifica di `riga_azione`, ma con `M_Rd` risolti esattamente dal motore (una
-    bisezione ciascuno) invece che letti per interpolazione lineare — vedi il docstring del modulo."""
+    bisezione ciascuno) invece che letti per interpolazione lineare — vedi il docstring del modulo.
+    Restituisce anche le resistenze esatte di entrambi gli assi (None se N_Ed è fuori dal dominio):
+    sono i numeri che un altro strumento può riusare (collegamento `sezione.mrd_x_kNm`)."""
     tipo = _tipo(azione.m_ed_x_kNm, azione.m_ed_y_kNm)
     n_min, n_max = intervallo_n(sezione)
     fuori_campo = not n_min <= azione.n_ed_kN <= n_max
     rd_x = None if fuori_campo else m_rd_esatto(sezione, azione.n_ed_kN, "x")
     rd_y = None if fuori_campo else m_rd_esatto(sezione, azione.n_ed_kN, "y")
-    return _costruisci_riga(azione, tipo, rd_x, rd_y, h_x_mm, h_y_mm, n_rd_kN)
+    resistenze = None if rd_x is None or rd_y is None else ResistenzeGovernante(
+        n_ed_kN=azione.n_ed_kN, mrd_x_pos_kNm=rd_x[0], mrd_x_neg_kNm=rd_x[1], mrd_y_pos_kNm=rd_y[0], mrd_y_neg_kNm=rd_y[1],
+    )
+    return _costruisci_riga(azione, tipo, rd_x, rd_y, h_x_mm, h_y_mm, n_rd_kN), resistenze

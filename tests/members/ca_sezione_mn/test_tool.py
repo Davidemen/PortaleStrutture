@@ -162,3 +162,22 @@ def test_barra_esterna_al_contorno_fallisce_con_messaggio_chiaro() -> None:
     report = execute(TOOL, inputs)
     assert report.ok is False
     assert any("esterna al contorno" in e for e in report.errors)
+
+
+def test_governing_resistances_are_exposed_positive_for_the_column_tools():
+    """Phase 5 link: the column tools take a typed M_Rd; the M-N tool provides the exact M_Rd+ about
+    x at the governing N_Ed (`sezione.mrd_x_kNm`), a positive number whatever the sign of M_Ed."""
+    report = execute(TOOL, TOOL.example)
+    assert report.ok, report.errors
+    res = report.data.resistenze_governante
+    assert res is not None
+    assert res.n_ed_kN == report.data.governante.n_ed_kN
+    assert res.mrd_x_pos_kNm > 0 and res.mrd_x_neg_kNm < 0
+    assert res.mrd_y_pos_kNm > 0 and res.mrd_y_neg_kNm < 0
+    assert res.mrd_x_pos_kNm == pytest.approx(abs(report.data.governante.mx_rd_kNm), rel=1e-6)
+
+
+def test_governing_resistances_are_absent_when_n_ed_is_outside_the_domain():
+    report = execute(TOOL, {**TOOL.example, "azioni": [{"nome": "X", "n_ed_kN": 50000.0, "m_ed_x_kNm": 10.0, "m_ed_y_kNm": 0.0}]})
+    assert report.ok, report.errors
+    assert report.data.resistenze_governante is None

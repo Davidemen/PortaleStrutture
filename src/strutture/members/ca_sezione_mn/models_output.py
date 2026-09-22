@@ -62,6 +62,19 @@ class RigaAzione(BaseModel):
     dentro: bool = Field(description="True se la combinazione è interna al dominio di resistenza (rapporto ≤ 1)")
 
 
+class ResistenzeGovernante(BaseModel):
+    """The exact M_Rd of both axes at the governing combination's N_Ed — the numbers another tool can
+    take (phase 5 link `sezione.mrd_x_kNm` -> the column tools' typed M_Rd)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    n_ed_kN: float = Field(description="Sforzo normale della combinazione governante (positivo di compressione)", json_schema_extra={"unit": "kN", "symbol": "N_Ed"})
+    mrd_x_pos_kNm: float = Field(description="Momento resistente attorno a x, verso positivo, a N = N_Ed (esatto)", json_schema_extra={"unit": "kNm", "symbol": "M_Rd,x+", "provides": "sezione.mrd_x_kNm"})
+    mrd_x_neg_kNm: float = Field(description="Momento resistente attorno a x, verso negativo, a N = N_Ed (esatto)", json_schema_extra={"unit": "kNm", "symbol": "M_Rd,x−"})
+    mrd_y_pos_kNm: float = Field(description="Momento resistente attorno a y, verso positivo, a N = N_Ed (esatto)", json_schema_extra={"unit": "kNm", "symbol": "M_Rd,y+"})
+    mrd_y_neg_kNm: float = Field(description="Momento resistente attorno a y, verso negativo, a N = N_Ed (esatto)", json_schema_extra={"unit": "kNm", "symbol": "M_Rd,y−"})
+
+
 class SezioneMnOutput(BaseModel):
     """Dominio di resistenza e verifica a pressoflessione su tutte le combinazioni di `azioni`."""
 
@@ -82,4 +95,7 @@ class SezioneMnOutput(BaseModel):
         json_schema_extra={"rows_page": 200},
     )
     governante: RigaAzione = Field(description="Combinazione governante (rapporto di sfruttamento massimo)")
+    resistenze_governante: ResistenzeGovernante | None = Field(
+        default=None, description="M_Rd esatti di entrambi gli assi a N = N_Ed della combinazione governante (assente se N_Ed è fuori dal dominio)",
+    )
     schizzo: Sketch | None = campo_schizzo()

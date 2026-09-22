@@ -114,3 +114,10 @@ def test_the_real_registry_is_consistent_and_has_the_first_links() -> None:
     assert {c.strumento for c in registro["sito.ag_g"].consumatori} >= {"muro-sostegno", "fond-trave-collegamento"}
     assert {f.strumento for f in registro["sito.ag_g"].fornitori} >= {"sisma-parametri-sito"}
     assert [c.strumento for c in registro["trave.sigma_s_rara_MPa"].consumatori] == ["ca-sle-limitazione-tensioni"]
+
+
+def test_the_section_tool_feeds_the_column_tools_with_its_governing_m_rd() -> None:
+    registro = raccogli(discover())
+    link = registro["sezione.mrd_x_kNm"]
+    assert [(f.strumento, f.percorso) for f in link.fornitori] == [("ca-sezione-dominio-mn", "resistenze_governante.mrd_x_pos_kNm")]
+    assert {c.strumento for c in link.consumatori} == {"ca-pilastro-rettangolare", "ca-pilastro-circolare"}

@@ -14,7 +14,7 @@ from .checks import check_pressoflessione
 from .geometria_riepilogo import riepilogo_geometrico
 from .governante import indice_governante
 from .models_input import SezioneMnInput
-from .models_output import RigaAzione, SezioneMnOutput
+from .models_output import ResistenzeGovernante, RigaAzione, SezioneMnOutput
 from .rows import AzioneRow
 from .schizzo import disegna as disegna_schizzo
 from .sezione_builder import costruisci_sezione
@@ -43,12 +43,12 @@ def _dimensioni_flessionali(sezione: Sezione) -> tuple[float, float]:
 def _con_governante_esatta(
     righe: tuple[RigaAzione, ...], azioni: tuple[AzioneRow, ...], sezione: Sezione,
     h_x_mm: float, h_y_mm: float, n_rd_kN: float,
-) -> tuple[tuple[RigaAzione, ...], RigaAzione]:
+) -> tuple[tuple[RigaAzione, ...], RigaAzione, ResistenzeGovernante | None]:
     """Sostituisce, nella tabella e come riga governante, la riga individuata come governante dalla
     lettura interpolata con la sua versione a M_Rd esatto (vedi `capacita.riga_azione_esatta`)."""
     idx = indice_governante(righe)
-    governante = riga_azione_esatta(azioni[idx], sezione, h_x_mm, h_y_mm, n_rd_kN)
-    return righe[:idx] + (governante,) + righe[idx + 1:], governante
+    governante, resistenze = riga_azione_esatta(azioni[idx], sezione, h_x_mm, h_y_mm, n_rd_kN)
+    return righe[:idx] + (governante,) + righe[idx + 1:], governante, resistenze
 
 
 def run(inputs: SezioneMnInput) -> Report[SezioneMnOutput]:
@@ -62,7 +62,7 @@ def run(inputs: SezioneMnInput) -> Report[SezioneMnOutput]:
     righe_interpolate = tuple(
         riga_azione(azione, dominio_x, dominio_y, h_x_mm, h_y_mm, n_rd_kN) for azione in inputs.azioni
     )
-    righe, governante = _con_governante_esatta(righe_interpolate, inputs.azioni, sezione, h_x_mm, h_y_mm, n_rd_kN)
+    righe, governante, resistenze = _con_governante_esatta(righe_interpolate, inputs.azioni, sezione, h_x_mm, h_y_mm, n_rd_kN)
     check = check_pressoflessione(governante)
 
     try:
@@ -79,6 +79,7 @@ def run(inputs: SezioneMnInput) -> Report[SezioneMnOutput]:
         dominio_y=dominio_y,
         righe=righe,
         governante=governante,
+        resistenze_governante=resistenze,
         schizzo=schizzo,
     )
     return success(data, inputs, checks=(check,))
