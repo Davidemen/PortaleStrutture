@@ -1,4 +1,4 @@
-# Consegna — StruttureMenni (aggiornata il 2026-09-22)
+# Consegna — StruttureMenni (aggiornata il 2026-09-23)
 
 Scritta per chi riceve il progetto: il titolare (vedi `docs/GUIDA_PROPRIETARIO.md`) e gli agenti di sviluppo che
 lavoreranno per lui (vedi `CLAUDE.md`). Lo stato qui sotto è verificato alla data indicata: non ricavarlo di nuovo.
@@ -10,15 +10,20 @@ con agenti, in oltre 60 commit; tutto ciò che conta è nel repository, nulla di
 Gira su macOS (sviluppo) e Windows (scritto per, non ancora provato dall'ufficio: `docs/VERIFICA_WINDOWS.md`).
 
 ## 2. Stato alla consegna
-- Git: remoto `origin` = github.com/Davidemen/PortaleStrutture (pubblico). Rami `main` (rilasci, solo avanzamento
-  rapido) e `sviluppo` (lavoro comune); rami di funzione e issue come in `docs/GUIDA_SVILUPPO.md`.
-- Suite verdi al 2026-09-22 (notte, dopo l'unione dei pacchetti §19/§20/§25/§23/§24/§26 e le correzioni di
-  revisione, vedi §3/§4.7): `uv run pytest -q` → 4349 superati · `uv run pytest tests/e2e -m e2e -q` → 297
-  superati, 1 saltato (circa 3 minuti e mezzo) · `node --test tests/e2e/*.mjs` → 92 · `uv run ruff check .`
-  pulito · `uv run python -m strutture.shared.divergences.check --strict` → 0 errori (26 avvertimenti di
-  clausola vuota, innocui).
+- Git: remoto `origin` = github.com/Davidemen/PortaleStrutture (pubblico). Rami previsti: `main` (rilasci) e
+  `sviluppo` (lavoro comune); rami di funzione e issue come in `docs/GUIDA_SVILUPPO.md`. Nella pratica, la sera
+  del 2026-09-22 i tre pacchetti (§19/§20/§25/§23/§24/§26) e le correzioni di revisione sono finiti direttamente
+  su `main` (4 commit avanti rispetto a `sviluppo`, che è rimasto indietro): non aggiornato apposta, per evitare
+  di toccare un ramo condiviso senza coordinarsi. Il titolare decide se allineare `sviluppo` (fast-forward, nessuna
+  perdita di lavoro) o continuare a considerare `main` il ramo di lavoro corrente.
+- Suite verdi al 2026-09-23 (dopo il blocco B, vedi §3/§4 punto 8): `uv run pytest -q` → 4359 superati ·
+  `uv run pytest tests/e2e -m e2e -q` → 302 superati, 1 saltato (circa 3 minuti e mezzo) ·
+  `node --test tests/e2e/*.mjs` → 92 · `uv run ruff check .` pulito ·
+  `uv run python -m strutture.shared.divergences.check --strict` → 0 errori (26 avvertimenti di clausola
+  vuota, innocui) · `build/snapshot_tools.py` confrontato bit a bit con `build/snapshot_before.json`: nessuna
+  differenza, i calcoli non sono cambiati.
 - Interfaccia servita: `src/strutture/web/static/`. Copia di lavoro: `src/strutture/web/static_next/` (ignorata da
-  git; identica a `static/` dopo la promozione del 2026-09-22). Il flusso di lavoro e di promozione è in `CLAUDE.md`, regola 3.
+  git; identica a `static/` dopo la promozione del 2026-09-23). Il flusso di lavoro e di promozione è in `CLAUDE.md`, regola 3.
 - Server: `uv run python scripts/serve_live.py --host 127.0.0.1 --port 8000` (il lanciatore esiste perché una volta
   un agente ha fermato il server dell'ufficio con `pkill -f strutture.web`; la sua riga di comando non contiene
   il nome del modulo). Controllo: `curl -s http://127.0.0.1:8000/api/tools`.
@@ -39,14 +44,19 @@ revisione di ciascuno (vedi §4.7 sotto). Suite verdi dopo l'unione: `uv run pyt
 `uv run ruff check .` pulito · `uv run python -m strutture.shared.divergences.check --strict` → 0 errori. I calcoli
 non sono cambiati (`build/snapshot_tools.py` confrontato bit a bit con `build/snapshot_before.json`).
 
+Blocco B costruito il 2026-09-22/23 (revisione dei tre pacchetti sopra): correzioni "correggi" applicate su
+`main`, vedi §4 punto 8 sotto per l'elenco completo e §2 per i numeri finali delle suite (invariati i calcoli,
+stesso confronto snapshot).
+
 ## 4. Lavori aperti, in ordine
 1. In attesa del titolare (non iniziare, ricordarglielo): verifica su Windows (`docs/VERIFICA_WINDOWS.md`,
    incluso il lanciatore `Avvia StruttureMenni.bat`); verifica MIDAS dal vivo (`docs/VERIFICA_MIDAS.md`); firma
    del registro delle correzioni (pagina `#/registro`); validazione strumento per strumento
    (`docs/VALIDAZIONE_STRUMENTI.md`: sei passi, tabella di stato compilata da lui o su sua richiesta, schede
    rigenerate con `uv run python scripts/validazione_strumenti.py`); le decisioni di
-   `docs/DECISIONI_DA_CONFERMARE.md`; poi i lavori rinviati di `docs/ROADMAP.md`: GitHub + test automatici,
-   griglia di pericolosità sismica, relazione DOCX, MIDAS fase 2.
+   `docs/DECISIONI_DA_CONFERMARE.md`; poi i lavori rinviati di `docs/ROADMAP.md`: griglia di pericolosità
+   sismica, relazione DOCX, MIDAS fase 2 (GitHub + test automatici sono invece già fatti: `.github/workflows/
+   ci.yml` esiste e il remoto `origin` è collegato, §2).
 2. Testi modificabili nel disegno (`docs/ui/WORKBENCH_SPEC.md` §18): quote, etichette, testi delle frecce e dei
    diagrammi si collegano al campo in automatico per simbolo, unità e valore mostrato; dove il disegno stampa un
    altro simbolo o unità, o un valore guidato da un dato, lo schizzo mette `campo=` (fatto per tutti gli strumenti:
@@ -64,7 +74,8 @@ non sono cambiati (`build/snapshot_tools.py` confrontato bit a bit con `build/sn
    bordo dello schermo (il token `--head-h` era 23 px più corto dell'intestazione reale: ora è derivato e l'intestazione
    è bloccata su di esso). Restano: `neve-carico-falda` disegna la falda inclinata anche con α = 0°; lo schizzo della mensola
    tozza è schematico; i simboli con doppio pedice (`M_Ed/M_Rd`) si leggono male nelle evidenze della sintesi.
-5. Blocco 1 (rifattorizzazione regola 12 + specifica §19-22) integrato il 2026-09-22; interfaccia §19-22 da costruire.
+5. Blocco 1 (rifattorizzazione regola 12 + specifica §19-22) integrato il 2026-09-22; interfaccia §19-22 costruita
+   (§19 varianti affiancate e §20/§25 tabella/stato di progetto, vedi punto 7 sotto).
 6. Interfaccia §23/§24/§26 (pacchetto "dimensiona_ui", 2026-09-22): finestre "Dimensiona" e "Sensibilità"
    (`js/dimensiona*.js`, `js/sensibilita*.js`), pagina `#/impostazioni` (`js/impostazioni*.js`), voce nella barra
    laterale e nella tavolozza, scorciatoie `g d`/`g s`/`g i`, link "Dimensiona" nel popover dello schizzo (§18),
@@ -85,15 +96,54 @@ non sono cambiati (`build/snapshot_tools.py` confrontato bit a bit con `build/sn
    mancante per il confronto varianti, perdita del fuoco a ogni tasto in Impostazioni, colonna Esito della
    sensibilità limitata alle verifiche disegnate, "Enter" che non avviava Cerca/Calcola in Dimensiona/
    Sensibilità, pulsante Applica mostrato per esiti che non lo prevedono, proposta Da/A di Dimensiona uguale al
-   limite escluso). Restano aperti, deliberatamente rinviati (rischio di toccare percorsi condivisi già ben
-   provati senza una verifica mirata dedicata, oppure lavoro di feature su larga scala più che una correzione):
-   la conferma "Chiudere le varianti aperte?" quando si apre `?elemento=`/`?anteprima=1`/un link "Usa in…" con
-   un confronto varianti già aperto (§19.2); il blocco di navigazione "modifiche non salvate" fuori da
+   limite escluso; e dal blocco B del 2026-09-22, punto 8 sotto: la conferma "Chiudere le varianti aperte?" ora
+   c'è, era un rischio sui dati salvati e non una semplice rifinitura). Restano aperti, deliberatamente rinviati
+   (rischio di toccare percorsi condivisi già ben provati senza una verifica mirata dedicata, oppure lavoro di
+   feature su larga scala più che una correzione): il blocco di navigazione "modifiche non salvate" fuori da
    `#/impostazioni` (§26.8, richiederebbe un aggancio in `router.js`, condiviso da tutte le pagine); la mappatura
    completa degli errori 422 di Impostazioni sui singoli campi dei passi per tipo/eccezione (oggi solo il
    sommario generale, con focus corretto); la spaccatura in funzioni più piccole di
    `varianti-confronto.js`/`sensibilita.js` oltre al limite di 400 righe già rispettato. Nessuna di queste
    tocca un calcolo o una verifica: sono rifiniture d'interfaccia.
+8. Blocco B (revisione del 2026-09-22, correzioni "correggi" + alcune "nota" della seconda ondata di revisione):
+   - Varianti: la conferma "Chiudere le varianti aperte?" ora appare su `?elemento=`, `?anteprima=1` e un link
+     "Usa in…" con un confronto varianti già aperto (`js/varianti-chiusura-confirm.js`, `tests/e2e/test_varianti.py`).
+   - Dimensiona: l'obiettivo di sfruttamento scritto a mano non viene più riscritto dalle Impostazioni, e la
+     ricerca non parte più con 1,00 se il campo è vuoto o illeggibile (`userEditedObiettivo`, tolto `?? 1`).
+   - `shared/dimensiona/sfruttamento.py`/`routes/dimensiona.py`: quando TUTTE le verifiche con rapporto sono
+     "inverso" (coefficienti di sicurezza a ribaltamento/scorrimento/capacità portante, non solo armatura
+     minima/passo/copriferro) e l'obiettivo su verifiche di minimo è "no", il motivo ora dice "Obiettivo non
+     applicato: tutte le verifiche sono di minimo (Impostazioni)" invece di affermare (falso) che è stato
+     applicato ai limiti di dettaglio. **Voce 19-bis di `docs/DECISIONI_DA_CONFERMARE.md` resta aperta e ora
+     precisata**: il titolare deve ancora scegliere se l'obiettivo si applica anche a queste verifiche di
+     minimo/coefficiente di sicurezza; finché non risponde, il comportamento sopra (nessuna applicazione, motivo
+     veritiero) resta quello di fabbrica.
+   - Stato di progetto: `cicli_origini` conta ora i CICLI distinti, non gli elementi che ci stanno dentro
+     (`stato_progetto/cicli.py`, nuovo modulo, con il percorso "<sigla> → … → <sigla>" nel motivo); corretto un
+     errore di uno nel limite di profondità delle origini (una catena di esattamente 10 passaggi non è più
+     segnalata come "controllo rinviato"); "Provvisorio per origine" nomina ora il fornitore che ha DAVVERO
+     causato lo stato quando è più a monte del fornitore diretto ("a monte SPS applica…"), e usa la sigla del
+     fornitore invece del nome interno dello strumento sia lì che in "Da ricalcolare".
+   - `impostazioni-api.js`: una richiesta di rete fallita non blocca più Dimensiona/Sensibilità su "valori di
+     fabbrica" fino al ricaricamento della pagina (la promessa respinta non resta più in cache).
+   - `middleware/rate_limit.py`: `/js`, `/css`, `/fonts`, la favicon non contano più contro il limite di 600
+     richieste al minuto (solo `/api/...` conta).
+   - `routes/impostazioni.py`/`routes/dimensiona.py`: `GET /api/impostazioni/passi` senza `?strumento=` dà ora la
+     busta italiana invece del 422 predefinito di FastAPI in inglese; i messaggi 422 di Dimensiona sul campo
+     scelto usano simbolo/descrizione italiana del campo, mai il nome interno pydantic.
+   - Non toccato in questa ondata (segnalato, non corretto): la mappatura simbolo/unità/sigla completa per i
+     motivi "da ricalcolare" (`stato_progetto/origini.py`'s `_messaggio` usa ancora la `chiave` interna, es.
+     "sito.ag_g", non il simbolo/unità del campo -- servirebbe accesso allo schema del campo da un modulo oggi
+     volutamente puro/senza dipendenza dai `Tool`); la domanda sulla gravità degli avvisi (§20, "avviso più
+     grave" della tabella di progetto) che richiederebbe toccare `shared/report.py` (contratto protetto dalla
+     regola dura 15: da chiedere al titolare prima).
+   - `tests/e2e/test_stato_progetto.py` ha solo 2 test; §25.5 (Acceptance) ne descrive una catena più lunga, non
+     ancora scritta: "Aggiorna dai dati a monte" + Salva che pulisce "↻ Da ricalcolare"; la firma
+     (`signoff-multiplo`) che toglie "◐ Provvisorio"; la relazione di progetto stampata senza "Provvisorio"; la
+     catena a tre elementi ("Usa in…" da un elemento salvato, poi un terzo "Usa in…" da quello) con "Apri
+     l'origine" e la propagazione "◐ Provvisorio per origine" su entrambi i consumatori quando il fornitore è in
+     modalità Excel. Non scritti in questo giro (rischio di allungare troppo la revisione corrente): da
+     aggiungere prima di considerare chiuso §25.
 
 ## 5. Decisioni che spettano all'ingegnere
 Tutte in `docs/DECISIONI_DA_CONFERMARE.md`. Un agente non le prende: le segnala e chiede.
@@ -102,7 +152,7 @@ Tutte in `docs/DECISIONI_DA_CONFERMARE.md`. Un agente non le prende: le segnala 
 La mappa del codice è in `CLAUDE.md`. Documentazione: indice in `docs/INDICE.md`. In sintesi: regole di
 costruzione `docs/BUILD_CONTRACT.md`; architettura `docs/architecture*.md` (`-batch2.md` §9 = decisioni del
 committente D1–D5, `-phase2.md` formule, `-phase3.md` progetti, `-phase4.md` motore M-N e capacità portante);
-piano `docs/ROADMAP.md`; validazione `docs/VALIDAZIONE_STRUMENTI.md`; interfaccia `docs/ui/DESIGN_SPEC.md`, `docs/ui/WORKBENCH_SPEC.md` §0–17,
+piano `docs/ROADMAP.md`; validazione `docs/VALIDAZIONE_STRUMENTI.md`; interfaccia `docs/ui/DESIGN_SPEC.md`, `docs/ui/WORKBENCH_SPEC.md` §0–26,
 `docs/ui/REVIEW_FABLE_2026-09-21.md`; MIDAS `docs/integrations/MIDAS.md`; specifiche per strumento `docs/specs/`.
 
 ## 7. Convenzioni e lezioni (ognuna è costata tempo una volta)
