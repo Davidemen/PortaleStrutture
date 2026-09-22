@@ -1,4 +1,4 @@
-"""E2E coverage for WORKBENCH_SPEC.md §12 (the redesigned navigation rail: a 9-destination
+"""E2E coverage for WORKBENCH_SPEC.md §12 (the redesigned navigation rail: a 10-destination
 activity bar + flyouts when collapsed, accordions when expanded) and the clipboard bug fix
 (js/clipboard.js): "Copia link" / click-to-copy / "Copia tabella" must never claim "Copiato" when
 nothing was actually copied, over a plain-http, non-secure-context VPN connection where
@@ -16,10 +16,11 @@ from ._actions import field_id, goto_tool, load_example
 pytestmark = pytest.mark.e2e
 
 RAIL_DESTINATIONS = [
-    "Home", "Cerca", "Preferiti", "Recenti", "Registro correzioni",
+    "Home", "Cerca", "Preferiti", "Recenti", "Registro correzioni", "Progetti",
     "Carichi", "Calcestruzzo armato", "Acciaio", "Geotecnica", "Fondazioni",
 ]
-FIXED_DESTINATIONS = 5  # Home, Cerca, Preferiti, Recenti, Registro correzioni (WORKBENCH_SPEC §13.1)
+# Home, Cerca, Preferiti, Recenti, Registro correzioni, Progetti (WORKBENCH_SPEC §13.1/§14.1)
+FIXED_DESTINATIONS = 6
 
 
 def _class_regex(fragment: str) -> re.Pattern[str]:
@@ -61,10 +62,10 @@ def _category_names(page: Page) -> list[str]:
     return seen
 
 
-def test_collapsed_rail_has_nine_destinations_and_toggle(page: Page, base_url: str) -> None:
-    """WORKBENCH_SPEC #12/#13.1: collapsed = Home, Cerca, Preferiti, Recenti, Registro correzioni
-    + one destination per top-level category (exactly the five named ones on the production
-    registry) + the expand/collapse toggle -- no individual tools."""
+def test_collapsed_rail_has_ten_destinations_and_toggle(page: Page, base_url: str) -> None:
+    """WORKBENCH_SPEC #12/#13.1/#14.1: collapsed = Home, Cerca, Preferiti, Recenti, Registro
+    correzioni, Progetti + one destination per top-level category (exactly the five named ones on
+    the production registry) + the expand/collapse toggle -- no individual tools."""
     goto_tool(page, base_url, "muro-sostegno")
     page.locator(".rail-toggle").click()  # force collapsed at >=1100px
     categories = _category_names(page)
@@ -89,7 +90,7 @@ def test_all_icon_path_data_are_distinct(page: Page, base_url: str) -> None:
     paths = page.evaluate(
         """async () => {
           const { buildIcon } = await import('/js/icons.js');
-          const keys = ['home', 'cerca', 'preferiti', 'recenti', 'registro', 'carichi', 'calcestruzzo-armato', 'acciaio', 'geotecnica', 'fondazioni'];
+          const keys = ['home', 'cerca', 'preferiti', 'recenti', 'registro', 'progetti', 'carichi', 'calcestruzzo-armato', 'acciaio', 'geotecnica', 'fondazioni'];
           return keys.map(key => {
             const svg = buildIcon(key);
             return [...svg.querySelectorAll('path')].map(p => p.getAttribute('d')).join('|');
@@ -100,7 +101,7 @@ def test_all_icon_path_data_are_distinct(page: Page, base_url: str) -> None:
 
 
 def test_destinations_have_accessible_name_and_tooltip(page: Page, base_url: str) -> None:
-    """WORKBENCH_SPEC #12: each of the 9 destinations has an accessible name and a tooltip
+    """WORKBENCH_SPEC #12: each of the 10 destinations has an accessible name and a tooltip
     (name + shortcut for Cerca)."""
     goto_tool(page, base_url, "muro-sostegno")
     page.locator(".rail-toggle").click()
