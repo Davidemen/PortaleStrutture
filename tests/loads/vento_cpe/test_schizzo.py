@@ -48,8 +48,10 @@ def test_viste_titoli_e_forme_esempio() -> None:
         assert kinds.count("dimension") == 2
     # sopravento + sottovento + zone A/B/C sul lato laterale libero (regola del budget di 8 testi):
     # direzione 1 ha solo le zone A/B (zona C degenere per questo esempio), direzione 2 ha A/B/C.
-    assert [f.kind for f in vista1.forme].count("label") == 4
-    assert [f.kind for f in vista2.forme].count("label") == 5
+    # sopravento + sottovento + UNA etichetta di zona ("A, B" / "A, B, C"): le zone laterali
+    # condividono lo stesso c_pe, ripeterlo tre volte era solo rumore (chiuso il 2026-09-22).
+    assert [f.kind for f in vista1.forme].count("label") == 3
+    assert [f.kind for f in vista2.forme].count("label") == 3
 
 
 @pytest.mark.unit
@@ -100,7 +102,7 @@ def test_meno_facce_definite_quando_hd_supera_cinque() -> None:
     # la geometria resta disegnata, solo le etichette del cpe spariscono
     assert any(f.kind == "rect" for f in vista1.forme)
     assert any(f.kind == "arrow" for f in vista1.forme)
-    assert sum(1 for f in vista2.forme if f.kind == "label") == 5  # sopravento+sottovento+A+B+C
+    assert sum(1 for f in vista2.forme if f.kind == "label") == 3  # sopravento+sottovento+"A, B, C"
 
 
 @pytest.mark.unit
@@ -110,7 +112,9 @@ def test_etichette_c_pe_riportano_il_simbolo_e_il_valore_giusti() -> None:
     sketch = disegna(inputs, dir1, dir2)
     etichette = [f for f in sketch.viste[0].forme if f.kind == "label"]
     simboli = sorted(e.simbolo for e in etichette)
-    assert simboli == ["A", "B", "c_pe,s", "c_pe,w"]  # zona C degenere in questo esempio (vedi sopra)
+    assert simboli == ["A, B", "c_pe,s", "c_pe,w"]  # zona C degenere in questo esempio (vedi sopra)
+    zone2 = next(f for f in sketch.viste[1].forme if f.kind == "label" and f.simbolo.startswith("A"))
+    assert zone2.simbolo == "A, B, C" and zone2.ancora == "start"
     windward = next(e for e in etichette if e.simbolo == "c_pe,w")
     # regola 4 (COMPOSITION RULES): con `simbolo` impostato, `testo` è solo il valore.
     assert windward.testo == "+" + f"{dir1.cpe_windward:.2f}".replace(".", ",")
@@ -131,7 +135,7 @@ def test_segno_tipografico_meno_e_più_esplicito() -> None:
     assert windward.testo.startswith("+")
     assert "-" not in windward.testo  # nessun trattino ASCII
 
-    laterale = next(e for e in etichette if e.simbolo == "A")  # negativo
+    laterale = next(e for e in etichette if e.simbolo.startswith("A"))  # negativo
     assert laterale.testo.startswith("−")
     assert "-" not in laterale.testo
 
@@ -261,6 +265,6 @@ def test_le_due_viste_hanno_la_stessa_composizione() -> None:
         orizzontale, verticale = ("b", "d") if vista is sketch.viste[0] else ("d", "b")
         assert quote[orizzontale].p1[1] == pytest.approx(pianta.h) and quote[orizzontale].p2[1] == pytest.approx(pianta.h)
         assert quote[verticale].p1[0] == pytest.approx(0.0) and quote[verticale].p2[0] == pytest.approx(0.0)
-        zone = [f for f in vista.forme if f.kind == "label" and f.simbolo in ("A", "B", "C")]
-        assert zone and all(z.punto[0] > pianta.w for z in zone)
+        zone = [f for f in vista.forme if f.kind == "label" and (f.simbolo or "").startswith("A")]
+        assert len(zone) == 1 and all(z.punto[0] > pianta.w for z in zone)
         assert all(z.punto[1] == pytest.approx(pianta.h / 2.0) for z in zone)

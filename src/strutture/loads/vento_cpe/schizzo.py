@@ -6,9 +6,10 @@ failure here must never fail the calculation (guarded in `tool.run`).
 
 Side walls are split into zones A/B/C at e/5 and e (e = min(crosswind, 2h)) with a tick line at
 each limit; since this tool computes a single `cpe_side` for the whole face (no per-zone values),
-every zone shows that same value, labelled "A"/"B"/"C" — only on ONE of the two side faces (the
-other keeps its division lines, unlabelled: the two faces are symmetric and the 8-text-per-view
-budget, rule 4, does not allow labelling both).
+ONE label "A, B, C = value" names the zones present, in order from the windward edge — next to
+ONE of the two side faces only (the other keeps its division lines, unlabelled: the two faces are
+symmetric and the 8-text-per-view budget, rule 4, does not allow labelling both). Repeating the
+same value three times ("A = −0,90  B = −0,90  C = −0,90") was only noise (closed 2026-09-22).
 
 Both views share ONE composition (owner's finding, 2026-09-22): wind always blows from below, the
 dimension of the horizontal side sits above the plan, the vertical one on its left, the zone
@@ -113,16 +114,12 @@ def _tick_zona(x0_m: float, y0_m: float, x1_m: float, y1_m: float) -> Linea:
     return Linea(p1=(x0_m, y0_m), p2=(x1_m, y1_m), stile="quota")
 
 
-_PASSO_ETICHETTA_ZONA_FRAZIONE = 0.5  # scostamento tra etichette di zona impilate, frazione del riferimento (regola 3)
-
-
 def _zone_laterali_verticali(x0_m: float, x1_m: float, profondita_m: float, zone: tuple[float, float],
                               riferimento_m: float) -> tuple[list[Linea], list[Etichetta]]:
     """Trattini di confine zona su entrambe le pareti laterali VERTICALI (x=x0, x=x1) alle vere
-    posizioni geometriche; le etichette A/B/C compaiono solo sulla parete x=x1 (l'altra è
-    simmetrica, vedi docstring del modulo) — x1 è il lato libero dalla quota `d`, ancorata su x0.
-    Le etichette sono impilate verso l'esterno (non lungo la parete, regola 3): una parete stretta
-    altrimenti non avrebbe spazio per 2-3 etichette affiancate."""
+    posizioni geometriche; l'unica etichetta di zona ("A, B, C") sta accanto alla parete x=x1
+    (l'altra è simmetrica, vedi docstring del modulo) — x1 è il lato libero dalla quota
+    verticale, ancorata su x0."""
     tick_m = _TICK_ZONA_FRAZIONE * riferimento_m
     f1, f2 = zone
     y1_m, y2_m = f1 * profondita_m, f2 * profondita_m
@@ -132,19 +129,15 @@ def _zone_laterali_verticali(x0_m: float, x1_m: float, profondita_m: float, zone
             linee.append(_tick_zona(x_m - tick_m, y1_m, x_m + tick_m, y1_m))
         if y1_m < y2_m < profondita_m:
             linee.append(_tick_zona(x_m - tick_m, y2_m, x_m + tick_m, y2_m))
-    passo_m = _PASSO_ETICHETTA_ZONA_FRAZIONE * riferimento_m
-    etichette = [
-        Etichetta(punto=(x1_m + tick_m * 2.0 + i * passo_m, profondita_m / 2.0), simbolo=lettera, testo="", ancora="middle")
-        for i, lettera in enumerate(_lettere_zona(y1_m, y2_m, profondita_m))
-    ]
+    lettere = ", ".join(_lettere_zona(y1_m, y2_m, profondita_m))
+    etichette = [Etichetta(punto=(x1_m + tick_m * 2.0, profondita_m / 2.0), simbolo=lettere, testo="", ancora="start")]
     return linee, etichette
 
 
 def _lettere_zona(s1_m: float, s2_m: float, profondita_m: float) -> list[str]:
     """Lettere delle zone presenti: A (0..s1) sempre, B (s1..s2) se non degenere, C
-    (s2..profondità) se non degenere. Le linee di confine (`_zone_laterali_*`) segnano i veri
-    limiti geometrici s1/s2; le ETICHETTE sono impilate verso l'esterno della parete (non lungo di
-    essa) nello stesso ordine A, B, C dal filo sopravento a quello sottovento."""
+    (s2..profondità) se non degenere, nell'ordine dal filo sopravento a quello sottovento; le
+    linee di confine (`_zone_laterali_verticali`) segnano i veri limiti geometrici s1/s2."""
     lettere = ["A"]
     if s2_m > s1_m:
         lettere.append("B")

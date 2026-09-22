@@ -47,8 +47,7 @@ riavviato: chiedere al titolare e riavviarlo (sezione 2).
    `js/symbols.js`); schizzo CPE con due impaginazioni diverse; pulsante "Comprimi la barra di navigazione" sotto il
    bordo dello schermo (il token `--head-h` era 23 px più corto dell'intestazione reale: ora è derivato e l'intestazione
    è bloccata su di esso). Restano: `neve-carico-falda` disegna la falda inclinata anche con α = 0°; lo schizzo della mensola
-   tozza è schematico; i simboli con doppio pedice (`M_Ed/M_Rd`) si leggono male nelle evidenze della sintesi; nello
-   schizzo CPE le tre etichette di zona ripetono lo stesso valore (una sola etichetta "A, B, C = …" sarebbe più pulita).
+   tozza è schematico; i simboli con doppio pedice (`M_Ed/M_Rd`) si leggono male nelle evidenze della sintesi.
 
 ## 5. Decisioni che spettano all'ingegnere
 Tutte in `docs/DECISIONI_DA_CONFERMARE.md`. Un agente non le prende: le segnala e chiede.
