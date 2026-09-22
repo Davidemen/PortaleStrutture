@@ -401,7 +401,7 @@ def _check_armatura_minima(nome: str, risultato: object) -> Check:
     disposta = armatura_minima.area_disposta_cm2_m(diametro_mm=risultato.diametro_mm, passo_m=risultato.passo_m)
     return Check(
         name=nome, passed=disposta + 1e-9 >= risultato.as_min_cm2_m, clause="NTC2018 §4.1.6.1.1",
-        detail=f"As,disposta={disposta:.2f} cm²/m >= As,min={risultato.as_min_cm2_m:.2f} cm²/m",
+        detail=f"{disposta:.2f} >= {risultato.as_min_cm2_m:.2f} cm²/m",  # short: the detail column is ~150 px wide
         value=disposta, limit=risultato.as_min_cm2_m, unit="cm2/m",
     )
 
@@ -649,9 +649,9 @@ def run_muro_sostegno(inputs: MuroSostegnoInput) -> Report[MuroSostegnoOutput]:
         tuple(c for v in ribaltamento_scorrimento for c in (v.verifica_ribaltamento, v.verifica_scorrimento))
         + capacita_portante_checks
         + (
-            _check_armatura_minima("Armatura minima del paramento", armatura_paramento),
-            _check_armatura_minima("Armatura minima della fondazione di valle", armatura_fondazione_valle),
-            _check_armatura_minima("Armatura minima della fondazione di monte", armatura_fondazione_monte),
+            _check_armatura_minima("Armatura minima paramento", armatura_paramento),
+            _check_armatura_minima("Armatura minima mancia", armatura_fondazione_valle),
+            _check_armatura_minima("Armatura minima tacco", armatura_fondazione_monte),
         )
     )
     return success(data, inputs, checks=checks, warnings=warnings + _avvisi_scorrimento(inputs))

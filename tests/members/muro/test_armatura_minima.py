@@ -42,9 +42,9 @@ def test_the_example_stem_is_sized_on_the_minimum_and_the_three_checks_exist():
     assert par.diametro_mm >= excel.data.armatura_paramento.diametro_mm
     assert excel.data.armatura_paramento.as_progetto_cm2_m == pytest.approx(excel.data.armatura_paramento.as_nec_cm2_m)
     nomi = {c.name: c for c in standard.checks}
-    for nome in ("Armatura minima del paramento", "Armatura minima della fondazione di valle", "Armatura minima della fondazione di monte"):
+    for nome in ("Armatura minima paramento", "Armatura minima mancia", "Armatura minima tacco"):
         assert nome in nomi and nomi[nome].passed, nome
         assert nomi[nome].clause == "NTC2018 §4.1.6.1.1"
     # in Excel mode the bars are chosen without the minimum: the same check reports it honestly
     nomi_excel = {c.name: c for c in excel.checks}
-    assert nomi_excel["Armatura minima del paramento"].passed is False
+    assert nomi_excel["Armatura minima paramento"].passed is False
