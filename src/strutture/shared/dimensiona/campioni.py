@@ -55,9 +55,19 @@ class Sessione:
 
 
 def interrotta(campioni: list[Campione], verso: Literal["auto", "minimo", "massimo"], valutazioni: int) -> Risultato:
-    migliore = min((c for c in campioni if c.esito == "ammissibile"), key=lambda c: c.eta_max or 0, default=None)
+    """§23.3 point 6: report the extreme admissible sample known SO FAR in the direction actually
+    being searched (the best-known bracket, "minimo" -> smallest admissible valore, "massimo" ->
+    largest), not the globally lowest-η one -- an interrupted search still owes the engineer the
+    closest thing to an answer in the direction they asked for, not an unrelated sample that
+    happens to look safest."""
+    verso_finale: Verso = "minimo" if verso != "massimo" else "massimo"
+    ammissibili = [c for c in campioni if c.esito == "ammissibile"]
+    migliore = (
+        min(ammissibili, key=lambda c: c.valore) if verso_finale == "minimo"
+        else max(ammissibili, key=lambda c: c.valore)
+    ) if ammissibili else None
     return Risultato(
-        esito="interrotta", verso="minimo" if verso != "massimo" else "massimo",
+        esito="interrotta", verso=verso_finale,
         valore=migliore.valore if migliore else None, affidabile=False,
         motivi=("Ricerca interrotta: limite di valutazioni o di tempo raggiunto",),
         campioni=tuple(campioni), valutazioni=valutazioni,

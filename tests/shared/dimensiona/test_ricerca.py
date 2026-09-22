@@ -72,6 +72,25 @@ def test_due_finestre_non_monotono():
     assert "non è monotono" in r.motivi[0]
 
 
+def test_due_finestre_non_monotono_raffina_il_bordo_della_finestra_giusta():
+    """§23.3 point 5: not just the sampled admissible point with the lowest η anywhere in the
+    interval -- the near edge of the window closest to the direction being searched, refined by
+    bisection to the grid's own resolution (here every integer, finer than the 17-point sampling
+    over a 0..100 range)."""
+
+    def v(valore):
+        ammissibile = 20 <= valore <= 40 or 60 <= valore <= 80
+        return Campione(valore=valore, esito="ammissibile" if ammissibile else "non_ammissibile", eta_max=0.5)
+
+    r_minimo = cerca(_griglia(100), v, "auto")  # "auto" -> "minimo": the LEFT window's near edge
+    assert not r_minimo.affidabile
+    assert "non è monotono" in r_minimo.motivi[0]
+    assert r_minimo.valore == Decimal(20)
+
+    r_massimo = cerca(_griglia(100), v, "massimo")  # forced "massimo": the RIGHT window's far edge
+    assert r_massimo.valore == Decimal(80)
+
+
 def test_banda_di_errore_alla_bordatura_e_limite_validita():
     def v(valore):
         if valore < 3:
@@ -149,3 +168,21 @@ def test_limite_di_valutazioni_da_interrotta():
 def test_limite_di_tempo_da_interrotta():
     r = cerca(_griglia(1000), _valuta_soglia(500), "auto", tempo_max_s=0.0)
     assert r.esito == "interrotta"
+
+
+def test_interrotta_riporta_estremo_ammissibile_nella_direzione_cercata():
+    """§23.3 point 6: not the globally best-η admissible sample -- the extreme one in the direction
+    actually being searched (here "minimo": the SMALLEST admissible valore known so far, even
+    though a larger one has a better/lower η)."""
+    from strutture.shared.dimensiona.campioni import Campione, interrotta
+
+    campioni = [
+        Campione(valore=Decimal(2), esito="ammissibile", eta_max=0.9),
+        Campione(valore=Decimal(3), esito="non_ammissibile", eta_max=1.2),
+        Campione(valore=Decimal(5), esito="ammissibile", eta_max=0.1),  # best η, but not the smallest
+    ]
+    r = interrotta(campioni, "minimo", valutazioni=3)
+    assert r.valore == Decimal(2)
+
+    r_massimo = interrotta(campioni, "massimo", valutazioni=3)
+    assert r_massimo.valore == Decimal(5)
