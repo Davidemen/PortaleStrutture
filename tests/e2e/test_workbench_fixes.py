@@ -385,7 +385,10 @@ def test_recenti_max_five(page: Page, base_url: str) -> None:
         page.goto(f"{base_url}/#/{name}")
         page.locator("#tool-title").wait_for(state="visible")
     recenti_items = page.locator("#tool-index .rail-group[data-kind='recenti'] .rail-row")
-    assert 0 < recenti_items.count() <= 5, f"expected 1-5 Recenti entries, got {recenti_items.count()}"
+    # The rail re-renders "Recenti" right after the title lands: a bare `count()` here caught the
+    # gap once (0 rows) -- `expect` retries until the list is populated, then the cap is checked.
+    expect(recenti_items.first).to_be_attached()
+    assert recenti_items.count() <= 5, f"expected at most 5 Recenti entries, got {recenti_items.count()}"
 
 
 # -- H: header search removed, search stays in the rail / Home / Ctrl+K --------------------
