@@ -10,7 +10,7 @@ from strutture.shared.impostazioni.campi import campi_numerici
 from strutture.shared.impostazioni.modelli import FABBRICA, TIPI_DATO, Impostazioni
 from strutture.shared.impostazioni.risolvi import passo_proposto
 from strutture.shared.impostazioni.tipi_dato import tipo_dato
-from strutture.shared.impostazioni.validazione import valida_eccezioni
+from strutture.shared.impostazioni.validazione import valida_eccezioni, valida_passi_per_tipo
 from strutture.shared.tool import Tool
 from strutture.storage.interfaces import ConflictError, ImpostazioniRepository
 from strutture.storage.models import MAX_SIGLA
@@ -53,6 +53,9 @@ def _register_write_route(router: APIRouter, repository: ImpostazioniRepository,
         errori_registro = valida_eccezioni(body.impostazioni.passi_per_campo, tools)
         if errori_registro:
             return error_envelope("; ".join(errori_registro), 422)
+        errori_tipo = valida_passi_per_tipo(body.impostazioni, tools)
+        if errori_tipo:
+            return _errori_body(errori_tipo, ["impostazioni", "passi_per_tipo"])
         try:
             repository.salva(body.impostazioni, body.revisione, body.sigla)
         except ConflictError:
@@ -192,3 +195,11 @@ def _conflict(repository: ImpostazioniRepository, tools: dict[str, Tool]) -> JSO
 
 def _unknown_tool(name: str) -> JSONResponse:
     return error_envelope(f"Strumento sconosciuto: {name}", 404)
+
+
+def _errori_body(messaggi: tuple[str, ...], loc: list[str]) -> JSONResponse:
+    body = {
+        "ok": False, "data": None, "checks": [], "warnings": [], "errors": list(messaggi),
+        "error_details": [{"loc": loc, "message": m} for m in messaggi], "inputs_echo": {},
+    }
+    return JSONResponse(content=body, status_code=422)

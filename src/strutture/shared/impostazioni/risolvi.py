@@ -30,7 +30,7 @@ def passo_proposto(
         return PassoProposto(None, None, None)
     passo_tipo = impostazioni.passi_per_tipo.get(tipo)
     if passo_tipo is not None:
-        return PassoProposto(_converti(passo_tipo, tipo, schema_campo.get("unit")), "tipo", tipo)
+        return PassoProposto(_converti(passo_tipo, tipo, schema_campo.get("unit"), strumento, campo), "tipo", tipo)
     if tipo == "intero":
         return PassoProposto(1.0, "intero", tipo)
     return PassoProposto(None, None, tipo)
@@ -43,7 +43,7 @@ def _eccezione(impostazioni: Impostazioni, strumento: str, campo: str):
     return None
 
 
-def _converti(passo: float, tipo: TipoDato, unita_campo: str | None) -> float:
+def _converti(passo: float, tipo: TipoDato, unita_campo: str | None, strumento: str, campo: str) -> float:
     """Convert a type step (in the type's own unit) into the field's unit; refuse a result that
     does not survive the 4-decimal rule (§26.3)."""
     unita_tipo = _UNITA_DEL_TIPO.get(tipo)
@@ -52,7 +52,8 @@ def _converti(passo: float, tipo: TipoDato, unita_campo: str | None) -> float:
     convertito = _CONVERSIONI.get((unita_tipo, unita_campo), lambda v: v)(passo)
     if _decimali(convertito) > _DECIMALI_PASSO:
         raise ValueError(
-            f"Il passo di {_numero_it(passo)} {unita_tipo} non è esprimibile in {unita_campo} per il campo"
+            f"Il passo di {_numero_it(passo)} {unita_tipo} non è esprimibile in {unita_campo} "
+            f"per {strumento}.{campo}"
         )
     return convertito
 

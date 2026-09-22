@@ -53,6 +53,48 @@ def test_get_via_default_sqlite_repository_warns_on_corrupted_row(tmp_path) -> N
 
 
 @pytest.mark.unit
+def test_put_type_step_unconvertible_for_a_field_rejected_with_field_named(settings) -> None:
+    """§26.3: a per-type step that cannot be expressed in one of the type's fields (4-decimal rule)
+    is rejected AT SAVE TIME, with that field named -- not just left for GET .../passi to discover
+    later."""
+    from pydantic import BaseModel, ConfigDict, Field
+
+    from strutture.shared.report import Report, success
+    from strutture.shared.tool import Tool
+
+    class _Input(BaseModel):
+        model_config = ConfigDict(frozen=True)
+
+        copriferro_cm: float = Field(gt=0, json_schema_extra={"unit": "cm", "symbol": "c", "group": "g"})
+
+    class _Output(BaseModel):
+        model_config = ConfigDict(frozen=True)
+
+        ok: bool = True
+
+    def _run(inputs: _Input) -> Report[_Output]:
+        return success(_Output(), inputs)
+
+    tool = Tool(
+        name="fake-copriferro", title="Copriferro di prova", group="Prova", norm="TEST",
+        input_model=_Input, output_model=_Output, run=_run,
+    )
+    app = create_app(
+        tools={**FAKE_TOOLS, "fake-copriferro": tool}, settings=settings, progetti=InMemoryProjectRepository(),
+        signoffs=InMemorySignoffRepository(), impostazioni=InMemoryImpostazioniRepository(),
+    )
+    client = TestClient(app)
+    body = client.put("/api/impostazioni", json={
+        "impostazioni": {"passi_per_tipo": {"copriferro": 1.2345}}, "revisione": 0, "sigla": "AB",
+    })
+    assert body.status_code == 422, body.text
+    payload = body.json()
+    assert "fake-copriferro.copriferro_cm" in payload["errors"][0]
+    assert payload["error_details"][0]["loc"] == ["impostazioni", "passi_per_tipo"]
+    assert client.get("/api/impostazioni").json()["revisione"] == 0  # never actually saved
+
+
+@pytest.mark.unit
 def test_get_returns_factory_shape(client: TestClient) -> None:
     body = client.get("/api/impostazioni").json()
     assert body["ok"] is True
