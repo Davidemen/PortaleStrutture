@@ -141,6 +141,10 @@ stesso confronto snapshot).
      l'origine" e la propagazione "◐ Provvisorio per origine" su entrambi i consumatori quando il fornitore è in
      modalità Excel. Non scritti in questo giro (rischio di allungare troppo la revisione corrente): da
      aggiungere prima di considerare chiuso §25.
+9. Una sola schermata per voce (`docs/ui/WORKBENCH_SPEC.md` §27, decisione 24, issue #7): specifica scritta il
+   2026-09-27, da costruire una voce alla volta (mai due lavori d'interfaccia in parallelo), a partire dal pilota
+   Neve (branch `feat/voce-unica-neve`). Nessun calcolo cambia; criterio: numeri identici allo strumento singolo.
+   Prima della voce Sisma serve la issue #8 ("Usa in…" dall'analisi completa).
 
 ## 5. Decisioni che spettano all'ingegnere
 Tutte in `docs/DECISIONI_DA_CONFERMARE.md`. Un agente non le prende: le segnala e chiede.
