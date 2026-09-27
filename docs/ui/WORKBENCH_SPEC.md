@@ -1449,8 +1449,9 @@ same overlay). For an optional part the visible part is the active result tab. N
 
 ### 27.7 Projects (choice 15)
 "Salva in progetto" saves the **visible part** as today (one element, `strumento` = that tool). With an optional
-part ticked it saves TWO elements, one per tool, with the same name suffixed " -1" / " -2" and the same sigla
-suffix, in one action (two POSTs; if the second fails the first stays and the error names the second). "Salva"
+part ticked it saves TWO elements, one per tool, with the same name suffixed " -1" / " -2" (by part order) and
+the same sigla (the dialog's sigla is who saves, stored on the revision: never suffixed; pilot Neve 2026-09-27),
+in one action (two POSTs; if the second fails the first stays and the error names the second). "Salva"
 after that updates both with their own `revisione`. Opening an element (`?elemento=`) opens its entry on its part.
 
 ### 27.8 Entry by entry (choices 6–14)
