@@ -17,6 +17,8 @@ import { navigate, onRoute, start as startRouter } from "./router.js";
 import { focusResults, focusFirstError } from "./layout.js";
 import { unmountAnnullaUi } from "./annulla-ui.js";
 import { el, clear } from "./dom.js";
+import { voceDiStrumento, voceDaSlug, indirizzoVoce, parteDi, rappresentante } from "./voci.js";
+import { mostraVoce, smontaVoce } from "./voce.js";
 
 const appEl = document.getElementById("app");
 const indexRoot = document.getElementById("tool-index");
@@ -203,7 +205,7 @@ async function selectTool(name, params) {
   }
   if (appEl) appEl.dataset.view = "tool";
   runErrorEl.hidden = true;
-  indexApi.setActive(name);
+  indexApi.setActive(rappresentante(name));
   clear(toolTitleEl);
   toolTitleEl.append(siglaChip(tool.sigla), ` ${tool.title}`);
   toolTitleEl.focus({ preventScroll: true });
@@ -226,7 +228,29 @@ async function selectTool(name, params) {
   dispatch("strutture:tool-schema", { ...schema, params });
 }
 
+// WORKBENCH_SPEC §27.5: `#/voce/<categoria>/<voce>?parte=<tool>&…` opens the entry screen; every
+// old `#/<tool>?…` of a tool that belongs to an entry lands there (`replace`, so Back does not
+// bounce), keeping all its parameters (`elemento`, `da`, `anteprima`, fields).
+function showVoce(voce, params) {
+  const { parte: richiesta, ...resto } = params;
+  const parte = parteDi(voce, richiesta) ? richiesta : voce.predefinita;
+  mostraVoce({ voce, parte, params: resto, selezionaParte: selectTool });
+}
+
 function onRouteChange({ tool, params }) {
+  const voceRotta = tool && tool.startsWith("voce/") ? voceDaSlug(tool.slice("voce/".length)) : null;
+  const voceVecchia = tool && !voceRotta ? voceDiStrumento(tool) : null;
+  if (voceVecchia) {
+    const indirizzo = indirizzoVoce(voceVecchia, tool, params);
+    navigate(indirizzo.path, indirizzo.params, { replace: true });
+    showVoce(voceVecchia, indirizzo.params);
+    return;
+  }
+  if (voceRotta) {
+    showVoce(voceRotta, params);
+    return;
+  }
+  smontaVoce();
   if (!tool) {
     showHome();
     return;

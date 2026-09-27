@@ -15,7 +15,8 @@ import { fetchTools } from "./api.js";
 import { fetchTotalePendenti } from "./registro-api.js";
 import { buildIcon } from "./icons.js";
 import { createFlyout } from "./rail-flyout.js";
-import { groupByCategory, categoryOf, listFavourites, listRecents, toggleFavourite, buildRowSections } from "./nav-state.js";
+import { groupByCategory, categoryOf, listFavourites, listRecents, toggleFavourite, buildRowSections, nomiDaMostrare } from "./nav-state.js";
+import { elencoConVoci } from "./voci.js";
 
 const CATEGORY_ICONS = {
   Carichi: "carichi",
@@ -75,7 +76,7 @@ export function renderIndex(root, { onSelect }) {
 
   function toolsFor(kind) {
     if (kind.type === "category") return allTools.filter((tool) => categoryOf(tool) === kind.title);
-    const names = kind.type === "preferiti" ? listFavourites() : listRecents(5);
+    const names = nomiDaMostrare(kind.type === "preferiti" ? listFavourites() : listRecents(5));
     return names.map((name) => allTools.find((tool) => tool.name === name)).filter(Boolean);
   }
 
@@ -288,7 +289,7 @@ export function renderIndex(root, { onSelect }) {
 
   fetchTools()
     .then((tools) => {
-      allTools = tools;
+      allTools = elencoConVoci(tools);
       render();
     })
     .catch(() => {

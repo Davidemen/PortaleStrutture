@@ -4,7 +4,8 @@
 // via api.fetchTools()").
 import { el, clear } from "./dom.js";
 import { fetchTools } from "./api.js";
-import { matchesQuery, listFavourites, listRecents, isFavourite, toggleFavourite, groupByCategory, siglaChip } from "./nav-state.js";
+import { matchesQuery, listFavourites, listRecents, isFavourite, toggleFavourite, groupByCategory, siglaChip, nomiDaMostrare } from "./nav-state.js";
+import { elencoConVoci } from "./voci.js";
 
 function buildCard(tool, onSelect, onToggleFav) {
   const fav = isFavourite(tool.name);
@@ -64,7 +65,7 @@ export function renderHome(root, { onSelect }) {
   function build(query) {
     clear(sectionsRoot);
     const filtered = allTools.filter((tool) => matchesQuery(tool, query));
-    const favNames = listFavourites();
+    const favNames = nomiDaMostrare(listFavourites());
     const favSection = buildSection(
       "Preferiti",
       pick(favNames, filtered),
@@ -72,7 +73,7 @@ export function renderHome(root, { onSelect }) {
     );
     if (favSection) sectionsRoot.append(favSection);
 
-    const recentSection = buildSection("Recenti", pick(listRecents(6), filtered), null);
+    const recentSection = buildSection("Recenti", pick(nomiDaMostrare(listRecents(6)), filtered), null);
     if (recentSection) sectionsRoot.append(recentSection);
 
     const groups = groupByCategory(filtered);
@@ -90,7 +91,7 @@ export function renderHome(root, { onSelect }) {
 
   fetchTools()
     .then((tools) => {
-      allTools = tools;
+      allTools = elencoConVoci(tools);
       build("");
     })
     .catch(() => {
