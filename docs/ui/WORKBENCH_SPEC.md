@@ -1357,3 +1357,146 @@ step. Open: 19-bis, exposed as the setting `obiettivo_su_verifiche_minimo` with 
 change it on the page at any time; the decision stays listed in `docs/DECISIONI_DA_CONFERMARE.md` until a
 definitive value is chosen. No change to `pyproject.toml` or to the shared contract (`shared/{tool,report,numeric,
 tables}.py`) is needed for §26.
+
+## 27. One screen per entry ("voce unica", owner's decision 2026-09-27, issue #7)
+Purpose: clicking an entry of the rail (e.g. Carichi / Neve) opens ONE screen that already holds every tool of
+that entry. Owner's guide `guide/02-accorpare-voci-portale.md`, **road A**: only the UI changes.
+
+### 27.1 What does NOT change (hard rule)
+No Python model, calculation step, `relazione*.py`, register entry, example, `Tool` registration or API route
+changes for this section. Every part of an entry is an existing tool run through the existing `POST /api/tools/
+<name>/run` with exactly the payload the single-tool page sends today; the printed report, saved elements
+(`strumento` = tool name), favourites, recents, share links, Excel mode, register indicators, variants (§19),
+Dimensiona (§23), sensitivity (§24) and "Confronta con Excel" (§13.3) stay **per tool**. Acceptance criterion of
+every entry PR: **with the same example the numbers are identical to the single tool** (proved by a test, §27.10).
+Only exception, tracked separately: issue #8 (`provides` on `sisma-completo`, a UI hint, no calculation).
+
+### 27.2 Entries
+An entry ("voce") is the second segment of `Tool.group` (`"Carichi / Neve"` -> category Carichi, entry Neve).
+Entries with one tool keep today's page unchanged. The nine entries with more than one tool:
+
+| Category | Entry | Tools (`name`) |
+|---|---|---|
+| Carichi | Neve | `neve-carico-falda`, `neve-accumulo` |
+| Carichi | Vento | `vento-pressione`, `vento-cpe-rettangolare` |
+| Carichi | Sisma | `sisma-completo` (+ hidden `sisma-vita-riferimento`, `sisma-parametri-sito`, `sisma-fattori-struttura`, `sisma-spettro`, §27.9) |
+| Calcestruzzo armato | Fessurazione | `ca-sle-limitazione-tensioni`, `ca-apertura-fessure`, `ca-apertura-fessure-semplificata` |
+| Calcestruzzo armato | Pilastri | `ca-pilastro-rettangolare`, `ca-pilastro-circolare`, `ca-sezione-dominio-mn` |
+| Calcestruzzo armato | Travi | `ca-trave-rettangolare`, `ca-taglio-non-armato` |
+| Acciaio | Fuoco | `acciaio-resistenza-incendio`, `acciaio-proprieta-temperatura` |
+| Geotecnica | Cedimenti | `geo-cedimento-edometrico`, `geo-cedimento-elastico-newmark`, `geo-cedimento-elastico-timoshenko-goodier` |
+| Fondazioni | Plinti | `fond-plinto-isolato`, `fond-plinto-su-pali` |
+
+The composition of each entry (tabs, selectors, optional parts, defaults, labels) is **UI data** in one JS module
+(`js/voci.js`), not derived from the schema, because it encodes the owner's choices below.
+
+### 27.3 Three kinds of part (owner's choices 1, 2, 7)
+```
+┌ Neve ───────────────────────────────────────────────────────────────────────────┐
+│ [Tab A] [Tab B]              <- tabs: one part visible at a time (choice 1)      │
+├──────────────────────┬──────────────────────────────────────────────────────────┤
+│ DATI                 │ SINTESI + results of the visible part (as today)          │
+│ Tipo [isolato ▾]     │  <- selector: alternatives, first row of Dati (choice 2)  │
+│ ▾ Geometria …        │                                                           │
+│ ☐ Accumulo           │  <- optional part: checkbox opens its own sections;       │
+│ ▾ Accumulo: dati …   │     results get a second tab [Copertura] [Accumulo]       │
+└──────────────────────┴──────────────────────────────────────────────────────────┘
+```
+- **Tab** (`role="tablist"`, arrow keys move, Enter/Space activates; label = short part title). Each tab is the
+  complete single-tool page of §1–26: Dati column, Sintesi, results, action bar. Switching tabs keeps each part's
+  inputs, last results and open groups; hidden parts are not recalculated until shown (live rules of §2 per part).
+- **Selector** ("Tipo", "Forma", "Metodo"): a select as the first row of the Dati column, visually an input but NOT
+  sent to the run (it picks which tool runs). Changing it swaps the Dati sections and results to the other tool;
+  common data (§27.4) stay written. Printed nowhere except as the tool title in the report.
+- **Optional part** (checkbox, Neve and Vento only): unticked = today's first tool alone. Ticked = the second tool's
+  OWN sections appear in the same Dati column under a heading with the part name (common data are not repeated),
+  both tools run live, and the results column shows two tabs (first part / optional part). The checkbox is UI state,
+  not a calculation input: never printed, persisted per browser like open groups (`sm.ui.voce.<entry>`), and ticked
+  automatically when a saved element or a link of the optional tool is opened.
+
+### 27.4 Common data (choice 3)
+- Common fields are an **explicit list per entry** in `js/voci.js`. Same name AND same unit is only the candidate
+  rule: a candidate with a different meaning is excluded (Neve `a` = roof pitch in `neve-carico-falda` but pitch of
+  the TALLER building in `neve-accumulo`: not common). Each entry PR lists its candidates with their descriptions;
+  a doubt on meaning is an engineering question for the owner (a `decisione` issue), never a guess. A common field
+  is written once: editing it in one part updates every other part of the entry (each part re-runs by its own live
+  rules). A small chip "comune alla voce" sits next to the label.
+- "Stacca" (a text button in the chip's disclosure, keyboard reachable) detaches that field in the current part
+  only: from then on it has its own value; "Ricollega" re-attaches it and takes the entry's value. Detached state
+  is per entry and per field, persisted with the part's inputs in the browser, never sent to the run.
+- Table inputs (strati, reazioni): only the **columns** with same key and unit are shared; the row count follows the
+  table being edited; columns that exist in one tool only keep their own values per row.
+- Fields with the same name but different unit or meaning are never shared (the test of §27.10 pins the list per
+  entry so a reviewer sees it).
+
+### 27.5 Addresses and navigation (choice 5)
+- Route `#/voce/<category-slug>/<entry-slug>?parte=<tool>&<field>=<value>&…` (query fields as today, applied to
+  `parte`). Without `parte` the entry's default part opens (§27.8).
+- Every old address keeps working and lands on the entry: `#/<tool>?…` -> `#/voce/…?parte=<tool>&…`
+  (`replace`, so Back does not bounce); `?elemento=<id>`, `?da=` ("Usa in…", §15) and `?anteprima=` keep their
+  parameters; the variants page (§19.3) stays per tool. A tool that belongs to an optional part opens the entry with
+  the checkbox ticked and its result tab active.
+- Rail, flyouts (§12), Home cards (§6) and the palette list the **entry** once (title = entry name, sigla chip of
+  the default part, norm of the default part); the palette also finds it by the titles of its parts. Favourites and
+  recents stay stored per tool (`sm.nav.fav`, `sm.nav.recent`), so colleagues' lists stay valid, and are shown
+  de-duplicated per entry.
+- "Usa in…" between two parts of the same entry (Pilastri: dominio N-M -> pilastro) switches tab instead of
+  navigating and prefills with the provenance chip of §15.
+
+### 27.6 Report (choice 4)
+"Stampa relazione" prints **only the visible part**, exactly as §10–11 print that tool today (same document,
+same overlay). For an optional part the visible part is the active result tab. No combined entry report.
+
+### 27.7 Projects (choice 15)
+"Salva in progetto" saves the **visible part** as today (one element, `strumento` = that tool). With an optional
+part ticked it saves TWO elements, one per tool, with the same name suffixed " -1" / " -2" and the same sigla
+suffix, in one action (two POSTs; if the second fails the first stays and the error names the second). "Salva"
+after that updates both with their own `revisione`. Opening an element (`?elemento=`) opens its entry on its part.
+
+### 27.8 Entry by entry (choices 6–14)
+| Entry | Layout | Default |
+|---|---|---|
+| Neve | `neve-carico-falda` always; checkbox **"Accumulo"** -> `neve-accumulo` (optional part); common: `comune`, `zona`, `as_m`, `ct`, `topografia` (not `a`, §27.4) | checkbox off |
+| Vento | `vento-pressione` always; checkbox **"Coefficienti Cpe"** -> `vento-cpe-rettangolare` (no common data today) | checkbox off |
+| Sisma | `sisma-completo` only (§27.9) | — |
+| Fessurazione | tabs **Tensioni** (`ca-sle-limitazione-tensioni`) / **Fessure**; in Fessure selector **"Metodo: diretto / semplificato"** (`ca-apertura-fessure` / `ca-apertura-fessure-semplificata`) | Tensioni; metodo diretto |
+| Pilastri | tabs **Pilastro** / **Dominio N-M** (`ca-sezione-dominio-mn`); in Pilastro selector **"Forma: rettangolare / circolare"** (`ca-pilastro-rettangolare` / `ca-pilastro-circolare`); "Usa in…" from the domain fills MRd in the Pilastro tab | Pilastro; rettangolare |
+| Travi | tabs **Trave** (`ca-trave-rettangolare`) / **Taglio senza armatura** (`ca-taglio-non-armato`); common: `h_mm` (same total section height, owner 2026-09-27) | Trave |
+| Fuoco | tabs **Resistenza in incendio** (`acciaio-resistenza-incendio`) / **Proprietà a temperatura** (`acciaio-proprieta-temperatura`) | Resistenza in incendio |
+| Cedimenti | selector **"Metodo: edometrico / elastico Newmark / elastico Timoshenko-Goodier"** | **elastico Newmark** |
+| Plinti | selector **"Tipo: isolato / su pali"**; live stays off for both (§2), button "Calcola" | **su pali** |
+
+Common fields of Fessurazione, Pilastri, Cedimenti and Plinti are fixed by their own entry PR with the §27.4
+procedure (today's same-name candidates: Pilastri 16, Plinti 10 incl. the `reazioni` table, Cedimenti 7–9 incl. the
+`strati` table, Fessurazione none).
+
+### 27.9 Sisma (choice 6)
+The entry shows `sisma-completo` only. The four partial tools disappear from rail, flyouts, Home, palette,
+favourites and recents lists. Exception so that nothing saved breaks: an element saved with one of them (or an old
+link to one) opens that tool's own page as today, with the dismissible note "Strumento non più in elenco: la voce
+Sisma usa l'analisi completa." The "Usa in…" links that today start from `sisma-parametri-sito` (to `muro-sostegno`
+and `fond-trave-collegamento`) must be given to `sisma-completo` by issue #8 before or with the Sisma PR.
+
+### 27.10 Acceptance (every entry PR)
+- **Numbers identical**: an e2e test per entry loads each part's example in the entry screen and runs the same
+  payload on the single tool (`page.request`), and asserts the run payload and the report `data` are equal (deep
+  equality) and the Sintesi numbers shown are equal. Common data test: the list of shared fields per entry equals
+  the table of §27.8.
+- Saved elements of every tool of the entry reopen with their inputs (tables included) on the right part; the
+  optional part's two-element save works; old routes, favourites and recents land on the entry.
+- Report of the visible part equal to the single-tool report (§11 acceptance).
+- Keyboard-only use of tabs, selector, checkbox, "Stacca"; 390×844 layout (tabs scroll horizontally, selector full
+  width); CSP unchanged; module caps (JS ≤ 400 lines).
+- Full suites green (`uv run pytest -q`, e2e on `static_next` then on `static`, `node --test`, ruff, register
+  `check --strict`), and `build/snapshot_tools.py` identical to before (no calculation moved).
+
+### 27.11 Order and files
+One PR per entry, **in sequence, never two UI PRs in parallel** (one `static_next` copy): pilot **Neve**; then
+Vento, Sisma (release); Travi, Fessurazione, Pilastri (release); Fuoco, Cedimenti, Plinti (release). The pilot
+builds the shared machinery; later entries mostly add rows to `js/voci.js`.
+Expected files (staging `src/strutture/web/static_next/`): new `js/voci.js` (entry table, pure), `js/voce.js`
+(entry page: tabs, selector, optional part), `js/voce-comuni.js` (common data, pure, + chip), `css/voce.css`;
+small edits to `router.js` (route + redirects), `main.js`, `tool-index.js`/`rail-flyout.js`/`nav-state.js`
+(entries in rail and lists), `home.js`, `palette.js`, `usa-in.js` (same-entry switch), `elemento-salva.js`
+(two-element save). Tests: `tests/e2e/test_voce_<entry>.py` per entry plus `tests/e2e/voci.test.mjs`. No Python
+file changes (§27.1).

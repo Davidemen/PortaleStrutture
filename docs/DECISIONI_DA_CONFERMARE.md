@@ -83,7 +83,7 @@ roadmap). Cambierebbero i numeri rispetto ai fogli: è una decisione ingegnerist
 | Cartiglio dello studio (logo, numerazione) | logo e campi che volete in relazione |
 | Login e permessi | escluso dal committente: tutti vedono e modificano tutto |
 
-## Scelte dell'interfaccia (specifica interfaccia §23-26)
+## Scelte dell'interfaccia (specifica interfaccia §23-27)
 Decise dal titolare il 2026-09-22 (restano qui come traccia; la specifica è già aggiornata):
 17. Obiettivo di sfruttamento: **impostabile**. È un valore d'ufficio nella pagina "Impostazioni"
     (`docs/ui/WORKBENCH_SPEC.md` §26), valore di fabbrica 1,00, modificabile; la finestra "Dimensiona" lo propone e
@@ -101,6 +101,13 @@ Decise dal titolare il 2026-09-22 (restano qui come traccia; la specifica è gi�
 
 23. Livello di gravità degli avvisi (per la colonna "avviso più grave" della tabella di progetto, §20): **no**
     (titolare, 2026-09-22). `shared/report.py` resta invariato; la tabella mostra il numero di avvisi e il primo.
+
+24. Una sola schermata per voce (strada A della guida 02, issue #7): **decisa dal titolare il 2026-09-27**, in
+    attesa della sua approvazione nella issue. Schede per le parti, selettore per le alternative (Plinti, Pilastri,
+    Cedimenti), dati comuni scritti una volta, relazione della sola scheda aperta, Sisma solo "analisi completa",
+    Neve e Vento con la seconda parte attivata da una casella. Dettaglio voce per voce:
+    `docs/ui/WORKBENCH_SPEC.md` §27.8. La h di trave e di taglio senza armatura è la stessa grandezza (titolare,
+    2026-09-27); l'angolo `a` della neve no (falda / costruzione più alta).
 
 Ancora aperta:
 19-bis. L'obiettivo di sfruttamento < 1 vale anche per le verifiche di minimo o di dettaglio (armatura minima,
