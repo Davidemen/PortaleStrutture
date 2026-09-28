@@ -33,6 +33,14 @@ test("§27.8: the common data of Neve are exactly the five the owner fixed (not 
   assert.equal(parteOpzionale(neve).casella, "Accumulo");
 });
 
+test("§27.8: Vento = pressione always, optional Cpe part, no common data", () => {
+  const vento = voceDaSlug("carichi/vento");
+  assert.deepEqual(vento.parti.map((p) => p.tool), ["vento-pressione", "vento-cpe-rettangolare"]);
+  assert.equal(vento.predefinita, "vento-pressione");
+  assert.equal(parteOpzionale(vento).casella, "Coefficienti Cpe");
+  assert.deepEqual(vento.comuni, []);
+});
+
 test("every entry has a unique slug and every tool belongs to one entry at most", () => {
   const slugs = VOCI.map((v) => v.slug);
   assert.equal(new Set(slugs).size, slugs.length);

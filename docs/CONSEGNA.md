@@ -1,4 +1,4 @@
-# Consegna — StruttureMenni (aggiornata il 2026-09-27)
+# Consegna — StruttureMenni (aggiornata il 2026-09-28)
 
 Scritta per chi riceve il progetto: il titolare (vedi `docs/GUIDA_PROPRIETARIO.md`) e gli agenti di sviluppo che
 lavoreranno per lui (vedi `CLAUDE.md`). Lo stato qui sotto è verificato alla data indicata: non ricavarlo di nuovo.
@@ -158,6 +158,11 @@ stesso confronto snapshot).
      su Windows (issue #12, Annulla nativo in Chromium headless) · `node --test tests/e2e/*.mjs` → 104 (sul PC
      dell'ufficio Node non è installato: si usa `.venv/Lib/site-packages/playwright/driver/node.exe`) · ruff pulito ·
      registro 0 errori · snapshot dei calcoli identico.
+   - Neve rilasciata in `v0.1.0` (2026-09-28, verificata dal titolare). Voce Vento costruita il 2026-09-28 (issue #16):
+     una riga in `VOCI`, nessun dato comune; H della pressione e h dei Cpe restano separate finché il titolare non
+     decide (issue #17, `decisione`). Prova: `tests/e2e/test_voce_vento.py` contro `voce_vento_riferimento.json`.
+     Suite: `pytest -q` 4358 · e2e 320 superati, 1 saltato, 2 falliti noti (issue #12) · node 105 · snapshot identico.
+     Prossima voce in ordine: Sisma (serve prima la issue #8).
 
 ## 5. Decisioni che spettano all'ingegnere
 Tutte in `docs/DECISIONI_DA_CONFERMARE.md`. Un agente non le prende: le segnala e chiede.
