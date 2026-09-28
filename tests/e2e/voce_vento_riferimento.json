@@ -1,0 +1,43 @@
+{
+ "vento-pressione": {
+  "payload": {
+   "comune": "Milano",
+   "provincia": null,
+   "zona": null,
+   "altitudine_m": 120,
+   "categoria_esposizione": "II",
+   "ct": 1,
+   "altezza_edificio_m": 60,
+   "periodo_ritorno_anni": 50,
+   "n_sezioni": 1000,
+   "legacy_compat": false
+  },
+  "sintesi": [
+   "25,02",
+   "3,606",
+   "1,411"
+  ]
+ },
+ "vento-cpe-rettangolare": {
+  "payload": {
+   "b": 15,
+   "d": 12,
+   "h": 9,
+   "legacy_compat": false
+  },
+  "sintesi": [
+   "1",
+   "0,77",
+   "0,45",
+   "0,90",
+   "15,00",
+   "12,00",
+   "2",
+   "0,76",
+   "0,42",
+   "0,90",
+   "12,00",
+   "15,00"
+  ]
+ }
+}

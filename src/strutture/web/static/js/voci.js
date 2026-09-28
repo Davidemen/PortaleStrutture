@@ -21,6 +21,20 @@ export const VOCI = [
     // neve-accumulo (owner, issue #7 comment of 2026-09-27).
     comuni: ["comune", "zona", "as_m", "ct", "topografia"],
   },
+  {
+    categoria: "Carichi",
+    nome: "Vento",
+    slug: "carichi/vento",
+    parti: [
+      { tool: "vento-pressione", titolo: "Pressione" },
+      { tool: "vento-cpe-rettangolare", titolo: "Coefficienti Cpe", casella: "Coefficienti Cpe" },
+    ],
+    predefinita: "vento-pressione",
+    descrizione: "Pressione cinetica e profilo lungo l'altezza; con la casella Coefficienti Cpe anche i coefficienti di pressione esterna di un edificio rettangolare.",
+    // §27.8: no field with the same name and meaning. H (pressione) vs h (Cpe) is an open
+    // engineering question for the owner (issue #17): separate until decided.
+    comuni: [],
+  },
 ];
 
 const PER_STRUMENTO = new Map(VOCI.flatMap((voce) => voce.parti.map((parte) => [parte.tool, voce])));

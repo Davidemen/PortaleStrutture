@@ -187,23 +187,24 @@ def test_palette_ctrl_k_search_opens_tool(page: Page, base_url: str) -> None:
 
 
 def test_favourites_persist_across_reload(page: Page, base_url: str) -> None:
-    """WORKBENCH_SPEC §6/§9: "favourites persist across reload" (localStorage `sm.nav.fav`)."""
+    """WORKBENCH_SPEC §6/§9: "favourites persist across reload" (localStorage `sm.nav.fav`). A tool
+    that is not part of a multi-tool entry (§27: "Pressione del vento" is now listed as "Vento")."""
     page.goto(f"{base_url}/#/")
     page.locator("#home-search").wait_for(state="visible")
-    page.get_by_role("button", name="Aggiungi Pressione del vento ai preferiti").click()
+    page.get_by_role("button", name="Aggiungi Muro di sostegno a mensola ai preferiti").click()
     # The star's accessible name flips ("Aggiungi" -> "Rimuovi") the instant it toggles, so the
     # post-click assertion re-queries by the NEW name rather than reusing the pre-click locator.
-    toggled = page.get_by_role("button", name="Rimuovi Pressione del vento dai preferiti")
+    toggled = page.get_by_role("button", name="Rimuovi Muro di sostegno a mensola dai preferiti")
     expect(toggled.first).to_have_attribute("aria-pressed", "true")
 
     page.reload()
     page.locator("#home-search").wait_for(state="visible")
     # The favourited tool now shows twice (its own "Preferiti" card + its category card), both
     # toggled together -- `.first` avoids a strict-mode ambiguity, not a real choice between them.
-    reloaded_button = page.get_by_role("button", name="Rimuovi Pressione del vento dai preferiti").first
+    reloaded_button = page.get_by_role("button", name="Rimuovi Muro di sostegno a mensola dai preferiti").first
     expect(reloaded_button).to_be_visible()
     preferiti = page.locator("section.home-section", has=page.get_by_role("heading", name="Preferiti"))
-    expect(preferiti.get_by_text("Pressione del vento", exact=True)).to_be_visible()
+    expect(preferiti.get_by_text("Muro di sostegno a mensola", exact=True)).to_be_visible()
 
 
 def test_mobile_bottom_bar_shows_verdict(mobile_page: tuple[Page, object], base_url: str) -> None:
