@@ -18,7 +18,7 @@ pytestmark = pytest.mark.unit
 
 BASE_URL = "https://moa-engineers.midasit.com:443/gen"
 FAKE_KEY = "FAKEKEY"
-_SLOW_SECONDS = 0.3
+_SLOW_SECONDS = 1.5  # long enough that runner jitter (~0.1 s) cannot reach the half-way threshold
 
 
 def _slow_handler(request: httpx.Request) -> httpx.Response:
