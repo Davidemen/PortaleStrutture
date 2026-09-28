@@ -6,6 +6,7 @@
 // chip "is also shown on Home cards, in the palette rows and next to the tool title").
 import { el } from "./dom.js";
 import { readJSON, writeJSON } from "./storage.js";
+import { rappresentante, nomiUnici } from "./voci.js";
 
 const FAV_KEY = "sm.nav.fav";
 const RECENT_KEY = "sm.nav.recent";
@@ -31,7 +32,7 @@ export function normalizeText(text) {
 export function matchesQuery(tool, query) {
   const needle = normalizeText(query);
   if (!needle) return true;
-  const haystack = normalizeText(`${tool.title} ${tool.summary || ""} ${tool.norm || ""} ${tool.group || ""}`);
+  const haystack = normalizeText(`${tool.title} ${tool.summary || ""} ${tool.norm || ""} ${tool.group || ""} ${tool.cerca || ""}`);
   return haystack.includes(needle);
 }
 
@@ -39,15 +40,23 @@ export function listFavourites() {
   return readJSON(FAV_KEY, []);
 }
 
+// WORKBENCH_SPEC §27.5: favourites/recents stay stored per TOOL (colleagues' lists stay valid) but
+// an entry is one row: any of its parts starred = the entry starred; un-starring it drops them all.
 export function isFavourite(name) {
-  return listFavourites().includes(name);
+  return listFavourites().some((item) => rappresentante(item) === rappresentante(name));
 }
 
 export function toggleFavourite(name) {
   const current = listFavourites();
-  const next = current.includes(name) ? current.filter((item) => item !== name) : [...current, name];
+  const was = isFavourite(name);
+  const next = was ? current.filter((item) => rappresentante(item) !== rappresentante(name)) : [...current, name];
   writeJSON(FAV_KEY, next);
-  return next.includes(name);
+  return !was;
+}
+
+// The names to show in Preferiti/Recenti lists: one per entry, in stored order.
+export function nomiDaMostrare(names) {
+  return nomiUnici(names);
 }
 
 export function listRecents(limit = 6) {

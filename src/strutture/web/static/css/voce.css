@@ -1,0 +1,126 @@
+/* Entry screen ("voce unica") -- WORKBENCH_SPEC §27.3/§27.4. */
+
+.vo-barra {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  align-items: center;
+  margin: 0 0 var(--s2);
+  padding: 0 var(--s4);
+}
+.vo-barra:empty {
+  display: none;
+}
+
+.vo-casella {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  font-size: var(--t-m);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.vo-parte-titolo {
+  margin: var(--s3) 0 var(--s2);
+  padding: 0 var(--s4);
+  font-size: var(--t-m);
+  font-weight: 600;
+}
+
+.vo-compagno {
+  margin: var(--s3) 0;
+  padding-top: var(--s2);
+  border-top: 1px solid var(--rule);
+}
+.vo-compagno[hidden] {
+  display: none;
+}
+
+.vo-errore {
+  margin: var(--s2) 0 0;
+  padding: 0 var(--s4);
+  color: var(--ko);
+  font-size: var(--t-s);
+}
+.vo-errore::before {
+  content: "⚠ ";
+}
+
+/* Result tabs: selected = bold + underline, never colour alone. Scroll horizontally on a phone. */
+.vo-schede[hidden] {
+  display: none;
+}
+.vo-schede-lista {
+  display: flex;
+  gap: var(--s1);
+  overflow-x: auto;
+  max-width: 100%;
+  margin: 0 0 var(--s2);
+  border-bottom: 1px solid var(--rule);
+}
+.vo-scheda {
+  flex: 0 0 auto;
+  padding: var(--s1) var(--s3);
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  color: var(--graphite);
+  font: inherit;
+  font-size: var(--t-m);
+  cursor: pointer;
+}
+.vo-scheda[aria-selected="true"] {
+  border-bottom-color: var(--ink);
+  color: var(--ink);
+  font-weight: 700;
+}
+.vo-scheda:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+/* "comune alla voce" chip next to the label of a common field. */
+.f-field-labelcell:has(.vo-comune) {
+  flex-wrap: wrap;
+}
+.vo-comune {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  font-size: var(--t-xs);
+  color: var(--graphite);
+}
+.vo-comune-etichetta {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 var(--s1);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  white-space: nowrap;
+  cursor: pointer;
+  list-style: none;
+}
+.vo-comune-etichetta::-webkit-details-marker {
+  display: none;
+}
+.vo-comune--staccato .vo-comune-etichetta {
+  border-style: dashed;
+}
+.vo-comune-azione {
+  padding: 0 var(--s1);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-xs);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.vo-comune-etichetta:focus-visible,
+.vo-comune-azione:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}

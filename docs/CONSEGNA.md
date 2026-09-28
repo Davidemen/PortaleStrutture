@@ -1,4 +1,4 @@
-# Consegna — StruttureMenni (aggiornata il 2026-09-23)
+# Consegna — StruttureMenni (aggiornata il 2026-09-27)
 
 Scritta per chi riceve il progetto: il titolare (vedi `docs/GUIDA_PROPRIETARIO.md`) e gli agenti di sviluppo che
 lavoreranno per lui (vedi `CLAUDE.md`). Lo stato qui sotto è verificato alla data indicata: non ricavarlo di nuovo.
@@ -145,6 +145,19 @@ stesso confronto snapshot).
    2026-09-27, da costruire una voce alla volta (mai due lavori d'interfaccia in parallelo), a partire dal pilota
    Neve (branch `feat/voce-unica-neve`). Nessun calcolo cambia; criterio: numeri identici allo strumento singolo.
    Prima della voce Sisma serve la issue #8 ("Usa in…" dall'analisi completa).
+   - Pilota Neve costruito il 2026-09-27 (issue #11), promosso in `static/`. Meccanismo comune: `js/voci.js`
+     (tabella delle voci, pura), `js/voce.js` (pagina della voce), `js/voce-comuni.js` (dati comuni, puro),
+     `js/voce-compagno.js` (seconda parte nella colonna Dati), `js/voce-schede.js`, `js/voce-chip.js`,
+     `js/voce-elementi.js` (salvataggio in due elementi), `css/voce.css`. La parte VISIBILE è la pagina singola di
+     oggi (stessi moduli, stesso `selectTool`); la seconda parte ha un modulo suo con nomi prefissati `vo__` e gira
+     da sola con lo stesso `POST /run`. Prova dei numeri: `tests/e2e/test_voce_neve.py` contro
+     `tests/e2e/voce_neve_riferimento.json`, catturato dalla pagina singola PRIMA della voce. Le voci successive
+     aggiungono righe a `VOCI` in `js/voci.js`; schede e selettore (Fessurazione, Pilastri, Cedimenti, Plinti) e
+     "Usa in…" dentro la stessa voce non esistono ancora: li costruisce la prima voce che li usa.
+   - Suite al 2026-09-27: `uv run pytest -q` → 4358 superati · e2e → 313 superati, 1 saltato, 2 falliti già prima
+     su Windows (issue #12, Annulla nativo in Chromium headless) · `node --test tests/e2e/*.mjs` → 104 (sul PC
+     dell'ufficio Node non è installato: si usa `.venv/Lib/site-packages/playwright/driver/node.exe`) · ruff pulito ·
+     registro 0 errori · snapshot dei calcoli identico.
 
 ## 5. Decisioni che spettano all'ingegnere
 Tutte in `docs/DECISIONI_DA_CONFERMARE.md`. Un agente non le prende: le segnala e chiede.

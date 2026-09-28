@@ -15,7 +15,8 @@ import { activeProvenienza, reconstructProvenienza, aggiornaOrigini } from "./pr
 import { azzeraStoriaAnnulla } from "./annulla-ui.js";
 import { apriConflittoDialog } from "./elemento-conflitto.js";
 import { openCreateDialog as openCreateDialogImpl } from "./elemento-salva-dialog.js";
-import { fetchProgetto, fetchElemento, updateElemento } from "./progetti-api.js";
+import { fetchProgetto, fetchElemento, updateElemento, createElemento } from "./progetti-api.js";
+import { ricorda, ricordato, compagnoDi } from "./voce-elementi.js";
 import { caricaVarianti } from "./varianti-state.js";
 import { confermaChiusuraVarianti } from "./varianti-chiusura-confirm.js";
 
@@ -63,14 +64,17 @@ export function mountElementoSalva({ toolForm, tool, title, fields, params, inpu
   errorEl.hidden = true;
   wrap.append(stateText, saveBtn, saveAsNewBtn, statusEl, errorEl);
 
-  let loaded = null; // {id, revisione, nome, sigla, nota, progettoId, progettoNome} | null
+  // §27.7: an entry page re-mounts this widget on every result-tab switch -- the part's element
+  // (if any) is remembered by js/voce-elementi.js, never by a `?elemento=` it was not opened with.
+  const opensElement = params && (params.elemento || params.anteprima === "1");
+  let loaded = opensElement ? null : ricordato(tool); // {id, revisione, nome, sigla, nota, progettoId, progettoNome} | null
   let dialogEl = null;
   let releaseTrap = null;
   // Fingerprint of the inputs+modalita the CURRENTLY loaded element was saved/reloaded with --
   // §25.1: "Usa in..." adds `da_elemento`/`da_revisione` only when the on-screen inputs are
   // IDENTICAL to this saved revision, not merely when the last run finished (a run can finish
   // successfully on inputs that were never saved at all).
-  let savedFootprint = null;
+  let savedFootprint = loaded ? loaded.footprint || null : null;
   function captureFootprint() {
     savedFootprint = JSON.stringify(visibleValues(toolForm, fields));
   }
@@ -90,6 +94,7 @@ export function mountElementoSalva({ toolForm, tool, title, fields, params, inpu
 
   function renderWidgetState() {
     activeLoaded = loaded;
+    ricorda(tool, loaded ? { ...loaded, footprint: savedFootprint } : null);
     if (loaded) {
       stateText.hidden = false;
       stateText.textContent = `Elemento: ${loaded.nome} · ${loaded.progettoNome || ""}`;
@@ -136,10 +141,45 @@ export function mountElementoSalva({ toolForm, tool, title, fields, params, inpu
       captureFootprint();
       renderWidgetState();
       showStatus("Elemento salvato.");
+      await aggiornaCompagno();
     } catch (error) {
       showError(error.message);
     } finally {
       saveBtn.disabled = false;
+    }
+  }
+
+  // §27.7: with the optional part ticked, the visible part and the other one are saved as two
+  // elements (" -1"/" -2" by part order; the sigla is who saves, the same on both); "Salva" updates both.
+  function payloadPerDialogo(nome, sigla, nota) {
+    const compagno = compagnoDi(tool);
+    if (!compagno) return currentPayload(nome, sigla, nota);
+    return currentPayload(`${nome} -${compagno.indiceAttiva}`, sigla, nota);
+  }
+
+  async function creaCompagno(targetId, nome, sigla, nota) {
+    const compagno = compagnoDi(tool);
+    if (!compagno) return;
+    try {
+      const body = await compagno.payload(`${nome} -${compagno.indice}`, sigla, nota);
+      const created = await createElemento(targetId, body);
+      ricorda(compagno.tool, { ...loaded, id: created.id, revisione: created.revisione, nome: created.nome, sigla: body.sigla });
+    } catch (error) {
+      showError(`Il secondo elemento (${compagno.titolo}) non è stato salvato: ${error.message || "errore imprevisto."}`);
+    }
+  }
+
+  async function aggiornaCompagno() {
+    const compagno = compagnoDi(tool);
+    const suo = compagno && ricordato(compagno.tool);
+    if (!suo) return;
+    try {
+      const body = { ...(await compagno.payload(suo.nome, suo.sigla, suo.nota)), revisione: suo.revisione };
+      const result = await updateElemento(suo.id, body);
+      if (result.conflict) throw new Error("è stato modificato da un altro utente, ricaricalo dal progetto.");
+      ricorda(compagno.tool, { ...suo, revisione: result.data.revisione });
+    } catch (error) {
+      showError(`Il secondo elemento (${compagno.titolo}) non è stato salvato: ${error.message || "errore imprevisto."}`);
     }
   }
 
@@ -149,14 +189,16 @@ export function mountElementoSalva({ toolForm, tool, title, fields, params, inpu
   async function openCreateDialog(options) {
     const mounted = await openCreateDialogImpl(
       {
-        tool, title, loaded, currentPayload, closeDialog,
+        tool, title, loaded, currentPayload: payloadPerDialogo, closeDialog,
         onCreated: (created, targetId, targetNome, sigla, nota) => {
+          const nomeBase = created.nome.replace(/ -\d+$/, "");
           loaded = { id: created.id, revisione: created.revisione, nome: created.nome, sigla, nota, progettoId: targetId, progettoNome: targetNome };
           captureFootprint();
           const current2 = getCurrentProgetto();
           if (!current2 || current2.id !== targetId) setCurrentProgetto({ id: targetId, nome: targetNome });
           renderWidgetState();
           showStatus("Elemento salvato in progetto.");
+          creaCompagno(targetId, nomeBase, sigla, nota);
         },
       },
       options,

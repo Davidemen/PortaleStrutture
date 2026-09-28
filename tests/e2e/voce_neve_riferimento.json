@@ -1,0 +1,55 @@
+{
+ "neve-carico-falda": {
+  "payload": {
+   "comune": "Mapello",
+   "zona": null,
+   "as_m": 250,
+   "topografia": "Normale",
+   "ct": 1,
+   "tipo_copertura": "Copertura ad una falda",
+   "a": 0,
+   "parapetto": "NO",
+   "a1": 35,
+   "parapetto1": "NO",
+   "a2": 50,
+   "parapetto2": "NO",
+   "legacy_compat": false
+  },
+  "sintesi": [
+   "1,243",
+   "1,24",
+   "0,80",
+   "0"
+  ]
+ },
+ "neve-accumulo": {
+  "payload": {
+   "comune": "Bergamo",
+   "zona": null,
+   "as_m": 249,
+   "topografia": "Normale",
+   "ct": 1,
+   "b1": 43.15,
+   "b2": 36.2,
+   "h": 10,
+   "a": 0,
+   "gamma": 2,
+   "m1_input": 0.8,
+   "msup": 0.45,
+   "neve_sheet_as_m": null,
+   "legacy_compat": false
+  },
+  "sintesi": [
+   "1",
+   "1,242",
+   "2",
+   "6,16",
+   "10,00",
+   "15,00",
+   "2",
+   "6,16",
+   "1",
+   "1,24"
+  ]
+ }
+}

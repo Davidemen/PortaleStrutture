@@ -3,7 +3,8 @@
 // keyboard operation; a labelled dialog wrapping a combobox+listbox.
 import { el, clear } from "./dom.js";
 import { fetchTools } from "./api.js";
-import { normalizeText, listRecents, trapFocus, isEditableTarget, siglaChip } from "./nav-state.js";
+import { normalizeText, listRecents, trapFocus, isEditableTarget, siglaChip, nomiDaMostrare } from "./nav-state.js";
+import { elencoConVoci } from "./voci.js";
 
 function fuzzyScore(text, query) {
   const hay = normalizeText(text);
@@ -35,7 +36,7 @@ function rankTools(tools, query, recentNames) {
     return [...recents, ...rest];
   }
   return all
-    .map((tool) => ({ tool, score: fuzzyScore(`${tool.title} ${tool.summary || ""} ${tool.norm || ""} ${tool.group || ""}`, query) }))
+    .map((tool) => ({ tool, score: fuzzyScore(`${tool.title} ${tool.summary || ""} ${tool.norm || ""} ${tool.group || ""} ${tool.cerca || ""}`, query) }))
     .filter((entry) => entry.score >= 0)
     .sort((a, b) => b.score - a.score)
     .map((entry) => entry.tool);
@@ -96,7 +97,7 @@ export function initPalette({ onNavigate }) {
   }
 
   function update() {
-    visible = rankTools(allTools, input.value, listRecents(6));
+    visible = rankTools(allTools, input.value, nomiDaMostrare(listRecents(6)));
     activeIndex = visible.length > 0 ? 0 : -1;
     renderOptions();
   }
@@ -133,7 +134,7 @@ export function initPalette({ onNavigate }) {
     } else {
       fetchTools()
         .then((tools) => {
-          allTools = tools;
+          allTools = elencoConVoci(tools);
           loaded = true;
           update();
         })
