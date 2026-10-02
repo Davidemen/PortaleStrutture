@@ -20,6 +20,25 @@ def _open_muro(page: Page, base_url: str) -> None:
     load_example(page)
 
 
+def _press_ctrl_z_and_assert_left_to_the_browser(page: Page) -> None:
+    """Ctrl+Z, then assert js/annulla-ui.js did NOT take it (issue #12). The app-handled branch
+    always calls `event.preventDefault()`; the native branch never does. The field's value after
+    a native undo is NOT asserted: it depends on the platform's own undo stack for a
+    CDP-synthesized keystroke (headless Chromium on macOS leaves the text as typed, on Windows it
+    really undoes it), so a value check made the test pass or fail by operating system. A window
+    listener runs after the app's document-level one in the bubble phase, so it sees its verdict."""
+    page.evaluate(
+        """() => {
+            window.__annullaPrevented = null;
+            window.addEventListener("keydown", (event) => {
+                if (event.key.toLowerCase() === "z") window.__annullaPrevented = event.defaultPrevented;
+            });
+        }"""
+    )
+    page.keyboard.press("Control+z")
+    assert page.evaluate("window.__annullaPrevented") is False
+
+
 def test_edit_then_ctrl_z_restores_the_value_and_the_live_result_follows(page: Page, base_url: str) -> None:
     _open_muro(page, base_url)
     field = page.locator(field_id("h_muro_m"))
@@ -185,13 +204,8 @@ def test_mid_typing_ctrl_z_is_native_and_leaves_the_app_history_untouched(page: 
     field.click()
     page.keyboard.press("Control+a")
     page.keyboard.type("9")  # value now differs from the confirmed snapshot: mid-edit, never committed
-    page.keyboard.press("Control+z")  # left to the browser (in-box character undo), not app-handled
+    _press_ctrl_z_and_assert_left_to_the_browser(page)  # in-box character undo, not app-handled
     expect(undo_btn).to_have_attribute("title", title_before)  # the app's own history never moved
-    # Headless Chromium's own undo stack for a CDP-synthesized keystroke is not reliable enough to
-    # assert an exact reverted string here, but the app-handled branch (`doUndo`) would have
-    # OVERWRITTEN the whole field with the last confirmed snapshot ("2,4") -- so "still not that
-    # snapshot" is the one assertion that actually distinguishes "left alone" from "app hijacked it".
-    expect(field).not_to_have_value("2,4")
 
 
 def test_ctrl_z_in_home_search_is_native_and_leaves_tool_history_untouched(page: Page, base_url: str) -> None:
@@ -206,10 +220,7 @@ def test_ctrl_z_in_home_search_is_native_and_leaves_tool_history_untouched(page:
     search = page.locator("#home-search")
     search.click()
     search.type("muro")
-    page.keyboard.press("Control+z")
-    # Same headless-undo caveat as above: assert the app never touched this control (still holds
-    # what was typed) rather than an exact native-undo result.
-    expect(search).to_have_value("muro")
+    _press_ctrl_z_and_assert_left_to_the_browser(page)
 
     page.goto(f"{base_url}/#/muro-sostegno")
     field = page.locator(field_id("h_muro_m"))
