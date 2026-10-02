@@ -145,3 +145,27 @@ def test_saving_prefilled_consumer_into_project_stores_provenienza(page: Page, b
     chiavi = {c["chiave"] for c in collegamenti}
     assert chiavi == {"sito.ag_g", "sito.f0", "sito.categoria_sottosuolo", "sito.categoria_topografica"}, collegamenti
     assert all(c["strumento"] == PROVIDER for c in collegamenti), collegamenti
+
+
+def test_complete_seismic_analysis_feeds_wall_and_tie_beam(page: Page, base_url: str) -> None:
+    """Issue #8: the Sisma voce shows only `sisma-completo`; its example has the same site
+    parameters as `sisma-parametri-sito`, so "Usa in…" must offer and prefill the same consumers."""
+    completo = "sisma-completo"
+    completo_sigla = _sigla_of(page, base_url, completo)
+
+    goto_tool(page, base_url, completo)
+    load_example(page)
+    page.locator("#results-head").wait_for(state="visible")
+    _open_usa_in_menu(page)
+    expect(page.locator(f'.ui-menu-item[data-tool="{CONSUMER}"]')).to_have_count(1)
+    expect(page.locator(f'.ui-menu-item[data-tool="{OTHER_CONSUMER}"]')).to_have_count(1)
+    page.locator(f'.ui-menu-item[data-tool="{CONSUMER}"]').click()
+
+    page.wait_for_url(re.compile(rf"#/{CONSUMER}\?da={completo}"))
+    page.locator("#tool-title").wait_for(state="visible")
+    expect(page.locator(field_id("ag_g"))).to_have_value("0,098")
+    expect(page.locator(field_id("f0"))).to_have_value("2,436")
+    expect(page.locator(field_id("categoria_sottosuolo"))).to_have_value("B")
+    expect(page.locator(field_id("categoria_topografica"))).to_have_value("T1")
+    for name in ("ag_g", "f0", "categoria_sottosuolo", "categoria_topografica"):
+        expect(page.locator(f'[data-field="{name}"] .pv-chip')).to_have_text(f"da {completo_sigla}")
