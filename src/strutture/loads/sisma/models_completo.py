@@ -37,8 +37,8 @@ class SismaCompletoInput(BaseModel):
         default=None, description="Provincia, se serve a distinguere comuni omonimi",
         json_schema_extra={"group": "Sito"},
     )
-    categoria_sottosuolo: CategoriaSottosuolo = Field(description="Categoria di sottosuolo", json_schema_extra={"group": "Sito"})
-    categoria_topografica: CategoriaTopografica = Field(description="Categoria topografica", json_schema_extra={"group": "Sito"})
+    categoria_sottosuolo: CategoriaSottosuolo = Field(description="Categoria di sottosuolo", json_schema_extra={"provides": "sito.categoria_sottosuolo", "group": "Sito"})
+    categoria_topografica: CategoriaTopografica = Field(description="Categoria topografica", json_schema_extra={"provides": "sito.categoria_topografica", "group": "Sito"})
     vn_anni: float = Field(
         description="Vita nominale della costruzione", gt=0,
         json_schema_extra={"unit": "anni", "symbol": "V_N", "group": "Vita nominale e classe d'uso"},
@@ -49,11 +49,11 @@ class SismaCompletoInput(BaseModel):
     stato_limite: StatoLimite = Field(description="Stato limite considerato", json_schema_extra={"group": "Stato limite"})
     ag_g: float = Field(
         description="Accelerazione orizzontale massima al sito", gt=0,
-        json_schema_extra={"unit": "g", "symbol": "a_g", "group": "Pericolosità di base"},
+        json_schema_extra={"provides": "sito.ag_g", "unit": "g", "symbol": "a_g", "group": "Pericolosità di base"},
     )
     f0: float = Field(
         description="Fattore di amplificazione massima dello spettro", gt=0,
-        json_schema_extra={"unit": "-", "symbol": "F_0", "group": "Pericolosità di base"},
+        json_schema_extra={"provides": "sito.f0", "unit": "-", "symbol": "F_0", "group": "Pericolosità di base"},
     )
     tc_star_s: float = Field(
         description="Periodo di inizio del tratto a velocità costante", gt=0,

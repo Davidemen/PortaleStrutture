@@ -116,6 +116,14 @@ def test_the_real_registry_is_consistent_and_has_the_first_links() -> None:
     assert [c.strumento for c in registro["trave.sigma_s_rara_MPa"].consumatori] == ["ca-sle-limitazione-tensioni"]
 
 
+def test_the_complete_seismic_analysis_provides_the_same_site_parameters_as_the_partial_one() -> None:
+    """Issue #8: the Sisma voce shows only `sisma-completo`, so it must keep the "Usa in…" links."""
+    registro = raccogli(discover())
+    for chiave in ("sito.ag_g", "sito.f0", "sito.categoria_sottosuolo", "sito.categoria_topografica"):
+        fornitori = {(f.strumento, f.percorso, f.ingresso) for f in registro[chiave].fornitori}
+        assert ("sisma-completo", chiave.removeprefix("sito."), True) in fornitori, chiave
+
+
 def test_the_section_tool_feeds_the_column_tools_with_its_governing_m_rd() -> None:
     registro = raccogli(discover())
     link = registro["sezione.mrd_x_kNm"]
